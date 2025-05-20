@@ -1,0 +1,72 @@
+@use "sass:map";
+@use "../../../styles/_variables.scss" as vars;
+
+.full-screen-container {
+  height: 90vh;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.homepage-wrapper {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.first-section {
+  height: 100%;
+  width: 100%;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+
+  .container {
+    max-width: 800px;
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .presentation .logo {
+    max-width: 200px;
+    height: auto;
+    margin-bottom: 1rem;
+  }
+
+  .slogan-box {
+    overflow: hidden;
+
+    p {
+      font-size: 1rem;
+      margin: 0 0 0.5rem;
+      line-height: 1.5;
+    }
+
+    hr {
+      margin: 1rem auto;
+      width: 50%;
+    }
+  }
+
+  .social-icons {
+    position: absolute;
+    bottom: 1rem;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 1.5rem;
+
+    .icon-link img {
+      width: 28px;
+      height: 28px;
+    }
+  }
+}

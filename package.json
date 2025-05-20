@@ -1,15 +1,18 @@
 {
   "name": "groupe-abc",
   "version": "0.0.0",
+  "private": true,
+  "type": "module",
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "watch": "ng build --watch --configuration development",
-    "test": "ng test",
-    "serve:ssr:groupe-abc": "node dist/groupe-abc/server/server.mjs"
+    "build:ssr": "ng build && ng run groupe-abc:server",
+    "serve:ssr": "node dist/groupe-abc/server/main.js",
+    "start:ssr": "npm run build:ssr && npm run serve:ssr",
+    "dev:ssr": "ng run groupe-abc:serve-ssr",
+    "prerender": "ng run groupe-abc:prerender"
   },
-  "private": true,
   "dependencies": {
     "@angular/animations": "^19.1.0",
     "@angular/common": "^19.1.0",
@@ -22,6 +25,8 @@
     "@angular/router": "^19.1.0",
     "@angular/ssr": "^19.1.5",
     "express": "^4.18.2",
+    "groupe-abc": "file:",
+    "gsap": "^3.13.0",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
     "zone.js": "~0.15.0"

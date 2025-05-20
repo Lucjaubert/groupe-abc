@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist/groupe-abc/server",
+    "target": "ES2022",
+    "module": "CommonJS",
+    "types": ["node"],
+    "useDefineForClassFields": false,
+    "noUnusedLocals": false
+  },
+  "files": [
+    "server.ts",
+    "src/main.server.ts",
+    "src/app/app.config.ts",
+    "src/server.ts"
+  ],
+  "exclude": [
+    "src/test.ts",
+    "src/**/*.spec.ts",
+    "src/main.ts"
+  ]
+}

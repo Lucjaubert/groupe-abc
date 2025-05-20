@@ -1,0 +1,94 @@
+@use "sass:map";
+@use "../../../../styles/_variables.scss" as vars;
+
+.header-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+
+  .logo-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: flex-start;
+
+    .logo {
+      height: 60px;
+      width: auto;
+    }
+  }
+
+  .navigation {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2rem;
+
+    .contact-link {
+      color: #1f2a8a;
+      font-weight: bold;
+      text-decoration: none;
+      font-size: 1.2rem;
+      transition: color 0.3s;
+
+      &:hover {
+        color: #e95420;
+      }
+    }
+
+    .menu-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+
+      .animated-icon {
+        width: 30px;
+        height: 30px;
+        position: relative;
+        overflow: hidden;
+
+        .menu-line {
+          display: block;
+          height: 2.5px;
+          background-color: #1f2a8a;
+          margin: 4.5px 0;
+          transition: all 0.3s ease-in-out;
+        }
+
+        .menu-line:nth-child(1) {
+          width: 30px; // Longueur de la première ligne (la plus longue)
+        }
+
+        .menu-line:nth-child(2) {
+          width: 25px; // Longueur de la deuxième ligne
+        }
+
+        .menu-line:nth-child(3) {
+          width: 20px; // Longueur de la troisième ligne (la plus courte)
+        }
+
+        &.open .menu-line:nth-child(1) {
+          transform: rotate(45deg) translate(5px, 5px);
+        }
+
+        &.open .menu-line:nth-child(2) {
+          opacity: 0;
+        }
+
+        &.open .menu-line:nth-child(3) {
+          transform: rotate(-45deg) translate(5px, -5px);
+        }
+      }
+    }
+  }
+}

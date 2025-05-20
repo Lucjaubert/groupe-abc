@@ -1,0 +1,129 @@
+@use "sass:map";
+@use "./_variables" as vars;
+@use "../assets/fonts/fonts.scss" as fonts;
+@use "bootstrap/scss/bootstrap";
+
+html,
+body,
+body[class^="mci-"] {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100%;
+  height: 100%;        // calé sur le viewport
+  overflow: hidden !important;   // annihile toute scrollbar
+  background-color: map.get(vars.$theme-colors, "blue") !important;
+  font-family: 'PlusJakartaSans', sans-serif;
+  -ms-overflow-style: none;      // IE / Edge Legacy
+  scrollbar-width: none;         // Firefox
+}
+
+// Chrome / Safari / Opera
+body::-webkit-scrollbar,
+body[class^="mci-"]::-webkit-scrollbar {
+  display: none;
+}
+
+// -----------------------------------------------------------------------------
+//  BOX SIZING + SAFE RESET
+// -----------------------------------------------------------------------------
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden; // pas de débordement horizontal
+}
+
+// -----------------------------------------------------------------------------
+//  STRUCTURE ANGULAR
+// -----------------------------------------------------------------------------
+app-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%; // prend toute la hauteur sans dépasser
+  width: 100%;
+}
+
+// -----------------------------------------------------------------------------
+//  BOOTSTRAP CONTAINERS (on vire les paddings d’origine)
+// -----------------------------------------------------------------------------
+.container,
+.container-fluid {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.container-fluid {
+  width: 100% !important;
+}
+
+// -----------------------------------------------------------------------------
+//  TYPOGRAPHIE
+// -----------------------------------------------------------------------------
+@mixin heading-styles($size-min, $size-max) {
+  font-family: 'PlusJakartaSans', sans-serif;
+  font-weight: normal;
+  color: inherit;
+  font-size: clamp($size-min, 3vw, $size-max);
+}
+
+h1 { @include heading-styles(1.8rem, 4rem); font-weight: 700; }
+h2 { @include heading-styles(1.65rem, 3rem); font-weight: 600; }
+h3 { @include heading-styles(1.4rem, 2rem); font-weight: 500; }
+h4 { @include heading-styles(1.1rem, 1.5rem); font-weight: 500; }
+h5 { @include heading-styles(1rem, 1.3rem); font-weight: 500; }
+h6 { @include heading-styles(0.8rem, 1rem); font-weight: 400; }
+
+ul,
+li,
+a {
+  font-family: 'PlusJakartaSans', sans-serif;
+  font-weight: 300;
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  font-size: clamp(0.675rem, 2vw, 1rem);
+  color: map.get(vars.$theme-colors, "grey");
+}
+
+p {
+  font-family: 'PlusJakartaSans', sans-serif;
+  font-weight: 300;
+  font-size: clamp(0.775rem, 2vw, 0.95rem);
+  margin: 0;
+  color: inherit;
+}
+
+// -----------------------------------------------------------------------------
+//  BOUTON « BACK TO TOP » (masqué par défaut)
+// -----------------------------------------------------------------------------
+#back-to-top {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  display: none;
+  width: 50px;
+  height: 50px;
+  background-color: map.get(vars.$theme-colors, "blue-6");
+  color: map.get(vars.$theme-colors, "beige");
+  border: none;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  opacity: 0;
+  visibility: hidden;
+
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+#back-to-top.show {
+  display: flex;
+  opacity: 1;
+  visibility: visible;
+}
