@@ -3,7 +3,8 @@
     <section id="first-section" class="first-section">
       <div class="container">
         <div class="slogan-container">
-          <div class="presentation">
+          <!-- 1. Logo -->
+          <div class="presentation" #logo>
             <img
               src="assets/img/homepage/logo_ABC.webp"
               alt="Groupe ABC logo"
@@ -12,17 +13,22 @@
           </div>
 
           <div class="slogan-box">
-            <p>Un nouveau look pour une nouvelle ère.<br />
-              <strong>Le Groupe ABC fait peau neuve !</strong><br />
+            <!-- 2. Bloc FR -->
+            <p #frTitle>Un nouveau look pour une nouvelle ère.</p>
+            <h5 #frTitle2>Le Groupe ABC fait peau neuve !</h5>
+            <p #frText>
               Notre site est temporairement indisponible pour cause de maintenance.<br />
               Nous vous préparons une toute nouvelle expérience, portée par notre nouveau logo et une charte graphique entièrement repensée.<br />
               Merci de votre compréhension et à très bientôt !
             </p>
 
-            <hr />
+            <!-- 3. Ligne -->
+            <hr #divider />
 
-            <p>A new look for a new era.<br />
-              <strong>Groupe ABC is getting a makeover!</strong><br />
+            <!-- 4. Bloc EN -->
+            <p #enTitle>A new look for a new era.</p>
+            <h5 #enTitle2>Groupe ABC is getting a makeover!</h5>
+            <p #enText>
               Our website is temporarily unavailable due to maintenance.<br />
               We’re preparing a brand-new experience, featuring our redesigned logo and refreshed visual identity.<br />
               Thank you for your understanding, we’ll be back online soon!
@@ -31,12 +37,13 @@
         </div>
       </div>
 
-      <div class="social-icons">
-        <a href="https://wa.me/ton-numero" target="_blank" class="icon-link">
-          <img src="/assets/icons/appel.png" alt="WhatsApp" />
+      <!-- 5. Social Icons -->
+      <div class="social-icons mt-4" #socialIcons>
+        <a href="mailto:contact@groupe-abc.fr" class="icon-mail mb-1" title="Nous écrire">
+          <img src="/assets/icons/email.png" alt="Email" />
         </a>
-        <a href="mailto:tonmail@example.com" target="_blank" class="icon-link">
-          <img src="/assets/icons/mail.png" alt="Mail" />
+        <a href="https://www.linkedin.com/company/groupe-abc-experts/" target="_blank" class="icon-link" title="Nous suivre sur LinkedIn">
+          <img src="/assets/icons/linkedin.png" alt="LinkedIn" />
         </a>
       </div>
     </section>

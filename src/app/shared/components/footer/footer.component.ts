@@ -9,7 +9,6 @@ import { RouterModule } from '@angular/router';
   standalone: true,
   imports: [
     CommonModule,
-    RouterModule
   ]
 })
 export class FooterComponent implements OnInit, OnDestroy {

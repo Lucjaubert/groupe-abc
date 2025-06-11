@@ -3,62 +3,56 @@
 @use "../assets/fonts/fonts.scss" as fonts;
 @use "bootstrap/scss/bootstrap";
 
-html,
-body,
-body[class^="mci-"] {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100%;
-  height: 100%;        // calé sur le viewport
-  overflow: hidden !important;   // annihile toute scrollbar
-  background-color: map.get(vars.$theme-colors, "blue") !important;
-  font-family: 'PlusJakartaSans', sans-serif;
-  -ms-overflow-style: none;      // IE / Edge Legacy
-  scrollbar-width: none;         // Firefox
-}
-
-// Chrome / Safari / Opera
-body::-webkit-scrollbar,
-body[class^="mci-"]::-webkit-scrollbar {
-  display: none;
-}
-
-// -----------------------------------------------------------------------------
-//  BOX SIZING + SAFE RESET
-// -----------------------------------------------------------------------------
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
-  overflow-x: hidden; // pas de débordement horizontal
+  overflow-x: hidden;
 }
 
-// -----------------------------------------------------------------------------
-//  STRUCTURE ANGULAR
-// -----------------------------------------------------------------------------
-app-root {
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  background-color: map.get(vars.$theme-colors, "blue") !important;
+  overflow-x: hidden;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+app-footer {
+  width: 100%;
+  height: 100px;
+  margin-top: auto;
+}
+
+#app-container {
+  position: relative;
   display: flex;
   flex-direction: column;
-  height: 100%; // prend toute la hauteur sans dépasser
-  width: 100%;
+  min-height: 100vh;
+  width: 100vw;
 }
 
-// -----------------------------------------------------------------------------
-//  BOOTSTRAP CONTAINERS (on vire les paddings d’origine)
-// -----------------------------------------------------------------------------
-.container,
-.container-fluid {
+#page {
+  flex: 1;
+  width: 100vw;
+}
+
+.container, .container-fluid {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
 
 .container-fluid {
-  width: 100% !important;
+  width: 100vw !important;
 }
 
-// -----------------------------------------------------------------------------
-//  TYPOGRAPHIE
-// -----------------------------------------------------------------------------
 @mixin heading-styles($size-min, $size-max) {
   font-family: 'PlusJakartaSans', sans-serif;
   font-weight: normal;
@@ -73,9 +67,7 @@ h4 { @include heading-styles(1.1rem, 1.5rem); font-weight: 500; }
 h5 { @include heading-styles(1rem, 1.3rem); font-weight: 500; }
 h6 { @include heading-styles(0.8rem, 1rem); font-weight: 400; }
 
-ul,
-li,
-a {
+ul, li, a {
   font-family: 'PlusJakartaSans', sans-serif;
   font-weight: 300;
   list-style-type: none;
@@ -88,14 +80,13 @@ a {
 p {
   font-family: 'PlusJakartaSans', sans-serif;
   font-weight: 300;
-  font-size: clamp(0.775rem, 2vw, 0.95rem);
+  list-style-type: none;
+  padding: 0;
   margin: 0;
+  font-size: clamp(0.7rem, 1vw, 0.95rem) !important;
   color: inherit;
 }
 
-// -----------------------------------------------------------------------------
-//  BOUTON « BACK TO TOP » (masqué par défaut)
-// -----------------------------------------------------------------------------
 #back-to-top {
   position: fixed;
   bottom: 2rem;
@@ -122,8 +113,6 @@ p {
   }
 }
 
-#back-to-top.show {
-  display: flex;
-  opacity: 1;
-  visibility: visible;
-}
+
+
+

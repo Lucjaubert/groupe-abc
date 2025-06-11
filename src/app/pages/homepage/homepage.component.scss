@@ -2,7 +2,8 @@
 @use "../../../styles/_variables.scss" as vars;
 
 .full-screen-container {
-  height: 90vh;
+  height: 100vh;
+  height: 100dvh; // ✅ Fixe le problème de hauteur sur mobile
   overflow: hidden;
   display: flex;
   justify-content: center;
@@ -19,20 +20,32 @@
 }
 
 .first-section {
-  height: 100%;
   width: 100%;
   padding: 1rem;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  position: relative;
   overflow: hidden;
 
   .container {
     max-width: 800px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
     text-align: center;
-    overflow: hidden;
+    gap: 1.5rem; // ✅ Ajoute de l’espace contrôlé entre slogan et icônes
+
+    p {
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .slogan-container {
+      overflow-y: hidden;
+    }
   }
 
   .presentation .logo {
@@ -44,29 +57,63 @@
   .slogan-box {
     overflow: hidden;
 
-    p {
+    h5 {
+      margin: 1rem 0 0.5rem;
       font-size: 1rem;
-      margin: 0 0 0.5rem;
-      line-height: 1.5;
-    }
-
-    hr {
-      margin: 1rem auto;
-      width: 50%;
+      font-weight: bold;
+      overflow-y: hidden;
     }
   }
 
   .social-icons {
-    position: absolute;
-    bottom: 1rem;
-    left: 50%;
-    transform: translateX(-50%);
+    margin-top: 1rem; // ✅ réduit l’espace
     display: flex;
+    justify-content: center;
+    align-items: center;
     gap: 1.5rem;
+    overflow-y: hidden;
 
     .icon-link img {
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
     }
+
+    .icon-mail img {
+      width: 25px;
+      height: 25px;
+    }
+
+    .email-options {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-top: 0.5rem;
+      background: #f0f0f0;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .email-options a {
+      text-decoration: none;
+      margin: 0.25rem 0;
+      color: #333;
+      font-size: 14px;
+    }
+  }
+}
+
+// ✅ Responsive adjustment
+@media screen and (max-width: 768px) {
+  .social-icons {
+    margin-top: 0.75rem; // Encore plus rapproché sur mobile
+  }
+
+  .container {
+    gap: 1rem;
+  }
+
+  .slogan-box h5 {
+    font-size: 1.05rem;
   }
 }

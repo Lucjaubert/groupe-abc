@@ -13,38 +13,54 @@ import gsap from 'gsap';
 export class HomepageComponent implements AfterViewInit {
   hoverGauche = false;
   hoverDroite = false;
+  showEmailOptions = false;
 
-  @ViewChild('logoGrid',      {static:true}) logoGrid!: ElementRef;
-  @ViewChild('verticalTitle', {static:true}) verticalTitle!: ElementRef;
-  @ViewChild('titlesBlock',   {static:true}) titlesBlock!: ElementRef;
-  @ViewChild('announcement',  {static:true}) announcement!: ElementRef;
-  @ViewChild('socialIcons',   {static:true}) socialIcons!: ElementRef;
+  @ViewChild('logo', { static: true }) logo!: ElementRef;
+  @ViewChild('frTitle', { static: true }) frTitle!: ElementRef;
+  @ViewChild('frText', { static: true }) frText!: ElementRef;
+  @ViewChild('divider', { static: true }) divider!: ElementRef;
+  @ViewChild('enTitle', { static: true }) enTitle!: ElementRef;
+  @ViewChild('enText', { static: true }) enText!: ElementRef;
+  @ViewChild('socialIcons', { static: true }) socialIcons!: ElementRef;
 
-  setHover(g:'gauche'|'droite', s:boolean){ g==='gauche'? this.hoverGauche=s : this.hoverDroite=s; }
+  setHover(g: 'gauche' | 'droite', s: boolean) {
+    g === 'gauche' ? (this.hoverGauche = s) : (this.hoverDroite = s);
+  }
 
   ngAfterViewInit() {
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' } });
 
-    tl.to(this.logoGrid.nativeElement.querySelectorAll('.logo-piece'), {
-        opacity: 1,
-        scale: 1,
-        duration: 1.4,
-        stagger: 0.3
+    tl.from(this.logo.nativeElement, {
+      opacity: 0,
+      scale: 0.8,
+      duration: 1
+    })
+      .from([this.frTitle.nativeElement, this.frText.nativeElement], {
+        opacity: 0,
+        y: 50,
+        duration: 1.5,
+        stagger: 0.2
       })
-      .from(
-        [this.verticalTitle.nativeElement, this.titlesBlock.nativeElement],
-        { opacity: 0, y: 70, duration: 1.1 },
-        "-=0.3" // Commence juste après la fin de l'animation précédente
-      )
-      .from(
-        this.announcement.nativeElement,
-        { opacity: 0, y: 70, duration: 1.1 },
-        "-=0.3" // Commence juste après la fin de l'animation précédente
-      )
-      .to(
-        this.socialIcons.nativeElement.querySelectorAll('.icon-link'),
-        { opacity: 1, scale: 1, duration: 1.1, stagger: 0.35 },
-        "-=0.3" // Commence juste après la fin de l'animation précédente
-      );
+      .from(this.divider.nativeElement, {
+        width: 0,
+        opacity: 0,
+        duration: 0.6
+      })
+      .from([this.enTitle.nativeElement, this.enText.nativeElement], {
+        opacity: 0,
+        y: 50,
+        duration: 1,
+        stagger: 0.2
+      })
+      .from(this.socialIcons.nativeElement.querySelectorAll('a'), {
+        opacity: 0,
+        y: 20,
+        duration: 0.8,
+        stagger: 0.2
+      });
+  }
+
+  toggleEmailOptions() {
+    this.showEmailOptions = !this.showEmailOptions;
   }
 }
