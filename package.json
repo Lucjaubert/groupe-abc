@@ -8,11 +8,13 @@
     "start": "ng serve",
     "build": "ng build",
     "build:ssr": "ng build --configuration production && ng run groupe-abc:server:production",
-    "serve:ssr": "node --experimental-specifier-resolution=node server.mjs",
+    "postbuild:ssr": "cp ssr.mjs dist/groupe_abc/",
+    "serve:ssr": "node --experimental-specifier-resolution=node dist/groupe_abc/ssr.mjs",
     "start:ssr": "npm run build:ssr && npm run serve:ssr",
     "dev:ssr": "ng run groupe-abc:serve-ssr",
     "prerender": "ng run groupe-abc:prerender"
   },
+
   "dependencies": {
     "@angular/animations": "18.2.12",
     "@angular/cdk": "18.2.12",

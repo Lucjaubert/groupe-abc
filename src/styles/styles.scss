@@ -10,7 +10,8 @@
   overflow-x: hidden;
 }
 
-body, html {
+body,
+html {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -44,7 +45,8 @@ app-footer {
   width: 100vw;
 }
 
-.container, .container-fluid {
+.container,
+.container-fluid {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
@@ -53,66 +55,125 @@ app-footer {
   width: 100vw !important;
 }
 
-@mixin heading-styles($size-min, $size-max) {
-  font-family: 'PlusJakartaSans', sans-serif;
-  font-weight: normal;
-  color: inherit;
-  font-size: clamp($size-min, 3vw, $size-max);
-}
-
-h1 { @include heading-styles(1.8rem, 4rem); font-weight: 700; }
-h2 { @include heading-styles(1.65rem, 3rem); font-weight: 600; }
-h3 { @include heading-styles(1.4rem, 2rem); font-weight: 500; }
-h4 { @include heading-styles(1.1rem, 1.5rem); font-weight: 500; }
-h5 { @include heading-styles(1rem, 1.3rem); font-weight: 500; }
-h6 { @include heading-styles(0.8rem, 1rem); font-weight: 400; }
-
-ul, li, a {
-  font-family: 'PlusJakartaSans', sans-serif;
-  font-weight: 300;
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  font-size: clamp(0.675rem, 2vw, 1rem);
-  color: map.get(vars.$theme-colors, "grey");
-}
-
-p {
-  font-family: 'PlusJakartaSans', sans-serif;
-  font-weight: 300;
-  list-style-type: none;
-  padding: 0;
-  margin: 0;
-  font-size: clamp(0.7rem, 1vw, 0.95rem) !important;
+@mixin heading-styles($min, $max) {
+  font-size: clamp($min, 3vw, $max);
+  font-family: "Plus Jakarta Sans", sans-serif;
   color: inherit;
 }
 
-#back-to-top {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  display: none;
-  width: 50px;
-  height: 50px;
-  background-color: map.get(vars.$theme-colors, "blue-6");
-  color: map.get(vars.$theme-colors, "beige");
-  border: none;
-  border-radius: 50%;
-  font-size: 1.5rem;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
-  opacity: 0;
-  visibility: hidden;
+h1 {
+  @include heading-styles(48px, 48px);
+  font-weight: 400;
+  color: map.get(vars.$theme-colors, "white");
 
   @media (max-width: map.get(vars.$breakpoints, "md")) {
-    width: 40px;
-    height: 40px;
+    @include heading-styles(30px, 30px);
+    font-weight: 300;
   }
 }
 
+h2 {
+  @include heading-styles(75px, 75px);
+  font-weight: 600;
+  color: map.get(vars.$theme-colors, "light-blue");
+  line-height: 110px;
 
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    @include heading-styles(40px, 40px);
+    line-height: 50px;
+    color: map.get(vars.$theme-colors, "light-blue");
+  }
+}
 
+h3 {
+  font-family: Inter, sans-serif;
+  @include heading-styles(60px, 60px);
+  font-weight: 400;
+  color: map.get(vars.$theme-colors, "light-blue");
 
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    @include heading-styles(32px, 32px);
+    font-weight: 300;
+    line-height: 50px;
+    color: map.get(vars.$theme-colors, "light-blue");
+  }
+}
+
+h4 {
+  @include heading-styles(40px, 40px);
+  font-weight: 400;
+  color: map.get(vars.$theme-colors, "light-blue");
+
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    @include heading-styles(24px, 24px);
+    font-weight: 300;
+    color: map.get(vars.$theme-colors, "light-blue");
+  }
+}
+
+h5 {
+  font-family: Inter, sans-serif;
+  @include heading-styles(36px, 36px);
+  font-weight: 400;
+  color: map.get(vars.$theme-colors, "light-blue");
+
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    @include heading-styles(24px, 24px);
+    line-height: 30px;
+    color: map.get(vars.$theme-colors, "light-blue");
+  }
+}
+
+h6 {
+  @include heading-styles(48px, 48px);
+  font-weight: 400;
+  color: map.get(vars.$theme-colors, "white");
+
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    @include heading-styles(24px, 24px);
+  }
+}
+
+p {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  color: map.get(vars.$theme-colors, "light-blue");
+
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    font-size: 13px;
+  }
+}
+
+.p-lg {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: map.get(vars.$theme-colors, "light-blue");
+
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    font-size: 16px;
+    line-height: 30px;
+    color: map.get(vars.$theme-colors, "light-blue");
+  }
+}
+
+ul,
+li,
+a {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 300;
+  list-style: none;
+  font-size: clamp(0.675rem, 2vw, 1rem);
+  color: map.get(vars.$theme-colors, "light-grey");
+}
+
+.main-wrapper {
+  padding-left: 200px;
+  padding-right: 200px;
+
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+}

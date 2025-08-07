@@ -3,18 +3,16 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
 import { environment } from '../../environments/environment';
 
-@Injectable({
-  providedIn: 'root'
-})
+@Injectable({ providedIn: 'root' })
 export class WordpressService {
 
-  private apiUrl = environment.apiUrl;
+  private api = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 
   getHomepageData(): Observable<any> {
-    return this.http.get<any>(`${this.apiUrl}/homepage`).pipe(
-      map(response => response[0]?.acf)
+    return this.http.get<any>(`${this.api}/homepage`).pipe(
+      map(res => res?.acf || {})
     );
   }
 }

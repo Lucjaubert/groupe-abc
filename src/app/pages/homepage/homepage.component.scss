@@ -103,10 +103,9 @@
   }
 }
 
-// ✅ Responsive adjustment
 @media screen and (max-width: 768px) {
   .social-icons {
-    margin-top: 0.75rem; // Encore plus rapproché sur mobile
+    margin-top: 0.75rem;
   }
 
   .container {
