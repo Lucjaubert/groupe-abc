@@ -1,7 +1,16 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { AppComponent } from './app/app.component';
-import { config } from './app/app.config.server';
+import { ApplicationRef, APP_ID } from '@angular/core';
+import { provideServerRendering } from '@angular/platform-server';
 
-const bootstrap = () => bootstrapApplication(AppComponent, config);
+import { AppComponent }  from './app/app.component';
+import { config }        from './app/app.config.server';
 
-export default bootstrap;
+export default function bootstrap(): Promise<ApplicationRef> {
+  return bootstrapApplication(AppComponent, {
+    providers: [
+      provideServerRendering(),
+      { provide: APP_ID, useValue: 'groupe-abc-app' },
+      ...(config.providers || [])
+    ]
+  });
+}

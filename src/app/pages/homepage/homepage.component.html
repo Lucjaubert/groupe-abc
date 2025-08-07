@@ -1,44 +1,87 @@
-<div class="full-screen-container">
-  <div class="homepage-wrapper">
-    <section id="first-section" class="first-section">
-      <div class="container">
-        <div class="slogan-container">
-          <div class="presentation">
-            <img
-              src="assets/img/homepage/logo_ABC.webp"
-              alt="Groupe ABC logo"
-              class="logo"
-            />
-          </div>
+<div class="homepage-wrapper" *ngIf="acf">
+  <!-- Hero Section -->
+  <section id="hero" class="hero-section">
+    <div class="hero-bg" [ngStyle]="{ 'background-image': 'url(' + acf.hero_background_image + ')' }"></div>
+    <div class="hero-content">
+      <h1 class="hero-title">{{ acf.hero_title }}</h1>
+      <p class="hero-subtitle">{{ acf.hero_subtitle }}</p>
+    </div>
+  </section>
 
-          <div class="slogan-box">
-            <p>Un nouveau look pour une nouvelle ère.<br />
-              <strong>Le Groupe ABC fait peau neuve !</strong><br />
-              Notre site est temporairement indisponible pour cause de maintenance.<br />
-              Nous vous préparons une toute nouvelle expérience, portée par notre nouveau logo et une charte graphique entièrement repensée.<br />
-              Merci de votre compréhension et à très bientôt !
-            </p>
+  <!-- Key Figures Section -->
+  <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">
+    <ul>
+      <li *ngFor="let fig of keyFigures">
+        <span class="value">{{ fig.value }}</span>
+        <span class="label">{{ fig.label }}</span>
+      </li>
+    </ul>
+  </section>
 
-            <hr />
+  <!-- Identity Section -->
+  <section id="identity" class="identity">
+    <div class="who">
+      <h2>{{ acf.who_title }}</h2>
+      <div [innerHTML]="acf.who_text"></div>
+    </div>
 
-            <p>A new look for a new era.<br />
-              <strong>Groupe ABC is getting a makeover!</strong><br />
-              Our website is temporarily unavailable due to maintenance.<br />
-              We’re preparing a brand-new experience, featuring our redesigned logo and refreshed visual identity.<br />
-              Thank you for your understanding, we’ll be back online soon!
-            </p>
-          </div>
-        </div>
+    <div class="where">
+      <h2>{{ acf.where_title }}</h2>
+      <ul><li *ngFor="let item of whereList">{{ item }}</li></ul>
+    </div>
+
+    <div class="what">
+      <h2>{{ acf.what_title }}</h2>
+      <ul><li *ngFor="let item of whatList">{{ item }}</li></ul>
+    </div>
+
+    <div class="how">
+      <h2>{{ acf.how_title }}</h2>
+      <ul><li *ngFor="let item of howList">{{ item }}</li></ul>
+    </div>
+
+    <a class="btn-download" [href]="acf.presentation_file" target="_blank">
+      {{ acf.presentation_button_text }}
+    </a>
+  </section>
+
+  <!-- Context Section -->
+  <section id="context" class="context" *ngIf="contexts.length">
+    <h2>{{ acf.context_title }}</h2>
+    <div class="context-items">
+      <div class="context-card" *ngFor="let ctx of contexts">
+        <img [src]="ctx.icon" [alt]="ctx.label">
+        <p>{{ ctx.label }}</p>
       </div>
+    </div>
+  </section>
 
-      <div class="social-icons">
-        <a href="https://wa.me/ton-numero" target="_blank" class="icon-link">
-          <img src="/assets/icons/appel.png" alt="WhatsApp" />
-        </a>
-        <a href="mailto:tonmail@example.com" target="_blank" class="icon-link">
-          <img src="/assets/icons/mail.png" alt="Mail" />
-        </a>
-      </div>
-    </section>
-  </div>
+  <!-- Clients Section -->
+  <section id="clients" class="clients" *ngIf="clients.length">
+    <h2>{{ acf.clients_title }}</h2>
+    <ul><li *ngFor="let c of clients">{{ c }}</li></ul>
+  </section>
+
+  <!-- Team Section -->
+  <section id="team" class="team" *ngIf="teamMembers.length">
+    <h2>{{ acf.team_title_1 }}<br>{{ acf.team_title_2 }}</h2>
+    <div class="team-grid">
+      <article *ngFor="let m of teamMembers">
+        <img [src]="m.photo" [alt]="m.name">
+        <span class="area">{{ m.area }}</span>
+        <span class="name">{{ m.name }}</span>
+        <span class="job">{{ m.job }}</span>
+      </article>
+    </div>
+  </section>
+
+  <!-- News Section -->
+  <section id="news" class="news" *ngIf="news.length">
+    <h2>{{ acf.news_title }}</h2>
+    <article *ngFor="let n of news">
+      <h3>{{ n.title }}</h3>
+      <div [innerHTML]="n.excerpt"></div>
+      <a [href]="n.link" target="_blank">Lire plus</a>
+    </article>
+  </section>
 </div>
