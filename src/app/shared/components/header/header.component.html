@@ -1,25 +1,48 @@
-<!-- <header class="header-container" [class.is-active]="navbarExpanded">
-  <div class="logo-wrapper">
-    <img
-      src="assets/img/header/madexdame.webp"
-      alt="madexdame logo"
-      class="logo"
-    />
+<header class="header main-wrapper">
+  <div class="header-inner">
+
+    <a routerLink="/" class="brand">
+      <img src="assets/img/header/logo-groupe-abc.webp" alt="Groupe ABC" class="logo">
+      <span class="slogan pl-5">
+        Groupement<br>
+        d’Experts immobiliers<br>
+        indépendants
+      </span>
+    </a>
+
+    <div class="tagline d-flex flex-column align-items-end">
+      <span class="tagline-text text-end">
+        Expertise amiable & judiciaire<br>
+        en France métropolitaine<br>
+        et Dom-Tom
+      </span>
+      <img class="rics" src="assets/img/logos-organisms/rics-logo.svg" alt="RICS">
+    </div>
+
+    <nav class="menu-bar">
+      <ul class="menu">
+        <li><a routerLink="/">Qui sommes-nous ?</a></li>
+        <li><a routerLink="/services">Nos Services</a></li>
+        <li><a routerLink="/methods">Biens & Méthodes</a></li>
+        <li><a routerLink="/team">Équipe</a></li>
+        <li><a routerLink="/news">Actualités</a></li>
+        <li><a routerLink="/contact">Contact</a></li>
+      </ul>
+    </nav>
+
   </div>
 
-  <nav class="navigation">
-    <a routerLink="/contact" class="contact-link">Contact</a>
+  <div class="right-rail d-flex flex-column align-items-end">
+    <span class="lang-switch d-flex align-items-center justify-content-center">FR</span>
 
-    <div
-      class="menu-toggle"
-      (click)="toggleMenu()"
-      [ngClass]="{ 'active': navbarExpanded }"
-    >
-      <div class="animated-icon" [ngClass]="{ 'open': navbarExpanded }">
-        <span class="menu-line"></span>
-        <span class="menu-line"></span>
-        <span class="menu-line"></span>
-      </div>
-    </div>
-  </nav>
-</header> -->
+    <a class="extranet-badge d-flex align-items-center justify-content-center"
+      href="#"
+      rel="nofollow"
+      aria-label="Espace Extranet Groupe ABC">
+      <span class="extranet-text">
+        GROUPE ABC <span class="extranet-slash">/</span> EXTRANET
+      </span>
+    </a>
+  </div>
+
+</header>

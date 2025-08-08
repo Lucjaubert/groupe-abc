@@ -3,16 +3,14 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 
 @Component({
-  selector: 'app-header',
-  standalone: true,
-  imports: [CommonModule, RouterModule],
+  selector   : 'app-header',
+  standalone : true,
+  imports    : [CommonModule, RouterModule],
   templateUrl: './header.component.html',
-  styleUrls: ['./header.component.scss']
+  styleUrls  : ['./header.component.scss']
 })
 export class HeaderComponent {
-  navbarExpanded = false;
 
-  toggleMenu(): void {
-    this.navbarExpanded = !this.navbarExpanded;
-  }
+  menuOpen = false;
+  toggleMenu(): void { this.menuOpen = !this.menuOpen; }
 }
