@@ -1,94 +1,219 @@
 @use "sass:map";
 @use "../../../../styles/_variables.scss" as vars;
 
-.header-container {
-  position: fixed;
-  top: 0;
-  left: 0;
+$logo-w: 140px;
+$rail-w: 40px;
+
+.header {
+  position: relative;
+  padding-top: 60px;
+  background: map.get(vars.$theme-colors, "white");
+}
+
+.header-inner {
+  display: grid;
+  grid-template-columns: minmax($logo-w, 520px) 1fr;
+  grid-auto-rows: auto;
+  align-items: center;
+  row-gap: 22px;
+}
+
+.brand {
+  grid-column: 1 / span 1;
+  display: grid;
+  grid-template-columns: $logo-w 24px 1fr;
+  align-items: center;
+  text-decoration: none;
+  color: inherit;
+}
+
+.logo {
+  width: $logo-w;
+  height: auto;
+}
+
+.slogan {
+  display: inline-block;
+  width: 280px;
+  text-align: left;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: map.get(vars.$theme-colors, "light-red");
+  line-height: 1.15;
+  overflow-y: hidden;
+}
+
+.tagline {
+  grid-column: 2 / span 1;
+}
+.tagline-text {
+  display: inline-block;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  color: map.get(vars.$theme-colors, "light-blue");
+  line-height: normal;
+}
+.rics {
+  display: block;
+  margin-top: 10px;
+  height: 22px;
+  margin-left: auto;
+}
+
+/* ----- MENU BAR ----- */
+.menu-bar {
+  grid-column: 1 / -1;
   width: 100%;
-  z-index: 1000;
-  background-color: transparent;
+  padding: 10px 0 0;
+}
+
+.menu {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 0;
+  width: 100%;
+}
+
+.menu li {
+  min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 1rem 2rem;
+  justify-content: center;
+  position: relative;
+}
 
-  .logo-wrapper {
-    flex: 1;
-    display: flex;
-    justify-content: flex-start;
+.menu li:first-child {
+  justify-content: flex-start;
+}
+.menu li:last-child {
+  justify-content: flex-end;
+}
 
-    .logo {
-      height: 60px;
-      width: auto;
+.menu a {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: normal;
+  color: #444697;
+  text-decoration: none;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.menu li:first-child a {
+  text-align: left;
+}
+.menu li:last-child a {
+  text-align: right;
+}
+
+.menu a:hover {
+  color: map.get(vars.$theme-colors, "dark-orange");
+}
+
+.menu li + li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 1px;
+  height: 18px;
+  transform: translateY(-50%);
+  background: map.get(vars.$theme-colors, "dark-blue");
+  opacity: .5;
+}
+
+/* ----- RAIL DROIT ----- */
+.right-rail {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: $rail-w;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 20;
+}
+
+.lang-switch {
+  width: $rail-w;
+  height: $rail-w;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  background: rgba(68, 70, 151, 0.68);
+  color: map.get(vars.$theme-colors, "white");
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: .05rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+}
+
+.extranet-badge {
+  width: $rail-w;
+  height: 204px;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  background: rgba(68, 70, 151, 0.68);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 2px;
+
+  .extranet-text {
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: normal;
+    color: #FFF;
+
+    .extranet-slash {
+      color: map.get(vars.$theme-colors, "light-red");
+      margin: 0 4px;
     }
   }
+}
 
-  .navigation {
-    flex: 1;
+/* ----- RESPONSIVE ----- */
+@media (max-width: map.get(vars.$breakpoints, "lg")) {
+  .tagline {
+    display: none !important;
+  }
+  .header-inner {
+    grid-template-columns: minmax($logo-w, 1fr);
+  }
+  .menu-bar {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: map.get(vars.$breakpoints, "md")) {
+  .menu {
     display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 2rem;
-
-    .contact-link {
-      color: #1f2a8a;
-      font-weight: bold;
-      text-decoration: none;
-      font-size: 1.2rem;
-      transition: color 0.3s;
-
-      &:hover {
-        color: #e95420;
-      }
-    }
-
-    .menu-toggle {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 40px;
-      height: 40px;
-      cursor: pointer;
-
-      .animated-icon {
-        width: 30px;
-        height: 30px;
-        position: relative;
-        overflow: hidden;
-
-        .menu-line {
-          display: block;
-          height: 2.5px;
-          background-color: #1f2a8a;
-          margin: 4.5px 0;
-          transition: all 0.3s ease-in-out;
-        }
-
-        .menu-line:nth-child(1) {
-          width: 30px; // Longueur de la première ligne (la plus longue)
-        }
-
-        .menu-line:nth-child(2) {
-          width: 25px; // Longueur de la deuxième ligne
-        }
-
-        .menu-line:nth-child(3) {
-          width: 20px; // Longueur de la troisième ligne (la plus courte)
-        }
-
-        &.open .menu-line:nth-child(1) {
-          transform: rotate(45deg) translate(5px, 5px);
-        }
-
-        &.open .menu-line:nth-child(2) {
-          opacity: 0;
-        }
-
-        &.open .menu-line:nth-child(3) {
-          transform: rotate(-45deg) translate(5px, -5px);
-        }
-      }
-    }
+    gap: 1rem;
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+  .menu li {
+    flex: 0 0 auto;
+  }
+  .menu li + li::before {
+    left: -10px;
+    height: 14px;
   }
 }
