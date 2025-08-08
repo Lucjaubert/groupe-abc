@@ -1,118 +1,89 @@
 @use "sass:map";
 @use "../../../styles/_variables.scss" as vars;
 
-.full-screen-container {
-  height: 100vh;
-  height: 100dvh; // ✅ Fixe le problème de hauteur sur mobile
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
 .homepage-wrapper {
-  height: 100%;
   width: 100%;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  overflow: visible;
 }
 
-.first-section {
-  width: 100%;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
+.hero-section {
+  position: relative;
+  min-height: clamp(420px, 70vh, 820px);
+  display: grid;
+  grid-template-rows: 1fr auto;
+  grid-template-columns: 1fr;
+  overflow: visible;
+  outline: none;
 
-  .container {
-    max-width: 800px;
-    width: 100%;
+  .hero-bg {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(-1 * var(--content-gutter));
+    right: calc(-1 * var(--content-gutter));
+    pointer-events: none;
+    z-index: 0;
+
+    .hero-layer {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0;
+      transition: opacity 600ms ease;
+      will-change: opacity;
+
+      &.active { opacity: 1; }
+    }
+  }
+
+  .hero-content {
+    position: relative;
+    align-self: center;
+    justify-self: start;
+    z-index: 1;
+    padding-inline: 0;
+    padding: 280px 0 0px;
+
+    .hero-subtitle {
+      color: #FFF;
+      font-family: "Plus Jakarta Sans";
+      font-size: 48px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
+    }
+  }
+
+  /* Boutons codés (remplace les strips images) */
+  .hero-dots {
+    position: relative;
+    z-index: 1;
     display: flex;
-    flex-direction: column;
-    justify-content: center;
+    gap: 12px;
     align-items: center;
-    text-align: center;
-    gap: 1.5rem; // ✅ Ajoute de l’espace contrôlé entre slogan et icônes
+    justify-self: start;
+    padding: 0px 0 52px;
 
-    p {
-      font-size: 14px;
-      line-height: 1.4;
+    .hero-dot {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,.9);
+      background: white;
+      cursor: pointer;
+      transition: transform .15s ease, background .15s ease, border-color .15s ease;
+      outline: none;
+
+      &:hover { transform: scale(1.08); background: rgba(255,255,255,.25); }
+      &:focus-visible { box-shadow: 0 0 0 2px #EA4D4D; }
+
+      &.active {
+        background: #EA4D4D;
+        border-color: #EA4D4D;
+        transform: scale(1.1);
+      }
     }
-
-    .slogan-container {
-      overflow-y: hidden;
-    }
-  }
-
-  .presentation .logo {
-    max-width: 200px;
-    height: auto;
-    margin-bottom: 1rem;
-  }
-
-  .slogan-box {
-    overflow: hidden;
-
-    h5 {
-      margin: 1rem 0 0.5rem;
-      font-size: 1rem;
-      font-weight: bold;
-      overflow-y: hidden;
-    }
-  }
-
-  .social-icons {
-    margin-top: 1rem; // ✅ réduit l’espace
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1.5rem;
-    overflow-y: hidden;
-
-    .icon-link img {
-      width: 32px;
-      height: 32px;
-    }
-
-    .icon-mail img {
-      width: 25px;
-      height: 25px;
-    }
-
-    .email-options {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      margin-top: 0.5rem;
-      background: #f0f0f0;
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .email-options a {
-      text-decoration: none;
-      margin: 0.25rem 0;
-      color: #333;
-      font-size: 14px;
-    }
-  }
-}
-
-@media screen and (max-width: 768px) {
-  .social-icons {
-    margin-top: 0.75rem;
-  }
-
-  .container {
-    gap: 1rem;
-  }
-
-  .slogan-box h5 {
-    font-size: 1.05rem;
   }
 }

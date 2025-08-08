@@ -1,87 +1,40 @@
-<div class="homepage-wrapper" *ngIf="acf">
-  <!-- Hero Section -->
-  <section id="hero" class="hero-section">
-    <div class="hero-bg" [ngStyle]="{ 'background-image': 'url(' + acf.hero_background_image + ')' }"></div>
-    <div class="hero-content">
-      <h1 class="hero-title">{{ acf.hero_title }}</h1>
-      <p class="hero-subtitle">{{ acf.hero_subtitle }}</p>
-    </div>
-  </section>
+<div class="homepage-wrapper pt-6" *ngIf="acf">
+  <section id="hero"
+           class="hero-section"
+           (mouseenter)="pauseAutoplay()"
+           (mouseleave)="resumeAutoplay()"
+           tabindex="0"
+           role="region"
+           aria-label="Carrousel d'images – section Héro"
+           (keydown)="onKeydown($event)"
+           (pointerdown)="onPointerDown($event)"
+           (pointerup)="onPointerUp($event)">
 
-  <!-- Key Figures Section -->
-  <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">
-    <ul>
-      <li *ngFor="let fig of keyFigures">
-        <span class="value">{{ fig.value }}</span>
-        <span class="label">{{ fig.label }}</span>
-      </li>
-    </ul>
-  </section>
-
-  <!-- Identity Section -->
-  <section id="identity" class="identity">
-    <div class="who">
-      <h2>{{ acf.who_title }}</h2>
-      <div [innerHTML]="acf.who_text"></div>
-    </div>
-
-    <div class="where">
-      <h2>{{ acf.where_title }}</h2>
-      <ul><li *ngFor="let item of whereList">{{ item }}</li></ul>
-    </div>
-
-    <div class="what">
-      <h2>{{ acf.what_title }}</h2>
-      <ul><li *ngFor="let item of whatList">{{ item }}</li></ul>
-    </div>
-
-    <div class="how">
-      <h2>{{ acf.how_title }}</h2>
-      <ul><li *ngFor="let item of howList">{{ item }}</li></ul>
-    </div>
-
-    <a class="btn-download" [href]="acf.presentation_file" target="_blank">
-      {{ acf.presentation_button_text }}
-    </a>
-  </section>
-
-  <!-- Context Section -->
-  <section id="context" class="context" *ngIf="contexts.length">
-    <h2>{{ acf.context_title }}</h2>
-    <div class="context-items">
-      <div class="context-card" *ngFor="let ctx of contexts">
-        <img [src]="ctx.icon" [alt]="ctx.label">
-        <p>{{ ctx.label }}</p>
+    <div class="hero-bg">
+      <div class="hero-layer"
+           *ngFor="let s of heroSlides; let i = index; trackBy: trackByIndex"
+           [class.active]="i === heroIndex"
+           [style.backgroundImage]="'url(' + s.bg + ')'">
       </div>
     </div>
-  </section>
 
-  <!-- Clients Section -->
-  <section id="clients" class="clients" *ngIf="clients.length">
-    <h2>{{ acf.clients_title }}</h2>
-    <ul><li *ngFor="let c of clients">{{ c }}</li></ul>
-  </section>
+    <div class="hero-overlay pb-10">
+      <div class="hero-content" aria-live="polite">
+        <h1 class="hero-title">{{ currentSlide?.title }}</h1>
+        <p class="hero-subtitle">{{ currentSlide?.subtitle }}</p>
+      </div>
 
-  <!-- Team Section -->
-  <section id="team" class="team" *ngIf="teamMembers.length">
-    <h2>{{ acf.team_title_1 }}<br>{{ acf.team_title_2 }}</h2>
-    <div class="team-grid">
-      <article *ngFor="let m of teamMembers">
-        <img [src]="m.photo" [alt]="m.name">
-        <span class="area">{{ m.area }}</span>
-        <span class="name">{{ m.name }}</span>
-        <span class="job">{{ m.job }}</span>
-      </article>
+      <!-- Boutons fonctionnels -->
+      <div class="hero-dots" *ngIf="heroSlides.length > 1">
+        <button *ngFor="let s of heroSlides; let i = index; trackBy: trackByIndex"
+                type="button"
+                class="hero-dot"
+                [class.active]="i === heroIndex"
+                [attr.aria-label]="'Aller au slide ' + (i + 1)"
+                [attr.aria-current]="i === heroIndex ? 'true' : null"
+                (click)="goTo(i)">
+        </button>
+      </div>
     </div>
-  </section>
-
-  <!-- News Section -->
-  <section id="news" class="news" *ngIf="news.length">
-    <h2>{{ acf.news_title }}</h2>
-    <article *ngFor="let n of news">
-      <h3>{{ n.title }}</h3>
-      <div [innerHTML]="n.excerpt"></div>
-      <a [href]="n.link" target="_blank">Lire plus</a>
-    </article>
   </section>
 </div>
