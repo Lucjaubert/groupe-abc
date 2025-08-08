@@ -8,11 +8,8 @@ export const routes: Routes = [
     pathMatch: 'full',
     title: 'Groupe-abc'
   },
-  {
-    path: '**',
-    redirectTo: ''
-  }
+  { path: '**', redirectTo: '' }
 ];
-
 export default routes;
+
 

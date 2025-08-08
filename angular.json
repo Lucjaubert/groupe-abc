@@ -90,7 +90,16 @@
           "options": {
             "browserTarget": "groupe-abc:build:production",
             "serverTarget": "groupe-abc:server:production",
-            "routes": ["/"]
+            "routes": [
+              "/",
+              "/qui-sommes-nous",
+              "/services",
+              "/biens-et-methodes",
+              "/equipe",
+              "/actualites",
+              "/contact"
+            ]
+
           }
         },
         "deploy-assets": {

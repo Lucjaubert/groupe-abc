@@ -3,46 +3,62 @@
 @use "../assets/fonts/fonts.scss" as fonts;
 @use "bootstrap/scss/bootstrap";
 
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
 }
 
-body,
-html {
+:root {
+  --content-gutter: 13px;
+  --rail-width: 200px;
+}
+
+@media (min-width: map.get(vars.$breakpoints, "lg")) {
+  :root { --content-gutter: var(--rail-width); }
+}
+
+.content-gutter {
+  padding-left: var(--content-gutter);
+  padding-right: var(--content-gutter);
+}
+
+.full-bleed {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
+
+html, body {
   margin: 0;
   padding: 0;
   width: 100%;
   min-height: 100%;
+  background-color: map.get(vars.$theme-colors, "blue") !important;
+  overflow-x: clip;
   -ms-overflow-style: none;
   scrollbar-width: none;
-  background-color: map.get(vars.$theme-colors, "blue") !important;
-  overflow-x: hidden;
 }
 
-body::-webkit-scrollbar {
-  display: none;
-}
-
-app-footer {
-  width: 100%;
-  height: 100px;
-  margin-top: auto;
-}
+body::-webkit-scrollbar { display: none; }
 
 #app-container {
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  width: 100vw;
+  width: 100%;
 }
 
 #page {
   flex: 1;
-  width: 100vw;
+  width: 100%;
+}
+
+app-footer {
+  width: 100%;
+  height: 100px;
+  margin-top: auto;
 }
 
 .container,
@@ -52,20 +68,21 @@ app-footer {
 }
 
 .container-fluid {
-  width: 100vw !important;
+  width: 100% !important;
 }
 
 @mixin heading-styles($min, $max) {
   font-size: clamp($min, 3vw, $max);
   font-family: "Plus Jakarta Sans", sans-serif;
   color: inherit;
+  margin: 0;
 }
 
 h1 {
   @include heading-styles(48px, 48px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "white");
-
+  line-height: normal;
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     @include heading-styles(30px, 30px);
     font-weight: 300;
@@ -77,25 +94,20 @@ h2 {
   font-weight: 600;
   color: map.get(vars.$theme-colors, "light-blue");
   line-height: 110px;
-
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     @include heading-styles(40px, 40px);
     line-height: 50px;
-    color: map.get(vars.$theme-colors, "light-blue");
   }
 }
 
 h3 {
-  font-family: Inter, sans-serif;
   @include heading-styles(60px, 60px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
-
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     @include heading-styles(32px, 32px);
     font-weight: 300;
     line-height: 50px;
-    color: map.get(vars.$theme-colors, "light-blue");
   }
 }
 
@@ -103,11 +115,9 @@ h4 {
   @include heading-styles(40px, 40px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
-
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     @include heading-styles(24px, 24px);
     font-weight: 300;
-    color: map.get(vars.$theme-colors, "light-blue");
   }
 }
 
@@ -116,11 +126,9 @@ h5 {
   @include heading-styles(36px, 36px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
-
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     @include heading-styles(24px, 24px);
     line-height: 30px;
-    color: map.get(vars.$theme-colors, "light-blue");
   }
 }
 
@@ -128,7 +136,6 @@ h6 {
   @include heading-styles(48px, 48px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "white");
-
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     @include heading-styles(24px, 24px);
   }
@@ -139,7 +146,6 @@ p {
   font-size: 14px;
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
-
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     font-size: 13px;
   }
@@ -150,11 +156,9 @@ p {
   font-size: 22px;
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
-
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     font-size: 16px;
     line-height: 30px;
-    color: map.get(vars.$theme-colors, "light-blue");
   }
 }
 
@@ -170,11 +174,6 @@ a {
 }
 
 .main-wrapper {
-  padding-left: 200px;
-  padding-right: 200px;
-
-  @media (max-width: map.get(vars.$breakpoints, "md")) {
-    padding-left: 13px;
-    padding-right: 13px;
-  }
+  padding-left: var(--content-gutter);
+  padding-right: var(--content-gutter);
 }

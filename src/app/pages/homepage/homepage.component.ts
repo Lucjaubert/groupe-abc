@@ -1,128 +1,148 @@
-import { Component, OnInit } from '@angular/core';
-import { CommonModule }      from '@angular/common';
-import { RouterModule }      from '@angular/router';
-import { WordpressService }  from '../../services/wordpress.service';
-import { SeoService }        from '../../services/seo.service';
+import { Component, OnDestroy, OnInit, AfterViewInit, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
+import { WordpressService } from '../../services/wordpress.service';
+import { SeoService } from '../../services/seo.service';
+
+type Slide = { title: string; subtitle: string; bg: string };
 
 @Component({
-  selector   : 'app-homepage',
-  standalone : true,
-  imports    : [CommonModule, RouterModule],
+  selector: 'app-homepage',
+  standalone: true,
+  imports: [CommonModule, RouterModule],
   templateUrl: './homepage.component.html',
-  styleUrls  : ['./homepage.component.scss']
+  styleUrls: ['./homepage.component.scss']
 })
-export class HomepageComponent implements OnInit {
-
+export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   acf: any = {};
+  heroSlides: Slide[] = [];
+  heroIndex = 0;
 
-  heroTitle    = '';
-  heroSubtitle = '';
-  heroBg       = '';
+  autoplayMs = 5000;
+  private autoplayRef: any = null;
 
-  keyFigures  : { value: string; label: string }[] = [];
-  whereList   : string[] = [];
-  whatList    : string[] = [];
-  howList     : string[] = [];
-  contexts    : { icon: string; label: string }[] = [];
-  clients     : string[] = [];
-  teamMembers : { photo: string; area: string; name: string; job: string }[] = [];
-  news        : { title: string; excerpt: string; link: string }[] = [];
+  private pointerStartX: number | null = null;
+  private swipeThreshold = 40;
 
-  constructor(
-    private wp : WordpressService,
-    private seo: SeoService
-  ) {}
+  get currentSlide(): Slide | undefined {
+    return this.heroSlides[this.heroIndex];
+  }
+
+  private wp = inject(WordpressService);
+  private seo = inject(SeoService);
 
   ngOnInit(): void {
     this.wp.getHomepageData().subscribe(acf => {
       this.acf = acf;
       this.extractHero();
-      this.buildCollections();
-      this.applySeo();
+      this.preloadHeroImages();
+      this.applySeoFromHero();
+      this.startAutoplay();
     });
+
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
-  /* -------- Hero -------- */
+  ngAfterViewInit(): void {}
+
+  ngOnDestroy(): void {
+    this.clearAutoplay();
+    document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+  }
+
   private extractHero(): void {
-    const h = this.acf.hero_section || {};
-    this.heroTitle    = h.hero_title       || '';
-    this.heroSubtitle = h.hero_subtitle    || '';
-    this.heroBg       = h.hero_background  || '';
+    const h = this.acf?.hero_section || {};
+    this.heroSlides = [
+      { title: h.hero_title_1 || '', subtitle: h.hero_subtitle_1 || '', bg: h.hero_background_1 || '' },
+      { title: h.hero_title_2 || '', subtitle: h.hero_subtitle_2 || '', bg: h.hero_background_2 || '' },
+      { title: h.hero_title_3 || '', subtitle: h.hero_subtitle_3 || '', bg: h.hero_background_3 || '' }
+    ].filter(s => !!s.bg);
+
+    if (!this.heroSlides.length && (h.hero_background || '')) {
+      this.heroSlides = [{
+        title: h.hero_title || '',
+        subtitle: h.hero_subtitle || '',
+        bg: h.hero_background || ''
+      }];
+    }
+
+    this.heroIndex = 0;
   }
 
-  /* -------- Collections -------- */
-  private buildCollections(): void {
-
-    /* Key figures */
-    const fig = this.acf.key_figures_section || {};
-    for (let i = 1; i <= 10; i++) {
-      const v = fig[`figure_value_${i}`];
-      const l = fig[`figure_label_${i}`] || fig[`figure_label_${i}_bis`];
-      if (v && l) this.keyFigures.push({ value: v, label: l });
-    }
-
-    /* Identity lists */
-    const id = this.acf.identity_section || {};
-    this.whereList = this.collectText(id, 'where_item_', 10);
-    this.whatList  = this.collectText(id, 'what_item_', 10);
-    this.howList   = this.collectText(id, 'how_item_', 10);
-
-    /* Context cards */
-    const ctx = this.acf.expertise_contact_section || {};
-    for (let i = 1; i <= 8; i++) {
-      const icon  = ctx[`context_icon_${i}`];
-      const label = ctx[`context_label_${i}`];
-      if (icon && label) this.contexts.push({ icon, label });
-    }
-
-    /* Clients */
-    const cli = this.acf.clients_section || {};
-    this.clients = this.collectText(cli, 'client_item_', 6);
-
-    /* Team members */
-    const team = this.acf.team_section || {};
-    for (let i = 1; i <= 8; i++) {
-      const photo = team[`team_photo_${i}`];
-      const area  = team[`team_area_${i}`];
-      const name  = team[`team_name_${i}`];
-      const job   = team[`team_job_${i}`];
-      if (photo && name) this.teamMembers.push({ photo, area, name, job });
-    }
-
-    /* News */
-    const newsSec = this.acf.news_section || {};
-    for (let i = 1; i <= 6; i++) {
-      const t = newsSec[`news_title_${i}`];
-      const e = newsSec[`news_bloc_${i}`];
-      const l = newsSec[`news_link_${i}`];
-      if (t || e || l) this.news.push({ title: t, excerpt: e, link: l });
+  private preloadHeroImages(): void {
+    for (const s of this.heroSlides) {
+      const img = new Image();
+      img.src = s.bg;
     }
   }
 
-  private collectText(obj: any, prefix: string, max: number): string[] {
-    const arr: string[] = [];
-    for (let i = 1; i <= max; i++) {
-      const v = obj[`${prefix}${i}`];
-      if (v) arr.push(v);
-    }
-    return arr;
+  goTo(i: number): void {
+    if (!this.heroSlides.length) return;
+    const len = this.heroSlides.length;
+    this.heroIndex = ((i % len) + len) % len;
   }
 
-  /* -------- SEO -------- */
-  private applySeo(): void {
-    const s = this.acf.seo_section || {};
+  next(): void { this.goTo(this.heroIndex + 1); }
+  prev(): void { this.goTo(this.heroIndex - 1); }
+
+  startAutoplay(): void {
+    this.clearAutoplay();
+    if (this.heroSlides.length > 1) {
+      this.autoplayRef = setInterval(() => this.next(), this.autoplayMs);
+    }
+  }
+
+  pauseAutoplay(): void { this.clearAutoplay(); }
+  resumeAutoplay(): void { if (document.visibilityState === 'visible') this.startAutoplay(); }
+
+  private clearAutoplay(): void {
+    if (this.autoplayRef) {
+      clearInterval(this.autoplayRef);
+      this.autoplayRef = null;
+    }
+  }
+
+  private handleVisibilityChange = () => {
+    if (document.visibilityState === 'hidden') this.pauseAutoplay();
+    else this.resumeAutoplay();
+  };
+
+  onKeydown(evt: KeyboardEvent): void {
+    if (this.heroSlides.length < 2) return;
+    if (evt.key === 'ArrowRight') { this.pauseAutoplay(); this.next(); }
+    else if (evt.key === 'ArrowLeft') { this.pauseAutoplay(); this.prev(); }
+  }
+
+  onPointerDown(evt: PointerEvent): void { this.pointerStartX = evt.clientX; }
+  onPointerUp(evt: PointerEvent): void {
+    if (this.pointerStartX == null) return;
+    const dx = evt.clientX - this.pointerStartX;
+    this.pointerStartX = null;
+    if (Math.abs(dx) > this.swipeThreshold) {
+      this.pauseAutoplay();
+      if (dx < 0) this.next(); else this.prev();
+    }
+  }
+
+  trackByIndex(i: number): number { return i; }
+
+  private applySeoFromHero(): void {
+    const s = this.acf?.seo_section || {};
+    const first = this.heroSlides[0] || { title: '', subtitle: '', bg: '' };
+    const seoImage = (s.seo_image && (s.seo_image.url || s.seo_image)) || first.bg;
+
     this.seo.update({
-      title:       s.seo_title       || this.heroTitle || 'Groupe ABC – Expertise immobilière',
-      description: s.seo_description || this.heroSubtitle,
+      title:       s.seo_title       || first.title || 'Groupe ABC – Expertise immobilière',
+      description: s.seo_description || first.subtitle,
       keywords:    s.seo_keywords,
-      image:       s.seo_image       || this.heroBg,
+      image:       seoImage,
       jsonLd: {
         '@context': 'https://schema.org',
         '@type'   : 'Organization',
         name      : 'Groupe ABC',
         url       : window.location.href,
-        logo      : s.seo_image || this.heroBg,
-        description: s.seo_description || this.heroSubtitle
+        logo      : seoImage,
+        description: s.seo_description || first.subtitle
       }
     });
   }
