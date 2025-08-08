@@ -1,89 +1,124 @@
 @use "sass:map";
 @use "../../../styles/_variables.scss" as vars;
 
-.homepage-wrapper {
-  width: 100%;
-  overflow: visible;
-}
+.homepage-wrapper { width: 100%; overflow: visible; }
 
 .hero-section {
   position: relative;
   min-height: clamp(420px, 70vh, 820px);
   display: grid;
   grid-template-rows: 1fr auto;
-  grid-template-columns: 1fr;
   overflow: visible;
   outline: none;
 
   .hero-bg {
     position: absolute;
-    top: 0;
-    bottom: 0;
+    top: 0; bottom: 0;
     left: calc(-1 * var(--content-gutter));
     right: calc(-1 * var(--content-gutter));
     pointer-events: none;
     z-index: 0;
 
     .hero-layer {
-      position: absolute;
-      inset: 0;
-      background-size: cover;
-      background-position: center;
-      background-repeat: no-repeat;
-      opacity: 0;
-      transition: opacity 600ms ease;
-      will-change: opacity;
-
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center; background-repeat: no-repeat;
+      opacity: 0; transition: opacity 600ms ease; will-change: opacity;
       &.active { opacity: 1; }
     }
   }
 
   .hero-content {
-    position: relative;
-    align-self: center;
-    justify-self: start;
-    z-index: 1;
-    padding-inline: 0;
-    padding: 280px 0 0px;
+    position: relative; align-self: center; justify-self: start; z-index: 1;
+    padding-inline: 0; padding: 280px 0 0;
 
     .hero-subtitle {
-      color: #FFF;
-      font-family: "Plus Jakarta Sans";
-      font-size: 48px;
-      font-style: normal;
-      font-weight: 400;
-      line-height: normal;
+      color: #FFF; font-family: "Plus Jakarta Sans";
+      font-size: 48px; font-style: normal; font-weight: 400; line-height: normal;
     }
   }
 
-  /* Boutons codés (remplace les strips images) */
   .hero-dots {
-    position: relative;
-    z-index: 1;
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    justify-self: start;
-    padding: 0px 0 52px;
+    position: relative; z-index: 1; display: flex; gap: 12px; align-items: center;
+    justify-self: start; padding: 0 0 52px;
 
     .hero-dot {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
+      width: 20px; height: 20px; border-radius: 50%;
       border: 2px solid rgba(255,255,255,.9);
-      background: white;
-      cursor: pointer;
+      background: #fff; cursor: pointer;
       transition: transform .15s ease, background .15s ease, border-color .15s ease;
       outline: none;
-
-      &:hover { transform: scale(1.08); background: rgba(255,255,255,.25); }
+      &:hover { transform: scale(1.08); background: rgba(255,255,255,.9); }
       &:focus-visible { box-shadow: 0 0 0 2px #EA4D4D; }
-
-      &.active {
-        background: #EA4D4D;
-        border-color: #EA4D4D;
-        transform: scale(1.1);
-      }
+      &.active { background: #EA4D4D; border-color: #EA4D4D; transform: scale(1.1); }
     }
   }
+}
+
+.key-figures {
+  padding-top: clamp(78px, 3vw, 92px);
+  padding-bottom: clamp(20px, 3vw, 48px);
+  --group-sep: clamp(26px, 3.6vw, 72px);
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(2px, 0.8vw, 4px);
+  }
+
+  li {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  li:nth-child(6),
+  li:nth-child(9) {
+    margin-top: var(--group-sep);
+  }
+
+  .value {
+    color: #444798;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 65px;
+    font-weight: 600;
+    line-height: 85px;
+    display: inline-block;
+    min-width: var(--value-w, 3ch);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  .label {
+    color: #444798;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 42px;
+    font-weight: 300;
+    line-height: 85px;
+    position: relative;
+    display: inline-block;
+    white-space: normal;
+  }
+
+  .label.typing::after {
+    content: none;
+    display: inline-block;
+    width: 0.08em;
+    height: 0.9em;
+    margin-left: 0.15em;
+    vertical-align: -0.05em;
+    background: currentColor;
+    animation: kf-caret 0.9s steps(1, end) infinite;
+  }
+}
+
+@keyframes kf-caret {
+  0%, 49%   { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@media (min-width: map.get(vars.$breakpoints, "lg")) {
+  .hero-section .hero-content { padding: 280px 0 0; }
 }

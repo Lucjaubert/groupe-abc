@@ -24,7 +24,6 @@
         <p class="hero-subtitle">{{ currentSlide?.subtitle }}</p>
       </div>
 
-      <!-- Boutons fonctionnels -->
       <div class="hero-dots" *ngIf="heroSlides.length > 1">
         <button *ngFor="let s of heroSlides; let i = index; trackBy: trackByIndex"
                 type="button"
@@ -36,5 +35,20 @@
         </button>
       </div>
     </div>
+  </section>
+
+  <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">
+    <ul>
+      <li *ngFor="let fig of keyFigures; let i = index; trackBy: trackByIndex"
+          #kfItem
+          [attr.data-index]="i"
+          [ngStyle]="{'--value-w': (fig.digits + 'ch')}">
+        <span class="value">{{ fig.display || '\u00A0' }}</span>
+        <span class="label"
+              [class.typing]="fig.typed.length < fig.fullLabel.length">
+          {{ fig.typed }}
+        </span>
+      </li>
+    </ul>
   </section>
 </div>
