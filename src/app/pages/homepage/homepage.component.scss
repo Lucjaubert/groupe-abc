@@ -122,3 +122,305 @@
 @media (min-width: map.get(vars.$breakpoints, "lg")) {
   .hero-section .hero-content { padding: 280px 0 0; }
 }
+
+/* Harmonise les colonnes Identity et WH */
+:root{
+  --title-list-gap: clamp(22px, 2.2vw, 28px); /* espace Titre → 1er item */
+  --list-gap: clamp(12px, 1.6vw, 18px);       /* espace entre items */
+  --cta-top-gap: clamp(28px, 3vw, 48px);      /* espace Liste → CTA */
+}
+
+/* ===== Identity : Qui / Où ===== */
+.identity {
+  padding-block: clamp(24px, 4vw, 56px);
+}
+
+.identity-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(24px, 4vw, 48px);
+
+  @media (min-width: map.get(vars.$breakpoints, "lg")) {
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+    column-gap: var(--section-gap-x); /* <- verrou d’alignement horizontal */
+    row-gap: clamp(28px, 5vw, 72px);
+  }
+}
+
+/* Titres de blocs (Qui ?, Où ?) */
+.block-title {
+  color: map.get(vars.$theme-colors, "light-blue");
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: clamp(28px, 3.2vw, 40px);
+  font-weight: 400;
+  line-height: 1.1;
+  margin: 0;
+}
+
+/* ===== Qui ? ===== */
+.who .who-text {
+  max-width: 476px;
+  color: map.get(vars.$theme-colors, "light-blue");
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: clamp(14px, 1.25vw, 16px);
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+/* ===== Où ? ===== */
+.where{
+  position: relative;
+  padding-left: 35px;
+}
+
+
+/* Titre + chevron */
+.where-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.where-toggle {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 6px;
+  margin: -6px;
+  line-height: 0;
+  cursor: pointer;
+  color: map.get(vars.$theme-colors, "light-blue");
+}
+
+/* Chevron : gauche par défaut → bas en .open */
+.chevron {
+  width: 24px;
+  height: 34.66px;
+  flex-shrink: 0;
+  transform: rotate(90deg);
+  transition: transform .25s ease;
+}
+.where.open .chevron { transform: rotate(0deg); }
+
+/* Conteneur empilé (carte / liste) */
+.where-body { position: relative; min-height: auto; }
+
+/* Panneaux en pile + cross-fade */
+.where-panel {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .28s ease;
+}
+
+/* Carte visible par défaut */
+.panel-map { opacity: 1; pointer-events: auto; }
+
+/* Quand .open : on affiche la liste et on masque la carte */
+.where.open .panel-map  { opacity: 0; pointer-events: none; }
+.where.open .panel-list { opacity: 1; pointer-events: auto; }
+
+/* ===== Carte ===== */
+.where-map { margin-top: clamp(6px, .8vw, 10px); }
+.where-map img {
+  display: block;
+  width: 100%;
+  max-width: 720px;
+  height: auto;
+  object-fit: contain;
+}
+
+/* ===== Liste ===== */
+.panel-list {
+  list-style: none;
+  margin: 0;
+  padding: clamp(6px, .8vw, 10px) 0 0 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: clamp(10px, 1.6vw, 18px);
+  height: auto;
+}
+
+.panel-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  color: #444798;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: normal;
+  margin: 0;
+}
+.panel-list li::before {
+  content: "—";
+  color: #E44D4D;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: normal;
+  margin-right: 6px;
+  flex: 0 0 auto;
+}
+
+/* ===== Bouton “Lire la suite” (commun) ===== */
+.who .who-actions { margin-top: clamp(16px, 3vw, 34.65px); }
+
+.cta-btn{
+  width: clamp(173px, 32vw, 244.5px);
+  height: clamp(27px, 2.6vw, 28.113px);
+  min-width: 173px;
+  max-width: 244.5px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: #444798;
+  color: #fff;
+  padding-left: 12px;
+  padding-right: 8px;
+  cursor: pointer;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 400;
+  font-size: clamp(11px, 1.4vw, 12px);
+  line-height: 1;
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+  &:hover { filter: brightness(1.04); }
+  &:active { transform: translateY(1px); }
+  &:focus-visible { outline: 2px solid #EA4D4D; outline-offset: 2px; }
+}
+.cta-label{ margin-right: 12px; white-space: nowrap; }
+.cta-plus{
+  margin-left: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 22px; height: 22px;
+}
+.icon-plus{
+  width: 22px; height: 22px;
+  stroke: #EA4D4D; stroke-width: 3.2;
+  stroke-linecap: round; fill: none;
+}
+
+/* ============ QUOI / COMMENT / TÉLÉCHARGER ============ */
+.wh { padding-block: clamp(28px, 5vw, 72px); }
+
+.wh-grid{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: clamp(28px, 5vw, 72px);
+
+  @media (min-width: map.get(vars.$breakpoints, "lg")){
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--section-gap-x, clamp(28px, 5vw, 72px));
+    align-items: stretch; /* colonnes même hauteur → permet l’alignement bas */
+  }
+}
+
+/* Colonnes : on pousse le bas avec flex */
+.wh-left,
+.wh-right{
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+/* Listes identiques des deux côtés */
+.what .dash-list,
+.how  .dash-list{
+  margin-top: var(--title-list-gap);
+}
+
+.dash-list{
+  list-style: none;
+  margin: 0;
+  padding: clamp(6px, .8vw, 10px) 0 0 0;  /* idem WHERE */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(10px, 1.6vw, 18px);          /* idem WHERE */
+  height: auto;
+
+  li{
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    color: #444798;                       /* idem WHERE */
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 22px;                      /* idem WHERE */
+    font-weight: 400;
+    line-height: normal;                  /* idem WHERE */
+    margin: 0;
+
+    &::before{
+      content: "—";
+      color: #E44D4D;                     /* idem WHERE */
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 22px;
+      font-weight: 400;                   /* même épaisseur du tiret */
+      line-height: normal;
+      margin-right: 6px;
+      flex: 0 0 auto;
+    }
+
+    &:last-child{
+      margin-bottom: 45px; /* espace supplémentaire avant le bouton */
+    }
+  }
+}
+
+
+/* CTA : même marge au-dessus (liste → CTA) */
+.wh-actions{ margin-top: var(--cta-top-gap); }
+
+/* Aligner bas : download à gauche et CTA à droite */
+.download { margin-top: auto; }                 /* pousse le bloc download en bas */
+.wh-right > .wh-actions { margin-top: auto; }   /* pousse le CTA en bas */
+
+/* ====== Download : aligner l’icône sur la 3e ligne ====== */
+.download .dl-link{
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;                 /* aligne le bas du texte et de l’icône */
+  gap: clamp(16px, 2.8vw, 24px);
+  text-decoration: none;
+  color: inherit;
+
+  /* largeurs inchangées */
+  width: 364px;
+  @media (max-width: 768px){ width: 232px; }
+
+  .dl-text{ max-width: 540px; }
+
+  .dl-line{
+    color: #444697;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1.1;               /* compacte un peu pour que la baseline colle */
+    white-space: normal;
+    margin: 0; padding: 0;
+  }
+
+  .dl-accent{ color: map.get(vars.$theme-colors, "light-red"); }
+
+  /* Fine-tune baseline (ajuste 1–3px selon rendu police / OS) */
+  .dl-icon-img{
+    width: clamp(36px, 4vw, 48px);
+    height: auto;
+    display: block;
+    align-self: end;                 /* colle en bas de la ligne */
+    transform: translateY(2px);      /* ajustement visuel de la baseline */
+  }
+
+  &.disabled{
+    pointer-events: none;
+    opacity: .55;
+    filter: grayscale(10%);
+  }
+}

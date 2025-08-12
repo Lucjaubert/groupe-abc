@@ -82,7 +82,6 @@ h1 {
   @include heading-styles(48px, 48px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "white");
-  line-height: normal;
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     @include heading-styles(30px, 30px);
     font-weight: 300;
@@ -93,7 +92,6 @@ h2 {
   @include heading-styles(75px, 75px);
   font-weight: 600;
   color: map.get(vars.$theme-colors, "light-blue");
-  line-height: 110px;
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     @include heading-styles(40px, 40px);
     line-height: 50px;

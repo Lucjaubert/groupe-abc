@@ -51,4 +51,135 @@
       </li>
     </ul>
   </section>
+
+  <!-- ===== Identity : Qui / Où ===== -->
+  <section id="identity" class="identity" *ngIf="identity?.whoTitle || identity?.whereTitle">
+    <div class="identity-grid">
+
+      <!-- Qui ? (colonne gauche) -->
+      <article class="who">
+        <h2 class="block-title">{{ identity.whoTitle }}</h2>
+
+        <div class="who-text mt-5" [innerHTML]="identity.whoHtml"></div>
+
+        <div class="who-actions">
+          <button type="button" class="cta-btn mt-5">
+            <span class="cta-label">Lire la suite</span>
+            <span class="cta-plus" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="icon-plus">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </article>
+
+      <!-- Où ? (colonne droite) -->
+      <div class="where" [class.open]="whereOpen">
+        <div class="where-head">
+          <h3 class="block-title">{{ identity.whereTitle }}</h3>
+
+          <button class="where-toggle"
+                  type="button"
+                  [attr.aria-expanded]="whereOpen"
+                  aria-controls="where-body"
+                  (click)="toggleWhere()">
+            <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <div id="where-body" class="where-body">
+          <!-- Carte -->
+          <div class="where-panel panel-map" [attr.aria-hidden]="whereOpen">
+            <div class="where-map">
+              <img [src]="identity.whereMap"
+                  alt="Carte des zones d'intervention du Groupe ABC">
+            </div>
+          </div>
+
+          <!-- Liste -->
+          <ul class="where-panel panel-list mt-4 d-flex align-items-start" [attr.aria-hidden]="!whereOpen">
+            <li *ngFor="let item of whereItems">{{ item }}</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ QUOI / COMMENT / TÉLÉCHARGER ============ -->
+  <section class="wh mt-lg-5" *ngIf="whatHow">
+    <div class="wh-grid">
+      <!-- Colonne gauche : Quoi + Télécharger aligné en bas -->
+      <div class="wh-left">
+        <article class="what">
+          <h3 class="block-title">{{ whatHow.whatTitle }}</h3>
+
+          <ul class="dash-list mt-5">
+            <li *ngFor="let item of whatHow.whatItems">{{ item }}</li>
+          </ul>
+
+          <div class="wh-actions">
+            <button type="button" class="cta-btn">
+              <span class="cta-label">Lire la suite</span>
+              <span class="cta-plus" aria-hidden="true">
+                <svg viewBox="0 0 24 24" class="icon-plus">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </span>
+            </button>
+          </div>
+        </article>
+
+        <!-- Download : rendu même si pas de fichier pour garder l’alignement -->
+        <article class="download">
+          <a class="dl-link"
+            [class.disabled]="!presentation.file"
+            [attr.href]="presentation.file || null"
+            [attr.tabindex]="presentation.file ? null : '-1'"
+            [attr.aria-disabled]="!presentation.file ? 'true' : null">
+
+            <div class="dl-text">
+              <div class="dl-line dl-line--hard">
+                Télécharger<br>
+                la présentation<br>
+                du <span class="dl-accent">Groupe ABC</span>
+              </div>
+            </div>
+
+            <img class="dl-icon-img"
+                src="assets/icons/download.webp"
+                alt="Télécharger"
+                width="48" height="56" loading="lazy">
+          </a>
+        </article>
+
+      </div>
+
+      <!-- Colonne droite : Comment + CTA aligné en bas -->
+      <div class="wh-right">
+        <article class="how">
+          <h3 class="block-title">{{ whatHow.howTitle }}</h3>
+
+          <ul class="dash-list mt-5">
+            <li *ngFor="let item of whatHow.howItems">{{ item }}</li>
+          </ul>
+        </article>
+
+        <div class="wh-actions">
+          <button type="button" class="cta-btn">
+            <span class="cta-label">Lire la suite</span>
+            <span class="cta-plus" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="icon-plus">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
 </div>
