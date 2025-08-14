@@ -217,5 +217,35 @@
     </div>
   </section>
 
+<!-- ===== Nos clients ===== -->
+<section class="clients" aria-labelledby="clients-title" *ngIf="clients?.items?.length">
+  <div class="clients-bg" aria-hidden="true"></div>
+
+  <div class="clients-inner px-0">
+    <div class="row align-items-start clients-row gx-0">
+      <!-- Colonne gauche : icône + titre -->
+      <div class="col-lg-auto clients-left pe-lg-5">
+        <img
+          class="clients-icon d-block"
+          [src]="clients?.icon"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          fetchpriority="low"
+        />
+        <h3 id="clients-title" class="clients-title">{{ clients?.title }}</h3>
+      </div>
+
+      <!-- Colonne droite : liste -->
+      <div class="col-lg clients-right">
+        <ul class="dash-list clients-list list-unstyled m-0" role="list">
+          <li *ngFor="let item of clients?.items; trackBy: trackByIndex">{{ item }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
 
 </div>

@@ -424,7 +424,7 @@
   --ctx-sep-top: 164px;       /* écart avec la section précédente */
   --ctx-gap-title-grid: 50px; /* titre -> grille */
   --ctx-square: 95px;
-  --ctx-gap-x: 40px;
+  --ctx-gap-x: 60px;
   --ctx-gap-y: 24px;
 
   /* séparation avec la section au-dessus */
@@ -445,7 +445,7 @@
 
   .contexts-inner{
     position: relative; z-index: 1;
-    width: 100%; max-width: 1280px;
+    width: 100%;
     margin-inline: auto;
     padding-inline: clamp(16px, 3vw, 40px);
     display: grid;
@@ -513,14 +513,11 @@
   .contexts-grid{
     display: grid;
     width: 100%;
-
-    /* Mobile / tablette : 4 colonnes égales */
     grid-template-columns: repeat(4, 1fr);
     row-gap: clamp(16px, 2.5vw, var(--ctx-gap-y));
     column-gap: clamp(20px, 3.5vw, var(--ctx-gap-x));
-    justify-items: center; /* centre chaque tuile dans sa colonne */
+    justify-items: center;
 
-    /* Desktop : 8 colonnes ÉGALES → 1re et 8e tuiles collées aux bords */
     @media (min-width: 1024px){
       grid-template-columns: repeat(8, 1fr);
     }
@@ -534,7 +531,7 @@
     justify-items: center;
     text-align: center;
     gap: 12px;
-    min-width: 0; /* évite les débords quand le texte est long */
+    min-width: 0;
 
     &:hover .ctx-img{
       transform: translateY(-2px);
@@ -565,5 +562,153 @@
     font-size: clamp(12px, 1.4vw, 14px);
     line-height: 1.25;
   }
+}
 
+/* ===================== CLIENTS (maquette 1440 × 520.614) ===================== */
+/* À placer au niveau racine (en dehors de .contexts) */
+.homepage-wrapper .clients{
+  position: relative;
+  isolation: isolate;
+
+  /* Variables maquette */
+  --cl-w: 1440px;          /* largeur max du bloc centré */
+  --cl-h: 520.614px;       /* hauteur visuelle */
+  --cl-pad-y: 150px;       /* padding haut/bas exacts */
+  --cl-gap-x: 148px;       /* écart colonne gauche ↔ droite */
+  --cl-left-w: 375px;      /* largeur fixe de la colonne gauche (icône + titre) */
+  --cl-right-w: 720px;     /* largeur fixe de la colonne droite (liste) */
+  --cl-gap-title: 16px;    /* écart icône ↔ titre */
+  --cl-icon-w: 108.038px;
+  --cl-icon-h: 80.429px;
+
+  /* Bande grise plein écran (même logique que .contexts) */
+  .clients-bg{
+    position: absolute;
+    inset: 0;
+    left: 50%;
+    width: 100vw;                 /* plein-bleed */
+    transform: translateX(-50%);
+    background: #F5F4F8;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Conteneur centré à 1440px */
+  .clients-inner{
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: var(--cl-w);
+    min-height: var(--cl-h);
+    margin-inline: auto;
+    box-sizing: border-box;
+    padding-top: var(--cl-pad-y) !important;
+    padding-bottom: var(--cl-pad-y) !important;
+    padding-inline: clamp(16px, 3vw, 40px);
+  }
+
+  /* --- Rangée en GRID : gauche collé au bord, droite figée à 720px --- */
+  .clients-row{
+    display: grid;
+    grid-template-columns: var(--cl-left-w) var(--cl-right-w);
+    column-gap: var(--cl-gap-x);
+    align-items: start;
+    justify-content: start;
+    margin: 0 !important;
+  }
+
+  /* Colonne gauche : icône + titre */
+  .clients-left{
+    grid-column: 1;
+    width: var(--cl-left-w);
+    display: grid;
+    align-content: start;
+    justify-items: start;
+    row-gap: var(--cl-gap-title);
+    padding-right: 0 !important;
+  }
+
+  .clients-icon{
+    width: var(--cl-icon-w);
+    height: var(--cl-icon-h);
+    display: block;
+  }
+
+  .clients-title{
+    margin: 0 !important;
+    color: #444798 !important;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 48px !important;
+    font-weight: 400;
+    line-height: normal;
+  }
+
+  /* Colonne droite : largeur FIXE (liste) */
+  .clients-right{
+    grid-column: 2;
+    width: var(--cl-right-w);
+    max-width: var(--cl-right-w);
+    min-width: 0;
+    display: flex;
+    align-items: flex-start;
+  }
+
+  .clients-list{
+    list-style: none;
+    width: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 28.113px;
+
+    li{
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      margin: 0;
+      color: #444798;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 22px;
+      line-height: 28.113px;
+
+      &::before{
+        content: "—";
+        color: #E44D4D;
+        font-size: 22px;
+        font-weight: 400;
+        line-height: 1;
+        flex: 0 0 auto;
+        margin-right: 6px;
+      }
+    }
+  }
+
+  /* ===== Ultra-wide (optionnel) : on peut faire respirer l’intérieur ===== */
+  @media (min-width: 1600px){
+    .clients-inner{ padding-inline: clamp(40px, 6vw, 320px); }
+    .clients-row{ column-gap: clamp(var(--cl-gap-x), 8vw, 360px); }
+  }
+  @media (min-width: 1920px){
+    .clients-inner{ padding-inline: clamp(60px, 8vw, 420px); }
+  }
+
+  /* ===== Responsive (≤ lg) : pile verticale ===== */
+  @media (max-width: 991.98px){
+    .clients-inner{
+      min-height: auto;
+      padding-top: clamp(56px, 8vw, 80px) !important;
+      padding-bottom: clamp(56px, 8vw, 80px) !important;
+    }
+    .clients-row{
+      display: flex;
+      flex-direction: column;
+      row-gap: clamp(24px, 6vw, 32px);
+    }
+    .clients-left{ width: auto; }
+    .clients-right{
+      width: auto;
+      max-width: none;
+      flex: 1 1 auto;
+    }
+    .clients-list{ max-width: none; }
+  }
 }

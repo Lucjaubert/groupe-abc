@@ -110,7 +110,7 @@ h3 {
 }
 
 h4 {
-  @include heading-styles(40px, 40px);
+  @include heading-styles(48px, 48px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
   @media (max-width: map.get(vars.$breakpoints, "md")) {

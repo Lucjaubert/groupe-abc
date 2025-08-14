@@ -44,6 +44,9 @@ type Presentation = {
 type ContextItem = { icon: string; label: string };
 type ExpertiseContext = { title: string; items: ContextItem[] };
 
+/* ===== NEW: Clients ===== */
+type Clients = { icon: string; title: string; items: string[] };
+
 @Component({
   selector: 'app-homepage',
   standalone: true,
@@ -80,6 +83,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* CONTEXTES D’INTERVENTION */
   contexts: ExpertiseContext | null = null;
 
+  /* ===== NEW: Clients ===== */
+  clients: Clients | null = null;
+
   /* AUTOPLAY */
   autoplayMs = 5000;
   private autoplayRef: any = null;
@@ -101,7 +107,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.extractIdentity();
       this.extractWhatHowAndPresentation();
       this.extractKeyFigures();
-      this.extractExpertiseContext();         // << NEW
+      this.extractExpertiseContext();
+      this.extractClientsSection();      // <<< NEW
 
       this.preloadHeroImages();
       this.applySeoFromHero();
@@ -323,19 +330,30 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   private extractExpertiseContext(): void {
     const ctx = this.acf?.expertise_contact_section || {};
     const items: ContextItem[] = [];
-
-    // on itère de 1 à 8
     for (let i = 1; i <= 8; i++) {
       const icon = ctx[`context_icon_${i}`];
       const label = ctx[`context_label_${i}`];
-      if (label) {
-        items.push({ icon: icon || '', label });
-      }
+      if (label) items.push({ icon: icon || '', label });
     }
+    this.contexts = { title: ctx.context_title || 'Contextes d’intervention', items };
+  }
 
-    this.contexts = {
-      title: ctx.context_title || 'Contextes d’intervention',
-      items
-    };
+  /* ===== NEW: CLIENTS ===== */
+  private extractClientsSection(): void {
+    const c = this.acf?.clients_section || {};
+    const items = [
+      c.client_item_1, c.client_item_2, c.client_item_3,
+      c.client_item_4, c.client_item_5, c.client_item_6
+    ].filter(Boolean) as string[];
+
+    if (c.clients_title || items.length) {
+      this.clients = {
+        icon: c.clients_icon || '',
+        title: c.clients_title || 'Nos clients',
+        items
+      };
+    } else {
+      this.clients = null;
+    }
   }
 }
