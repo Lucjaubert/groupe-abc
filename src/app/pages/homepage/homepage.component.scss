@@ -572,14 +572,16 @@
 
   /* Variables maquette */
   --cl-w: 1440px;          /* largeur max du bloc centré */
-  --cl-h: 520.614px;       /* hauteur visuelle */
-  --cl-pad-y: 150px;       /* padding haut/bas exacts */
+  --cl-h: 520.614px;       /* hauteur visuelle totale */
+  --cl-pad-y: 126px;       /* padding haut/bas exacts */
   --cl-gap-x: 148px;       /* écart colonne gauche ↔ droite */
   --cl-left-w: 375px;      /* largeur fixe de la colonne gauche (icône + titre) */
   --cl-right-w: 720px;     /* largeur fixe de la colonne droite (liste) */
   --cl-gap-title: 16px;    /* écart icône ↔ titre */
   --cl-icon-w: 108.038px;
   --cl-icon-h: 80.429px;
+  --cl-line: 28.049px;     /* line-height exact Figma */
+  --cl-gap-y: 20px;        /* écart vertical entre les items de liste */
 
   /* Bande grise plein écran (même logique que .contexts) */
   .clients-bg{
@@ -653,22 +655,24 @@
     align-items: flex-start;
   }
 
+  /* Neutralise les styles .dash-list globaux et fixe les valeurs Figma */
   .clients-list{
     list-style: none;
     width: 100%;
     margin: 0 !important;
-    padding: 0 !important;
-    line-height: 28.113px;
+    padding: 0 !important;          /* pas de padding-top hérité */
+    gap: var(--cl-gap-y) !important;/* écart entre items */
+    line-height: var(--cl-line);    /* hauteur de ligne exacte */
 
     li{
       display: flex;
       align-items: baseline;
       gap: 10px;
-      margin: 0;
+      margin: 0 !important;         /* supprime toute marge héritée */
       color: #444798;
       font-family: "Plus Jakarta Sans", sans-serif;
       font-size: 22px;
-      line-height: 28.113px;
+      line-height: var(--cl-line);
 
       &::before{
         content: "—";
@@ -680,6 +684,9 @@
         margin-right: 6px;
       }
     }
+
+    /* pas d'espace additionnel sous le dernier item */
+    li:last-child{ margin-bottom: 0 !important; }
   }
 
   /* ===== Ultra-wide (optionnel) : on peut faire respirer l’intérieur ===== */
