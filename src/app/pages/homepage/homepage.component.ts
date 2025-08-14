@@ -56,6 +56,18 @@ type TeamMember = {
   jobHtml: string;
 };
 
+/* ===== NEWS ===== */
+type NewsItem = {
+  logo?: string;
+  firm?: string;
+  authorDate?: string;
+  title?: string;
+  html?: string;   // contenu riche (excerpt)
+  link?: string;
+};
+type News = { title: string; items: NewsItem[] };
+
+
 @Component({
   selector: 'app-homepage',
   standalone: true,
@@ -119,6 +131,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   teamTitleLine1 = 'Une équipe';
   teamTitleLine2 = 'de 8 experts à vos côtés';
 
+  /* NEWS */
+  news: News | null = null;
+
   /* ==================================================== */
   /*                        LIFECYCLE                     */
   /* ==================================================== */
@@ -142,6 +157,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       // TEAM
       this.extractTeamSection();
       this.startTeamAutoplay();
+
+      // NEWS
+      this.extractNewsSection();
     });
 
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
@@ -519,4 +537,33 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /*                        UTILS                          */
   /* ==================================================== */
   trackByIndex(i: number): number { return i; }
+
+
+  /* ===== NEWS: mapping ACF ===== */
+  private extractNewsSection(): void {
+    const n = this.acf?.news_section || {};
+
+    const items: NewsItem[] = [];
+    // On prend jusqu’à 2 cartes (maquette)
+    for (let i = 1; i <= 2; i++) {
+      const item: NewsItem = {
+        logo: n[`news_logo_firm_${i}`] || '',
+        firm: n[`news_details_${i}`] || '',
+        authorDate: n[`news_details_${i}_bis`] || '',
+        title: n[`news_title_${i}`] || '',
+        html: n[`news_bloc_${i}`] || '',
+        link: n[`news_link_${i}`] || ''
+      };
+      // on garde si au moins un champ utile
+      if (item.title || item.html || item.logo || item.firm || item.authorDate) {
+        items.push(item);
+      }
+    }
+
+    if (items.length) {
+      this.news = { title: n.news_title || 'Actualités', items };
+    } else {
+      this.news = null;
+    }
+  }
 }
