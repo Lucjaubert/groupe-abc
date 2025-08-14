@@ -719,3 +719,158 @@
     .clients-list{ max-width: none; }
   }
 }
+
+
+/* ===================== TEAM ===================== */
+.team {
+  /* Vars maquette locales au bloc */
+  --team-tile-w: 232px;        /* largeur photo */
+  --team-tile-h: 273px;        /* hauteur panneau rose + image */
+  --team-gap-x: clamp(40px, 8vw, 120px);
+  --team-dots-top-gap: 76.7px; /* écart sous l'image -> points */
+
+  padding-block: clamp(48px, 7vw, 96px);
+  box-sizing: border-box;
+
+  .team-inner {
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 3vw, 40px);
+    box-sizing: border-box;
+  }
+
+  .team-title {
+    color: #444697;
+    font-family: Inter, sans-serif;
+    font-size: 36px;
+    font-weight: 400;
+    line-height: 1.1;
+    margin: 0 0 clamp(28px, 4vw, 40px);
+
+    .line1, .line2 { display: block; margin: 0; }
+    .line2 { margin-top: clamp(6px, 0.9vw, 12px); }
+  }
+
+  /* Grille des deux cartes */
+  .team-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(20px, 4vw, 56px);
+
+    @media (min-width: 992px) {
+      grid-template-columns: 1fr 1fr;
+      column-gap: var(--team-gap-x);
+    }
+  }
+
+  .member-card {
+    display: grid;
+    grid-template-columns: var(--team-tile-w) 1fr;
+    align-items: stretch; /* même hauteur image/texte */
+    column-gap: clamp(18px, 2.6vw, 28px);
+    min-width: 0;
+  }
+
+  .photo-tile {
+    width: var(--team-tile-w);
+    height: var(--team-tile-h);
+    background: #F7C9CF;
+    display: grid;
+    place-items: end center;
+    overflow: hidden;
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  /* Colonne texte = même hauteur que la photo */
+  .member-text {
+    height: var(--team-tile-h);
+    overflow: hidden;               /* rien ne dépasse */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: 8px;                       /* gère l’espacement interne */
+  }
+
+  .member-area {
+    color: #EA4D4D;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 25px;
+    margin-bottom: clamp(6px, .8vw, 8px);
+  }
+
+  .member-name .first,
+  .member-name .last {
+    color: #444697;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 32px;
+    white-space: nowrap;
+    margin: 0;
+  }
+
+  /* Texte de fonctions — collé en bas */
+  .member-job {
+    margin-top: auto;
+    color: #444697;
+    font-family: "Plus Jakarta Sans";
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 20px;
+
+    p { margin: 0 0 6px; }
+    p:last-child { margin-bottom: 0; }
+  }
+
+  /* Neutralise les utilitaires Bootstrap dans la colonne texte */
+  .member-text .mb-1,
+  .member-text .mb-2,
+  .member-text .mb-3,
+  .member-text .mb-4 { margin-bottom: 0 !important; }
+
+  .team-bottom {
+    display: grid;
+    grid-template-columns: var(--team-tile-w) 1fr;
+    align-items: center;
+    margin-top: var(--team-dots-top-gap);
+  }
+
+  .team-dots {
+    grid-column: 1;
+    justify-self: start;
+    width: var(--team-tile-w);
+    display: flex;
+    gap: 10px;
+    padding: 0;
+    margin: 0; /* évite les décalages inattendus */
+  }
+
+  .team-dot {
+    width: 21px;
+    height: 21px;
+    border-radius: 50%;
+    border: 0;
+    background: #E3E3EA;
+    cursor: pointer;
+    transition: transform .12s ease, background .12s ease;
+
+    &:hover { transform: scale(1.08); }
+    &:focus-visible { box-shadow: 0 0 0 2px #EA4D4D; }
+    &.active { background: #444798; }
+  }
+
+  .team-cta {
+    grid-column: 2;
+    justify-self: end;
+    margin-top: 0;
+  }
+}

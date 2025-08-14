@@ -44,8 +44,17 @@ type Presentation = {
 type ContextItem = { icon: string; label: string };
 type ExpertiseContext = { title: string; items: ContextItem[] };
 
-/* ===== NEW: Clients ===== */
+/* ===== Clients ===== */
 type Clients = { icon: string; title: string; items: string[] };
+
+/* ===== Team ===== */
+type TeamMember = {
+  photo: string;
+  nameFirst: string;
+  nameLast: string;
+  area: string;
+  jobHtml: string;
+};
 
 @Component({
   selector: 'app-homepage',
@@ -57,15 +66,21 @@ type Clients = { icon: string; title: string; items: string[] };
 export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   acf: any = {};
 
-  /* HERO */
+  /* ---------- HERO ---------- */
   heroSlides: Slide[] = [];
   heroIndex = 0;
+  autoplayMs = 5000;
+  private autoplayRef: any = null;
 
-  /* KEY FIGURES */
+  /* swipe hero */
+  private pointerStartX: number | null = null;
+  private swipeThreshold = 40;
+
+  /* ---------- KEY FIGURES ---------- */
   keyFigures: KeyFigure[] = [];
   @ViewChildren('kfItem') kfItems!: QueryList<ElementRef<HTMLLIElement>>;
 
-  /* IDENTITY / WHAT-HOW / DOWNLOAD */
+  /* ---------- IDENTITY / WHAT-HOW / DOWNLOAD ---------- */
   identity: Identity = {
     whoTitle: '',
     whoHtml: '',
@@ -80,39 +95,53 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   whatHow: WhatHow | null = null;
   presentation: Presentation = { text1: '', text2: '', file: null };
 
-  /* CONTEXTES D’INTERVENTION */
+  /* ---------- CONTEXTES ---------- */
   contexts: ExpertiseContext | null = null;
 
-  /* ===== NEW: Clients ===== */
+  /* ---------- CLIENTS ---------- */
   clients: Clients | null = null;
 
-  /* AUTOPLAY */
-  autoplayMs = 5000;
-  private autoplayRef: any = null;
-
-  /* SWIPE */
-  private pointerStartX: number | null = null;
-  private swipeThreshold = 40;
+  /* ---------- TEAM ---------- */
+  teamTitle = '';
+  teamMembers: TeamMember[] = [];
+  teamPages: TeamMember[][] = [];      // groupes de 2
+  teamPageIndex = 0;
+  private teamAutoplayRef: any = null;
+  teamAutoplayMs = 5000;
+  teamAutoplayStoppedByUser = false;
 
   get currentSlide(): Slide | undefined { return this.heroSlides[this.heroIndex]; }
 
   private wp = inject(WordpressService);
   private seo = inject(SeoService);
 
+  // Titre sur 2 lignes
+  teamTitleLine1 = 'Une équipe';
+  teamTitleLine2 = 'de 8 experts à vos côtés';
+
+  /* ==================================================== */
+  /*                        LIFECYCLE                     */
+  /* ==================================================== */
   ngOnInit(): void {
     this.wp.getHomepageData().subscribe(acf => {
       this.acf = acf;
 
+      // HERO
       this.extractHero();
-      this.extractIdentity();
-      this.extractWhatHowAndPresentation();
-      this.extractKeyFigures();
-      this.extractExpertiseContext();
-      this.extractClientsSection();      // <<< NEW
-
       this.preloadHeroImages();
       this.applySeoFromHero();
       this.startAutoplay();
+
+      // CONTENT
+      this.extractKeyFigures();
+      this.extractIdentity();
+      this.extractWhatHowAndPresentation();
+      this.extractExpertiseContext();
+      this.extractClientsSection();
+
+      // TEAM
+      this.extractTeamSection();
+      this.startTeamAutoplay();
     });
 
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
@@ -136,11 +165,14 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.clearAutoplay();
+    this.clearAutoplay();        // hero
+    this.clearTeamAutoplay();    // team
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
-  /* HERO */
+  /* ==================================================== */
+  /*                         HERO                         */
+  /* ==================================================== */
   private extractHero(): void {
     const h = this.acf?.hero_section || {};
     this.heroSlides = [
@@ -172,10 +204,14 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   startAutoplay(): void {
     this.clearAutoplay();
-    if (this.heroSlides.length > 1) this.autoplayRef = setInterval(() => this.next(), this.autoplayMs);
+    if (this.heroSlides.length > 1) {
+      this.autoplayRef = setInterval(() => this.next(), this.autoplayMs);
+    }
   }
   pauseAutoplay(): void { this.clearAutoplay(); }
-  resumeAutoplay(): void { if (document.visibilityState === 'visible') this.startAutoplay(); }
+  resumeAutoplay(): void {
+    if (document.visibilityState === 'visible') this.startAutoplay();
+  }
   private clearAutoplay(): void {
     if (this.autoplayRef) {
       clearInterval(this.autoplayRef);
@@ -183,8 +219,14 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
   private handleVisibilityChange = () => {
-    if (document.visibilityState === 'hidden') this.pauseAutoplay();
-    else this.resumeAutoplay();
+    if (document.visibilityState === 'hidden') {
+      this.pauseAutoplay();
+      this.clearTeamAutoplay();
+    } else {
+      this.resumeAutoplay();
+      // ne relance l’autoplay Team que si l’utilisateur ne l’a pas stoppé
+      if (!this.teamAutoplayStoppedByUser) this.startTeamAutoplay();
+    }
   };
 
   onKeydown(evt: KeyboardEvent): void {
@@ -197,12 +239,15 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.pointerStartX == null) return;
     const dx = evt.clientX - this.pointerStartX;
     this.pointerStartX = null;
-    if (Math.abs(dx) > this.swipeThreshold) { this.pauseAutoplay(); if (dx < 0) this.next(); else this.prev(); }
+    if (Math.abs(dx) > this.swipeThreshold) {
+      this.pauseAutoplay();
+      if (dx < 0) this.next(); else this.prev();
+    }
   }
 
-  trackByIndex(i: number): number { return i; }
-
-  /* KEY FIGURES */
+  /* ==================================================== */
+  /*                     KEY FIGURES                      */
+  /* ==================================================== */
   private extractKeyFigures(): void {
     const fig = this.acf?.key_figures_section || {};
     const out: KeyFigure[] = [];
@@ -260,7 +305,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     requestAnimationFrame(step);
   }
 
-  /* IDENTITY (Qui / Où) */
+  /* ==================================================== */
+  /*                     IDENTITY / WH                    */
+  /* ==================================================== */
   private extractIdentity(): void {
     const id = this.acf?.identity_section || {};
     this.identity = {
@@ -276,7 +323,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.whereItems = this.identity.whereItems;
   }
 
-  /* SEO */
   private applySeoFromHero(): void {
     const s = this.acf?.seo_section || {};
     const first = this.heroSlides[0] || { title: '', subtitle: '', bg: '' };
@@ -326,7 +372,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     };
   }
 
-  /* CONTEXTES D’INTERVENTION */
+  /* ==================================================== */
+  /*                       CONTEXTES                      */
+  /* ==================================================== */
   private extractExpertiseContext(): void {
     const ctx = this.acf?.expertise_contact_section || {};
     const items: ContextItem[] = [];
@@ -338,7 +386,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.contexts = { title: ctx.context_title || 'Contextes d’intervention', items };
   }
 
-  /* ===== NEW: CLIENTS ===== */
+  /* ==================================================== */
+  /*                         CLIENTS                       */
+  /* ==================================================== */
   private extractClientsSection(): void {
     const c = this.acf?.clients_section || {};
     const items = [
@@ -356,4 +406,117 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.clients = null;
     }
   }
+
+  /* ==================================================== */
+  /*                           TEAM                        */
+  /* ==================================================== */
+  private extractTeamSection(): void {
+    const t = this.acf?.team_section || {};
+
+    // 1) Titre
+    this.teamTitle = t.team_title_1 || 'Une équipe de 8 experts à vos côtés';
+    this.setTeamTitleTwoLines(this.teamTitle);
+
+
+    // 2) Mapping
+    const tmp: TeamMember[] = [];
+    for (let i = 1; i <= 8; i++) {
+      const photo = t[`team_photo_${i}`];
+      const name = (t[`team_name_${i}`] || '').toString().trim() || '';
+      const area = t[`team_area_${i}`] || '';
+      const jobHtml = t[`team_job_${i}`] || '';
+
+      if (photo || name || area || jobHtml) {
+        let nameFirst = name, nameLast = '';
+        const parts = name.split(/\s+/);
+        if (parts.length > 1) {
+          nameFirst = parts.slice(0, -1).join(' ');
+          nameLast  = parts.slice(-1)[0];
+        }
+        tmp.push({ photo: photo || '', nameFirst, nameLast, area, jobHtml });
+      }
+    }
+
+    // 3) Shuffle à chaque visite
+    this.teamMembers = this.shuffleArray(tmp);
+
+    // 4) Groupes de 2 (pages)
+    this.teamPages = [];
+    for (let i = 0; i < this.teamMembers.length; i += 2) {
+      this.teamPages.push(this.teamMembers.slice(i, i + 2));
+    }
+
+    // 5) Page de départ aléatoire
+    if (this.teamPages.length) {
+      this.teamPageIndex = Math.floor(Math.random() * this.teamPages.length);
+    }
+  }
+
+  private shuffleArray<T>(arr: T[]): T[] {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  private setTeamTitleTwoLines(full: string | undefined): void {
+    const s = (full || '').replace(/\s+/g, ' ').trim();
+    // Si un retour ligne existe déjà dans l’ACF, on le respecte
+    if (s.includes('\n')) {
+      const [l1, l2] = s.split('\n');
+      this.teamTitleLine1 = l1?.trim() || this.teamTitleLine1;
+      this.teamTitleLine2 = l2?.trim() || this.teamTitleLine2;
+      return;
+    }
+    // Sinon, on applique la coupe maquette après "Une équipe"
+    if (s.toLowerCase().startsWith('une équipe')) {
+      const rest = s.slice('une équipe'.length).trim();
+      if (rest) this.teamTitleLine2 = rest;
+    }
+  }
+
+  /* Navigation utilisateur -> stoppe l’autoplay Team */
+  goTeamTo(i: number): void {
+    if (!this.teamPages.length) return;
+    const len = this.teamPages.length;
+    this.teamPageIndex = ((i % len) + len) % len;
+    this.stopTeamAutoplayByUser();
+  }
+  nextTeam(): void { this.goTeamTo(this.teamPageIndex + 1); }
+  prevTeam(): void { this.goTeamTo(this.teamPageIndex - 1); }
+
+  /* Autoplay aléatoire Team (sans répéter la page courante) */
+  private startTeamAutoplay(): void {
+    this.clearTeamAutoplay();
+    if (this.teamPages.length < 2) return;
+    if (this.teamAutoplayStoppedByUser) return; // si l’utilisateur a cliqué, on ne relance pas
+
+    this.teamAutoplayRef = setInterval(() => {
+      const len = this.teamPages.length;
+      if (len < 2) return;
+
+      let next = this.teamPageIndex;
+      while (next === this.teamPageIndex) {
+        next = Math.floor(Math.random() * len);
+      }
+      this.teamPageIndex = next;
+    }, this.teamAutoplayMs);
+  }
+  private clearTeamAutoplay(): void {
+    if (this.teamAutoplayRef) {
+      clearInterval(this.teamAutoplayRef);
+      this.teamAutoplayRef = null;
+    }
+  }
+  private stopTeamAutoplayByUser(): void {
+    this.teamAutoplayStoppedByUser = true;
+    this.clearTeamAutoplay();
+  }
+
+  /* ==================================================== */
+  /*                        UTILS                          */
+  /* ==================================================== */
+  trackByIndex(i: number): number { return i; }
 }

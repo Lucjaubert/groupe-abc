@@ -217,35 +217,91 @@
     </div>
   </section>
 
-<!-- ===== Nos clients ===== -->
-<section class="clients" aria-labelledby="clients-title" *ngIf="clients?.items?.length">
-  <div class="clients-bg" aria-hidden="true"></div>
+  <!-- ===== Nos clients ===== -->
+  <section class="clients" aria-labelledby="clients-title" *ngIf="clients?.items?.length">
+    <div class="clients-bg" aria-hidden="true"></div>
 
-  <div class="clients-inner px-0">
-    <div class="row align-items-start clients-row gx-0">
-      <!-- Colonne gauche : icône + titre -->
-      <div class="col-lg-auto clients-left pe-lg-5">
-        <img
-          class="clients-icon d-block"
-          [src]="clients?.icon"
-          alt=""
-          aria-hidden="true"
-          loading="lazy"
-          decoding="async"
-          fetchpriority="low"
-        />
-        <h3 id="clients-title" class="clients-title">{{ clients?.title }}</h3>
-      </div>
+    <div class="clients-inner px-0">
+      <div class="row align-items-start clients-row gx-0">
+        <!-- Colonne gauche : icône + titre -->
+        <div class="col-lg-auto clients-left pe-lg-5">
+          <img
+            class="clients-icon d-block"
+            [src]="clients?.icon"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
+          />
+          <h3 id="clients-title" class="clients-title">{{ clients?.title }}</h3>
+        </div>
 
-      <!-- Colonne droite : liste -->
-      <div class="col-lg clients-right">
-        <ul class="dash-list clients-list list-unstyled m-0" role="list">
-          <li *ngFor="let item of clients?.items; trackBy: trackByIndex">{{ item }}</li>
-        </ul>
+        <!-- Colonne droite : liste -->
+        <div class="col-lg clients-right">
+          <ul class="dash-list clients-list list-unstyled m-0" role="list">
+            <li *ngFor="let item of clients?.items; trackBy: trackByIndex">{{ item }}</li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 
+
+<!-- ===== Team ===== -->
+  <section id="team" class="team" *ngIf="teamPages.length">
+    <div class="team-inner px-0">
+      <h3 class="team-title">
+        <span class="line1">{{ teamTitleLine1 }}</span>
+        <span class="line2">{{ teamTitleLine2 }}</span>
+      </h3>
+
+      <!-- 2 cartes visibles -->
+      <div class="team-grid" aria-live="polite">
+        <article class="member-card " *ngFor="let m of teamPages[teamPageIndex]; trackBy: trackByIndex">
+          <div class="photo-tile">
+            <img [src]="m.photo" [alt]="'Portrait de ' + m.nameFirst + ' ' + m.nameLast" loading="lazy" decoding="async">
+          </div>
+
+          <!-- Colonne texte contrainte exactement à la hauteur de la photo -->
+          <div class="member-text pt-3">
+            <div class="member-area">{{ m.area }}</div>
+            <div class="member-name">
+              <div class="first">{{ m.nameFirst }}</div>
+              <div class="last">{{ m.nameLast }}</div>
+            </div>
+            <div class="member-job" [innerHTML]="m.jobHtml"></div>
+          </div>
+        </article>
+      </div>
+
+      <!-- Bas de section aligné sur les colonnes globales :
+          - les points occupent la 1re colonne (largeur = photo)
+          - le CTA est poussé complètement à droite -->
+      <div class="team-bottom">
+        <div class="team-dots" role="tablist" aria-label="Profils de l’équipe">
+          <button
+            *ngFor="let _ of teamPages; let i = index; trackBy: trackByIndex"
+            type="button"
+            class="team-dot"
+            [class.active]="i === teamPageIndex"
+            [attr.aria-label]="'Aller aux profils ' + (i*2+1) + '–' + (i*2+2)"
+            [attr.aria-selected]="i === teamPageIndex ? 'true' : 'false'"
+            role="tab"
+            (click)="goTeamTo(i)">
+          </button>
+        </div>
+
+        <div class="team-cta">
+          <button type="button" class="cta-btn">
+            <span class="cta-label">Découvrez notre équipe</span>
+            <span class="cta-plus" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="icon-plus"><path d="M12 5v14M5 12h14"/></svg>
+            </span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
 
 </div>
