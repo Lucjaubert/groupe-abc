@@ -125,9 +125,9 @@
 
 /* Harmonise les colonnes Identity et WH */
 :root{
-  --title-list-gap: clamp(22px, 2.2vw, 28px); /* espace Titre → 1er item */
-  --list-gap: clamp(12px, 1.6vw, 18px);       /* espace entre items */
-  --cta-top-gap: clamp(28px, 3vw, 48px);      /* espace Liste → CTA */
+  --title-list-gap: clamp(22px, 2.2vw, 28px);
+  --list-gap: clamp(12px, 1.6vw, 18px);
+  --cta-top-gap: clamp(28px, 3vw, 48px);
 }
 
 /* ===== Identity : Qui / Où ===== */
@@ -143,7 +143,7 @@
   @media (min-width: map.get(vars.$breakpoints, "lg")) {
     grid-template-columns: 1fr 1fr;
     align-items: start;
-    column-gap: var(--section-gap-x); /* <- verrou d’alignement horizontal */
+    column-gap: var(--section-gap-x);
     row-gap: clamp(28px, 5vw, 72px);
   }
 }
@@ -308,7 +308,12 @@
 }
 
 /* ============ QUOI / COMMENT / TÉLÉCHARGER ============ */
-.wh { padding-block: clamp(28px, 5vw, 72px); }
+
+/* Pas d'espace en bas: l'écart sera géré par .contexts */
+.wh{
+  padding-top: clamp(28px, 5vw, 56px);
+  padding-bottom: 0;
+}
 
 .wh-grid{
   display: grid;
@@ -374,53 +379,191 @@
   }
 }
 
-
-/* CTA : même marge au-dessus (liste → CTA) */
 .wh-actions{ margin-top: var(--cta-top-gap); }
 
-/* Aligner bas : download à gauche et CTA à droite */
-.download { margin-top: auto; }                 /* pousse le bloc download en bas */
-.wh-right > .wh-actions { margin-top: auto; }   /* pousse le CTA en bas */
+.download { margin-top: auto; }
+.wh-right > .wh-actions { margin-top: auto; }
 
 /* ====== Download : aligner l’icône sur la 3e ligne ====== */
 .download .dl-link{
   display: grid;
   grid-template-columns: 1fr auto;
-  align-items: end;                 /* aligne le bas du texte et de l’icône */
+  align-items: end;
   gap: clamp(16px, 2.8vw, 24px);
   text-decoration: none;
-  color: inherit;
-
-  /* largeurs inchangées */
   width: 364px;
   @media (max-width: 768px){ width: 232px; }
 
   .dl-text{ max-width: 540px; }
 
   .dl-line{
-    color: #444697;
-    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    color: map.get(vars.$theme-colors, "light-blue");
     font-size: 36px;
     font-weight: 400;
-    line-height: 1.1;               /* compacte un peu pour que la baseline colle */
     white-space: normal;
     margin: 0; padding: 0;
   }
 
   .dl-accent{ color: map.get(vars.$theme-colors, "light-red"); }
 
-  /* Fine-tune baseline (ajuste 1–3px selon rendu police / OS) */
   .dl-icon-img{
     width: clamp(36px, 4vw, 48px);
     height: auto;
     display: block;
-    align-self: end;                 /* colle en bas de la ligne */
-    transform: translateY(2px);      /* ajustement visuel de la baseline */
+    align-self: end;
+    transform: translateY(2px);
+  }
+}
+
+/* ===================== CONTEXTES D’INTERVENTION ===================== */
+.contexts{
+  position: relative;
+  isolation: isolate;
+
+  /* distances maquette */
+  --ctx-sep-top: 164px;       /* écart avec la section précédente */
+  --ctx-gap-title-grid: 50px; /* titre -> grille */
+  --ctx-square: 95px;
+  --ctx-gap-x: 40px;
+  --ctx-gap-y: 24px;
+
+  /* séparation avec la section au-dessus */
+  margin-top: clamp(56px, 10vw, var(--ctx-sep-top));
+
+  /* bande bleue centrée */
+  display: grid;
+  place-items: center;                        /* centre .contexts-inner */
+  min-height: clamp(553px, 60vh, 560px);
+  padding-block: clamp(32px, 4vw, 40px);      /* <<< symétrique ! */
+
+  .contexts-bg{
+    position: absolute; inset: 0; left: 50%;
+    width: 100vw; transform: translateX(-50%);
+    background: map.get(vars.$theme-colors, "dark-blue");
+    z-index: 0;
   }
 
-  &.disabled{
-    pointer-events: none;
-    opacity: .55;
-    filter: grayscale(10%);
+  .contexts-inner{
+    position: relative; z-index: 1;
+    width: 100%; max-width: 1280px;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 3vw, 40px);
+    display: grid;
+    row-gap: clamp(32px, 6vw, var(--ctx-gap-title-grid));
   }
+
+  .contexts-head{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: clamp(12px, 2.5vw, 28px);
+    margin: 0;
+  }
+
+  .contexts-title{
+    margin: 0;
+    color: #fff;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 48px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+  }
+
+  .contexts .contexts-actions { margin-top: clamp(16px, 3vw, 34.65px); }
+
+  .cta-btn{
+    width: clamp(173px, 32vw, 244.5px);
+    height: clamp(27px, 2.6vw, 28.113px);
+    min-width: 173px;
+    max-width: 244.5px;
+    display: flex;
+    align-items: center;
+    border: 0;
+    border-radius: 5px;
+    background: white;
+    color: map.get(vars.$theme-colors, "light-blue");
+    padding-left: 12px;
+    padding-right: 8px;
+    margin-top: 150px;
+    cursor: pointer;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-weight: 400;
+    font-size: clamp(11px, 1.4vw, 12px);
+    line-height: 1;
+    transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+    &:hover { filter: brightness(1.04); }
+    &:active { transform: translateY(1px); }
+    &:focus-visible { outline: 2px solid #EA4D4D; outline-offset: 2px; }
+  }
+  .cta-label{ margin-right: 12px; white-space: nowrap; }
+  .cta-plus{
+    margin-left: auto;
+    display: inline-grid;
+    place-items: center;
+    width: 22px; height: 22px;
+  }
+  .icon-plus{
+    width: 22px; height: 22px;
+    stroke: #EA4D4D; stroke-width: 3.2;
+    stroke-linecap: round; fill: none;
+  }
+
+  /* ===== Grille : 4 colonnes sur mobile, 8 colonnes égales sur desktop ===== */
+  .contexts-grid{
+    display: grid;
+    width: 100%;
+
+    /* Mobile / tablette : 4 colonnes égales */
+    grid-template-columns: repeat(4, 1fr);
+    row-gap: clamp(16px, 2.5vw, var(--ctx-gap-y));
+    column-gap: clamp(20px, 3.5vw, var(--ctx-gap-x));
+    justify-items: center; /* centre chaque tuile dans sa colonne */
+
+    /* Desktop : 8 colonnes ÉGALES → 1re et 8e tuiles collées aux bords */
+    @media (min-width: 1024px){
+      grid-template-columns: repeat(8, 1fr);
+    }
+  }
+
+  /* ===== Item ===== */
+  .ctx-item{
+    /* petit conteneur vertical : tuile au dessus, label dessous */
+    display: grid;
+    grid-template-rows: auto auto;
+    justify-items: center;
+    text-align: center;
+    gap: 12px;
+    min-width: 0; /* évite les débords quand le texte est long */
+
+    &:hover .ctx-img{
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(0,0,0,.18);
+      background: rgba(255,255,255,.14);
+    }
+  }
+
+  /* ===== Tuile carrée (icône) =====
+    Important : largeur FIXE → les espacements gauche/droite deviennent identiques */
+  .ctx-img{
+    width: clamp(90px, 9vw, var(--ctx-square));
+    height: clamp(90px, 9vw, var(--ctx-square));
+    border-radius: 16px;
+    background: rgba(255,255,255,.10);
+    display: grid;
+    place-items: center;
+    transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+
+  /* ===== Label sous la tuile ===== */
+  .ctx-label{
+    /* tu peux ajuster ce max-width si un label dépasse trop */
+    max-width: calc(var(--ctx-square) + 60px);
+    color: rgba(255,255,255,.88);
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-weight: 400;
+    font-size: clamp(12px, 1.4vw, 14px);
+    line-height: 1.25;
+  }
+
 }

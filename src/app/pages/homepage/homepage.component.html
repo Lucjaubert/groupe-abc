@@ -181,5 +181,41 @@
       </div>
     </div>
   </section>
+  <!-- ===== Contextes d’intervention ===== -->
+  <section class="contexts" aria-labelledby="contexts-title" *ngIf="contexts?.items?.length">
+    <!-- Fond full-bleed (même principe que .hero-bg) -->
+    <div class="contexts-bg" aria-hidden="true"></div>
+
+    <div class="contexts-inner px-0">
+      <div class="contexts-head">
+        <h3 id="contexts-title" class="contexts-title">{{ contexts?.title }}</h3>
+
+        <div class="contexts-actions">
+          <button type="button" class="cta-btn">
+            <span class="cta-label">Plus d'infos</span>
+            <span class="cta-plus" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="icon-plus">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <ul class="contexts-grid px-0 pb-4" role="list">
+        <li class="ctx-item" *ngFor="let it of contexts?.items; let i = index; trackBy: trackByIndex">
+          <!-- .ctx-icon devient le carré, l'image est décorative -->
+          <div class="ctx-icon" role="img" [attr.aria-label]="it.label || ('Contexte ' + (i+1))">
+            <img class="ctx-img"
+                [src]="it.icon"
+                alt=""
+                loading="lazy">
+          </div>
+          <div class="ctx-label" [innerHTML]="it.label"></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
 
 </div>

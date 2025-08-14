@@ -41,6 +41,9 @@ type Presentation = {
   file: string | null;
 };
 
+type ContextItem = { icon: string; label: string };
+type ExpertiseContext = { title: string; items: ContextItem[] };
+
 @Component({
   selector: 'app-homepage',
   standalone: true,
@@ -74,6 +77,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   whatHow: WhatHow | null = null;
   presentation: Presentation = { text1: '', text2: '', file: null };
 
+  /* CONTEXTES D’INTERVENTION */
+  contexts: ExpertiseContext | null = null;
+
   /* AUTOPLAY */
   autoplayMs = 5000;
   private autoplayRef: any = null;
@@ -95,6 +101,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.extractIdentity();
       this.extractWhatHowAndPresentation();
       this.extractKeyFigures();
+      this.extractExpertiseContext();         // << NEW
 
       this.preloadHeroImages();
       this.applySeoFromHero();
@@ -262,7 +269,27 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.whereItems = this.identity.whereItems;
   }
 
+  /* SEO */
+  private applySeoFromHero(): void {
+    const s = this.acf?.seo_section || {};
+    const first = this.heroSlides[0] || { title: '', subtitle: '', bg: '' };
+    const seoImage = (s.seo_image && (s.seo_image.url || s.seo_image)) || first.bg;
 
+    this.seo.update({
+      title: s.seo_title || first.title || 'Groupe ABC – Expertise immobilière',
+      description: s.seo_description || first.subtitle,
+      keywords: s.seo_keywords,
+      image: seoImage,
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'Organization',
+        name: 'Groupe ABC',
+        url: window.location.href,
+        logo: seoImage,
+        description: s.seo_description || first.subtitle
+      }
+    });
+  }
 
   private extractWhatHowAndPresentation(): void {
     const id = this.acf?.identity_section || {};
@@ -292,25 +319,23 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     };
   }
 
-    /* SEO */
-  private applySeoFromHero(): void {
-    const s = this.acf?.seo_section || {};
-    const first = this.heroSlides[0] || { title: '', subtitle: '', bg: '' };
-    const seoImage = (s.seo_image && (s.seo_image.url || s.seo_image)) || first.bg;
+  /* CONTEXTES D’INTERVENTION */
+  private extractExpertiseContext(): void {
+    const ctx = this.acf?.expertise_contact_section || {};
+    const items: ContextItem[] = [];
 
-    this.seo.update({
-      title: s.seo_title || first.title || 'Groupe ABC – Expertise immobilière',
-      description: s.seo_description || first.subtitle,
-      keywords: s.seo_keywords,
-      image: seoImage,
-      jsonLd: {
-        '@context': 'https://schema.org',
-        '@type': 'Organization',
-        name: 'Groupe ABC',
-        url: window.location.href,
-        logo: seoImage,
-        description: s.seo_description || first.subtitle
+    // on itère de 1 à 8
+    for (let i = 1; i <= 8; i++) {
+      const icon = ctx[`context_icon_${i}`];
+      const label = ctx[`context_label_${i}`];
+      if (label) {
+        items.push({ icon: icon || '', label });
       }
-    });
+    }
+
+    this.contexts = {
+      title: ctx.context_title || 'Contextes d’intervention',
+      items
+    };
   }
 }
