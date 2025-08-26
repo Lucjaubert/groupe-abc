@@ -1,128 +1,136 @@
 @use "sass:map";
 @use "../../../../styles/_variables.scss" as vars;
 
-.site-footer {
-  background-color: map.get(vars.$theme-colors, "dark-blue");
-  color: map.get(vars.$theme-colors, "white");
+/* ------------------------------ */
+.section {
+  position: relative; isolation: isolate;
 
-  .container {
-    max-width: 1400px;
-    margin: 0 auto;
+  .section-bg {
+    position: absolute; inset: 0; left: 50%;
+    width: 100vw; transform: translateX(-50%);
+    z-index: 0; background: var(--section-bg, transparent);
   }
 
-  .footer-logo {
-    width: 11vw;
-    height: auto;
+  .section-inner {
+    position: relative; z-index: 1;
+    width: 100%;
+    max-width: 1840px;
+    margin-inline: auto;
+    padding-inline: var(--content-gutter);
+    padding-block: 34px;
   }
-
-  .footer-menu {
-    margin: 0;
-    padding: 0;
-    li {
-      margin-bottom: 0.5rem;
-      a {
-        color: map.get(vars.$theme-colors, "white");
-        text-decoration: none;
-        &:hover {
-          text-decoration: underline;
-        }
-      }
-    }
-  }
-
-  .footer-menu-large {
-    margin: 1vw;
-
-    a {
-      font-size: 0.9rem !important;
-
-    }
-  }
-
-  .linkedin-link {
-    display: inline-block;
-    .linkedin-icon {
-      width: 24px;
-      height: auto;
-    }
-  }
-
-  .footer-address {
-    margin-top: 3vw;
-    margin-bottom: 3vw;
-    margin-left: 9vw;
-    margin-right: 4vw;
-    line-height: 2;
-    font-size: 0.9rem !important;
-    a {
-      color: map.get(vars.$theme-colors, "white");
-      text-decoration: underline;
-      &:hover {
-        text-decoration: none;
-      }
-    }
-  }
-
-  .footer-mention {
-    margin: 0;
-    font-size: 0.9rem !important;
-
-    a {
-      color: map.get(vars.$theme-colors, "white");
-      text-decoration: underline;
-
-      &:hover {
-        text-decoration: none;
-      }
-    }
-  }
-
-
-
-  .vertical-separator {
-    width: 1px;
-    height: 220px;
-    background-color: map.get(vars.$theme-colors, "gold");
-    flex: 0 0 auto;
-    margin: 0 1rem;
-  }
-
 }
 
-@media (max-width: 768px) {
-  .site-footer {
-    .row.g-5 {
-      flex-direction: column;
-      align-items: center !important;
-      text-align: center;
-      gap: 2rem;
+/* ------------------------------ */
+.footer {
+  color:#FFF;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  .footer-title{
+    margin: 0 0 20px 0;
+    font-size: 30px; font-weight: 400; line-height: normal; color:#FFF;
+  }
+
+  .contact-grid{
+    --gap: 18px;
+
+    display: grid;
+    grid-template-columns:
+      minmax(496px, 2fr)
+      minmax(298px, 1.25fr)
+      minmax(217.5px, 1fr);
+    column-gap: var(--gap);
+    grid-template-rows: 42.69px 42.69px;
+    row-gap: 16px;
+
+    width: 100%;
+    margin: 0 0 28px 0;
+    align-items: center;
+
+    textarea,
+    input{
+      width: 100%;
+      height: 42.69px;
+      font: 400 14px/normal Inter, sans-serif;
+      color:#444697; background:#FFF; border:none; border-radius:6px;
+      box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset;
+      padding:10px 14px;
+      &::placeholder{ color:#444697; opacity:1; }
     }
 
-    .footer-logo {
-      width: 35vw;
+    textarea{
+      grid-column: 1; grid-row: 1 / span 2;
+      height: 93.71px; resize:none; padding:12px 14px;
     }
 
-    .footer-menu-large {
-      margin: 0;
-    }
+    #footer-name{ grid-column: 2; grid-row: 1; }
+    #footer-mail{ grid-column: 2; grid-row: 2; }
+    #footer-tel { grid-column: 3; grid-row: 1; }
 
-    .footer-address {
-      margin: 0;
-    }
+    .btn-send {
+      grid-column: 3; grid-row: 2;
+      height: 42.69px; width: 100%;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 12px;
+      background: #E74040; color: #FFF;
+      border: none; border-radius: 6px; cursor: pointer;
+      font: 400 16px/normal Inter, sans-serif;
+      transition: background-color .2s ease, transform .15s ease, opacity .15s ease;
 
-    .vertical-separator {
-      display: none;
-    }
+      .btn-label { pointer-events: none; }
 
-    .footer-mention {
-      font-size: 0.8rem;
-      padding: 0 1rem;
-    }
+      .ico-send { width: 30.642px; height: 18.813px; flex-shrink: 0; }
+      .ico-check { display: none; width: 22px; height: 22px; flex-shrink: 0; fill: #FFF; }
 
-    .footer-menu {
-      li {
-        margin-bottom: 1.2rem;
+      &:hover:not(:disabled) { transform: translateY(-1px); opacity: .95; }
+      &:active:not(:disabled) { transform: none; opacity: .9; }
+      &:focus-visible { outline: 2px solid #FFF; outline-offset: 2px; }
+
+      &.is-loading { cursor: progress; opacity: .8; }
+
+      &.is-success {
+        background: #2BB673;
+        .ico-send { display: none; }
+        .ico-check { display: block; }
       }
+
+      &:disabled { cursor: default; }
     }
   }
+
+  .meta-row{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    margin-top: 8px;
+  }
+  .footer-contact{
+    margin:0; font: 400 22px/normal Inter, sans-serif; color:#FFF; text-align:left;
+  }
+  .socials{
+    display:flex; align-items:center; justify-content:flex-end;
+    .linkedin img{ width:39.47px; height:41.097px; display:block; }
+  }
+}
+
+@media (max-width: 1024px){
+  .footer .contact-grid{
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
+    column-gap: 0; row-gap: 12px;
+
+    textarea, #footer-name, #footer-tel, #footer-mail, .btn-send{
+      grid-column: 1; grid-row: auto; width: 100%;
+    }
+    .btn-send{ max-width: 360px; margin-inline:auto; }
+  }
+  .footer .meta-row{
+    flex-direction: column; gap:12px;
+    .socials{ justify-content:center; }
+    .footer-contact{ text-align:center; }
+  }
+}
+
+/* utilitaire déjà présent dans tes styles globaux, remis au cas où */
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
 }

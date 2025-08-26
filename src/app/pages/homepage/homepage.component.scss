@@ -311,7 +311,7 @@
 
 /* Pas d'espace en bas: l'écart sera géré par .contexts */
 .wh{
-  padding-top: clamp(28px, 5vw, 56px);
+  padding-top: clamp(28px, 5vw, 130px) !important;
   padding-bottom: 0;
 }
 
@@ -966,14 +966,12 @@
   /* ===== Ruban dans la marge, HAUTEUR = .news-grid ===== */
   .news-side-btn{
     position:absolute;
-    top:0;                 /* haut = haut de .news-grid (via .news-row) */
+    top:0;
     bottom:0;
     right: var(--news-side-right);
-    transform: translateX(calc(100% + var(--news-side-gap)));
-
     writing-mode: vertical-rl;
     text-orientation: mixed;
-
+    transform: translateX(calc(100% + var(--news-side-gap))) rotate(180deg);
     display:flex;
     align-items:center;
     justify-content:center;

@@ -175,3 +175,17 @@ a {
   padding-left: var(--content-gutter);
   padding-right: var(--content-gutter);
 }
+
+/* A11y: masque visuel mais lisible par les lecteurs d’écran */
+.sr-only,
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}

@@ -33,7 +33,14 @@
   </div>
 
   <div class="right-rail d-flex flex-column align-items-end">
-    <span class="lang-switch d-flex align-items-center justify-content-center">FR</span>
+    <span class="lang-switch d-flex align-items-center justify-content-center"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="'Changer la langue. Langue actuelle: ' + (currentLang | uppercase)"
+          (click)="onToggleLang()"
+          (keydown.enter)="onToggleLang()">
+      {{ (currentLang | uppercase) }}
+    </span>
 
     <a class="extranet-badge d-flex align-items-center justify-content-center"
       href="#"
