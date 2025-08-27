@@ -1,9 +1,11 @@
-<app-header></app-header>
+<div id="app-container">
+  <app-header></app-header>
 
-<div class="main-wrapper">
-  <main>
-    <router-outlet></router-outlet>
-  </main>
+  <div id="page" class="main-wrapper">
+    <main>
+      <router-outlet></router-outlet>
+    </main>
+  </div>
 </div>
 
 <app-footer *ngIf="showFooter" [footer]="footerData"></app-footer>

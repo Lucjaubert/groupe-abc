@@ -32,11 +32,31 @@ export class FooterComponent {
   sendState: SendState = 'idle';
   messageError = '';
 
-  // Base API pour l'envoi : prend environment.apiGabc, sinon environment.apiBase (compat ancienne clé)
-  private readonly sendApiBase: string =
-    (environment as any).apiGabc ?? (environment as any).apiBase ?? '';
+  private readonly sendApiBase: string = this.computeApiBase();
 
   constructor(private cdr: ChangeDetectorRef) {}
+
+  private computeApiBase(): string {
+    const envAny = environment as any;
+
+    if (envAny.apiGabc) {
+      return String(envAny.apiGabc).replace(/\/+$/, '');
+    }
+
+    if (envAny.apiUrl) {
+      const base = String(envAny.apiUrl).replace(/\/+$/, '');
+      if (base.includes('/wp-json/wp/v2')) {
+        return base.replace('/wp-json/wp/v2', '/wp-json/groupeabc/v1');
+      }
+    }
+
+    if (envAny.apiBase) {
+      const root = String(envAny.apiBase).replace(/\/+$/, '');
+      return `${root}/wp-json/groupeabc/v1`;
+    }
+
+    return '';
+  }
 
   telHref(phone?: string | null) {
     if (!phone) return null;
@@ -56,9 +76,19 @@ export class FooterComponent {
       email:   String(fd.get('email') ?? '').trim(),
       phone:   String(fd.get('phone') ?? '').trim(),
       message: String(fd.get('message') ?? '').trim(),
-      website: String(fd.get('website') ?? ''), // honeypot
-      // recaptchaToken: ... (à ajouter quand prêt)
+      website: String(fd.get('website') ?? ''),
     };
+
+    if (payload.website) {
+      this.sendState = 'success';
+      this.cdr.markForCheck();
+      setTimeout(() => {
+        this.sendState = 'idle';
+        form.reset();
+        this.cdr.markForCheck();
+      }, 1500);
+      return;
+    }
 
     if (!payload.name || !payload.email || !payload.message) {
       this.sendState = 'error';
@@ -68,9 +98,8 @@ export class FooterComponent {
     }
 
     if (!this.sendApiBase) {
-      // Sécurise le cas où l’environnement n’est pas correctement renseigné
       this.sendState = 'error';
-      this.messageError = 'Configuration API manquante (apiGabc / apiBase).';
+      this.messageError = 'Configuration API manquante (apiGabc / apiUrl / apiBase).';
       this.cdr.markForCheck();
       return;
     }
@@ -79,7 +108,6 @@ export class FooterComponent {
     this.messageError = '';
     this.cdr.markForCheck();
 
-    // Endpoint réel
     const endpoint = `${this.sendApiBase}/send-message`;
 
     try {

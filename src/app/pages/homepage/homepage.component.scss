@@ -525,7 +525,6 @@
 
   /* ===== Item ===== */
   .ctx-item{
-    /* petit conteneur vertical : tuile au dessus, label dessous */
     display: grid;
     grid-template-rows: auto auto;
     justify-items: center;
@@ -571,7 +570,7 @@
   isolation: isolate;
 
   /* Variables maquette */
-  --cl-w: 1440px;          /* largeur max du bloc centré */
+
   --cl-h: 520.614px;       /* hauteur visuelle totale */
   --cl-pad-y: 126px;       /* padding haut/bas exacts */
   --cl-gap-x: 148px;       /* écart colonne gauche ↔ droite */
@@ -733,7 +732,7 @@
   box-sizing: border-box;
 
   .team-inner {
-    max-width: 1440px;
+    // max-width: 1440px;
     margin-inline: auto;
     padding-inline: clamp(16px, 3vw, 40px);
     box-sizing: border-box;
@@ -741,7 +740,6 @@
 
   .team-title {
     color: #444697;
-    font-family: Inter, sans-serif;
     font-size: 36px;
     font-weight: 400;
     line-height: 1.1;
@@ -891,7 +889,9 @@
 
   .news-inner{
     position: relative; z-index:1;
-    width:100%; max-width:1440px; margin-inline:auto;
+    width:100%;
+    // max-width:1440px;
+    margin-inline:auto;
     padding-block:clamp(48px, 7vw, 96px);
     box-sizing:border-box;
   }
@@ -899,7 +899,7 @@
   /* Titre */
   .news-title{
     margin:0 0 clamp(28px, 4vw, 40px);
-    color:#444697; font-family:Inter, sans-serif;
+    color:#444697;
     font-size:36px; font-weight:400; line-height:normal;
   }
 
@@ -946,7 +946,7 @@
 
   /* Titre d’article */
   .news-item-title{
-    margin:0; color:#444798; font-family:Inter, sans-serif;
+    margin:0; color:#444798;
     font-size:24px; font-weight:400; line-height:normal;
   }
 

@@ -14,7 +14,6 @@
   .section-inner {
     position: relative; z-index: 1;
     width: 100%;
-    max-width: 1840px;
     margin-inline: auto;
     padding-inline: var(--content-gutter);
     padding-block: 34px;
@@ -24,7 +23,6 @@
 /* ------------------------------ */
 .footer {
   color:#FFF;
-  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   .footer-title{
     margin: 0 0 20px 0;
@@ -32,7 +30,7 @@
   }
 
   .contact-grid{
-    --gap: 18px;
+    --gap: 10px;
 
     display: grid;
     grid-template-columns:
@@ -41,7 +39,7 @@
       minmax(217.5px, 1fr);
     column-gap: var(--gap);
     grid-template-rows: 42.69px 42.69px;
-    row-gap: 16px;
+    row-gap: 10px;
 
     width: 100%;
     margin: 0 0 28px 0;
@@ -51,7 +49,6 @@
     input{
       width: 100%;
       height: 42.69px;
-      font: 400 14px/normal Inter, sans-serif;
       color:#444697; background:#FFF; border:none; border-radius:6px;
       box-shadow: 0 0 0 1px rgba(0,0,0,.06) inset;
       padding:10px 14px;
@@ -74,7 +71,6 @@
       padding: 0 12px;
       background: #E74040; color: #FFF;
       border: none; border-radius: 6px; cursor: pointer;
-      font: 400 16px/normal Inter, sans-serif;
       transition: background-color .2s ease, transform .15s ease, opacity .15s ease;
 
       .btn-label { pointer-events: none; }
@@ -103,7 +99,7 @@
     margin-top: 8px;
   }
   .footer-contact{
-    margin:0; font: 400 22px/normal Inter, sans-serif; color:#FFF; text-align:left;
+    margin:0; font: 400 22px/normal "Plus Jakarta Sans", sans-serif; color:#FFF; text-align:left;
   }
   .socials{
     display:flex; align-items:center; justify-content:flex-end;
