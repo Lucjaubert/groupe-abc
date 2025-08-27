@@ -51,6 +51,19 @@
               "extractLicenses": false,
               "sourceMap": true,
               "namedChunks": true
+            },
+            "staging": {
+              "outputPath": "dist/groupe-abc-staging/browser",
+              "outputHashing": "all",
+              "optimization": true,
+              "sourceMap": true,
+              "extractLicenses": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ]
             }
           }
         },
@@ -65,6 +78,9 @@
             },
             "development": {
               "buildTarget": "groupe-abc:build:development"
+            },
+            "staging": {
+              "buildTarget": "groupe-abc:build:staging"
             }
           },
           "defaultConfiguration": "development"
@@ -81,7 +97,25 @@
             "production": {
               "optimization": true,
               "sourceMap": false,
-              "extractLicenses": true
+              "extractLicenses": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.prod.ts"
+                }
+              ]
+            },
+            "staging": {
+              "outputPath": "dist/groupe-abc-staging/server",
+              "optimization": true,
+              "sourceMap": true,
+              "extractLicenses": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ]
             }
           }
         },
@@ -99,7 +133,21 @@
               "/actualites",
               "/contact"
             ]
-
+          },
+          "configurations": {
+            "staging": {
+              "browserTarget": "groupe-abc:build:staging",
+              "serverTarget": "groupe-abc:server:staging",
+              "routes": [
+                "/",
+                "/qui-sommes-nous",
+                "/services",
+                "/biens-et-methodes",
+                "/equipe",
+                "/actualites",
+                "/contact"
+              ]
+            }
           }
         },
         "deploy-assets": {
@@ -111,6 +159,24 @@
               "bootstrap-proxy.cjs",
               "package.json"
             ]
+          },
+          "configurations": {
+            "staging": {
+              "outputPath": "dist/groupe-abc-staging",
+              "assets": [
+                "server.mjs",
+                "bootstrap-proxy.cjs",
+                "package.json"
+              ]
+            },
+            "production": {
+              "outputPath": "dist/groupe-abc",
+              "assets": [
+                "server.mjs",
+                "bootstrap-proxy.cjs",
+                "package.json"
+              ]
+            }
           }
         },
         "serve-ssr": {
@@ -118,6 +184,16 @@
           "options": {
             "browserTarget": "groupe-abc:build:production",
             "serverTarget": "groupe-abc:server:production"
+          },
+          "configurations": {
+            "production": {
+              "browserTarget": "groupe-abc:build:production",
+              "serverTarget": "groupe-abc:server:production"
+            },
+            "staging": {
+              "browserTarget": "groupe-abc:build:staging",
+              "serverTarget": "groupe-abc:server:staging"
+            }
           },
           "defaultConfiguration": "production"
         }

@@ -5,14 +5,16 @@
   "type": "module",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --proxy-config proxy.conf.json",
     "build": "ng build",
-    "build:ssr": "ng build --configuration production && ng run groupe-abc:server:production",
-    "postbuild:ssr": "cp ssr.mjs dist/groupe_abc/",
-    "serve:ssr": "node --experimental-specifier-resolution=node dist/groupe_abc/ssr.mjs",
+    "build:ssr": "ng build --configuration=production && ng run groupe-abc:server:production",
+    "serve:ssr": "ng run groupe-abc:serve-ssr:production",
     "start:ssr": "npm run build:ssr && npm run serve:ssr",
-    "dev:ssr": "ng run groupe-abc:serve-ssr",
-    "prerender": "ng run groupe-abc:prerender"
+    "build:ssr:staging": "ng build --configuration=staging && ng run groupe-abc:server:staging",
+    "serve:ssr:staging": "ng run groupe-abc:serve-ssr:staging",
+    "start:ssr:staging": "npm run build:ssr:staging && npm run serve:ssr:staging",
+    "prerender": "ng run groupe-abc:prerender",
+    "prerender:staging": "ng run groupe-abc:prerender:staging"
   },
 
   "dependencies": {

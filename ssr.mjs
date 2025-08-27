@@ -1,84 +1,102 @@
+import 'zone.js/node';
+import '@angular/platform-server/init';  // bonnes pratiques SSR
+import '@angular/compiler';             // JIT fallback si nécessaire (ex: PlatformNavigation)
 
-/* ------------ 0. Faux DOM (doit précéder Angular) -------------- */
-import { readFileSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import domino from 'domino';
+import express from 'express';
+import { CommonEngine } from '@angular/ssr';
+import { dirname, join, resolve } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
+import { createRequire } from 'module';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const DIST      = join(__dirname, 'browser');
-const tpl       = readFileSync(join(DIST, 'index.html'), 'utf8');
-const win       = domino.createWindow(tpl);
-['window', 'document', 'navigator', 'location'].forEach(k => globalThis[k] ??= win[k]);
-global.document    = win.document;
-global.HTMLElement = win.HTMLElement;
-global.Node        = win.Node;
+const __dirname   = dirname(fileURLToPath(import.meta.url));
+const rootDir     = __dirname;                         // racine du build déployé
+const browserDist = resolve(rootDir, 'browser');       // ex: ./browser
+const indexHtml   = join(browserDist, 'index.html');
 
-/* ------------ 1. Outillage ------------------------------------ */
-import 'source-map-support/register.js';   // traces lisibles
-import 'zone.js/node';                     // zone pour Node
+const requireCJS  = createRequire(import.meta.url);
 
-/* !! ligne indispensable pour compiler les templates Angular ---- */
-import '@angular/compiler';
+/** Charge le bundle SSR en essayant plusieurs chemins/cas (ESM & CJS). */
+async function loadServerBundle() {
+  const candidates = [
+    './server/main.mjs',
+    './server/main.js',
+    './server/main.cjs',
+    './main.mjs',
+    './main.js',
+    './main.cjs',
+  ];
 
-/* Angular se prépare seulement maintenant ----------------------- */
-import '@angular/platform-server/init';
-
-/* ------------ 2. Dépendances ---------------------------------- */
-import express  from 'express';
-import fetch    from 'node-fetch';
-import { CommonEngine }            from '@angular/ssr';
-import { APP_BASE_HREF, DOCUMENT } from '@angular/common';
-
-/* ------------ 3. Bundle Angular ------------------------------- */
-const SERVER_BUNDLE = './server/main.js';
-const bundle        = await import(SERVER_BUNDLE);
-const isNgModule    = t => typeof t === 'function' && t.ɵmod && t.ɵinj;
-
-const renderTarget =
-  isNgModule(bundle.AppServerModule)                       ? { module:    bundle.AppServerModule } :
-  typeof bundle.default === 'function'                     ? { bootstrap: bundle.default } :
-  (typeof bundle.default === 'object' &&
-   typeof bundle.default.renderApplication === 'function') ? { bootstrap: o => bundle.default.renderApplication(o) } :
-  (() => { throw new Error('Point d’entrée SSR introuvable'); })();
-
-/* ------------ 4. Express + proxy WP --------------------------- */
-const app = express();
-app.use(express.static(DIST, { maxAge: '1y' }));
-
-app.use('/wp-json', async (req, res) => {
-  try {
-    const r = await fetch('https://wordpress.groupe-abc.fr/wp-json' + req.url);
-    res.status(r.status).set('content-type', r.headers.get('content-type') ?? 'application/json')
-       .send(await r.text());
-  } catch (e) {
-    console.error('❌ proxy /wp-json', e);
-    res.status(500).send('proxy error');
+  for (const rel of candidates) {
+    const abs = resolve(rootDir, rel);
+    try {
+      // Essaye import ESM direct
+      const mod = await import(pathToFileURL(abs).href);
+      return { mod, path: rel };
+    } catch (e1) {
+      // Si .cjs, tente require CJS
+      if (abs.endsWith('.cjs')) {
+        try {
+          const mod = requireCJS(abs);
+          return { mod, path: rel };
+        } catch { /* ignore */ }
+      }
+      // continue vers le prochain candidat
+    }
   }
+  throw new Error(`Aucun bundle SSR trouvé. Cherché parmi: ${candidates.join(', ')}`);
+}
+
+const { mod, path: usedBundle } = await loadServerBundle();
+
+let renderTarget;
+/** Détermine si c'est standalone bootstrap(), renderApplication(), ou NgModule */
+if (typeof mod?.default === 'function') {
+  console.log('➡️  Utilisation bootstrap standalone (export default).');
+  renderTarget = { bootstrap: mod.default };
+} else if (mod?.default?.renderApplication) {
+  console.log('➡️  Utilisation renderApplication via default.');
+  renderTarget = { bootstrap: (opts) => mod.default.renderApplication(opts) };
+} else if (typeof mod?.renderApplication === 'function') {
+  console.log('➡️  Utilisation renderApplication (nommé).');
+  renderTarget = { bootstrap: (opts) => mod.renderApplication(opts) };
+} else if (mod?.AppServerModule) {
+  console.log('➡️  Utilisation AppServerModule (NgModule).');
+  renderTarget = { module: mod.AppServerModule };
+} else {
+  throw new Error(`❌ Aucun point d’entrée SSR valide trouvé dans ${usedBundle}. Exports: ${Object.keys(mod || {})}`);
+}
+
+const app = express();
+
+// ---- Statique (browser build) ----
+app.use('/assets', express.static(join(browserDist, 'assets'), { maxAge: '30d', immutable: true }));
+app.get('*.*',     express.static(browserDist,                 { maxAge: '1h'  }));
+
+// ---- Healthcheck (simple, sans SSR) ----
+app.get('/health', (_req, res) => {
+  res.setHeader('content-type', 'text/plain; charset=utf-8');
+  res.status(200).send('ok');
 });
 
-/* ------------ 5. Universal engine ----------------------------- */
+// ---- SSR ----
 const engine = new CommonEngine();
 
-app.get('*', async (req, res) => {
+app.get('*', async (req, res, next) => {
   try {
     const html = await engine.render({
       ...renderTarget,
-      documentFilePath: join(DIST, 'index.html'),
-      url:        req.originalUrl,
-      publicPath: DIST,
-      providers: [
-        { provide: DOCUMENT,      useValue: win.document },
-        { provide: APP_BASE_HREF, useValue: req.baseUrl },
-      ],
+      documentFilePath: indexHtml,
+      url: req.originalUrl,
     });
     res.status(200).send(html);
   } catch (err) {
-    console.error('❌ SSR error – fallback CSR', err);
-    res.status(200).send(tpl); // fallback côté client
+    console.error('❌ SSR error', err);
+    res.status(500).send('SSR error');
   }
 });
 
-/* ------------ 6. Lancement ------------------------------------ */
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log(`✅ SSR Groupe ABC prêt sur http://localhost:${PORT}`));
+// ---- Lancement ----
+const PORT = process.env.PORT ?? 4100;
+app.listen(PORT, () => {
+  console.log(`✅ SSR Groupe ABC prêt sur http://localhost:${PORT} (bundle: ${usedBundle})`);
+});

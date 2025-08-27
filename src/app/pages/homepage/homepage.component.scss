@@ -311,7 +311,7 @@
 
 /* Pas d'espace en bas: l'écart sera géré par .contexts */
 .wh{
-  padding-top: clamp(28px, 5vw, 56px);
+  padding-top: clamp(28px, 5vw, 130px) !important;
   padding-bottom: 0;
 }
 
@@ -525,7 +525,6 @@
 
   /* ===== Item ===== */
   .ctx-item{
-    /* petit conteneur vertical : tuile au dessus, label dessous */
     display: grid;
     grid-template-rows: auto auto;
     justify-items: center;
@@ -571,7 +570,7 @@
   isolation: isolate;
 
   /* Variables maquette */
-  --cl-w: 1440px;          /* largeur max du bloc centré */
+
   --cl-h: 520.614px;       /* hauteur visuelle totale */
   --cl-pad-y: 126px;       /* padding haut/bas exacts */
   --cl-gap-x: 148px;       /* écart colonne gauche ↔ droite */
@@ -733,7 +732,7 @@
   box-sizing: border-box;
 
   .team-inner {
-    max-width: 1440px;
+    // max-width: 1440px;
     margin-inline: auto;
     padding-inline: clamp(16px, 3vw, 40px);
     box-sizing: border-box;
@@ -741,7 +740,6 @@
 
   .team-title {
     color: #444697;
-    font-family: Inter, sans-serif;
     font-size: 36px;
     font-weight: 400;
     line-height: 1.1;
@@ -872,5 +870,128 @@
     grid-column: 2;
     justify-self: end;
     margin-top: 0;
+  }
+}
+
+/* ===================== NEWS ===================== */
+.news{
+  position: relative;
+  isolation: isolate;
+  --news-side-right: 4px !important;
+  --news-side-gap: clamp(28px, 6vw, 83px);
+
+  /* Full-bleed background */
+  .news-bg{
+    position:absolute; inset:0; left:50%;
+    width:100vw; transform:translateX(-50%);
+    background:#F5F4F8; z-index:0; pointer-events:none;
+  }
+
+  .news-inner{
+    position: relative; z-index:1;
+    width:100%;
+    // max-width:1440px;
+    margin-inline:auto;
+    padding-block:clamp(48px, 7vw, 96px);
+    box-sizing:border-box;
+  }
+
+  /* Titre */
+  .news-title{
+    margin:0 0 clamp(28px, 4vw, 40px);
+    color:#444697;
+    font-size:36px; font-weight:400; line-height:normal;
+  }
+
+  /* ===== Wrapper qui borne la hauteur du ruban ===== */
+  .news-row{
+    position: relative;   /* ancre le ruban */
+  }
+
+  /* Grille 2 colonnes */
+  .news-grid{
+    display:grid; grid-template-columns:1fr;
+    gap:clamp(28px, 5vw, 56px);
+    align-items:stretch; /* mêmes hauteurs → baseline commune */
+
+    @media (min-width: 992px){
+      grid-template-columns:1fr 1fr;
+      column-gap:clamp(48px, 6vw, 120px);
+    }
+  }
+
+  /* Carte */
+  .news-card{
+    display:grid;
+    grid-template-rows:auto auto 1fr auto; /* head / title / body / CTA */
+    row-gap:clamp(14px, 2vw, 18px);
+    min-width:0;
+  }
+
+  /* Header */
+  .news-head{
+    display:grid; grid-template-columns:40px 1fr;
+    align-items:start; column-gap:12px;
+  }
+  .news-logo{ width:40px; height:40px; aspect-ratio:1/1; object-fit:contain; display:block; }
+  .news-meta{ display:grid; row-gap:4px; }
+  .news-firm{
+    color:#444697; font-family:"Plus Jakarta Sans", sans-serif;
+    font-size:14px; font-weight:500; line-height:normal;
+  }
+  .news-author{
+    color:#444697; font-family:"Plus Jakarta Sans", sans-serif;
+    font-size:13px; font-style:italic; font-weight:400; line-height:normal;
+  }
+
+  /* Titre d’article */
+  .news-item-title{
+    margin:0; color:#444798;
+    font-size:24px; font-weight:400; line-height:normal;
+  }
+
+  /* Excerpt */
+  .news-body{
+    color:#444697; font-family:"Plus Jakarta Sans", sans-serif;
+    font-size:14px; font-weight:400; line-height:normal;
+    p{ margin:0 0 10px; } p:last-child{ margin-bottom:0; }
+  }
+
+  /* CTA à droite */
+  .news-cta{
+    display:flex; justify-content:flex-end;
+    .cta-btn{ text-decoration:none; }
+  }
+
+  /* ===== Ruban dans la marge, HAUTEUR = .news-grid ===== */
+  .news-side-btn{
+    position:absolute;
+    top:0;
+    bottom:0;
+    right: var(--news-side-right);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: translateX(calc(100% + var(--news-side-gap))) rotate(180deg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#444798; color:#fff;
+    font-family:"Plus Jakarta Sans", sans-serif;
+    font-size:12px; font-weight:500;
+    padding:0 8px; border-radius:6px;
+    z-index:2;
+
+    @media (max-width: 1200px){
+      --news-side-gap: clamp(24px, 5vw, 72px);
+      --news-side-right: 32px;
+    }
+    @media (max-width: 992px){
+      --news-side-gap: clamp(20px, 4.5vw, 56px);
+      --news-side-right: 24px;
+    }
+    @media (max-width: 768px){
+      --news-side-gap: clamp(16px, 5vw, 40px);
+      --news-side-right: 16px;
+    }
   }
 }

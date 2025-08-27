@@ -5,13 +5,13 @@
 
 *,
 *::before,
-*::after {
-  box-sizing: border-box;
-}
+*::after { box-sizing: border-box; }
 
-:root {
+:root{
   --content-gutter: 13px;
   --rail-width: 200px;
+  --footer-h: 100px;     /* hauteur du footer réelle */
+  --vh-fudge: 110vh;     /* trick pour masquer le footer au 1er paint */
 }
 
 @media (min-width: map.get(vars.$breakpoints, "lg")) {
@@ -29,126 +29,135 @@
   margin-right: calc(50% - 50vw);
 }
 
+/* ===== Base ===== */
 html, body {
   margin: 0;
   padding: 0;
   width: 100%;
-  min-height: 100%;
+  height: 100%;          /* compat anciens moteurs */
+  min-height: 100vh;
   background-color: map.get(vars.$theme-colors, "blue") !important;
   overflow-x: clip;
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
-
 body::-webkit-scrollbar { display: none; }
 
-#app-container {
+/* ===== Layout “anti-saut” =====
+   On pousse le contenu à 110vh et on réserve la place du footer.
+   Footer est en dehors de #app-container.
+*/
+#app-container{
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  min-height: var(--vh-fudge);   /* 110vh */
   width: 100%;
+
+  &.loading { opacity: .5; }     /* optionnel si tu as un état de chargement */
 }
 
-#page {
-  flex: 1;
+#page{
+  flex: 1 1 auto;
   width: 100%;
+  min-height: calc(var(--vh-fudge) - var(--footer-h)); /* 110vh - footer */
 }
 
-app-footer {
+/* Footer laissé dans le flux, en dehors du wrapper */
+app-footer{
   width: 100%;
-  height: 100px;
-  margin-top: auto;
+  height: var(--footer-h);
+  margin-top: auto; /* inoffensif même hors flex parent */
 }
 
+/* ===== Containers ===== */
 .container,
 .container-fluid {
   padding-left: 0 !important;
   padding-right: 0 !important;
 }
+.container-fluid { width: 100% !important; }
 
-.container-fluid {
-  width: 100% !important;
-}
-
+/* --------- Mixin titrage --------- */
 @mixin heading-styles($min, $max) {
   font-size: clamp($min, 3vw, $max);
   font-family: "Plus Jakarta Sans", sans-serif;
   color: inherit;
   margin: 0;
+  font-style: normal;
+  line-height: normal;
 }
 
+/* ===================================================================
+   TITRAGES
+   - H1 = H2 (48 / 400 / normal)
+   - Échelle descendante : H3 32, H4 24, H5 20, H6 18
+   =================================================================== */
 h1 {
   @include heading-styles(48px, 48px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "white");
   @media (max-width: map.get(vars.$breakpoints, "md")) {
-    @include heading-styles(30px, 30px);
-    font-weight: 300;
+    @include heading-styles(40px, 40px);
+    font-weight: 400;
   }
 }
-
 h2 {
-  @include heading-styles(75px, 75px);
-  font-weight: 600;
+  @include heading-styles(48px, 48px);
+  font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
   @media (max-width: map.get(vars.$breakpoints, "md")) {
     @include heading-styles(40px, 40px);
-    line-height: 50px;
+    font-weight: 400;
   }
 }
-
 h3 {
-  @include heading-styles(60px, 60px);
+  @include heading-styles(32px, 32px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
   @media (max-width: map.get(vars.$breakpoints, "md")) {
-    @include heading-styles(32px, 32px);
-    font-weight: 300;
-    line-height: 50px;
+    @include heading-styles(28px, 28px);
+    font-weight: 400;
   }
 }
-
 h4 {
-  @include heading-styles(48px, 48px);
+  @include heading-styles(24px, 24px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
   @media (max-width: map.get(vars.$breakpoints, "md")) {
-    @include heading-styles(24px, 24px);
-    font-weight: 300;
+    @include heading-styles(22px, 22px);
+    font-weight: 400;
   }
 }
-
 h5 {
-  font-family: Inter, sans-serif;
-  @include heading-styles(36px, 36px);
+  @include heading-styles(20px, 20px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
   @media (max-width: map.get(vars.$breakpoints, "md")) {
-    @include heading-styles(24px, 24px);
-    line-height: 30px;
+    @include heading-styles(18px, 18px);
+    font-weight: 400;
   }
 }
-
 h6 {
-  @include heading-styles(48px, 48px);
+  @include heading-styles(18px, 18px);
   font-weight: 400;
-  color: map.get(vars.$theme-colors, "white");
+  color: map.get(vars.$theme-colors, "light-blue");
   @media (max-width: map.get(vars.$breakpoints, "md")) {
-    @include heading-styles(24px, 24px);
+    @include heading-styles(16px, 16px);
+    font-weight: 400;
   }
 }
 
+/* ===================================================================
+   TEXTE
+   =================================================================== */
 p {
   font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 14px;
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
-  @media (max-width: map.get(vars.$breakpoints, "md")) {
-    font-size: 13px;
-  }
+  @media (max-width: map.get(vars.$breakpoints, "md")) { font-size: 13px; }
 }
-
 .p-lg {
   font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 22px;
@@ -159,19 +168,33 @@ p {
     line-height: 30px;
   }
 }
-
-ul,
-li,
-a {
+ul, li, a {
   font-family: "Plus Jakarta Sans", sans-serif;
   font-weight: 400;
   font-style: normal;
   line-height: normal;
-  font-size: clamp(0.675rem, 2vw, 1.125rem);
+  font-size: clamp(0.675rem, 2vw, 22px);
   color: map.get(vars.$theme-colors, "light-blue");
 }
 
+/* ===================================================================
+   LAYOUT UTILITAIRES
+   =================================================================== */
 .main-wrapper {
   padding-left: var(--content-gutter);
   padding-right: var(--content-gutter);
+}
+
+/* A11y: masque visuel mais lisible par les lecteurs d’écran */
+.sr-only,
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }

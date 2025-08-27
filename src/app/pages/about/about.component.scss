@@ -1,0 +1,524 @@
+@use "sass:map";
+@use "../../../styles/_variables.scss" as vars;
+
+.about-wrapper { width: 100%; }
+
+/* ===== Section ===== */
+.section {
+  position: relative;
+  isolation: isolate;
+
+  .section-inner{
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: clamp(16px, 3vw, 40px);
+    padding-block: clamp(48px, 7vw, 96px);
+  }
+}
+
+/* ===== Titre de page ===== */
+.page-title{
+  color: #444798;
+  font-size: 60px;
+  font-weight: 400;
+  line-height: normal;
+  margin: 0 0 24px;
+}
+
+.page-subtitle{
+  color: #444697;
+  font-size: clamp(18px, 2vw, 24px);
+  font-weight: 400;
+  margin: 0;
+}
+
+/* ===================================================================== */
+/* ============================  CORE  ================================== */
+/* ===================================================================== */
+
+/* Titre du bloc : plein-largeur au-dessus de la grille */
+.block-title{
+  color: #444798;
+  font-size: clamp(28px, 3.2vw, 40px);
+  font-weight: 400;
+  line-height: 1.1;
+  margin: 0 0 58px; /* pousse la grille (gauche + droite) d’un seul coup */
+}
+
+/* Réglage de la grille :
+   - mobile : pile (left -> right -> below)
+   - desktop : 2 colonnes avec un ratio contrôlé (55% / 45%)  */
+.core-grid{
+  --core-gap: var(--section-gap-x, 148px);
+  --core-left-col: 55%; /* <<< mets 50% si tu veux du 50/50 */
+
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-areas:
+    "left"
+    "right"
+    "below";
+  row-gap: clamp(28px, 4vw, 48px);
+  align-items: start;
+
+  @media (min-width: 992px){
+    /* colonne gauche verrouillée à 55% (ou 50%), droite prend le reste */
+    grid-template-columns:
+      minmax(0, var(--core-left-col))
+      minmax(0, calc(100% - var(--core-left-col)));
+    grid-template-areas:
+      "left  right"
+      "below below";
+    column-gap: var(--core-gap);
+  }
+}
+
+.core-left  {
+  grid-area: left;
+  display: flex;
+  flex-direction: column;
+}
+
+.core-right {
+  grid-area: right;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;   /* centrage vertical */
+  align-items: center;       /* centrage horizontal du bloc */
+  text-align: left;          /* texte aligné à gauche */
+  gap: clamp(16px, 2vw, 24px);
+}
+
+.core-below {
+  grid-area: below;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Texte générique (aucune marge en haut du 1er paragraphe) */
+.block-html{
+  color: #444697;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+
+  p{ margin: 0 0 12px; }
+  p:first-child{ margin-top: 0; }  /* aligne avec la liste à droite */
+  p:last-child{ margin-bottom: 0; }
+}
+
+/* Si “where-panel” de la Home est réutilisé → neutraliser les effets */
+.core .where-panel{
+  position: static !important;
+  inset: auto !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  transition: none !important;
+}
+
+/* ===== Liste (colonne droite, style “map-list”) ===== */
+.panel-list.about-where-list{
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;   /* texte aligné à gauche */
+  gap: clamp(10px, 1.8vw, 14px);
+
+  max-width: 320px;          /* largeur fixe/centrée (ajuste selon ta maquette Figma) */
+  width: 100%;
+}
+
+.panel-list.about-where-list li{
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  color: #444798;
+  font-size: 22px;
+  font-weight: 400;
+  line-height: normal;
+  margin: 0;
+
+  &::before{
+    content: "—";
+    color: #E44D4D;
+    font-size: 20px;
+    font-weight: 400;
+    margin-right: 6px;
+    flex: 0 0 auto;
+  }
+}
+
+
+/* ===== CTA ===== */
+.cta-btn{
+  width: clamp(173px, 32vw, 244.5px);
+  height: clamp(27px, 2.6vw, 28.113px);
+  min-width: 173px;
+  max-width: 244.5px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: #444798;
+  color: #fff;
+  padding-left: 12px;
+  padding-right: 8px;
+  cursor: pointer;
+  font-weight: 400;
+  font-size: clamp(11px, 1.4vw, 12px);
+  line-height: 1;
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+  &:hover { filter: brightness(1.04); }
+  &:active { transform: translateY(1px); }
+  &:focus-visible { outline: 2px solid #EA4D4D; outline-offset: 2px; }
+}
+.cta-label{ margin-right: 12px; white-space: nowrap; }
+.cta-plus{
+  margin-left: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 22px; height: 22px;
+}
+.icon-plus{
+  width: 22px; height: 22px;
+  stroke: #EA4D4D; stroke-width: 3.2;
+  stroke-linecap: round; fill: none;
+}
+
+/* ===== Mesh ===== */
+.mesh {
+  .mesh-title{
+    color:#444697;
+    font-size: 36px;
+    font-weight: 400;
+    line-height: normal;
+    text-align: center;
+    margin: 0 0 clamp(24px,4vw,32px);
+  }
+
+  .mesh-skyline{
+    width: 100%;
+    margin-bottom: clamp(16px,3.2vw,24px);
+
+
+    img{
+      display: block;
+      width: 100%;
+      height: auto;
+      margin-inline: auto;
+      margin-top: 70px;
+    }
+  }
+
+  .mesh-levels{
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 14px 0 0;
+
+    &::before{
+      content: "";
+      position: absolute;
+      left: 0; right: 0;
+      top: 0;
+      height: 2px;
+      background: #444798;
+    }
+
+    li{
+      position: absolute;
+      top: 18px;
+      color: #444798;
+      font-size: 24px;
+      font-weight: 400;
+      line-height: normal;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    li:first-child{
+      left: 0;
+      text-align: left;
+    }
+
+    li:nth-child(2){
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+    }
+
+    li:last-child{
+      right: 0;
+      text-align: right;
+    }
+  }
+}
+
+/* ============================  MAP SECTION (Où ?) ============================ */
+.map-section {
+  /* Grille globale */
+  .map-grid {
+    display: grid;
+    grid-template-columns: 1fr;                          /* mobile : pile */
+    gap: clamp(24px, 4vw, 48px);
+    align-items: center;
+
+    @media (min-width: 992px) {
+      /* Desktop : carte large + colonne texte fixe */
+      grid-template-columns: 2fr 400px;                  /* ⟵ carte agrandie */
+      column-gap: clamp(100px, 12vw, 160px);
+    }
+  }
+
+  /* Colonne gauche : carte */
+  .map-image {
+    display: flex;
+    align-items: center;          /* centre verticalement dans la cellule */
+    justify-content: flex-start;  /* carte collée à gauche */
+
+    img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-width: 100%;
+
+      /* Sur desktop, on donne une largeur maximale «fluide» plus généreuse */
+      @media (min-width: 992px) {
+        /* Entre 760px et 980px selon la largeur du viewport */
+        max-width: clamp(760px, 58vw, 980px);
+      }
+    }
+  }
+
+  /* Colonne droite : titre + liste */
+  .map-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;      /* centre verticalement le titre + liste */
+    align-self: center;
+    gap: clamp(16px, 2vw, 24px);
+
+    .map-title {
+      color: #444798;
+      font-size: 48px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
+      margin: 0 0 12px;
+    }
+
+    ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: clamp(10px, 1.8vw, 14px);
+    }
+
+    li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #444798;
+      font-size: 22px;
+      font-weight: 400;
+      line-height: normal;
+
+      &::before {
+        content: "—";
+        color: #E44D4D;
+        font-size: 20px;
+        font-weight: 400;
+        margin-right: 6px;
+        flex: 0 0 auto;
+      }
+    }
+  }
+}
+
+/* ====== NOS VALEURS ====== */
+.values {
+  /* Bande de fond ~506px de haut (PJ) ; le contenu peut dépasser */
+  min-block-size: 506px;
+
+  /* padding vertical + distance titre → icônes */
+  --pad-y: clamp(56px, 6vw, 80px);
+  .section-inner { padding-block: var(--pad-y); }
+
+  /* ----- BACKGROUND plein écran (même pattern que hero-bg) ----- */
+  .values-bg{
+    position: absolute;
+    top: 0; bottom: 0;
+    left: calc(-1 * var(--content-gutter));
+    right: calc(-1 * var(--content-gutter));
+    pointer-events: none;
+    z-index: 0;
+
+    .values-layer{
+      position: absolute; inset: 0;
+      background: #F5F4F8;   /* couleur PJ */
+      opacity: 1;            /* bande statique (pas d’anim nécessaire) */
+    }
+  }
+
+  .values-title{
+    color:#444798;
+    font-weight:400;
+    text-align:center;
+    font-size: clamp(28px, 3.2vw, 40px);
+    line-height: 1.1;
+
+    /* distance exacte titre → icônes (≈80px sur la maquette) */
+    margin: 0 0 80px;
+  }
+
+  .values-grid{
+    /* 3 colonnes équilibrées dans un conteneur 1440 */
+    display:grid;
+    grid-template-columns: repeat(1, minmax(240px, 1fr));
+    gap: clamp(28px, 4vw, 48px);
+    justify-items:center;
+    align-items:start;
+
+    @media (min-width: 992px){
+      grid-template-columns: repeat(3, 1fr);
+      column-gap: clamp(80px, 10vw, 140px);
+    }
+  }
+
+  .value-item{
+    position: relative;    /* pour positionner les séparateurs */
+    display:flex; flex-direction:column; align-items:center;
+    text-align:center;
+    max-width: 360px;      /* sécurité responsive pour la desc */
+
+    /* >>> Icône ACF telle quelle (pas de fond ni filtre) */
+    .icon-wrap{
+      display:grid; place-items:center;
+      margin-bottom: clamp(16px, 2vw, 20px);
+
+      img{
+        display:block;
+        max-width: clamp(84px, 7vw, 96px);
+        max-height: clamp(84px, 7vw, 96px);
+        height:auto; width:auto;
+      }
+    }
+
+    .value-name{
+      color:#444798;
+      font-weight:400;
+      font-size: clamp(18px, 2.1vw, 22px);
+      line-height: 1.25;
+      margin: 0 0 clamp(10px, 1.6vw, 12px);
+    }
+
+    .value-desc{
+      color:#444697;
+      font-weight:400;
+      font-size: clamp(13px, 1.6vw, 14px);
+      line-height: 1.55;
+      max-width: 320px;
+
+      p{ margin:0; }             /* ACF renvoie <p> : neutraliser */
+      p + p{ margin-top: 6px; }
+    }
+
+    /* ——— Séparateurs horizontaux (Desktop) ——— */
+    .divider{
+      display:none;
+
+      @media (min-width: 992px){
+        display:block;
+        position:absolute;
+        top: calc(clamp(84px, 7vw, 96px) / 2 + 10px); /* aligné au centre des icônes */
+        right: calc(-1 * clamp(40px, 5vw, 70px));     /* sort un peu du bloc */
+        width: clamp(64px, 7vw, 96px);
+        height: 2px;
+        background: #444798;
+        opacity: .45; /* léger comme sur ta capture */
+        transform: translateY(-50%);
+      }
+    }
+  }
+}
+
+
+/* ===== Affiliations ===== */
+.affiliations{
+  .section-title{
+    @extend .block-title;
+    font-size: clamp(32px, 3.6vw, 44px);
+  }
+  .aff-preamble{ @extend .block-html; margin-bottom: clamp(16px, 2.2vw, 24px); }
+
+  .aff-grid{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(24px, 3.6vw, 40px);
+
+    @media (min-width: 992px){
+      grid-template-columns: 1fr 1fr;
+      column-gap: var(--section-gap-x, 148px);
+    }
+  }
+  .aff-card{ display: grid; row-gap: 10px; }
+  .aff-logo{ width: 48px; height: 48px; object-fit: contain; }
+  .aff-excerpt{ @extend .block-html; }
+
+  details.aff-details{
+    summary{ cursor: pointer; color: #444798; font-weight: 500; margin-bottom: 6px; }
+    .aff-content{ @extend .block-html; }
+  }
+}
+
+/* ===== Déontologie ===== */
+.deon{
+  background: #F5F4F8;
+
+  .section-title{ @extend .block-title; font-size: clamp(32px, 3.6vw, 44px); }
+
+  .deon-grid{
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(24px, 3.6vw, 40px);
+
+    @media (min-width: 992px){
+      grid-template-columns: 1fr 1fr;
+      column-gap: var(--section-gap-x, 148px);
+    }
+  }
+  .deon-item{ display: grid; row-gap: 10px; }
+}
+
+/* ===== Timeline ===== */
+.timeline{
+  background: #F5F4F8;
+
+  .tl{
+    list-style: none;
+    margin: 0; padding: 0;
+    display: grid;
+    row-gap: clamp(18px, 2.6vw, 24px);
+  }
+  .tl-item{
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    column-gap: clamp(16px, 2.4vw, 28px);
+    align-items: start;
+  }
+  .tl-year{
+    color: #444798;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .tl-text{ @extend .block-html; }
+}

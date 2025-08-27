@@ -1,0 +1,137 @@
+<div class="about-wrapper">
+
+  <!-- ===== Core (3 blocs) ===== -->
+  <section class="section core" *ngIf="core.length && mapSection as ms">
+    <div class="section-inner px-0">
+      <!-- Titre : on garde celui du bloc gauche -->
+      <h2 class="block-title" *ngIf="core[0]?.title">{{ core[0].title }}</h2>
+
+      <div class="core-grid px-0">
+        <!-- Colonne gauche : intro -->
+        <article class="core-block core-left" *ngIf="core[0] as left">
+          <div class="block-html" [innerHTML]="left.html"></div>
+        </article>
+
+        <!-- Colonne droite : liste “Où ?” provenant de mapSection -->
+        <aside class="core-block core-right">
+          <ul class="panel-list about-where-list" *ngIf="ms.items?.length">
+            <li *ngFor="let item of ms.items; trackBy: trackByIndex">{{ item }}</li>
+          </ul>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===== Mesh / Maillage ===== -->
+  <section class="section mesh" *ngIf="mesh?.title || mesh?.image || mesh?.levels?.length">
+    <div class="section-inner px-0">
+
+      <h2 class="mesh-title mb-5" *ngIf="mesh?.title">{{ mesh?.title }}</h2>
+
+      <div class="mesh-skyline mt-5" *ngIf="mesh?.image">
+        <img [src]="mesh?.image" alt="" aria-hidden="true" />
+      </div>
+
+      <ul class="mesh-levels" *ngIf="mesh?.levels?.length">
+        <li *ngFor="let l of mesh?.levels; trackBy: trackByIndex">{{ l }}</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== Carte / Où ? ===== -->
+  <section class="section map-section" *ngIf="mapSection as ms">
+    <div class="section-inner px-0">
+      <div class="map-grid">
+
+        <!-- Colonne gauche : image carte -->
+        <div class="map-image" *ngIf="ms.image">
+          <img [src]="ms.image" alt="Carte du Groupe ABC" />
+        </div>
+
+        <!-- Colonne droite : titre + liste, centrés verticalement -->
+        <div class="map-list">
+          <h2 class="map-title" *ngIf="ms.title">{{ ms.title }}</h2>
+
+          <ul *ngIf="ms.items?.length">
+            <li *ngFor="let item of ms.items; trackBy: trackByIndex">{{ item }}</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+
+  <!-- ===== Nos valeurs  ===== -->
+  <section class="section values" *ngIf="coreValues?.length">
+    <div class="values-bg">
+      <div class="values-layer active"></div>
+    </div>
+
+    <div class="section-inner">
+      <h2 class="values-title" *ngIf="coreValuesTitle">{{ coreValuesTitle }}</h2>
+
+      <ul class="values-grid" role="list">
+        <li class="value-item" *ngFor="let v of coreValues; index as i; trackBy: trackByIndex">
+          <div class="icon-wrap" *ngIf="v.iconUrl">
+            <img [src]="v.iconUrl" alt="" aria-hidden="true" />
+          </div>
+
+          <h3 class="value-name" *ngIf="v.title">{{ v.title }}</h3>
+          <div class="value-desc" *ngIf="v.html" [innerHTML]="v.html"></div>
+
+          <!-- Traits séparateurs (desktop), masqués sur le dernier -->
+          <span class="divider" *ngIf="i < coreValues.length - 1"></span>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+
+  <!-- ===== Affiliations ===== -->
+  <section class="section affiliations" *ngIf="affiliations.length || affTitle || affPreamble">
+    <div class="section-inner px-0">
+      <h2 class="section-title" *ngIf="affTitle">{{ affTitle }}</h2>
+      <div class="aff-preamble" *ngIf="affPreamble" [innerHTML]="affPreamble"></div>
+
+      <div class="aff-grid">
+        <article class="aff-card" *ngFor="let a of affiliations; trackBy: trackByIndex">
+          <img class="aff-logo" *ngIf="a.logo" [src]="a.logo" alt="" aria-hidden="true" />
+
+          <details class="aff-details" *ngIf="a.content">
+            <summary>En savoir plus</summary>
+            <div class="aff-content" [innerHTML]="a.content"></div>
+          </details>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Déontologie ===== -->
+  <section class="section deon" *ngIf="deontology.length">
+    <div class="section-inner px-0">
+      <h2 class="section-title" *ngIf="deonTitle">{{ deonTitle }}</h2>
+
+      <div class="deon-grid">
+        <article class="deon-item" *ngFor="let d of deontology; trackBy: trackByIndex">
+          <h3 class="block-title" *ngIf="d.title">{{ d.title }}</h3>
+          <div class="block-html" *ngIf="d.html" [innerHTML]="d.html"></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Timeline ===== -->
+  <section class="section timeline" *ngIf="timeline.length">
+    <div class="section-inner px-0">
+      <ul class="tl">
+        <li class="tl-item" *ngFor="let s of timeline; trackBy: trackByIndex">
+          <div class="tl-year" *ngIf="s.year">{{ s.year }}</div>
+          <div class="tl-text" *ngIf="s.html" [innerHTML]="s.html"></div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+</div>
