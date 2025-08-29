@@ -36,6 +36,11 @@ export class FooterComponent {
 
   constructor(private cdr: ChangeDetectorRef) {}
 
+  // 👉 Getters utilisés dans le template
+  get isLoading(): boolean { return this.sendState === 'loading'; }
+  get isSuccess(): boolean { return this.sendState === 'success'; }
+  get isError(): boolean { return this.sendState === 'error'; }
+
   private computeApiBase(): string {
     const envAny = environment as any;
 
@@ -79,6 +84,7 @@ export class FooterComponent {
       website: String(fd.get('website') ?? ''),
     };
 
+    // Honeypot
     if (payload.website) {
       this.sendState = 'success';
       this.cdr.markForCheck();

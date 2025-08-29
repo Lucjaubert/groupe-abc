@@ -7,6 +7,13 @@
   padding-top:110px;
   padding-bottom:50px;
 
+  .prehide{
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    will-change: transform, opacity;
+  }
+
   .page-title{
     color:#444798;
     font-size:48px;
@@ -30,16 +37,34 @@
       margin:0;
     }
 
-    .linkedin img{
-      width:39.47px;
-      height:39.47px;
-      flex-shrink:0;
-      display:block;
+    .linkedin{
+      display:inline-block; /* pour l’anim et éviter les sauts */
+      img{
+        width:39.47px;
+        height:39.47px;
+        flex-shrink:0;
+        display:block;
+      }
     }
   }
 }
 
 .news-list{
+
+  /* ===== Prehide helpers ===== */
+  /* Generic: use on elements that shouldn't move (e.g., .news-bg) */
+  .prehide-row{
+    opacity: 0;
+    visibility: hidden;
+  }
+  /* Moving prehide: use on inner content you want to slide up */
+  .prehide-move{
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    will-change: transform, opacity;
+  }
+
   .posts{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
 
   .news-row{
@@ -54,6 +79,9 @@
       z-index:0;
       pointer-events:none;
       background:#F5F5F7;
+
+      /* Apply prehide to the element itself (no translate so we don't override translateX) */
+      &.prehide-row{ opacity:0; visibility:hidden; }
     }
     &.theme-expertise .news-bg{ background:#EEE; }
     &.theme-juridique .news-bg{ background:#FFEAEB; }
@@ -62,7 +90,6 @@
     .news-box{
       position:relative; z-index:1;
       width:100%;
-      max-width:1440px;
       min-height:530px;
       margin-inline:auto;
       display:grid;
@@ -72,6 +99,14 @@
       box-sizing:border-box;
       padding-top:40px;
       padding-bottom:40px;
+
+      /* If you used class="prehide-row" on .news-box in HTML, make it move */
+      &.prehide-row{
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(20px);
+        will-change: transform, opacity;
+      }
     }
 
     .news-col--text{ align-self:center; }
@@ -174,8 +209,8 @@
     }
 
     .post-excerpt{
-      max-width:560px;
-      overflow:hidden; /* conteneur animé */
+      max-width:650px;
+      overflow:hidden;
     }
 
     .excerpt-body{
@@ -187,16 +222,17 @@
 
       p{ margin:0 0 10px; }
       p:last-child{ margin-bottom:0; }
-
-      &.is-clamped{
-        display:-webkit-box;
-        -webkit-box-orient: vertical;
-        -webkit-line-clamp: 5;
-        line-clamp: 5;
-        overflow:hidden;
-      }
     }
 
+    /* Clamp support on either wrapper or inner body (covers both implementations) */
+    .post-excerpt.is-clamped,
+    .excerpt-body.is-clamped{
+      display:-webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 5;
+      line-clamp: 5;
+      overflow:hidden;
+    }
 
     .card-cta{
       display:flex; align-items:center; gap:14px; margin-top:22px;
@@ -247,4 +283,13 @@
     .news-row .news-col--image{ justify-content:flex-start; }
     .news-row .post-image{ width:100%; height:auto; }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .news-wrapper * {
+      animation: none !important;
+      transition: none !important;
+      scroll-behavior: auto !important;
+    }
+  }
 }
+

@@ -1,11 +1,13 @@
 import {
-  Component, OnInit, inject, ElementRef, QueryList, ViewChildren
+  Component, OnInit, AfterViewInit, OnDestroy,
+  inject, ElementRef, QueryList, ViewChild, ViewChildren
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { firstValueFrom } from 'rxjs';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 type NewsIntro = {
   title: string;
@@ -33,7 +35,7 @@ type NewsPost = {
   templateUrl: './news.component.html',
   styleUrls: ['./news.component.scss'],
 })
-export class NewsComponent implements OnInit {
+export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
   private wp  = inject(WordpressService);
   private seo = inject(SeoService);
 
@@ -46,8 +48,16 @@ export class NewsComponent implements OnInit {
   posts: NewsPost[] = [];
   expanded: boolean[] = [];
 
+  @ViewChildren('excerpt')   excerpts!: QueryList<ElementRef<HTMLElement>>;
+  @ViewChild('introTitle')   introTitle!: ElementRef<HTMLElement>;
+  @ViewChild('introSubtitle')introSubtitle!: ElementRef<HTMLElement>;
+  @ViewChild('introLinkedin')introLinkedin!: ElementRef<HTMLElement>;
+  @ViewChildren('newsRow')   rows!: QueryList<ElementRef<HTMLElement>>;
   @ViewChildren('excerptClip') clips!: QueryList<ElementRef<HTMLElement>>;
   @ViewChildren('excerptBody') bodies!: QueryList<ElementRef<HTMLElement>>;
+
+
+  private rowsAnimationsInitialized = false;
 
   async ngOnInit(): Promise<void> {
     const list: any[] = await firstValueFrom(this.wp.getAllNews());
@@ -95,6 +105,107 @@ export class NewsComponent implements OnInit {
     });
   }
 
+  ngAfterViewInit(): void {
+    gsap.registerPlugin(ScrollTrigger);
+
+    this.rows.changes.subscribe(() => {
+      if (!this.rowsAnimationsInitialized && this.rows.length) {
+        this.rowsAnimationsInitialized = true;
+        this.initIntroSequence(() => this.animateFirstRow());
+        this.initRowsScrollAnimations();
+      }
+    });
+
+    if (this.rows.length && !this.rowsAnimationsInitialized) {
+      this.rowsAnimationsInitialized = true;
+      this.initIntroSequence(() => this.animateFirstRow());
+      this.initRowsScrollAnimations();
+    }
+  }
+
+  ngOnDestroy(): void {
+    ScrollTrigger.getAll().forEach(t => t.kill());
+    gsap.globalTimeline.clear();
+  }
+
+  private initIntroSequence(onComplete?: () => void): void {
+    const titleEl = this.introTitle?.nativeElement;
+    const subEl   = this.introSubtitle?.nativeElement;
+    const linkEl  = this.introLinkedin?.nativeElement;
+    if (!titleEl || !subEl || !linkEl) return;
+
+    gsap.set([titleEl, subEl, linkEl], { autoAlpha: 0, y: 20 });
+
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    tl.to(titleEl, { autoAlpha: 1, y: 0, duration: 0.65 })
+      .to(subEl,   { autoAlpha: 1, y: 0, duration: 0.65 }, '-=0.35')
+      .to(linkEl,  { autoAlpha: 1, y: 0, duration: 0.55 }, '-=0.40')
+      .add(() => { onComplete && onComplete(); });
+  }
+
+  private animateFirstRow(): void {
+    const first = this.rows?.first?.nativeElement;
+    if (!first) return;
+
+    const bg   = first.querySelector('.news-bg') as HTMLElement | null;
+    const box  = first.querySelector('.news-box') as HTMLElement | null;
+    const items = [
+      first.querySelector('.theme-chip'),
+      first.querySelector('.meta-line'),
+      first.querySelector('.post-title'),
+      first.querySelector('.post-excerpt'),
+      first.querySelector('.card-cta'),
+      first.querySelector('.news-col--image'),
+    ].filter(Boolean) as HTMLElement[];
+
+    if (!box || !bg) return;
+
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    tl.to(bg,  { autoAlpha: 1, duration: 0.35 })
+      .fromTo(box, { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 0.55 }, '-=0.05');
+
+    if (items.length) {
+      tl.set(items, { autoAlpha: 0, y: 24, willChange: 'transform,opacity' })
+        .to(items, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.6,
+          stagger: 0.08,
+          ease: 'power3.out',
+          delay: 0.10,
+          onComplete: () => { gsap.set(items, { clearProps: 'willChange' }); }
+        }, '-=0.35');
+    }
+  }
+
+  private initRowsScrollAnimations(): void {
+    this.rows.forEach((rowRef, idx) => {
+      const row = rowRef.nativeElement;
+      if (idx === 0) return;
+
+      const bg    = row.querySelector('.news-bg') as HTMLElement | null;
+      const box   = row.querySelector('.news-box') as HTMLElement | null;
+      const items = row.querySelectorAll<HTMLElement>('.theme-chip, .meta-line, .post-title, .post-excerpt, .card-cta, .news-col--image');
+      if (!box || !bg) return;
+
+      gsap.set(items, { autoAlpha: 0, y: 26 });
+
+      const tl = gsap.timeline({
+        defaults: { ease: 'power3.out' },
+        scrollTrigger: {
+          trigger: row,
+          start: 'top 78%',
+          toggleActions: 'play none none none',
+          once: true
+        }
+      });
+
+      tl.to(bg,  { autoAlpha: 1, duration: 0.35 })
+        .fromTo(box, { autoAlpha: 0, y: 26 }, { autoAlpha: 1, y: 0, duration: 0.55 }, '-=0.15')
+        .to(items,   { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.08 }, '-=0.25');
+    });
+  }
+
   private nextFrame(): Promise<void> {
     return new Promise(res => requestAnimationFrame(() => res()));
   }
@@ -106,45 +217,55 @@ export class NewsComponent implements OnInit {
 
     gsap.killTweensOf(clip);
 
-    const lineH = parseFloat(getComputedStyle(body).lineHeight) || 22;
-    const clampH = lineH * 5;
+    const nextFrame = () => new Promise<void>(r => requestAnimationFrame(() => r()));
 
     if (!this.expanded[i]) {
+      // OUVERTURE — fige la hauteur CLAMPÉE avant de dé-clamper
+      const startH = body.getBoundingClientRect().height; // hauteur clampée réelle
+      gsap.set(clip, { height: startH, overflow: 'hidden', willChange: 'height' });
+
       body.classList.remove('is-clamped');
-      await this.nextFrame();
+      await nextFrame(); // recalcul du layout une fois dé-clampé
 
-      const startH = Math.min(clip.getBoundingClientRect().height || clampH, clampH);
       const targetH = body.scrollHeight;
-
       this.expanded[i] = true;
 
-      gsap.set(clip, { height: startH, willChange: 'height' });
+      const ro = new ResizeObserver(() => {
+        if (clip.style.height !== 'auto') gsap.set(clip, { height: body.scrollHeight });
+      });
+      ro.observe(body);
+
       gsap.to(clip, {
         height: targetH,
         duration: 0.9,
         ease: 'power3.out',
-        onComplete: () => { gsap.set(clip, { height: 'auto', clearProps: 'willChange' }); }
+        onComplete: () => {
+          ro.disconnect();
+          gsap.set(clip, { height: 'auto', clearProps: 'willChange,overflow' });
+        }
       });
     } else {
+      // FERMETURE — calcule la hauteur clampée après ré-application du clamp
       const startH = clip.getBoundingClientRect().height || body.scrollHeight;
 
       body.classList.add('is-clamped');
-      await this.nextFrame();
+      await nextFrame();
+      const targetH = body.getBoundingClientRect().height;
 
-      const targetH = Math.min(body.getBoundingClientRect().height, clampH);
-
-      gsap.set(clip, { height: startH, willChange: 'height' });
+      gsap.set(clip, { height: startH, overflow: 'hidden', willChange: 'height' });
       gsap.to(clip, {
         height: targetH,
         duration: 0.8,
         ease: 'power3.inOut',
         onComplete: () => {
           this.expanded[i] = false;
-          gsap.set(clip, { height: 'auto', clearProps: 'willChange' });
+          gsap.set(clip, { height: 'auto', clearProps: 'willChange,overflow' });
         }
       });
     }
   }
+
+
 
   private toThemeKey(raw?: string): NewsPost['themeKey'] {
     const s = (raw || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
