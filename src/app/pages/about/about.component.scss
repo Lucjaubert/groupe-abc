@@ -8,13 +8,16 @@
   position: relative;
   isolation: isolate;
 
-  .section-inner{
+  /* Variable de padding vertical (par défaut) */
+  --pad-y: clamp(48px, 7vw, 96px);
+
+  .section-inner {
     position: relative;
     z-index: 1;
     width: 100%;
     margin-inline: auto;
     padding-inline: clamp(16px, 3vw, 40px);
-    padding-block: clamp(48px, 7vw, 96px);
+    padding-block: var(--pad-y);
   }
 }
 

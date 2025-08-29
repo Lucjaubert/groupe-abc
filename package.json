@@ -6,21 +6,31 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
+
     "build": "ng build",
+
     "build:ssr": "ng build --configuration=production && ng run groupe-abc:server:production",
     "serve:ssr": "ng run groupe-abc:serve-ssr:production",
     "start:ssr": "npm run build:ssr && npm run serve:ssr",
+
     "build:ssr:staging": "ng build --configuration=staging && ng run groupe-abc:server:staging",
     "serve:ssr:staging": "ng run groupe-abc:serve-ssr:staging",
     "start:ssr:staging": "npm run build:ssr:staging && npm run serve:ssr:staging",
+
     "prerender": "ng run groupe-abc:prerender",
-    "prerender:staging": "ng run groupe-abc:prerender:staging"
+    "prerender:staging": "ng run groupe-abc:prerender:staging",
+
+    "deploy-assets:prod": "ng run groupe-abc:deploy-assets:production",
+    "deploy-assets:staging": "ng run groupe-abc:deploy-assets:staging",
+
+    "build:prod": "ng build --configuration=production && ng run groupe-abc:server:production && npm run deploy-assets:prod",
+    "build:staging": "ng build --configuration=staging && ng run groupe-abc:server:staging && npm run deploy-assets:staging"
   },
   "dependencies": {
     "@angular/animations": "18.2.12",
     "@angular/cdk": "18.2.12",
     "@angular/common": "18.2.12",
-    "@angular/compiler": "^18.2.12",
+    "@angular/compiler": "18.2.12",
     "@angular/core": "18.2.12",
     "@angular/forms": "18.2.12",
     "@angular/platform-browser": "18.2.12",
@@ -35,7 +45,6 @@
     "express": "^4.21.2",
     "express-static-gzip": "2.1.8",
     "glob": "11.0.0",
-    "groupe-abc": "file:",
     "gsap": "^3.13.0",
     "node-fetch": "^3.3.2",
     "rxjs": "7.8.0",
@@ -44,7 +53,7 @@
   },
   "devDependencies": {
     "@angular-devkit/build-angular": "18.2.12",
-    "@angular/cli": "^18.2.12",
+    "@angular/cli": "18.2.12",
     "@angular/compiler-cli": "18.2.12",
     "@fullhuman/postcss-purgecss": "6.0.0",
     "@types/animejs": "^3.1.12",
