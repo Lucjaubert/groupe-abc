@@ -37,22 +37,17 @@
 /* ===================================================================== */
 /* ============================  CORE  ================================== */
 /* ===================================================================== */
-
-/* Titre du bloc : plein-largeur au-dessus de la grille */
 .block-title{
   color: #444798;
   font-size: clamp(28px, 3.2vw, 40px);
   font-weight: 400;
   line-height: 1.1;
-  margin: 0 0 58px; /* pousse la grille (gauche + droite) d’un seul coup */
+  margin: 0 0 58px;
 }
 
-/* Réglage de la grille :
-   - mobile : pile (left -> right -> below)
-   - desktop : 2 colonnes avec un ratio contrôlé (55% / 45%)  */
 .core-grid{
   --core-gap: var(--section-gap-x, 148px);
-  --core-left-col: 55%; /* <<< mets 50% si tu veux du 50/50 */
+  --core-left-col: 55%;
 
   display: grid;
   grid-template-columns: 1fr;
@@ -64,7 +59,6 @@
   align-items: start;
 
   @media (min-width: 992px){
-    /* colonne gauche verrouillée à 55% (ou 50%), droite prend le reste */
     grid-template-columns:
       minmax(0, var(--core-left-col))
       minmax(0, calc(100% - var(--core-left-col)));
@@ -85,9 +79,9 @@
   grid-area: right;
   display: flex;
   flex-direction: column;
-  justify-content: center;   /* centrage vertical */
-  align-items: center;       /* centrage horizontal du bloc */
-  text-align: left;          /* texte aligné à gauche */
+  justify-content: center;
+  align-items: center;
+  text-align: left;
   gap: clamp(16px, 2vw, 24px);
 }
 
@@ -97,7 +91,6 @@
   flex-direction: column;
 }
 
-/* Texte générique (aucune marge en haut du 1er paragraphe) */
 .block-html{
   color: #444697;
   font-size: 16px;
@@ -105,11 +98,10 @@
   line-height: 1.6;
 
   p{ margin: 0 0 12px; }
-  p:first-child{ margin-top: 0; }  /* aligne avec la liste à droite */
+  p:first-child{ margin-top: 0; }
   p:last-child{ margin-bottom: 0; }
 }
 
-/* Si “where-panel” de la Home est réutilisé → neutraliser les effets */
 .core .where-panel{
   position: static !important;
   inset: auto !important;
@@ -118,7 +110,6 @@
   transition: none !important;
 }
 
-/* ===== Liste (colonne droite, style “map-list”) ===== */
 .panel-list.about-where-list{
   list-style: none;
   margin: 0;
@@ -126,10 +117,10 @@
 
   display: flex;
   flex-direction: column;
-  align-items: flex-start;   /* texte aligné à gauche */
+  align-items: flex-start;
   gap: clamp(10px, 1.8vw, 14px);
 
-  max-width: 320px;          /* largeur fixe/centrée (ajuste selon ta maquette Figma) */
+  max-width: 320px;
   width: 100%;
 }
 
@@ -153,7 +144,6 @@
     flex: 0 0 auto;
   }
 }
-
 
 /* ===== CTA ===== */
 .cta-btn{
@@ -205,7 +195,6 @@
   .mesh-skyline{
     width: 100%;
     margin-bottom: clamp(16px,3.2vw,24px);
-
 
     img{
       display: block;
@@ -262,25 +251,22 @@
 
 /* ============================  MAP SECTION (Où ?) ============================ */
 .map-section {
-  /* Grille globale */
   .map-grid {
     display: grid;
-    grid-template-columns: 1fr;                          /* mobile : pile */
+    grid-template-columns: 1fr;
     gap: clamp(24px, 4vw, 48px);
     align-items: center;
 
     @media (min-width: 992px) {
-      /* Desktop : carte large + colonne texte fixe */
-      grid-template-columns: 2fr 400px;                  /* ⟵ carte agrandie */
+      grid-template-columns: 2fr 400px;
       column-gap: clamp(100px, 12vw, 160px);
     }
   }
 
-  /* Colonne gauche : carte */
   .map-image {
     display: flex;
-    align-items: center;          /* centre verticalement dans la cellule */
-    justify-content: flex-start;  /* carte collée à gauche */
+    align-items: center;
+    justify-content: flex-start;
 
     img {
       display: block;
@@ -288,19 +274,16 @@
       height: auto;
       max-width: 100%;
 
-      /* Sur desktop, on donne une largeur maximale «fluide» plus généreuse */
       @media (min-width: 992px) {
-        /* Entre 760px et 980px selon la largeur du viewport */
         max-width: clamp(760px, 58vw, 980px);
       }
     }
   }
 
-  /* Colonne droite : titre + liste */
   .map-list {
     display: flex;
     flex-direction: column;
-    justify-content: center;      /* centre verticalement le titre + liste */
+    justify-content: center;
     align-self: center;
     gap: clamp(16px, 2vw, 24px);
 
@@ -345,14 +328,10 @@
 
 /* ====== NOS VALEURS ====== */
 .values {
-  /* Bande de fond ~506px de haut (PJ) ; le contenu peut dépasser */
   min-block-size: 506px;
-
-  /* padding vertical + distance titre → icônes */
   --pad-y: clamp(56px, 6vw, 80px);
   .section-inner { padding-block: var(--pad-y); }
 
-  /* ----- BACKGROUND plein écran (même pattern que hero-bg) ----- */
   .values-bg{
     position: absolute;
     top: 0; bottom: 0;
@@ -363,8 +342,8 @@
 
     .values-layer{
       position: absolute; inset: 0;
-      background: #F5F4F8;   /* couleur PJ */
-      opacity: 1;            /* bande statique (pas d’anim nécessaire) */
+      background: #F5F4F8;
+      opacity: 1;
     }
   }
 
@@ -374,13 +353,10 @@
     text-align:center;
     font-size: clamp(28px, 3.2vw, 40px);
     line-height: 1.1;
-
-    /* distance exacte titre → icônes (≈80px sur la maquette) */
     margin: 0 0 80px;
   }
 
   .values-grid{
-    /* 3 colonnes équilibrées dans un conteneur 1440 */
     display:grid;
     grid-template-columns: repeat(1, minmax(240px, 1fr));
     gap: clamp(28px, 4vw, 48px);
@@ -394,12 +370,11 @@
   }
 
   .value-item{
-    position: relative;    /* pour positionner les séparateurs */
+    position: relative;
     display:flex; flex-direction:column; align-items:center;
     text-align:center;
-    max-width: 360px;      /* sécurité responsive pour la desc */
+    max-width: 360px;
 
-    /* >>> Icône ACF telle quelle (pas de fond ni filtre) */
     .icon-wrap{
       display:grid; place-items:center;
       margin-bottom: clamp(16px, 2vw, 20px);
@@ -427,98 +402,228 @@
       line-height: 1.55;
       max-width: 320px;
 
-      p{ margin:0; }             /* ACF renvoie <p> : neutraliser */
+      p{ margin:0; }
       p + p{ margin-top: 6px; }
     }
 
-    /* ——— Séparateurs horizontaux (Desktop) ——— */
     .divider{
       display:none;
 
       @media (min-width: 992px){
         display:block;
         position:absolute;
-        top: calc(clamp(84px, 7vw, 96px) / 2 + 10px); /* aligné au centre des icônes */
-        right: calc(-1 * clamp(40px, 5vw, 70px));     /* sort un peu du bloc */
+        top: calc(clamp(84px, 7vw, 96px) / 2 + 10px);
+        right: calc(-1 * clamp(40px, 5vw, 70px));
         width: clamp(64px, 7vw, 96px);
         height: 2px;
         background: #444798;
-        opacity: .45; /* léger comme sur ta capture */
+        opacity: .45;
         transform: translateY(-50%);
       }
     }
   }
 }
 
-
-/* ===== Affiliations ===== */
-.affiliations{
-  .section-title{
-    @extend .block-title;
-    font-size: clamp(32px, 3.6vw, 44px);
+/* ===== Appartenance (ajustements maquette) ===== */
+.affiliations {
+  .aff-title{
+    color:#444697;
+    font-size:36px;
+    font-weight:400;
+    line-height:normal;
+    margin: 0 0 58px;
   }
-  .aff-preamble{ @extend .block-html; margin-bottom: clamp(16px, 2.2vw, 24px); }
 
-  .aff-grid{
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: clamp(24px, 3.6vw, 40px);
-
-    @media (min-width: 992px){
-      grid-template-columns: 1fr 1fr;
-      column-gap: var(--section-gap-x, 148px);
-    }
+  .aff-list{
+    list-style:none;
+    margin:0; padding:0;
+    border-top: 2px solid #444798;
   }
-  .aff-card{ display: grid; row-gap: 10px; }
-  .aff-logo{ width: 48px; height: 48px; object-fit: contain; }
-  .aff-excerpt{ @extend .block-html; }
+  .aff-row{ border-bottom: 2px solid #444798; }
 
-  details.aff-details{
-    summary{ cursor: pointer; color: #444798; font-weight: 500; margin-bottom: 6px; }
-    .aff-content{ @extend .block-html; }
+  .aff-line{
+    display:grid;
+    grid-template-columns: 1fr auto auto;
+    align-items:center;
+    column-gap: 0;
+    padding-block: 14px;
+  }
+
+  .aff-name{
+    display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+  }
+  .aff-abbr{ color:#444798; font-size:24px; font-weight:400; line-height:normal; }
+  .aff-label{ color:#444798; font-size:18px; font-weight:400; line-height:normal; }
+
+  .aff-logo{
+    width:75px; height:75px;
+    aspect-ratio:1 / 1;
+    object-fit:contain;
+    flex-shrink:0;
+    margin-right: 80px;
+    justify-self:end;
+  }
+
+  .aff-toggle{
+    background:none; border:0; padding:0;
+    color:#444798; cursor:pointer; justify-self:end;
+  }
+  .chevron{
+    width:24px; height:34.66px; flex-shrink:0;
+    transform: rotate(90deg);
+    transition: transform .25s ease;
+  }
+  .aff-row.open .chevron{ transform: rotate(0deg); }
+
+  .aff-desc{ padding: 8px 0 18px; }
+  .aff-desc-inner{
+    color:#444697; font-size:16px; line-height:1.55;
+    p{ margin:0 0 10px; } p:last-child{ margin-bottom:0; }
+  }
+
+  @media (max-width: 640px){
+    .aff-line{ grid-template-columns: 1fr auto; row-gap: 10px; }
+    .aff-logo{ grid-column: 1 / -1; justify-self:start; margin-right: 0; }
   }
 }
 
-/* ===== Déontologie ===== */
-.deon{
-  background: #F5F4F8;
-
-  .section-title{ @extend .block-title; font-size: clamp(32px, 3.6vw, 44px); }
-
-  .deon-grid{
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: clamp(24px, 3.6vw, 40px);
-
-    @media (min-width: 992px){
-      grid-template-columns: 1fr 1fr;
-      column-gap: var(--section-gap-x, 148px);
-    }
+/* ===== Déontologie — mêmes espacements que Appartenance ===== */
+.deon {
+  .deon-title{
+    color:#444697;
+    font-size:36px;
+    font-weight:400;
+    line-height:normal;
+    margin: 0 0 58px;
   }
-  .deon-item{ display: grid; row-gap: 10px; }
+
+  .deon-list{
+    list-style:none;
+    margin:0; padding:0;
+    border-top: 2px solid #444798;
+  }
+  .deon-row{ border-bottom: 2px solid #444798; }
+
+  .deon-line{
+    --row-h: 98px;
+    display:grid;
+    grid-template-columns: 1fr auto;
+    align-items:center;
+    block-size: var(--row-h);
+    padding-block: 0;
+  }
+
+  .deon-name{
+    color:#444798;
+    font-size:20px;
+    font-weight:400;
+    line-height:1;
+    margin:0;
+  }
+
+  .deon-toggle{
+    background:none; border:0; padding:0;
+    color:#444798; cursor:pointer; justify-self:end;
+  }
+  .chevron{
+    width:24px; height:34.66px;
+    transform: rotate(90deg);
+    transition: transform .25s ease;
+  }
+  .deon-row.open .chevron{ transform: rotate(0deg); }
+
+  .deon-desc{ padding: 8px 0 18px; }
+  .deon-desc-inner{
+    color:#444697; font-size:16px; line-height:1.55;
+    p{ margin:0 0 10px; } p:last-child{ margin-bottom:0; }
+  }
 }
 
-/* ===== Timeline ===== */
+/* ============================  TIMELINE (grid 2 colonnes) ============================ */
 .timeline{
-  background: #F5F4F8;
+  --years-col: 152px;
+  --rail-w: 2px;
+  --row-gap: 96px;
+  --dash-w: 24px;
+  --rail-gap: clamp(48px, 6vw, 110px);
+  --content-max: 940px;
 
-  .tl{
-    list-style: none;
-    margin: 0; padding: 0;
-    display: grid;
-    row-gap: clamp(18px, 2.6vw, 24px);
+  position: relative;
+  isolation: isolate;
+
+  .timeline-bg{ position:absolute; inset:0; left:calc(-1 * var(--content-gutter)); right:calc(-1 * var(--content-gutter)); pointer-events:none; z-index:0;
+    .timeline-layer{ position:absolute; inset:0; background:#F5F4F8; }
   }
-  .tl-item{
+  .section-inner{ position:relative; z-index:1; }
+
+  .tl-grid{
+    position: relative;
     display: grid;
-    grid-template-columns: 120px 1fr;
-    column-gap: clamp(16px, 2.4vw, 28px);
-    align-items: start;
+    grid-template-columns: var(--years-col) 1fr;
+    column-gap: var(--rail-gap);
+    row-gap: var(--row-gap);
   }
+
+  .tl-rail{
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--years-col) + var(--rail-gap));
+    width: var(--rail-w);
+    background:#444798;
+    z-index:0;
+  }
+
+  .timeline-title{
+    grid-column: 1 / -1;
+    margin: 0 0 clamp(28px, 4vw, 40px);
+    max-width: var(--content-max);
+    margin-inline: auto;
+    text-align: center;
+    color:#444798; font-weight:400; font-size:clamp(28px, 3.2vw, 40px); line-height:1.1;
+  }
+
   .tl-year{
-    color: #444798;
-    font-size: 28px;
-    font-weight: 600;
-    line-height: 1;
+    justify-self: end;
+    align-self: start;
+    color:#444798; font-size:24px; font-weight:400; line-height:1;
+    position: relative;
+    text-align: right;
+    white-space: nowrap;
+    padding-right: calc(var(--rail-gap) + var(--rail-w));
+
+    &::after{
+      content:"";
+      position: absolute;
+      top: .6em;
+      right: calc(var(--rail-gap) - var(--dash-w) - 6px);
+      width: var(--dash-w);
+      height: 2px;
+      background:#E44D4D;
+    }
   }
-  .tl-text{ @extend .block-html; }
+
+  .tl-body{
+    grid-column: 2;
+    max-width: var(--content-max);
+    width: 100%;
+    justify-self: center;
+    margin-inline: auto;
+    padding-left: var(--rail-gap);
+  }
+
+  .tl-item-title{
+    color:#444798; font-weight:400; font-size:clamp(18px, 2vw, 22px); line-height:1.25; margin:0 0 10px;
+  }
+  .tl-desc{
+    color:#444697; font-weight:400; font-size:14px; line-height:1.55;
+    p{ margin:0; } p + p{ margin-top:6px; }
+  }
+
+  @media (max-width: 720px){
+    --years-col: 110px;
+    --row-gap: 64px;
+    --rail-gap: clamp(28px, 8vw, 64px);
+    --content-max: 92vw;
+  }
 }

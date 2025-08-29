@@ -1,0 +1,250 @@
+@use "sass:map";
+@use "../../../styles/_variables.scss" as vars;
+
+.news-wrapper { width: 100%; }
+
+.news-intro{
+  padding-top:110px;
+  padding-bottom:50px;
+
+  .page-title{
+    color:#444798;
+    font-size:48px;
+    font-weight:400;
+    line-height:normal;
+    margin:0 0 24px;
+  }
+
+  .intro-line{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:20px;
+
+    .page-subtitle{
+      flex:1;
+      color:#444697;
+      font-size:16px;
+      line-height:1.6;
+      max-width:960px;
+      margin:0;
+    }
+
+    .linkedin img{
+      width:39.47px;
+      height:39.47px;
+      flex-shrink:0;
+      display:block;
+    }
+  }
+}
+
+.news-list{
+  .posts{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+
+  .news-row{
+    position:relative; isolation:isolate;
+
+    .news-bg{
+      position:absolute;
+      inset:0;
+      left:50%;
+      width:100vw;
+      transform:translateX(-50%);
+      z-index:0;
+      pointer-events:none;
+      background:#F5F5F7;
+    }
+    &.theme-expertise .news-bg{ background:#EEE; }
+    &.theme-juridique .news-bg{ background:#FFEAEB; }
+    &.theme-marche    .news-bg{ background:rgba(88,80,173,0.16); }
+
+    .news-box{
+      position:relative; z-index:1;
+      width:100%;
+      max-width:1440px;
+      min-height:530px;
+      margin-inline:auto;
+      display:grid;
+      grid-template-columns: 1fr 496px;
+      column-gap:64px;
+      align-items:center;
+      box-sizing:border-box;
+      padding-top:40px;
+      padding-bottom:40px;
+    }
+
+    .news-col--text{ align-self:center; }
+
+    .theme-chip{
+      display:inline-flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      width:133px;
+      height:23px;
+      flex-shrink:0;
+      border-radius:5px;
+      border:1px solid #444798;
+      background:#FFF;
+      padding:0 8px;
+      cursor:default;
+
+      .chip-label{
+        color:#444697;
+        font-family:"Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+        font-size:14px;
+        font-style:italic;
+        font-weight:300;
+        line-height:normal;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      .chip-icon{
+        width:22px;
+        height:13px;
+        display:inline-grid;
+        place-items:center;
+        flex-shrink:0;
+      }
+    }
+
+    .meta-line{
+      display:flex; align-items:center; gap:10px;
+      margin:16px 0 29px;
+
+      .firm-logo{
+        width:40px; height:40px; aspect-ratio:1/1;
+        object-fit:contain; flex-shrink:0;
+      }
+
+      .meta-text{
+        display:flex;
+        flex-direction:column;
+        justify-content:center;
+        line-height:1.2;
+      }
+
+      .firm-info{
+        display:flex;
+        align-items:center;
+        gap:6px;
+        margin-bottom:2px;
+      }
+
+      .firm-name{
+        color:#444697;
+        font-family:"Plus Jakarta Sans";
+        font-size:14px;
+        font-weight:500;
+        line-height:normal;
+      }
+
+      .meta-sep{
+        color:#EA4D4D;
+        font-family:"Plus Jakarta Sans";
+        font-size:14px;
+        font-weight:400;
+        line-height:normal;
+      }
+
+      .post-meta{ margin-top:0; }
+
+      .author-date{
+        color:#444697;
+        font-family:"Plus Jakarta Sans";
+        font-size:13px;
+        font-style:italic;
+        font-weight:400;
+        line-height:normal;
+      }
+    }
+
+    .post-title{
+      color:#444697;
+      font-family:Inter, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      font-size:36px;
+      font-style:normal;
+      font-weight:400;
+      line-height:normal;
+      margin:0 0 45px;
+      max-width:450px;
+    }
+
+    .post-excerpt{
+      max-width:560px;
+      overflow:hidden; /* conteneur animé */
+    }
+
+    .excerpt-body{
+      color:#444697;
+      font-family:"Plus Jakarta Sans";
+      font-size:14px;
+      font-weight:400;
+      line-height:1.6;
+
+      p{ margin:0 0 10px; }
+      p:last-child{ margin-bottom:0; }
+
+      &.is-clamped{
+        display:-webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 5;
+        line-clamp: 5;
+        overflow:hidden;
+      }
+    }
+
+
+    .card-cta{
+      display:flex; align-items:center; gap:14px; margin-top:22px;
+
+      .cta-btn{
+        width:clamp(173px, 32vw, 244.5px);
+        height:clamp(27px, 2.6vw, 28.113px);
+        min-width:173px; max-width:244.5px;
+        display:flex; align-items:center;
+        border:0; border-radius:5px; background:#444798; color:#fff;
+        padding-left:12px; padding-right:8px;
+        cursor:pointer; font-weight:400; font-size:clamp(11px,1.4vw,12px); line-height:1;
+        transition:transform .12s ease, filter .12s ease, box-shadow .12s ease;
+
+        .icon-plus{
+          width:22px; height:22px;
+          stroke:#EA4D4D; stroke-width:3.2;
+          stroke-linecap:round; fill:none;
+          transition:transform .15s ease;
+        }
+
+        &:hover{ filter:brightness(1.04); }
+        &:active{ transform:translateY(1px); }
+        &:focus-visible{ outline:2px solid #EA4D4D; outline-offset:2px; }
+
+        &.is-open .icon-plus{ transform:rotate(45deg); }
+      }
+
+      .cta-label{ margin-right:12px; white-space:nowrap; }
+      .cta-plus{ margin-left:auto; display:inline-grid; place-items:center; width:22px; height:22px; }
+      .card-linkedin img{ width:27.47px; height:27px; display:block; }
+    }
+
+    .news-col--image{ display:flex; justify-content:flex-end; align-items:flex-start; }
+    .post-image{
+      width:496px; height:355px; flex-shrink:0;
+      object-fit:cover; display:block; border-radius:4px;
+    }
+  }
+
+  @media (max-width:992px){
+    .news-row .news-box{
+      grid-template-columns:1fr;
+      min-height:auto;
+      row-gap:20px;
+      padding:24px;
+    }
+    .news-row .news-col--image{ justify-content:flex-start; }
+    .news-row .post-image{ width:100%; height:auto; }
+  }
+}

@@ -14,6 +14,17 @@ export const routes: Routes = [
       import('./pages/about/about.component').then(m => m.AboutComponent),
     title: 'Qui sommes-nous ? – Groupe ABC'
   },
-  { path: '**', redirectTo: '' }
+
+  {
+    path: 'actualites',
+    loadComponent: () =>
+      import('./pages/news/news.component').then(m => m.NewsComponent),
+    title: 'Actualités – Groupe ABC'
+  },
+  {
+    path: '**',
+    redirectTo: ''
+  }
 ];
+
 export default routes;

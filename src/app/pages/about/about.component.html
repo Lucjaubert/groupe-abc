@@ -89,49 +89,109 @@
   </section>
 
 
-  <!-- ===== Affiliations ===== -->
-  <section class="section affiliations" *ngIf="affiliations.length || affTitle || affPreamble">
+  <!-- ===== Appartenance ===== -->
+  <section class="section affiliations" *ngIf="affiliations?.length">
     <div class="section-inner px-0">
-      <h2 class="section-title" *ngIf="affTitle">{{ affTitle }}</h2>
-      <div class="aff-preamble" *ngIf="affPreamble" [innerHTML]="affPreamble"></div>
 
-      <div class="aff-grid">
-        <article class="aff-card" *ngFor="let a of affiliations; trackBy: trackByIndex">
-          <img class="aff-logo" *ngIf="a.logo" [src]="a.logo" alt="" aria-hidden="true" />
+      <h2 class="aff-title" *ngIf="affTitle">{{ affTitle }}</h2>
 
-          <details class="aff-details" *ngIf="a.content">
-            <summary>En savoir plus</summary>
-            <div class="aff-content" [innerHTML]="a.content"></div>
-          </details>
-        </article>
-      </div>
-    </div>
-  </section>
+      <ul class="aff-list" role="list">
+        <li class="aff-row"
+            *ngFor="let a of affiliations; let i = index; trackBy: trackByIndex"
+            [class.open]="affOpen[i]">
 
-  <!-- ===== Déontologie ===== -->
-  <section class="section deon" *ngIf="deontology.length">
-    <div class="section-inner px-0">
-      <h2 class="section-title" *ngIf="deonTitle">{{ deonTitle }}</h2>
+          <!-- Ligne cliquable -->
+          <div class="aff-line">
+            <!-- Nom : "RICS : Royal Institution of Chartered Surveyors" découpé -->
+            <div class="aff-name" *ngIf="a.excerpt as n">
+              <span class="aff-abbr">{{ splitAffName(n).abbr }} :</span>
+              <span class="aff-label">{{ splitAffName(n).label }}</span>
+            </div>
 
-      <div class="deon-grid">
-        <article class="deon-item" *ngFor="let d of deontology; trackBy: trackByIndex">
-          <h3 class="block-title" *ngIf="d.title">{{ d.title }}</h3>
-          <div class="block-html" *ngIf="d.html" [innerHTML]="d.html"></div>
-        </article>
-      </div>
-    </div>
-  </section>
+            <img class="aff-logo" *ngIf="a.logo" [src]="a.logo" alt="" aria-hidden="true" />
 
-  <!-- ===== Timeline ===== -->
-  <section class="section timeline" *ngIf="timeline.length">
-    <div class="section-inner px-0">
-      <ul class="tl">
-        <li class="tl-item" *ngFor="let s of timeline; trackBy: trackByIndex">
-          <div class="tl-year" *ngIf="s.year">{{ s.year }}</div>
-          <div class="tl-text" *ngIf="s.html" [innerHTML]="s.html"></div>
+            <button class="aff-toggle"
+                    type="button"
+                    [attr.aria-expanded]="affOpen[i] ? 'true':'false'"
+                    (click)="toggleAff(i)">
+              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Description (affichée au clic) -->
+          <div class="aff-desc" *ngIf="a.content && affOpen[i]">
+            <div class="aff-desc-inner" [innerHTML]="a.content"></div>
+          </div>
         </li>
       </ul>
+
     </div>
   </section>
+
+
+  <!-- ===== Déontologie ===== -->
+  <section class="section deon" *ngIf="deontology?.length">
+    <div class="section-inner px-0">
+
+      <h2 class="deon-title" *ngIf="deonTitle">{{ deonTitle }}</h2>
+
+      <ul class="deon-list" role="list">
+        <li class="deon-row"
+            *ngFor="let d of deontology; let i = index; trackBy: trackByIndex"
+            [class.open]="deonOpen[i]">
+
+          <div class="deon-line">
+            <div class="deon-name">{{ d.title }}</div>
+
+            <button class="deon-toggle"
+                    type="button"
+                    [attr.aria-expanded]="deonOpen[i] ? 'true':'false'"
+                    (click)="toggleDeon(i)">
+              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <div class="deon-desc" *ngIf="d.html && deonOpen[i]">
+            <div class="deon-desc-inner" [innerHTML]="d.html"></div>
+          </div>
+        </li>
+      </ul>
+
+    </div>
+  </section>
+
+
+
+<!-- ===== Timeline ===== -->
+<section class="section timeline" *ngIf="timeline.length">
+  <!-- Fond plein écran -->
+  <div class="timeline-bg"><div class="timeline-layer"></div></div>
+
+  <div class="section-inner px-0">
+    <div class="tl-grid">
+      <!-- Rail bleu entre colonnes -->
+      <span class="tl-rail" aria-hidden="true"></span>
+
+      <!-- Titre, aligné sur la colonne de droite -->
+      <h2 class="timeline-title"> {{ timelineTitle }} </h2>
+
+      <!-- Chaque événement rend 2 frères : année (col 1) + contenu (col 2) -->
+      <ng-container *ngFor="let s of timeline; trackBy: trackByIndex">
+        <div class="tl-year">{{ s.year }}</div>
+
+        <div class="tl-body">
+          <h3 class="tl-item-title" *ngIf="s.title">{{ s.title }}</h3>
+          <div class="tl-desc" *ngIf="s.html" [innerHTML]="s.html"></div>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+</section>
+
+
 
 </div>
