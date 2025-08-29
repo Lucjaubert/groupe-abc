@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
-import { forkJoin } from 'rxjs';
+import { forkJoin, firstValueFrom } from 'rxjs';
 
 /* =========================
  *  Types de données (ACF)
@@ -41,21 +41,26 @@ export class AboutComponent implements OnInit {
   // Core (grille : gauche = intro, droite = “Où ?”, dessous = valeurs (legacy))
   core: CoreBlock[] = [];
 
-  // Bloc dédié “Nos valeurs” (pour la section avec fond #F5F4F8)
+  // Bloc dédié “Nos valeurs”
   coreValuesTitle = '';
   coreValues: ValueItem[] = [];
 
   // Timeline (liste d’événements)
   timeline: TimelineStep[] = [];
+  timelineTitle = '';
 
-  // Affiliations (titre, préambule, cartes)
+  // Affiliations
   affTitle = '';
   affPreamble = '';
   affiliations: AffItem[] = [];
+  /** états d’ouverture des lignes d’appartenance (chevrons) */
+  affOpen: boolean[] = [];
 
-  // Déontologie (titre + items)
+  // Déontologie
   deonTitle = '';
   deontology: DeonItem[] = [];
+  /** états d’ouverture des lignes de déontologie (chevrons) */
+  deonOpen: boolean[] = [];
 
   // Mesh (maillage : skyline + 3 niveaux)
   mesh?: Mesh;
@@ -67,16 +72,13 @@ export class AboutComponent implements OnInit {
    *  Cycle de vie
    * ========================= */
   ngOnInit(): void {
-    // On charge en parallèle :
-    // - la page About (ACF)
-    // - la liste "Où ?" provenant de la Home (fallback si vide : map_section de About)
     forkJoin({
       about: this.wp.getAboutData(),
       whereFromHome: this.wp.getHomepageIdentityWhereItems(),
-    }).subscribe(({ about, whereFromHome }) => {
+    }).subscribe(async ({ about, whereFromHome }) => {
 
       /* -------------------------------------
-       *  INTRO (titre + texte principal)
+       *  INTRO
        * ------------------------------------- */
       const hero = about?.hero ?? {};
       const introBody: string = about?.intro_body || '';
@@ -86,8 +88,7 @@ export class AboutComponent implements OnInit {
       };
 
       /* -------------------------------------
-       *  CARTE "OÙ ?" (image + liste régions)
-       *  - items : priorise la Home, sinon fallback sur map_section du About
+       *  CARTE "OÙ ?"
        * ------------------------------------- */
       const mapSecRaw = about?.map_section ?? {};
       const whereFallback = [
@@ -107,22 +108,16 @@ export class AboutComponent implements OnInit {
 
       /* -------------------------------------
        *  CORE (3 blocs “legacy”)
-       *   - gauche  : intro
-       *   - droite  : liste "Où ?"
-       *   - dessous : "Nos valeurs" (texte concaténé)
        * ------------------------------------- */
-      // Colonne gauche (reprend l’intro)
       const left: CoreBlock = {
         title: this.intro.title,
         html:  this.intro.content
       };
 
-      // Colonne droite (liste "Où ?")
       const right: CoreBlock = {
         items: whereItems.length ? whereItems : undefined
       };
 
-      // Dessous : "Nos valeurs" (pour l’ancien bloc)
       const cv = about?.core_values ?? {};
       const valuesLegacy: CoreValue[] = ['value_1','value_2','value_3']
         .map((k) => {
@@ -153,41 +148,44 @@ export class AboutComponent implements OnInit {
       this.core = [left, right, below].filter(b => b.title || b.html || (b.items && b.items.length));
 
       /* -------------------------------------
-       *  BLOC DÉDIÉ “NOS VALEURS” (section avec fond #F5F4F8)
+       *  BLOC DÉDIÉ “NOS VALEURS”
        * ------------------------------------- */
       this.coreValuesTitle = (about?.core_values?.section_title || 'Nos valeurs').trim();
 
-        // Étape 1 : on lit tel quel (sans rien transformer)
-        const rawValues = ['value_1','value_2','value_3']
-          .map(k => (about?.core_values as any)?.[k])
-          .filter(Boolean)
-          .map(v => ({
-            title: (v.title || '').trim(),
-            html:  (v.description || '').trim(),
-            icon:  v.icon as string | number | undefined,  // peut être URL ou ID
-          }));
+      const rawValues = ['value_1','value_2','value_3']
+        .map(k => (about?.core_values as any)?.[k])
+        .filter(Boolean)
+        .map(v => ({
+          title: (v.title || '').trim(),
+          html:  (v.description || '').trim(),
+          icon:  v.icon as string | number | undefined,
+        }));
 
-        // Petit utilitaire : résout un champ icon (URL ou ID) -> URL
-        const resolveIconUrl = (icon: string | number | undefined) => {
-          if (!icon) return Promise.resolve('');
-          if (typeof icon === 'string') return Promise.resolve(icon); // URL déjà fournie
-          // ID numérique -> on demande l’URL au service (à implémenter si pas déjà fait)
-          return this.wp.getMediaUrl(icon).toPromise().then(u => u || '');
-        };
+      const resolveIconUrl = async (icon: string | number | undefined) => {
+        if (!icon) return '';
+        if (typeof icon === 'string') return icon;
+        try {
+          const url = await firstValueFrom(this.wp.getMediaUrl(icon));
+          return url || '';
+        } catch { return ''; }
+      };
 
-        // Étape 2 : on résout toutes les icônes en parallèle, SANS les modifier
-        Promise.all(rawValues.map(async v => ({
+      const resolvedValues: ValueItem[] = [];
+      for (const v of rawValues) {
+        resolvedValues.push({
           title: v.title,
           html:  v.html,
           iconUrl: await resolveIconUrl(v.icon),
-        }))).then(resolved => {
-          this.coreValues = resolved.filter(v => v.title || v.html || v.iconUrl);
         });
+      }
+      this.coreValues = resolvedValues.filter(v => v.title || v.html || v.iconUrl);
 
       /* -------------------------------------
-       *  TIMELINE (event_1..event_n)
-       * ------------------------------------- */
+      *  TIMELINE (event_1..event_n)
+      * ------------------------------------- */
       const tlRaw = about?.timeline ?? {};
+      this.timelineTitle = tlRaw.section_title || 'Timeline du Groupe ABC';
+
       const events: TimelineStep[] = [];
       for (let i = 1; i <= 12; i++) {
         const ev = (tlRaw as any)[`event_${i}`];
@@ -201,34 +199,47 @@ export class AboutComponent implements OnInit {
       }
       this.timeline = events;
 
+
       /* -------------------------------------
-       *  AFFILIATIONS (association_1..5)
+       *  AFFILIATIONS
        * ------------------------------------- */
       const a = about?.affiliations ?? {};
       this.affTitle     = a.section_title || 'Appartenance';
       this.affPreamble  = '';
 
-      // utilitaire : number|string -> URL string (ici on laisse l’ID sous forme de string si besoin)
-      const mediaToUrl = (v: unknown): string => {
-        if (typeof v === 'string') return v;         // URL déjà fournie
-        if (typeof v === 'number') return String(v); // ID numérique (à résoudre plus tard si besoin)
-        return '';
-      };
-
-      const affs: AffItem[] = [];
+      const rawAffs: Array<{ logo: string | number | undefined; excerpt: string; content: string }> = [];
       for (let i = 1; i <= 5; i++) {
         const it = (a as any)[`association_${i}`];
         if (!it) continue;
-        affs.push({
-          logo:    mediaToUrl(it.logo),
+        rawAffs.push({
+          logo:    it.logo as string | number | undefined,
           excerpt: it.name || '',
           content: it.description || ''
         });
       }
-      this.affiliations = affs.filter(x => !!(x.logo || x.excerpt || x.content));
+
+      const resolveLogo = async (logo: string | number | undefined): Promise<string> => {
+        if (!logo) return '';
+        if (typeof logo === 'string') return logo;
+        try {
+          const url = await firstValueFrom(this.wp.getMediaUrl(logo));
+          return url || '';
+        } catch { return ''; }
+      };
+
+      const resolvedAffs: AffItem[] = [];
+      for (const it of rawAffs) {
+        resolvedAffs.push({
+          logo: await resolveLogo(it.logo),
+          excerpt: it.excerpt,
+          content: it.content
+        });
+      }
+      this.affiliations = resolvedAffs.filter(x => !!(x.logo || x.excerpt || x.content));
+      this.affOpen = new Array(this.affiliations.length).fill(false);
 
       /* -------------------------------------
-       *  DÉONTOLOGIE (deo_1..deo_4)
+       *  DÉONTOLOGIE
        * ------------------------------------- */
       const d = about?.deontology ?? {};
       this.deonTitle   = d.deo_title || 'DEONTOLOGIE';
@@ -243,18 +254,10 @@ export class AboutComponent implements OnInit {
         })
         .filter(Boolean) as DeonItem[];
 
-      /* -------------------------------------
-       *  MESH (maillage skyline + niveaux)
-       * ------------------------------------- */
-      const m = about?.mesh ?? {};
-      this.mesh = {
-        title:  m.section_title || 'Un maillage à toutes les échelles de notre territoire',
-        image:  typeof m.skyline_image === 'string' ? m.skyline_image : '',
-        levels: [m.level_label_1, m.level_label_2, m.level_label_3].filter(Boolean) as string[],
-      };
+      this.deonOpen = new Array(this.deontology.length).fill(false);
 
       /* -------------------------------------
-       *  SEO (fallback si vide)
+       *  SEO
        * ------------------------------------- */
       this.seo.update({
         title:       this.intro.title || 'Qui sommes-nous ? – Groupe ABC',
@@ -271,6 +274,35 @@ export class AboutComponent implements OnInit {
 
   /** trackBy pour *ngFor (performances, pas de recréation DOM) */
   trackByIndex(i: number){ return i; }
+
+  /**
+   * Accordéon : ouvre un index et ferme tous les autres.
+   * - Si l'item cliqué était déjà ouvert -> tout ferme.
+   */
+  private setSingleOpen(stateArr: boolean[], index: number): void {
+    const willOpen = !stateArr[index];
+    // on ferme tout
+    for (let i = 0; i < stateArr.length; i++) stateArr[i] = false;
+    // on ouvre éventuellement celui cliqué
+    if (willOpen) stateArr[index] = true;
+  }
+
+  /** Ouvre/ferme une ligne d'appartenance (chevron) en mode accordéon */
+  toggleAff(i: number){ this.setSingleOpen(this.affOpen, i); }
+
+  /** Ouvre/ferme une ligne de déontologie (chevron) en mode accordéon */
+  toggleDeon(i: number){ this.setSingleOpen(this.deonOpen, i); }
+
+  /** "RICS : Royal Institution..." -> { abbr:"RICS", label:"Royal Institution..." } */
+  splitAffName(raw: string): { abbr: string; label: string }{
+    const s = (raw || '').trim();
+    const idx = s.indexOf(':');
+    if (idx === -1) return { abbr: s, label: '' };
+    return {
+      abbr: s.slice(0, idx).trim(),
+      label: s.slice(idx + 1).trim()
+    };
+  }
 
   /** Supprime les balises HTML et tronque pour la meta description */
   private strip(html: string, max = 160): string {

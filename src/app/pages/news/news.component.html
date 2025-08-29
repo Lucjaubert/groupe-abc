@@ -1,0 +1,116 @@
+<div class="news-wrapper">
+  <section class="section news-intro">
+    <div class="section-inner">
+      <h1 #introTitle class="page-title prehide">Actualités</h1>
+
+      <div class="intro-line">
+        <p #introSubtitle class="page-subtitle prehide">
+          Retrouvez nos points de marché, décryptages réglementaires, retours d’expérience et temps forts de nos huit cabinets…<br>
+          À suivre ici et sur notre compte LinkedIn
+        </p>
+
+        <a *ngIf="intro.linkedinUrl as li"
+          #introLinkedin
+          class="linkedin prehide"
+          [href]="li"
+          target="_blank"
+          rel="noopener"
+          aria-label="Voir notre page LinkedIn">
+          <img src="assets/icons/linkedin.webp"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              decoding="async"
+              fetchpriority="low" />
+        </a>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="section news-list" *ngIf="posts.length">
+    <div class="section-inner px-0">
+      <ul class="posts" role="list">
+        <li #newsRow class="news-row"
+            *ngFor="let p of posts; let i = index; trackBy: trackByIndex"
+            [ngClass]="themeClass(p.themeKey)">
+          <div class="news-bg prehide-row" aria-hidden="true"></div>
+
+          <!-- pré-cachée : pas de flash au chargement -->
+          <div class="news-box prehide-row">
+            <div class="news-col news-col--text">
+              <button class="theme-chip" type="button" aria-label="Thème" disabled>
+                <span class="chip-label">{{ p.theme }}</span>
+                <span class="chip-icon" aria-hidden="true">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="13" viewBox="0 0 22 13" fill="none">
+                    <path d="M16.2703 9.79272H20.0868" stroke="#444898" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2.09473 9.79272H10.7704" stroke="#444898" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M13.4678 3.59302H20.0869" stroke="#444898" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M2.09473 3.59302H7.9582" stroke="#444898" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12.5494 11.8277C13.5373 11.8277 14.3381 11.1483 14.3381 10.3102C14.3381 9.47212 13.5373 8.79272 12.5494 8.79272C11.5616 8.79272 10.7607 9.47212 10.7607 10.3102C10.7607 11.1483 11.5616 11.8277 12.5494 11.8277Z" stroke="#444898"/>
+                    <path d="M9.73743 4.59306C10.7253 4.59306 11.5261 3.91366 11.5261 3.07558C11.5261 2.2375 10.7253 1.55811 9.73743 1.55811C8.74956 1.55811 7.94873 2.2375 7.94873 3.07558C7.94873 3.91366 8.74956 4.59306 9.73743 4.59306Z" stroke="#444898"/>
+                  </svg>
+                </span>
+              </button>
+
+              <div class="meta-line">
+                <img *ngIf="p.firmLogo" [src]="p.firmLogo" alt="" class="firm-logo" aria-hidden="true" />
+                <div class="meta-text d-flex flex-column">
+                  <div class="firm-info">
+                    <span class="firm-name" *ngIf="p.firmName">{{ p.firmName }}</span>
+                    <span class="meta-sep" aria-hidden="true">—</span>
+                  </div>
+                  <div class="post-meta">
+                    <span class="author-date" *ngIf="p.author || p.date">
+                      {{ p.author }}<ng-container *ngIf="p.author && p.date">, </ng-container>{{ p.date }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <h2 class="post-title" *ngIf="p.title">{{ p.title }}</h2>
+
+              <!-- Extrait -->
+              <div class="post-excerpt" #excerptClip>
+                <div class="excerpt-body"
+                    #excerptBody
+                    [class.is-clamped]="!expanded[i]"
+                    *ngIf="p.html"
+                    [innerHTML]="p.html">
+                </div>
+              </div>
+
+
+              <div class="card-cta">
+                <button class="cta-btn"
+                        type="button"
+                        [class.is-open]="expanded[i]"
+                        (click)="toggleExpand(i)"
+                        [attr.aria-expanded]="expanded[i]">
+                  <span class="cta-label">{{ expanded[i] ? 'Réduire' : 'Lire la suite' }}</span>
+                  <span class="cta-plus">
+                    <svg class="icon-plus" viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                  </span>
+                </button>
+
+                <a *ngIf="p.linkedinUrl"
+                   [href]="p.linkedinUrl"
+                   target="_blank" rel="noopener"
+                   class="card-linkedin"
+                   aria-label="Lire sur LinkedIn">
+                  <img src="assets/icons/linkedin.svg" alt="" />
+                </a>
+              </div>
+            </div>
+
+            <div class="news-col news-col--image">
+              <img *ngIf="p.imageUrl" [src]="p.imageUrl" alt="" class="post-image" />
+            </div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+</div>

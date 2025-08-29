@@ -5,43 +5,25 @@
   <div class="section-inner main-wrapper">
     <h2 id="footer-title" class="footer-title">Prise de contact rapide</h2>
 
-    <!-- NB: onSubmit est bien bindé ici -->
+    <!-- Formulaire -->
     <form class="contact-grid" novalidate (submit)="onSubmit($event)">
       <!-- Message -->
       <label class="sr-only" for="footer-msg">Message</label>
-      <textarea
-        id="footer-msg"
-        name="message"
-        placeholder="Message"
-        required></textarea>
+      <textarea id="footer-msg" name="message" placeholder="Message" required></textarea>
 
       <!-- Nom -->
       <label class="sr-only" for="footer-name">Nom</label>
-      <input
-        id="footer-name"
-        name="name"
-        type="text"
-        placeholder="Nom"
-        required />
+      <input id="footer-name" name="name" type="text" placeholder="Nom" required />
 
       <!-- Téléphone -->
       <label class="sr-only" for="footer-tel">Téléphone</label>
-      <input
-        id="footer-tel"
-        name="phone"
-        type="tel"
-        placeholder="Téléphone" />
+      <input id="footer-tel" name="phone" type="tel" placeholder="Téléphone" />
 
       <!-- Email -->
       <label class="sr-only" for="footer-mail">Adresse e-mail*</label>
-      <input
-        id="footer-mail"
-        name="email"
-        type="email"
-        placeholder="Adresse e-mail*"
-        required />
+      <input id="footer-mail" name="email" type="email" placeholder="Adresse e-mail*" required />
 
-      <!-- Honeypot anti-bot (invisible) -->
+      <!-- Honeypot anti-bot -->
       <label class="sr-only" for="website">Ne pas remplir</label>
       <input id="website" name="website" type="text" tabindex="-1" autocomplete="off" class="sr-only" />
 
@@ -55,11 +37,7 @@
         aria-live="polite"
         [attr.aria-pressed]="sendState==='success' ? 'true' : 'false'"
         [attr.aria-label]="sendState==='success' ? 'Message envoyé' : 'Envoyer le message'">
-
-        <span class="btn-label">
-          {{ sendState === 'success' ? 'Envoyé' : 'Envoyer' }}
-        </span>
-
+        <span class="btn-label">{{ sendState==='success' ? 'Envoyé' : 'Envoyer' }}</span>
         <img class="ico-send" src="assets/icons/send.svg" alt="" aria-hidden="true" />
         <svg class="ico-check" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M20.285 6.708a1 1 0 0 1 .007 1.414l-9.2 9.2a1 1 0 0 1-1.414 0l-5-5a1 1 0 1 1 1.414-1.414l4.293 4.293 8.493-8.493a1 1 0 0 1 1.407 0z"/>
@@ -72,11 +50,14 @@
       <p class="footer-contact">
         18 rue Pasquier — 75008 Paris / T. 01 78 41 44 41 / contact&#64;groupe-abc.fr
       </p>
+
       <div class="socials">
         <a class="linkedin" href="https://www.linkedin.com/company/groupe-abc" target="_blank" rel="noopener">
-          <img src="assets/icons/linkedin.webp" alt="LinkedIn">
+          <img src="assets/icons/linkedin.webp" alt="LinkedIn" />
         </a>
       </div>
+
+      <p class="footer-legal mt-3">©2025 - Mentions légales - Crédits</p>
     </div>
   </div>
 </footer>

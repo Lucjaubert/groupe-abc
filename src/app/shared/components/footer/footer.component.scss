@@ -1,27 +1,27 @@
 @use "sass:map";
 @use "../../../../styles/_variables.scss" as vars;
 
-/* ------------------------------ */
-.section {
+/* ===== Section ===== */
+.section{
   position: relative; isolation: isolate;
 
-  .section-bg {
+  .section-bg{
     position: absolute; inset: 0; left: 50%;
     width: 100vw; transform: translateX(-50%);
     z-index: 0; background: var(--section-bg, transparent);
   }
 
-  .section-inner {
+  .section-inner{
     position: relative; z-index: 1;
     width: 100%;
     margin-inline: auto;
     padding-inline: var(--content-gutter);
-    padding-block: 34px;
+    padding-block: 34px; /* conforme à la maquette */
   }
 }
 
-/* ------------------------------ */
-.footer {
+/* ===== Footer ===== */
+.footer{
   color:#FFF;
 
   .footer-title{
@@ -29,6 +29,7 @@
     font-size: 30px; font-weight: 400; line-height: normal; color:#FFF;
   }
 
+  /* ---- Formulaire en grille 3 colonnes ---- */
   .contact-grid{
     --gap: 10px;
 
@@ -37,8 +38,8 @@
       minmax(496px, 2fr)
       minmax(298px, 1.25fr)
       minmax(217.5px, 1fr);
-    column-gap: var(--gap);
     grid-template-rows: 42.69px 42.69px;
+    column-gap: var(--gap);
     row-gap: 10px;
 
     width: 100%;
@@ -57,75 +58,97 @@
 
     textarea{
       grid-column: 1; grid-row: 1 / span 2;
-      height: 93.71px; resize:none; padding:12px 14px;
+      height: 93.71px; resize:none; padding:12px 14px; /* légère diff pour caler la baseline */
     }
 
     #footer-name{ grid-column: 2; grid-row: 1; }
     #footer-mail{ grid-column: 2; grid-row: 2; }
     #footer-tel { grid-column: 3; grid-row: 1; }
 
-    .btn-send {
+    .btn-send{
       grid-column: 3; grid-row: 2;
       height: 42.69px; width: 100%;
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 12px;
-      background: #E74040; color: #FFF;
+      background: #E74040; color:#FFF;
       border: none; border-radius: 6px; cursor: pointer;
       transition: background-color .2s ease, transform .15s ease, opacity .15s ease;
 
-      .btn-label { pointer-events: none; }
+      .btn-label{ pointer-events: none; }
 
       .ico-send { width: 30.642px; height: 18.813px; flex-shrink: 0; }
-      .ico-check { display: none; width: 22px; height: 22px; flex-shrink: 0; fill: #FFF; }
+      .ico-check{ display: none; width: 22px; height: 22px; flex-shrink: 0; fill:#FFF; }
 
-      &:hover:not(:disabled) { transform: translateY(-1px); opacity: .95; }
-      &:active:not(:disabled) { transform: none; opacity: .9; }
-      &:focus-visible { outline: 2px solid #FFF; outline-offset: 2px; }
+      &:hover:not(:disabled){ transform: translateY(-1px); opacity:.95; }
+      &:active:not(:disabled){ transform: none; opacity:.9; }
+      &:focus-visible{ outline: 2px solid #FFF; outline-offset: 2px; }
 
-      &.is-loading { cursor: progress; opacity: .8; }
+      &.is-loading{ cursor: progress; opacity:.8; }
 
-      &.is-success {
-        background: #2BB673;
-        .ico-send { display: none; }
-        .ico-check { display: block; }
+      &.is-success{
+        background:#2BB673;
+        .ico-send{ display:none; }
+        .ico-check{ display:block; }
       }
 
-      &:disabled { cursor: default; }
+      &:disabled{ cursor: default; }
     }
   }
 
+  /* ---- Ligne d’info : contact gauche, LinkedIn droite, mentions en dessous ---- */
   .meta-row{
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    row-gap: 8px;
+    column-gap: 12px;
     margin-top: 8px;
   }
+
   .footer-contact{
-    margin:0; font: 400 22px/normal "Plus Jakarta Sans", sans-serif; color:#FFF; text-align:left;
+    grid-column: 1 / 2;
+    margin: 0;
+    font: 400 22px/normal "Plus Jakarta Sans", sans-serif;
+    color:#FFF;
+    text-align: left;
   }
+
   .socials{
-    display:flex; align-items:center; justify-content:flex-end;
+    grid-column: 2 / 3;
+    display: flex; align-items: center; justify-content: flex-end;
     .linkedin img{ width:39.47px; height:41.097px; display:block; }
   }
-}
 
-@media (max-width: 1024px){
-  .footer .contact-grid{
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    column-gap: 0; row-gap: 12px;
+  .footer-legal{
+    grid-column: 1 / -1; /* prend toute la ligne en dessous */
+    margin: 0;
+    color:#FFF; font-size: 12px; font-weight: 400; line-height: normal;
+  }
 
-    textarea, #footer-name, #footer-tel, #footer-mail, .btn-send{
-      grid-column: 1; grid-row: auto; width: 100%;
+  /* ---- Responsive ---- */
+  @media (max-width: 1024px){
+    .contact-grid{
+      grid-template-columns: 1fr;
+      grid-template-rows: auto;
+      column-gap: 0; row-gap: 12px;
+
+      textarea{ grid-column: 1; grid-row: 1; }
+      #footer-name{ grid-column: 1; grid-row: 2; }
+      #footer-mail{ grid-column: 1; grid-row: 3; }
+      #footer-tel { grid-column: 1; grid-row: 4; }
+      .btn-send  { grid-column: 1; grid-row: 5; max-width: 360px; margin-inline: auto; }
     }
-    .btn-send{ max-width: 360px; margin-inline:auto; }
-  }
-  .footer .meta-row{
-    flex-direction: column; gap:12px;
-    .socials{ justify-content:center; }
-    .footer-contact{ text-align:center; }
+
+    .meta-row{
+      grid-template-columns: 1fr;
+      row-gap: 8px;
+      .socials{ justify-content: flex-start; }
+      .footer-contact{ text-align: left; font-size: 18px; }
+    }
   }
 }
 
-/* utilitaire déjà présent dans tes styles globaux, remis au cas où */
+/* utilitaire accessibilité (au cas où hors global) */
 .sr-only{
   position:absolute; width:1px; height:1px; padding:0; margin:-1px;
   overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
