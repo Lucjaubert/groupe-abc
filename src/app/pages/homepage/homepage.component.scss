@@ -297,9 +297,11 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   font-weight: map.get(vars.$font-weight, "regular");
   line-height: 1.1;
   margin: 0;
+  /* hook perf pour GSAP */
+  will-change: transform, opacity;
 }
 
-/* ===== Qui ? ===== */
+/* ===== Qui ? (colonne gauche) ===== */
 
 .who .who-text {
   max-width: 476px;
@@ -308,9 +310,57 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   font-size: clamp(14px, 1.25vw, 16px);
   font-weight: map.get(vars.$font-weight, "regular");
   line-height: 1.7;
+  will-change: transform, opacity;
 }
 
-/* ===== Où ? ===== */
+.who .who-actions { margin-top: clamp(16px, 3vw, 34.65px); }
+
+.cta-btn {
+  width: clamp(173px, 32vw, 244.5px);
+  height: clamp(27px, 2.6vw, 28.113px);
+  min-width: 173px;
+  max-width: 244.5px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  border-radius: 5px;
+  background: $blue;
+  color: $white;
+  padding-left: 12px;
+  padding-right: 8px;
+  cursor: pointer;
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: map.get(vars.$font-weight, "regular");
+  font-size: clamp(11px, 1.4vw, 12px);
+  line-height: 1;
+  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
+  will-change: transform, opacity;
+}
+
+.cta-btn:hover { filter: brightness(1.04); }
+.cta-btn:active { transform: translateY(1px); }
+.cta-btn:focus-visible { outline: 2px solid $red; outline-offset: 2px; }
+
+.cta-label { margin-right: 12px; white-space: nowrap; }
+
+.cta-plus {
+  margin-left: auto;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+}
+
+.icon-plus {
+  width: 22px;
+  height: 22px;
+  stroke: $red;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  fill: none;
+}
+
+/* ===== Où ? (colonne droite) ===== */
 
 .where {
   position: relative;
@@ -343,9 +393,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   transition: transform .25s ease;
 }
 
-.where.open .chevron {
-  transform: rotate(0deg);
-}
+.where.open .chevron { transform: rotate(0deg); }
 
 .where-body {
   position: relative;
@@ -357,7 +405,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .28s ease;
+  transition: opacity .28s ease; /* garde la petite transition pour le toggle map/liste */
 }
 
 .panel-map {
@@ -377,6 +425,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
 
 .where-map {
   margin-top: clamp(6px, 0.8vw, 10px);
+  will-change: transform, opacity; /* hook GSAP */
 }
 
 .where-map img {
@@ -409,6 +458,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   font-weight: map.get(vars.$font-weight, "regular");
   line-height: normal;
   margin: 0;
+  will-change: transform, opacity; /* si un jour tu staggers la liste */
 }
 
 .panel-list li::before {
@@ -420,68 +470,6 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   line-height: normal;
   margin-right: 6px;
   flex: 0 0 auto;
-}
-
-/* ===== CTA commun ===== */
-
-.who .who-actions {
-  margin-top: clamp(16px, 3vw, 34.65px);
-}
-
-.cta-btn {
-  width: clamp(173px, 32vw, 244.5px);
-  height: clamp(27px, 2.6vw, 28.113px);
-  min-width: 173px;
-  max-width: 244.5px;
-  display: flex;
-  align-items: center;
-  border: 0;
-  border-radius: 5px;
-  background: $blue;
-  color: $white;
-  padding-left: 12px;
-  padding-right: 8px;
-  cursor: pointer;
-  font-family: "Plus Jakarta Sans", sans-serif;
-  font-weight: map.get(vars.$font-weight, "regular");
-  font-size: clamp(11px, 1.4vw, 12px);
-  line-height: 1;
-  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
-}
-
-.cta-btn:hover {
-  filter: brightness(1.04);
-}
-
-.cta-btn:active {
-  transform: translateY(1px);
-}
-
-.cta-btn:focus-visible {
-  outline: 2px solid $red;
-  outline-offset: 2px;
-}
-
-.cta-label {
-  margin-right: 12px;
-  white-space: nowrap;
-}
-
-.cta-plus {
-  margin-left: auto;
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-}
-
-.icon-plus {
-  width: 22px;
-  height: 22px;
-  stroke: $red;
-  stroke-width: 3.2;
-  stroke-linecap: round;
-  fill: none;
 }
 
 /* ===================================================================== */
@@ -512,10 +500,12 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   min-height: 100%;
 }
 
+/* Titres + listes (hooks perf pour GSAP) */
+.what .block-title,
+.how  .block-title { will-change: transform, opacity; }
+
 .what .dash-list,
-.how .dash-list {
-  margin-top: var(--title-list-gap);
-}
+.how  .dash-list { margin-top: var(--title-list-gap); }
 
 .dash-list {
   list-style: none;
@@ -538,6 +528,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   font-weight: map.get(vars.$font-weight, "regular");
   line-height: normal;
   margin: 0;
+  will-change: transform, opacity;
 }
 
 .dash-list li::before {
@@ -551,21 +542,12 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   flex: 0 0 auto;
 }
 
-.dash-list li:last-child {
-  margin-bottom: 45px;
-}
+.dash-list li:last-child { margin-bottom: 45px; }
 
-.wh-actions {
-  margin-top: var(--cta-top-gap);
-}
+.wh-actions { margin-top: var(--cta-top-gap); }
+.wh-right > .wh-actions { margin-top: auto; }
 
-.download {
-  margin-top: auto;
-}
-
-.wh-right > .wh-actions {
-  margin-top: auto;
-}
+.download { margin-top: auto; }
 
 .download .dl-link {
   display: grid;
@@ -574,17 +556,14 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   gap: clamp(16px, 2.8vw, 24px);
   text-decoration: none;
   width: 364px;
+  will-change: transform, opacity; /* hook GSAP */
 }
 
 @media (max-width: 768px) {
-  .download .dl-link {
-    width: 232px;
-  }
+  .download .dl-link { width: 232px; }
 }
 
-.download .dl-text {
-  max-width: 540px;
-}
+.download .dl-text { max-width: 540px; }
 
 .download .dl-line {
   color: $blue;
@@ -595,9 +574,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   padding: 0;
 }
 
-.download .dl-accent {
-  color: $red;
-}
+.download .dl-accent { color: $red; }
 
 .download .dl-icon-img {
   width: clamp(36px, 4vw, 48px);
@@ -606,6 +583,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   align-self: end;
   transform: translateY(2px);
 }
+
 
 /* ===================================================================== */
 /* ====================== CONTEXTES (bande bleue) ====================== */
@@ -658,7 +636,6 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     color: $white;
     font-family: "Plus Jakarta Sans", sans-serif;
     font-size: map.get(vars.$font-size, "100"); /* 48px */
-    font-style: normal;
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: normal;
   }
@@ -688,41 +665,13 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     line-height: 1;
     transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
   }
+  .cta-btn:hover { filter: brightness(1.04); }
+  .cta-btn:active { transform: translateY(1px); }
+  .cta-btn:focus-visible { outline: 2px solid $red; outline-offset: 2px; }
 
-  .cta-btn:hover {
-    filter: brightness(1.04);
-  }
-
-  .cta-btn:active {
-    transform: translateY(1px);
-  }
-
-  .cta-btn:focus-visible {
-    outline: 2px solid $red;
-    outline-offset: 2px;
-  }
-
-  .cta-label {
-    margin-right: 12px;
-    white-space: nowrap;
-  }
-
-  .cta-plus {
-    margin-left: auto;
-    display: inline-grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-  }
-
-  .icon-plus {
-    width: 22px;
-    height: 22px;
-    stroke: $red;
-    stroke-width: 3.2;
-    stroke-linecap: round;
-    fill: none;
-  }
+  .cta-label { margin-right: 12px; white-space: nowrap; }
+  .cta-plus  { margin-left: auto; display: inline-grid; place-items: center; width: 22px; height: 22px; }
+  .icon-plus { width: 22px; height: 22px; stroke: $red; stroke-width: 3.2; stroke-linecap: round; fill: none; }
 
   .contexts-grid {
     display: grid;
@@ -748,12 +697,8 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     min-width: 0;
   }
 
-  .ctx-item:hover .ctx-img {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
-    background: rgba(255, 255, 255, 0.14);
-  }
-
+  /* Carré icône (accepte .ctx-icon et .ctx-img pour robustesse) */
+  .ctx-icon,
   .ctx-img {
     width: clamp(90px, 9vw, var(--ctx-square));
     height: clamp(90px, 9vw, var(--ctx-square));
@@ -762,6 +707,14 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     display: grid;
     place-items: center;
     transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    object-fit: contain; /* utile si .ctx-img est un <img> */
+  }
+
+  .ctx-item:hover .ctx-icon,
+  .ctx-item:hover .ctx-img {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    background: rgba(255, 255, 255, 0.14);
   }
 
   .ctx-label {
@@ -771,8 +724,13 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     font-weight: map.get(vars.$font-weight, "regular");
     font-size: clamp(12px, 1.4vw, 14px);
     line-height: 1.25;
+
+    &hover {
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+    }
   }
 }
+
 
 /* ===================================================================== */
 /* =============================== CLIENTS ============================= */

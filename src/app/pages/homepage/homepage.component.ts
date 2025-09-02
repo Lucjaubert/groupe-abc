@@ -9,6 +9,7 @@ import { SeoService } from '../../services/seo.service';
 
 /* === GSAP === */
 import { gsap } from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 type Slide = { title: string; subtitle: string; bg: string };
 
@@ -70,7 +71,6 @@ type NewsItem = {
 };
 type News = { title: string; items: NewsItem[] };
 
-
 @Component({
   selector: 'app-homepage',
   standalone: true,
@@ -87,7 +87,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   autoplayMs = 5000;
   private autoplayRef: any = null;
 
-  // Refs Hero présents dans ton HTML
+  // Refs Hero
   @ViewChild('heroBg') heroBgRef!: ElementRef<HTMLElement>;
   @ViewChildren('heroLayer') heroLayerEls!: QueryList<ElementRef<HTMLElement>>;
   @ViewChild('heroTitle') heroTitleEl!: ElementRef<HTMLElement>;
@@ -153,6 +153,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /*                        LIFECYCLE                     */
   /* ==================================================== */
   ngOnInit(): void {
+    // Registre ScrollTrigger au plus tôt (idempotent)
+    try { gsap.registerPlugin(ScrollTrigger); } catch {}
+
     this.wp.getHomepageData().subscribe(acf => {
       this.acf = acf;
 
@@ -161,7 +164,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.preloadHeroImages();
       this.applySeoFromHero();
       this.heroDataReady = true;
-      this.tryInitHeroIntro(); // ← lance l’intro quand DOM + data sont prêts
+      this.tryInitHeroIntro();
 
       // CONTENT
       this.extractKeyFigures();
@@ -176,13 +179,16 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // NEWS
       this.extractNewsSection();
+
+      // (Re)lier les animations une fois les *ngIf rendus
+      setTimeout(() => { this.bindScrollAnimations(); }, 0);
     });
 
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   ngAfterViewInit(): void {
-    // IntersectionObserver Key Figures (inchangé)
+    // IO Key Figures
     const io = new IntersectionObserver(entries => {
       for (const e of entries) {
         if (e.isIntersecting) {
@@ -198,18 +204,18 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     });
     setTimeout(() => this.kfItems.forEach(el => io.observe(el.nativeElement)));
 
-    // Marque la vue prête puis tente l’intro Hero
     this.viewReady = true;
     this.tryInitHeroIntro();
 
-    // Si tes autres sections utilisent GSAP/ScrollTrigger, garde ton bind ici:
-    this.bindScrollAnimations?.();
+    // Ce rappel “sécurité” si le contenu était déjà prêt
+    setTimeout(() => { this.bindScrollAnimations(); }, 0);
   }
 
   ngOnDestroy(): void {
     this.clearAutoplay();        // hero
     this.clearTeamAutoplay();    // team
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
     try { gsap.globalTimeline.clear(); } catch {}
   }
 
@@ -242,12 +248,10 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.heroIntroDone) return;
     if (!this.viewReady) return;
     if (!this.heroDataReady) return;
-
-    // Attendre que le DOM Angular soit rendu (QueryList peupler) avant de setter les états initiaux
     queueMicrotask(() => setTimeout(() => this.initHeroIntroNow(), 0));
   }
 
-  /** Intro immédiate (sans ScrollTrigger) : H1 → P → dots */
+  /** Intro immédiate : H1 → P → dots (BG déjà visible) */
   private initHeroIntroNow(): void {
     if (this.heroIntroDone) return;
 
@@ -260,30 +264,26 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     const titleEl = this.heroTitleEl?.nativeElement;
     const subEl   = this.heroSubtitleEl?.nativeElement;
 
-    // 1) BG visible au 1er paint (pas de fade initial)
     if (layers.length) {
       layers.forEach((el, i) => gsap.set(el, { opacity: i === this.heroIndex ? 1 : 0 }));
-      if (bg) bg.classList.add('is-ready'); // active les transitions ultérieures côté CSS
+      if (bg) bg.classList.add('is-ready');
     }
 
-    // 2) états init
     if (titleEl) gsap.set(titleEl, { autoAlpha: 0, y: 16, willChange: 'transform,opacity' });
     if (subEl)   gsap.set(subEl,   { autoAlpha: 0, y: 12, willChange: 'transform,opacity' });
     const heroEl = document.getElementById('hero');
     const dots = heroEl ? Array.from(heroEl.querySelectorAll<HTMLButtonElement>('.hero-dots .hero-dot')) : [];
     if (dots.length) gsap.set(dots, { autoAlpha: 0, y: 10, willChange: 'transform,opacity' });
 
-    // 3) timeline H1 -> P -> dots (gauche→droite)
     const DUR_T = this.prefersReduced ? 0.001 : 2.5;
     const DUR_S = this.prefersReduced ? 0.001 : 1;
 
-    this.pauseAutoplay(); // évite un changement pendant l’intro
+    this.pauseAutoplay();
 
     const tl = gsap.timeline({
       defaults: { ease: 'power3.out' },
       onComplete: () => {
         this.heroIntroDone = true;
-        // clear will-change
         if (titleEl) gsap.set(titleEl, { clearProps: 'willChange' });
         if (subEl)   gsap.set(subEl,   { clearProps: 'willChange' });
         if (dots.length) gsap.set(dots, { clearProps: 'willChange' });
@@ -296,7 +296,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       .to(dots,    { autoAlpha: 1, y: 0, duration: 0.5, stagger: { each: 0.08, from: 'start' } }, 1.5);
 
     if (this.prefersReduced) {
-      // instantané → relance autoplay de suite
       this.heroIntroDone = true;
       this.resumeAutoplay();
     }
@@ -355,8 +354,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       if (dx < 0) this.next(); else this.prev();
     }
   }
-
-
 
   /* ==================================================== */
   /*                     KEY FIGURES                      */
@@ -486,6 +483,217 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ==================================================== */
+  /*       ANIMS: Identity + WH + Contexts + Clients      */
+  /*                + Team + News (ScrollTrigger)         */
+  /* ==================================================== */
+  private bindScrollAnimations(): void {
+    const EASE = 'power3.out';
+    const prefersReduced =
+      typeof window !== 'undefined'
+        ? (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false)
+        : false;
+
+    // Durées / cadence (toutes sections)
+    const DUR_TITLE   = prefersReduced ? 0.001 : 0.55;
+    const DUR_BLOCK   = prefersReduced ? 0.001 : 0.45;
+    const STAG_SMALL  = prefersReduced ? 0     : 0.06;
+    const STAG_ITEM   = prefersReduced ? 0     : 0.10; // “domino” pour grilles
+    const STAG_CARD   = prefersReduced ? 0     : 0.08;
+
+    const els = <T extends Element>(xs: (T | null | undefined)[]) =>
+      xs.filter(Boolean) as T[];
+
+    /* ======================= IDENTITY (Qui / Où) ======================= */
+    {
+      const identity = document.getElementById('identity');
+      if (identity) {
+        const whoTitle   = identity.querySelector<HTMLElement>('.who .block-title');
+        const whereTitle = identity.querySelector<HTMLElement>('.where .block-title');
+        const whoText = identity.querySelector<HTMLElement>('.who .who-text');
+        const whoBtn  = identity.querySelector<HTMLElement>('.who .cta-btn');
+        const whereMap =
+          identity.querySelector<HTMLElement>('.where .where-map') ??
+          identity.querySelector<HTMLElement>('.where .panel-map');
+
+        gsap.set(els([whoTitle, whereTitle]), { autoAlpha: 0, y: 16 });
+        gsap.set(els([whoText, whoBtn, whereMap]), { autoAlpha: 0, y: 14 });
+
+        gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: identity, start: 'top 75%', once: true }
+        })
+        .to(els([whoTitle, whereTitle]), { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0)
+        .to(els([whoText, whoBtn, whereMap]), {
+          autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_SMALL
+        }, 0.10);
+      }
+    }
+
+    /* ===================== WH (Quoi / Comment / DL) ==================== */
+    {
+      const wh = document.querySelector<HTMLElement>('.wh');
+      if (wh) {
+        const whatTitle = wh.querySelector<HTMLElement>('.what .block-title') ??
+                          wh.querySelector<HTMLElement>('.wh-left  .block-title');
+        const howTitle  = wh.querySelector<HTMLElement>('.how  .block-title') ??
+                          wh.querySelector<HTMLElement>('.wh-right .block-title');
+
+        const whatItems = Array.from(
+          wh.querySelectorAll<HTMLElement>('.what .dash-list li, .wh-left .dash-list li')
+        );
+        const howItems = Array.from(
+          wh.querySelectorAll<HTMLElement>('.how .dash-list li, .wh-right .dash-list li')
+        );
+
+        const rightBtn = wh.querySelector<HTMLElement>('.wh-right .wh-actions .cta-btn') ??
+                         wh.querySelector<HTMLElement>('.wh-actions .cta-btn');
+        const dlLink   = wh.querySelector<HTMLElement>('.download .dl-link');
+
+        gsap.set(els([whatTitle, howTitle]), { autoAlpha: 0, y: 16 });
+        if (whatItems.length) gsap.set(whatItems, { autoAlpha: 0, y: 12 });
+        if (howItems.length)  gsap.set(howItems,  { autoAlpha: 0, y: 12 });
+        gsap.set(els([rightBtn, dlLink]), { autoAlpha: 0, y: 10 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: wh, start: 'top 78%', once: true }
+        });
+
+        tl.to(els([whatTitle, howTitle]), { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0);
+
+        if (whatItems.length) {
+          tl.to(whatItems, { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_SMALL }, 0.12);
+        }
+        if (howItems.length) {
+          tl.to(howItems,  { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_SMALL }, 0.12);
+        }
+
+        tl.to(els([dlLink, rightBtn]), { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, '+=0.10');
+      }
+    }
+
+    /* ======================= CONTEXTES (domino) ======================== */
+    {
+      const ctx = document.querySelector<HTMLElement>('.contexts');
+      if (ctx) {
+        const title = ctx.querySelector<HTMLElement>('.contexts-title');
+        const grid  = ctx.querySelector<HTMLElement>('.contexts-grid');
+        const items = Array.from(ctx.querySelectorAll<HTMLElement>('.contexts-grid .ctx-item'));
+
+        const icons = items.map(li => li.querySelector<HTMLElement>('.ctx-icon, .ctx-img') || null);
+        const labels = items.map(li => li.querySelector<HTMLElement>('.ctx-label') || null);
+
+        gsap.set(title, { autoAlpha: 0, y: 16 });
+        gsap.set(els(icons),  { autoAlpha: 0, y: 14 });
+        gsap.set(els(labels), { autoAlpha: 0, y: 10 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: ctx, start: 'top 75%', once: true }
+        });
+
+        tl.to(title, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0);
+
+        // Domino : pour chaque case -> icône, puis label ; cases de gauche à droite.
+        items.forEach((_, i) => {
+          const at = 0.12 + i * STAG_ITEM;
+          const ico = icons[i];
+          const lbl = labels[i];
+          if (ico) tl.to(ico, { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, at);
+          if (lbl) tl.to(lbl, { autoAlpha: 1, y: 0, duration: DUR_BLOCK * 0.9 }, at + 0.08);
+        });
+      }
+    }
+
+    /* =========================== CLIENTS ============================== */
+    {
+      const clients = document.querySelector<HTMLElement>('.clients');
+      if (clients) {
+        const icon  = clients.querySelector<HTMLElement>('.clients-icon');
+        const title = clients.querySelector<HTMLElement>('.clients-title');
+        const listItems = Array.from(clients.querySelectorAll<HTMLElement>('.clients-list li'));
+
+        gsap.set(els([icon, title]), { autoAlpha: 0, y: 16 });
+        if (listItems.length) gsap.set(listItems, { autoAlpha: 0, y: 12 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: clients, start: 'top 80%', once: true }
+        } as any); // typing guard if needed
+
+        // fix typo: using gsap correctly
+        (tl as gsap.core.Timeline)
+          .to(icon,  { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, 0.00)
+          .to(title, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0.10);
+
+        if (listItems.length) {
+          (tl as gsap.core.Timeline).to(listItems, { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_SMALL }, 0.28);
+        }
+      }
+    }
+
+    /* ============================= TEAM =============================== */
+    {
+      const team = document.querySelector<HTMLElement>('#team.team');
+      if (team) {
+        const line1 = team.querySelector<HTMLElement>('.team-title .line1');
+        const line2 = team.querySelector<HTMLElement>('.team-title .line2');
+        const cards = Array.from(team.querySelectorAll<HTMLElement>('.team-grid .member-card'));
+        const dots  = team.querySelector<HTMLElement>('.team-dots');
+        const cta   = team.querySelector<HTMLElement>('.team-cta');
+
+        gsap.set(els([line1, line2]), { autoAlpha: 0, y: 16 });
+        if (cards.length) gsap.set(cards, { autoAlpha: 0, y: 14 });
+        gsap.set(els([dots, cta]), { autoAlpha: 0, y: 10 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: team, start: 'top 78%', once: true }
+        });
+
+        tl.to(line1, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0)
+          .to(line2, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0.10);
+
+        if (cards.length) {
+          tl.to(cards, { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_CARD }, 0.28);
+        }
+
+        tl.to(els([dots, cta]), { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, '+=0.10');
+      }
+    }
+
+    /* ============================== NEWS ============================== */
+    {
+      const news = document.querySelector<HTMLElement>('.news');
+      if (news) {
+        const title = news.querySelector<HTMLElement>('.news-title');
+        const cards = Array.from(news.querySelectorAll<HTMLElement>('.news-card'));
+        const side  = news.querySelector<HTMLElement>('.news-side-btn');
+
+        gsap.set(title, { autoAlpha: 0, y: 16 });
+        if (cards.length) gsap.set(cards, { autoAlpha: 0, y: 14 });
+        gsap.set(side, { autoAlpha: 0, y: 10 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: news, start: 'top 80%', once: true }
+        });
+
+        tl.to(title, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0);
+
+        if (cards.length) {
+          tl.to(cards, { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_CARD }, 0.15);
+        }
+
+        tl.to(side, { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, '+=0.10');
+      }
+    }
+
+    // Clean + reposition
+    try { ScrollTrigger.refresh(); } catch {}
+  }
+
+  /* ==================================================== */
   /*                       CONTEXTES                      */
   /* ==================================================== */
   private extractExpertiseContext(): void {
@@ -575,21 +783,19 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private setTeamTitleTwoLines(full: string | undefined): void {
     const s = (full || '').replace(/\s+/g, ' ').trim();
-    // Si un retour ligne existe déjà dans l’ACF, on le respecte
     if (s.includes('\n')) {
       const [l1, l2] = s.split('\n');
       this.teamTitleLine1 = l1?.trim() || this.teamTitleLine1;
       this.teamTitleLine2 = l2?.trim() || this.teamTitleLine2;
       return;
     }
-    // Sinon, on applique la coupe maquette après "Une équipe"
     if (s.toLowerCase().startsWith('une équipe')) {
       const rest = s.slice('une équipe'.length).trim();
       if (rest) this.teamTitleLine2 = rest;
     }
   }
 
-  /* Navigation utilisateur -> stoppe l’autoplay Team */
+  /* Navigation Team -> stop autoplay */
   goTeamTo(i: number): void {
     if (!this.teamPages.length) return;
     const len = this.teamPages.length;
@@ -599,11 +805,10 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   nextTeam(): void { this.goTeamTo(this.teamPageIndex + 1); }
   prevTeam(): void { this.goTeamTo(this.teamPageIndex - 1); }
 
-  /* Autoplay aléatoire Team (sans répéter la page courante) */
   private startTeamAutoplay(): void {
     this.clearTeamAutoplay();
     if (this.teamPages.length < 2) return;
-    if (this.teamAutoplayStoppedByUser) return; // si l’utilisateur a cliqué, on ne relance pas
+    if (this.teamAutoplayStoppedByUser) return;
 
     this.teamAutoplayRef = setInterval(() => {
       const len = this.teamPages.length;
@@ -632,153 +837,10 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ==================================================== */
   trackByIndex(i: number): number { return i; }
 
-  /* ==================================================== */
-  /*                 GSAP HELPERS & BIND                  */
-  /* ==================================================== */
-
-  /** Fade-up simple, une seule fois */
-  private fadeUpOnce(
-    el: Element | null | undefined,
-    opts: { start?: string; delay?: number; dur?: number; y?: number } = {}
-  ){
-    if (!el) return;
-    const { start = 'top 85%', delay = 0, dur = 0.5, y = 16 } = opts;
-    gsap.fromTo(el, { autoAlpha: 0, y }, {
-      autoAlpha: 1, y: 0, duration: dur, ease: 'power3.out', delay,
-      scrollTrigger: { trigger: el as Element, start, once: true }
-    });
-  }
-
-  /** Liste (ou plusieurs éléments) révélés en une fois (ou avec léger stagger) */
-  private fadeListOnce(
-    container: Element | null | undefined,
-    items: Element[],
-    opts: { start?: string; delay?: number; dur?: number; stagger?: number; y?: number } = {}
-  ){
-    if (!container || !items?.length) return;
-    const { start = 'top 85%', delay = 0.35, dur = 0.5, stagger = 0, y = 16 } = opts;
-    gsap.fromTo(items, { autoAlpha: 0, y }, {
-      autoAlpha: 1, y: 0, duration: dur, ease: 'power3.out', delay, stagger,
-      scrollTrigger: { trigger: container as Element, start, once: true }
-    });
-  }
-
-  /** Anims “comme About” : Titre → Contenu, section par section */
-  private bindScrollAnimations(): void {
-    // --- HERO (léger reveal du bloc texte au 1er rendu) ---
-    const hero = document.querySelector('.hero-section .hero-content');
-    this.fadeUpOnce(hero, { start: 'top 95%', dur: 0.6, y: 18 });
-
-    // --- IDENTITY : Qui ? (titre → texte → CTA) ---
-    {
-      const whoTitle  = document.querySelector('.identity .who .block-title');
-      const whoText   = document.querySelector('.identity .who .who-text');
-      const whoCta    = document.querySelector('.identity .who .who-actions .cta-btn');
-
-      this.fadeUpOnce(whoTitle, { start: 'top 85%' });
-      // contenu 350 ms après le titre
-      this.fadeUpOnce(whoText, { start: 'top 85%', delay: 0.35 });
-      this.fadeUpOnce(whoCta,  { start: 'top 85%', delay: 0.45 });
-    }
-
-    // --- IDENTITY : Où ? (titre → body (carte/liste)) ---
-    {
-      const whereTitle = document.querySelector('.identity .where .block-title');
-      const whereBody  = document.querySelector('.identity .where #where-body');
-      const list       = document.querySelector('.identity .where .panel-list');
-      const listItems  = Array.from(document.querySelectorAll('.identity .where .panel-list li')) as HTMLElement[];
-
-      this.fadeUpOnce(whereTitle, { start: 'top 85%' });
-      this.fadeUpOnce(whereBody,  { start: 'top 85%', delay: 0.35 });
-
-      // on révèle la liste “en bloc” (la map a sa propre opacité via CSS)
-      if (list && listItems.length) {
-        this.fadeListOnce(list, listItems, { start: 'top 85%', delay: 0.45, stagger: 0 });
-      }
-    }
-
-    // --- WHAT (titre → list → CTA/download) ---
-    {
-      const whatTitle = document.querySelector('.wh .what .block-title');
-      const whatList  = document.querySelector('.wh .what .dash-list');
-      const whatItems = Array.from(document.querySelectorAll('.wh .what .dash-list li')) as HTMLElement[];
-      const dlLink    = document.querySelector('.wh .download .dl-link');
-
-      this.fadeUpOnce(whatTitle, { start: 'top 85%' });
-      this.fadeListOnce(whatList, whatItems, { start: 'top 85%', delay: 0.35, stagger: 0.05 });
-      this.fadeUpOnce(dlLink,   { start: 'top 85%', delay: 0.55 });
-    }
-
-    // --- HOW (titre → list → CTA) ---
-    {
-      const howTitle = document.querySelector('.wh .how .block-title');
-      const howList  = document.querySelector('.wh .how .dash-list');
-      const howItems = Array.from(document.querySelectorAll('.wh .how .dash-list li')) as HTMLElement[];
-      const howCta   = document.querySelector('.wh .wh-right > .wh-actions .cta-btn');
-
-      this.fadeUpOnce(howTitle, { start: 'top 85%' });
-      this.fadeListOnce(howList, howItems, { start: 'top 85%', delay: 0.35, stagger: 0.05 });
-      this.fadeUpOnce(howCta,   { start: 'top 85%', delay: 0.55 });
-    }
-
-    // --- CONTEXTS (titre → grille) ---
-    {
-      const ctxTitle = document.querySelector('.contexts .contexts-title');
-      const ctxGrid  = document.querySelector('.contexts .contexts-grid');
-      const ctxItems = Array.from(document.querySelectorAll('.contexts .ctx-item')) as HTMLElement[];
-
-      this.fadeUpOnce(ctxTitle, { start: 'top 85%' });
-      this.fadeListOnce(ctxGrid, ctxItems, { start: 'top 85%', delay: 0.35, stagger: 0.06 });
-    }
-
-    // --- CLIENTS (titre gauche → liste droite) ---
-    {
-      const clTitle = document.querySelector('.clients .clients-title');
-      const clIcon  = document.querySelector('.clients .clients-icon');
-      const clList  = document.querySelector('.clients .clients-list');
-      const clItems = Array.from(document.querySelectorAll('.clients .clients-list li')) as HTMLElement[];
-
-      this.fadeUpOnce(clTitle, { start: 'top 85%' });
-      this.fadeUpOnce(clIcon,  { start: 'top 85%', delay: 0.2 });
-      this.fadeListOnce(clList, clItems, { start: 'top 85%', delay: 0.45, stagger: 0.04 });
-    }
-
-    // --- TEAM (titre → cartes → bas de section) ---
-    {
-      const teamTitle = document.querySelector('.team .team-title');
-      const cardsWrap = document.querySelector('.team .team-grid');
-      const cards     = Array.from(document.querySelectorAll('.team .member-card')) as HTMLElement[];
-      const teamDots  = document.querySelector('.team .team-dots');
-      const teamCta   = document.querySelector('.team .team-cta');
-
-      this.fadeUpOnce(teamTitle, { start: 'top 85%' });
-      this.fadeListOnce(cardsWrap, cards, { start: 'top 85%', delay: 0.35, stagger: 0.08 });
-      this.fadeUpOnce(teamDots, { start: 'top 85%', delay: 0.55 });
-      this.fadeUpOnce(teamCta,  { start: 'top 85%', delay: 0.65 });
-    }
-
-    // --- NEWS (titre → 2 cartes → ruban latéral) ---
-    {
-      const newsTitle = document.querySelector('.news .news-title');
-      const newsGrid  = document.querySelector('.news .news-grid');
-      const newsCards = Array.from(document.querySelectorAll('.news .news-card')) as HTMLElement[];
-      const newsSide  = document.querySelector('.news .news-side-btn');
-
-      this.fadeUpOnce(newsTitle, { start: 'top 85%' });
-      this.fadeListOnce(newsGrid, newsCards, { start: 'top 85%', delay: 0.35, stagger: 0.08 });
-      this.fadeUpOnce(newsSide,  { start: 'top 85%', delay: 0.6 });
-    }
-
-    // Sécurité : refresh après binding
-    try { ScrollTrigger.refresh(); } catch {}
-  }
-
   /* ===== NEWS: mapping ACF ===== */
   private extractNewsSection(): void {
     const n = this.acf?.news_section || {};
-
     const items: NewsItem[] = [];
-    // On prend jusqu’à 2 cartes (maquette)
     for (let i = 1; i <= 2; i++) {
       const item: NewsItem = {
         logo: n[`news_logo_firm_${i}`] || '',
@@ -788,12 +850,10 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         html: n[`news_bloc_${i}`] || '',
         link: n[`news_link_${i}`] || ''
       };
-      // on garde si au moins un champ utile
       if (item.title || item.html || item.logo || item.firm || item.authorDate) {
         items.push(item);
       }
     }
-
     if (items.length) {
       this.news = { title: n.news_title || 'Actualités', items };
     } else {
