@@ -1,11 +1,14 @@
 import {
   Component, OnDestroy, OnInit, AfterViewInit, inject,
-  ViewChildren, QueryList, ElementRef
+  ViewChildren, QueryList, ElementRef, ViewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
+
+/* === GSAP === */
+import { gsap } from 'gsap';
 
 type Slide = { title: string; subtitle: string; bg: string };
 
@@ -84,6 +87,18 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   autoplayMs = 5000;
   private autoplayRef: any = null;
 
+  // Refs Hero présents dans ton HTML
+  @ViewChild('heroBg') heroBgRef!: ElementRef<HTMLElement>;
+  @ViewChildren('heroLayer') heroLayerEls!: QueryList<ElementRef<HTMLElement>>;
+  @ViewChild('heroTitle') heroTitleEl!: ElementRef<HTMLElement>;
+  @ViewChild('heroSubtitle') heroSubtitleEl!: ElementRef<HTMLElement>;
+
+  // Flags de synchronisation
+  private viewReady = false;
+  private heroDataReady = false;
+  private heroIntroDone = false;
+  private prefersReduced = false;
+
   /* swipe hero */
   private pointerStartX: number | null = null;
   private swipeThreshold = 40;
@@ -145,7 +160,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.extractHero();
       this.preloadHeroImages();
       this.applySeoFromHero();
-      this.startAutoplay();
+      this.heroDataReady = true;
+      this.tryInitHeroIntro(); // ← lance l’intro quand DOM + data sont prêts
 
       // CONTENT
       this.extractKeyFigures();
@@ -166,6 +182,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
+    // IntersectionObserver Key Figures (inchangé)
     const io = new IntersectionObserver(entries => {
       for (const e of entries) {
         if (e.isIntersecting) {
@@ -180,12 +197,20 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.kfItems.forEach(el => io.observe(el.nativeElement));
     });
     setTimeout(() => this.kfItems.forEach(el => io.observe(el.nativeElement)));
+
+    // Marque la vue prête puis tente l’intro Hero
+    this.viewReady = true;
+    this.tryInitHeroIntro();
+
+    // Si tes autres sections utilisent GSAP/ScrollTrigger, garde ton bind ici:
+    this.bindScrollAnimations?.();
   }
 
   ngOnDestroy(): void {
     this.clearAutoplay();        // hero
     this.clearTeamAutoplay();    // team
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
+    try { gsap.globalTimeline.clear(); } catch {}
   }
 
   /* ==================================================== */
@@ -212,6 +237,72 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /** Essaie d’initialiser l’intro quand (1) la vue est prête et (2) les slides sont chargés */
+  private tryInitHeroIntro(): void {
+    if (this.heroIntroDone) return;
+    if (!this.viewReady) return;
+    if (!this.heroDataReady) return;
+
+    // Attendre que le DOM Angular soit rendu (QueryList peupler) avant de setter les états initiaux
+    queueMicrotask(() => setTimeout(() => this.initHeroIntroNow(), 0));
+  }
+
+  /** Intro immédiate (sans ScrollTrigger) : H1 → P → dots */
+  private initHeroIntroNow(): void {
+    if (this.heroIntroDone) return;
+
+    this.prefersReduced = typeof window !== 'undefined'
+      ? (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false)
+      : false;
+
+    const bg      = this.heroBgRef?.nativeElement;
+    const layers  = this.heroLayerEls?.toArray().map(r => r.nativeElement) ?? [];
+    const titleEl = this.heroTitleEl?.nativeElement;
+    const subEl   = this.heroSubtitleEl?.nativeElement;
+
+    // 1) BG visible au 1er paint (pas de fade initial)
+    if (layers.length) {
+      layers.forEach((el, i) => gsap.set(el, { opacity: i === this.heroIndex ? 1 : 0 }));
+      if (bg) bg.classList.add('is-ready'); // active les transitions ultérieures côté CSS
+    }
+
+    // 2) états init
+    if (titleEl) gsap.set(titleEl, { autoAlpha: 0, y: 16, willChange: 'transform,opacity' });
+    if (subEl)   gsap.set(subEl,   { autoAlpha: 0, y: 12, willChange: 'transform,opacity' });
+    const heroEl = document.getElementById('hero');
+    const dots = heroEl ? Array.from(heroEl.querySelectorAll<HTMLButtonElement>('.hero-dots .hero-dot')) : [];
+    if (dots.length) gsap.set(dots, { autoAlpha: 0, y: 10, willChange: 'transform,opacity' });
+
+    // 3) timeline H1 -> P -> dots (gauche→droite)
+    const DUR_T = this.prefersReduced ? 0.001 : 2.5;
+    const DUR_S = this.prefersReduced ? 0.001 : 1;
+
+    this.pauseAutoplay(); // évite un changement pendant l’intro
+
+    const tl = gsap.timeline({
+      defaults: { ease: 'power3.out' },
+      onComplete: () => {
+        this.heroIntroDone = true;
+        // clear will-change
+        if (titleEl) gsap.set(titleEl, { clearProps: 'willChange' });
+        if (subEl)   gsap.set(subEl,   { clearProps: 'willChange' });
+        if (dots.length) gsap.set(dots, { clearProps: 'willChange' });
+        this.resumeAutoplay();
+      }
+    });
+
+    tl.to(titleEl, { autoAlpha: 1, y: 0, duration: DUR_T }, 0.5)
+      .to(subEl,   { autoAlpha: 1, y: 0, duration: DUR_S }, 0.8)
+      .to(dots,    { autoAlpha: 1, y: 0, duration: 0.5, stagger: { each: 0.08, from: 'start' } }, 1.5);
+
+    if (this.prefersReduced) {
+      // instantané → relance autoplay de suite
+      this.heroIntroDone = true;
+      this.resumeAutoplay();
+    }
+  }
+
+  /** Navigation Hero */
   goTo(i: number): void {
     if (!this.heroSlides.length) return;
     const len = this.heroSlides.length;
@@ -220,6 +311,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   next(): void { this.goTo(this.heroIndex + 1); }
   prev(): void { this.goTo(this.heroIndex - 1); }
 
+  /** Autoplay */
   startAutoplay(): void {
     this.clearAutoplay();
     if (this.heroSlides.length > 1) {
@@ -228,7 +320,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   pauseAutoplay(): void { this.clearAutoplay(); }
   resumeAutoplay(): void {
-    if (document.visibilityState === 'visible') this.startAutoplay();
+    if (document.visibilityState === 'visible' && this.heroSlides.length > 1) {
+      this.startAutoplay();
+    }
   }
   private clearAutoplay(): void {
     if (this.autoplayRef) {
@@ -242,7 +336,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.clearTeamAutoplay();
     } else {
       this.resumeAutoplay();
-      // ne relance l’autoplay Team que si l’utilisateur ne l’a pas stoppé
       if (!this.teamAutoplayStoppedByUser) this.startTeamAutoplay();
     }
   };
@@ -262,6 +355,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       if (dx < 0) this.next(); else this.prev();
     }
   }
+
+
 
   /* ==================================================== */
   /*                     KEY FIGURES                      */
@@ -435,7 +530,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.teamTitle = t.team_title_1 || 'Une équipe de 8 experts à vos côtés';
     this.setTeamTitleTwoLines(this.teamTitle);
 
-
     // 2) Mapping
     const tmp: TeamMember[] = [];
     for (let i = 1; i <= 8; i++) {
@@ -538,6 +632,146 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ==================================================== */
   trackByIndex(i: number): number { return i; }
 
+  /* ==================================================== */
+  /*                 GSAP HELPERS & BIND                  */
+  /* ==================================================== */
+
+  /** Fade-up simple, une seule fois */
+  private fadeUpOnce(
+    el: Element | null | undefined,
+    opts: { start?: string; delay?: number; dur?: number; y?: number } = {}
+  ){
+    if (!el) return;
+    const { start = 'top 85%', delay = 0, dur = 0.5, y = 16 } = opts;
+    gsap.fromTo(el, { autoAlpha: 0, y }, {
+      autoAlpha: 1, y: 0, duration: dur, ease: 'power3.out', delay,
+      scrollTrigger: { trigger: el as Element, start, once: true }
+    });
+  }
+
+  /** Liste (ou plusieurs éléments) révélés en une fois (ou avec léger stagger) */
+  private fadeListOnce(
+    container: Element | null | undefined,
+    items: Element[],
+    opts: { start?: string; delay?: number; dur?: number; stagger?: number; y?: number } = {}
+  ){
+    if (!container || !items?.length) return;
+    const { start = 'top 85%', delay = 0.35, dur = 0.5, stagger = 0, y = 16 } = opts;
+    gsap.fromTo(items, { autoAlpha: 0, y }, {
+      autoAlpha: 1, y: 0, duration: dur, ease: 'power3.out', delay, stagger,
+      scrollTrigger: { trigger: container as Element, start, once: true }
+    });
+  }
+
+  /** Anims “comme About” : Titre → Contenu, section par section */
+  private bindScrollAnimations(): void {
+    // --- HERO (léger reveal du bloc texte au 1er rendu) ---
+    const hero = document.querySelector('.hero-section .hero-content');
+    this.fadeUpOnce(hero, { start: 'top 95%', dur: 0.6, y: 18 });
+
+    // --- IDENTITY : Qui ? (titre → texte → CTA) ---
+    {
+      const whoTitle  = document.querySelector('.identity .who .block-title');
+      const whoText   = document.querySelector('.identity .who .who-text');
+      const whoCta    = document.querySelector('.identity .who .who-actions .cta-btn');
+
+      this.fadeUpOnce(whoTitle, { start: 'top 85%' });
+      // contenu 350 ms après le titre
+      this.fadeUpOnce(whoText, { start: 'top 85%', delay: 0.35 });
+      this.fadeUpOnce(whoCta,  { start: 'top 85%', delay: 0.45 });
+    }
+
+    // --- IDENTITY : Où ? (titre → body (carte/liste)) ---
+    {
+      const whereTitle = document.querySelector('.identity .where .block-title');
+      const whereBody  = document.querySelector('.identity .where #where-body');
+      const list       = document.querySelector('.identity .where .panel-list');
+      const listItems  = Array.from(document.querySelectorAll('.identity .where .panel-list li')) as HTMLElement[];
+
+      this.fadeUpOnce(whereTitle, { start: 'top 85%' });
+      this.fadeUpOnce(whereBody,  { start: 'top 85%', delay: 0.35 });
+
+      // on révèle la liste “en bloc” (la map a sa propre opacité via CSS)
+      if (list && listItems.length) {
+        this.fadeListOnce(list, listItems, { start: 'top 85%', delay: 0.45, stagger: 0 });
+      }
+    }
+
+    // --- WHAT (titre → list → CTA/download) ---
+    {
+      const whatTitle = document.querySelector('.wh .what .block-title');
+      const whatList  = document.querySelector('.wh .what .dash-list');
+      const whatItems = Array.from(document.querySelectorAll('.wh .what .dash-list li')) as HTMLElement[];
+      const dlLink    = document.querySelector('.wh .download .dl-link');
+
+      this.fadeUpOnce(whatTitle, { start: 'top 85%' });
+      this.fadeListOnce(whatList, whatItems, { start: 'top 85%', delay: 0.35, stagger: 0.05 });
+      this.fadeUpOnce(dlLink,   { start: 'top 85%', delay: 0.55 });
+    }
+
+    // --- HOW (titre → list → CTA) ---
+    {
+      const howTitle = document.querySelector('.wh .how .block-title');
+      const howList  = document.querySelector('.wh .how .dash-list');
+      const howItems = Array.from(document.querySelectorAll('.wh .how .dash-list li')) as HTMLElement[];
+      const howCta   = document.querySelector('.wh .wh-right > .wh-actions .cta-btn');
+
+      this.fadeUpOnce(howTitle, { start: 'top 85%' });
+      this.fadeListOnce(howList, howItems, { start: 'top 85%', delay: 0.35, stagger: 0.05 });
+      this.fadeUpOnce(howCta,   { start: 'top 85%', delay: 0.55 });
+    }
+
+    // --- CONTEXTS (titre → grille) ---
+    {
+      const ctxTitle = document.querySelector('.contexts .contexts-title');
+      const ctxGrid  = document.querySelector('.contexts .contexts-grid');
+      const ctxItems = Array.from(document.querySelectorAll('.contexts .ctx-item')) as HTMLElement[];
+
+      this.fadeUpOnce(ctxTitle, { start: 'top 85%' });
+      this.fadeListOnce(ctxGrid, ctxItems, { start: 'top 85%', delay: 0.35, stagger: 0.06 });
+    }
+
+    // --- CLIENTS (titre gauche → liste droite) ---
+    {
+      const clTitle = document.querySelector('.clients .clients-title');
+      const clIcon  = document.querySelector('.clients .clients-icon');
+      const clList  = document.querySelector('.clients .clients-list');
+      const clItems = Array.from(document.querySelectorAll('.clients .clients-list li')) as HTMLElement[];
+
+      this.fadeUpOnce(clTitle, { start: 'top 85%' });
+      this.fadeUpOnce(clIcon,  { start: 'top 85%', delay: 0.2 });
+      this.fadeListOnce(clList, clItems, { start: 'top 85%', delay: 0.45, stagger: 0.04 });
+    }
+
+    // --- TEAM (titre → cartes → bas de section) ---
+    {
+      const teamTitle = document.querySelector('.team .team-title');
+      const cardsWrap = document.querySelector('.team .team-grid');
+      const cards     = Array.from(document.querySelectorAll('.team .member-card')) as HTMLElement[];
+      const teamDots  = document.querySelector('.team .team-dots');
+      const teamCta   = document.querySelector('.team .team-cta');
+
+      this.fadeUpOnce(teamTitle, { start: 'top 85%' });
+      this.fadeListOnce(cardsWrap, cards, { start: 'top 85%', delay: 0.35, stagger: 0.08 });
+      this.fadeUpOnce(teamDots, { start: 'top 85%', delay: 0.55 });
+      this.fadeUpOnce(teamCta,  { start: 'top 85%', delay: 0.65 });
+    }
+
+    // --- NEWS (titre → 2 cartes → ruban latéral) ---
+    {
+      const newsTitle = document.querySelector('.news .news-title');
+      const newsGrid  = document.querySelector('.news .news-grid');
+      const newsCards = Array.from(document.querySelectorAll('.news .news-card')) as HTMLElement[];
+      const newsSide  = document.querySelector('.news .news-side-btn');
+
+      this.fadeUpOnce(newsTitle, { start: 'top 85%' });
+      this.fadeListOnce(newsGrid, newsCards, { start: 'top 85%', delay: 0.35, stagger: 0.08 });
+      this.fadeUpOnce(newsSide,  { start: 'top 85%', delay: 0.6 });
+    }
+
+    // Sécurité : refresh après binding
+    try { ScrollTrigger.refresh(); } catch {}
+  }
 
   /* ===== NEWS: mapping ACF ===== */
   private extractNewsSection(): void {

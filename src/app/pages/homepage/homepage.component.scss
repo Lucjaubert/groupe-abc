@@ -42,6 +42,11 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     pointer-events: none;
     z-index: 0;
 
+    // Désactive la transition au premier paint pour éviter un flash
+    &:not(.is-ready) .hero-layer {
+      transition: none !important;
+    }
+
     .hero-layer {
       position: absolute;
       inset: 0;
@@ -66,13 +71,68 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     padding-inline: 0;
     padding: 280px 0 0;
 
+    .hero-title {
+      color: $white;
+      font-family: "Plus Jakarta Sans";
+      font-size: map.get(vars.$font-size, "120"); // ajuste selon ta grille
+      font-weight: map.get(vars.$font-weight, "bold");
+      line-height: 1.1;
+      margin-bottom: 12px;
+      will-change: transform, opacity;
+    }
+
     .hero-subtitle {
       color: $white;
       font-family: "Plus Jakarta Sans";
-      font-size: map.get(vars.$font-size, "100"); /* 48px */
+      font-size: map.get(vars.$font-size, "100"); /* ~48px */
       font-style: normal;
       font-weight: map.get(vars.$font-weight, "regular");
       line-height: normal;
+      margin-bottom: 20px;
+      will-change: transform, opacity;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 12px;
+      margin-top: 18px;
+
+      .btn {
+        padding: 10px 18px;
+        border-radius: 6px;
+        font-family: "Plus Jakarta Sans";
+        font-size: 16px;
+        font-weight: 500;
+        line-height: normal;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: 1px solid transparent;
+
+        &:hover {
+          transform: translateY(-2px);
+        }
+      }
+
+      .btn-primary {
+        background: $white;
+        color: $blue;
+      }
+
+      .btn-outline {
+        background: transparent;
+        color: $white;
+        border-color: $white;
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: $white;
+        opacity: 0.9;
+
+        &:hover {
+          opacity: 1;
+        }
+      }
     }
   }
 
@@ -118,6 +178,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     padding: 280px 0 0;
   }
 }
+
 
 /* ===================================================================== */
 /* ============================ KEY FIGURES ============================= */
@@ -1249,4 +1310,24 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   display: block;
   object-fit: cover;
   object-position: center;
+}
+
+/* Optionnel : helper pour pré-cacher (si tu ajoutes .prehide dans le HTML plus tard) */
+.prehide {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(16px);
+  will-change: transform, opacity;
+}
+.prehide-row {
+  opacity: 0;
+  visibility: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .prehide, .prehide-row {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
 }

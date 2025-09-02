@@ -1,19 +1,32 @@
 @use "sass:map";
 @use "../../../styles/_variables.scss" as vars;
 
-/* ===== Aliases pratiques ===== */
-$blue:       map.get(vars.$theme-colors, "light-blue");   /* #444697 proche de #444798 Figma */
-$blue-hero:  #444798;                                      /* si tu veux la teinte exacte Figma */
+/* ===== Aliases ===== */
+$blue:       map.get(vars.$theme-colors, "light-blue");
+$blue-hero:  #444798;
 $red:        map.get(vars.$theme-colors, "light-red");
 $grey-100:   map.get(vars.$theme-colors, "light-grey");
 $white:      map.get(vars.$theme-colors, "white");
 
-/* ====== Wrapper ====== */
+/* ========================= */
+/* Pré-cachage local (NEWS)  */
+/* ========================= */
 .about-wrapper {
-  width: 100%;
+  .prehide {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    will-change: transform, opacity;
+  }
+  .prehide-row {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
 
-/* ===== Section ===== */
+/* ===== Wrapper/Section ===== */
+.about-wrapper { width: 100%; }
+
 .section {
   position: relative;
   isolation: isolate;
@@ -29,337 +42,131 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 }
 
-/* ===== Titre de page ===== */
-.page-title {
-  color: $blue-hero;
-  font-size: 48px !important;
-  font-weight: map.get(vars.$font-weight, "regular");
-  line-height: normal;
-  margin: 0 0 24px;
-}
-
-.page-subtitle {
-  color: $blue;
-  font-size: clamp(18px, 2vw, 24px);
-  font-weight: map.get(vars.$font-weight, "regular");
-  margin: 0;
-}
-
-/* ===================================================================== */
-/* ============================  CORE  ================================== */
-/* ===================================================================== */
+/* ========================= */
+/* CORE (titre + 2 colonnes) */
+/* ========================= */
 .block-title {
   color: $blue-hero;
   font-size: clamp(32px, 3.2vw, 60px);
   font-weight: map.get(vars.$font-weight, "regular");
   line-height: 1.1;
-  margin: 0 0 58px;
+  margin: 0 0 38px;
 }
 
 .core-grid {
-  --core-gap: var(--section-gap-x, 148px);
+  --core-gap: clamp(48px, 8vw, 148px);
   --core-left-col: 55%;
   display: grid;
   grid-template-columns: 1fr;
   grid-template-areas:
     "left"
-    "right"
-    "below";
-  row-gap: clamp(28px, 4vw, 48px);
-  align-items: start;
+    "right";
+  row-gap: clamp(24px, 4vw, 40px);
 
   @media (min-width: 992px) {
     grid-template-columns:
       minmax(0, var(--core-left-col))
       minmax(0, calc(100% - var(--core-left-col)));
-    grid-template-areas:
-      "left  right"
-      "below below";
+    grid-template-areas: "left right";
     column-gap: var(--core-gap);
   }
 }
 
-.core-left {
-  grid-area: left;
-  display: flex;
-  flex-direction: column;
-}
-
-.core-right {
-  grid-area: right;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  text-align: left;
-  gap: clamp(16px, 2vw, 24px);
-}
-
-.core-below {
-  grid-area: below;
-  display: flex;
-  flex-direction: column;
-}
+.core-left  { grid-area: left;  display: flex; flex-direction: column; }
+.core-right { grid-area: right; display: flex; flex-direction: column; gap: clamp(10px, 2vw, 14px); align-items: flex-start; }
 
 .block-html {
   color: $blue;
   font-size: map.get(vars.$font-size, "30"); /* 16px */
-  font-weight: map.get(vars.$font-weight, "regular");
   line-height: 1.6;
-
-  p {
-    margin: 0 0 12px;
-  }
-
-  p:first-child {
-    margin-top: 0;
-  }
-
-  p:last-child {
-    margin-bottom: 0;
-  }
-}
-
-.core .where-panel {
-  position: static !important;
-  inset: auto !important;
-  opacity: 1 !important;
-  pointer-events: auto !important;
-  transition: none !important;
+  p { margin: 0 0 12px; }
+  p:last-child { margin-bottom: 0; }
 }
 
 .panel-list.about-where-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: clamp(10px, 1.8vw, 14px);
-  max-width: 320px;
-  width: 100%;
+  list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: clamp(8px, 1.8vw, 12px);
 }
-
 .panel-list.about-where-list li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: $blue-hero;
-  font-size: 22px;
-  font-weight: map.get(vars.$font-weight, "regular");
-  line-height: normal;
-  margin: 0;
+  display: flex; align-items: center; gap: 10px;
+  color: $blue-hero; font-size: 20px;
 }
-
 .panel-list.about-where-list li::before {
-  content: "—";
-  color: $red;
-  font-size: 20px;
-  font-weight: map.get(vars.$font-weight, "regular");
-  margin-right: 6px;
-  flex: 0 0 auto;
+  content: "—"; color: $red; font-size: 18px; margin-right: 6px;
 }
 
-/* ===== CTA ===== */
-.cta-btn {
-  width: clamp(173px, 32vw, 244.5px);
-  height: clamp(27px, 2.6vw, 28.113px);
-  min-width: 173px;
-  max-width: 244.5px;
-  display: flex;
-  align-items: center;
-  border: 0;
-  border-radius: 5px;
-  background: $blue-hero;
-  color: $white;
-  padding-left: 12px;
-  padding-right: 8px;
-  cursor: pointer;
-  font-weight: map.get(vars.$font-weight, "regular");
-  font-size: clamp(11px, 1.4vw, 12px);
-  line-height: 1;
-  transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
-}
-
-.cta-btn:hover {
-  filter: brightness(1.04);
-}
-
-.cta-btn:active {
-  transform: translateY(1px);
-}
-
-.cta-btn:focus-visible {
-  outline: 2px solid $red;
-  outline-offset: 2px;
-}
-
-.cta-label {
-  margin-right: 12px;
-  white-space: nowrap;
-}
-
-.cta-plus {
-  margin-left: auto;
-  display: inline-grid;
-  place-items: center;
-  width: 22px;
-  height: 22px;
-}
-
-.icon-plus {
-  width: 22px;
-  height: 22px;
-  stroke: $red;
-  stroke-width: 3.2;
-  stroke-linecap: round;
-  fill: none;
-}
-
-/* ===== Mesh ===== */
+/* ========================= */
+/* MESH (maillage)          */
+/* ========================= */
 .mesh {
   .mesh-title {
     color: $blue;
-    font-size: map.get(vars.$font-size, "80"); /* 36px */
+    font-size: map.get(vars.$font-size, "80"); /* 36 */
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: normal;
     text-align: center;
-    margin: 0 0 clamp(24px, 4vw, 32px);
+    margin: 0;
   }
 
   .mesh-skyline {
     width: 100%;
-    margin-bottom: clamp(16px, 3.2vw, 24px);
-
-    img {
-      display: block;
-      width: 100%;
-      height: auto;
-      margin-inline: auto;
-      margin-top: 70px;
-    }
+    img { display: block; width: 100%; height: auto; margin-top: clamp(24px, 4vw, 40px); }
   }
 
+  /* Trait animé + labels */
   .mesh-levels {
+    --lineW: 0%; /* animé par GSAP -> 100% */
     position: relative;
     list-style: none;
-    margin: 0;
-    padding: 14px 0 0;
+    margin: clamp(18px, 3vw, 28px) 0 0;
+    padding: 18px 0 0;
   }
-
   .mesh-levels::before {
     content: "";
     position: absolute;
-    left: 0;
-    right: 0;
-    top: 0;
+    left: 0; top: 0;
     height: 2px;
+    width: var(--lineW);
     background: $blue-hero;
   }
-
   .mesh-levels li {
     position: absolute;
     top: 18px;
     color: $blue-hero;
-    font-size: 24px;
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
+    font-size: 22px;
     text-transform: uppercase;
     white-space: nowrap;
   }
-
-  .mesh-levels li:first-child {
-    left: 0;
-    text-align: left;
-  }
-
-  .mesh-levels li:nth-child(2) {
-    left: 50%;
-    transform: translateX(-50%);
-    text-align: center;
-  }
-
-  .mesh-levels li:last-child {
-    right: 0;
-    text-align: right;
-  }
+  .mesh-levels li:first-child { left: 0; }
+  .mesh-levels li:nth-child(2) { left: 50%; transform: translateX(-50%); }
+  .mesh-levels li:last-child { right: 0; }
 }
 
-/* ============================  MAP SECTION (Où ?) ============================ */
+/* ========================= */
+/* MAP (Où ?)               */
+/* ========================= */
 .map-section {
   .map-grid {
-    display: grid;
+    display: grid; gap: clamp(24px, 4vw, 48px);
     grid-template-columns: 1fr;
-    gap: clamp(24px, 4vw, 48px);
-    align-items: center;
-
-    @media (min-width: 992px) {
-      grid-template-columns: 2fr 400px;
-      column-gap: clamp(100px, 12vw, 160px);
-    }
+    @media (min-width: 992px) { grid-template-columns: 2fr 400px; column-gap: clamp(80px, 10vw, 140px); }
   }
-
-  .map-image {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-
-    img {
-      display: block;
-      width: 100%;
-      height: auto;
-      max-width: 100%;
-
-      @media (min-width: 992px) {
-        max-width: clamp(760px, 58vw, 980px);
-      }
-    }
-  }
-
-  .map-list {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-self: center;
-    gap: clamp(16px, 2vw, 24px);
-  }
-
-  .map-list .map-title {
+  .map-image img { display:block; width:100%; height:auto; }
+  .map-title {
     color: $blue-hero;
-    font-size: map.get(vars.$font-size, "100"); /* 48px */
-    font-style: normal;
+    font-size: map.get(vars.$font-size, "100"); /* 48 */
     font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
-    margin: 0 0 12px;
+    margin: 0 0 8px;
   }
-
   .map-list ul {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: clamp(10px, 1.8vw, 14px);
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: clamp(8px, 1.6vw, 12px);
   }
-
   .map-list li {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: $blue-hero;
-    font-size: 22px;
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
+    display: flex; align-items: center; gap: 10px;
+    color: $blue-hero; font-size: 20px;
   }
-
-  .map-list li::before {
-    content: "—";
-    color: $red;
-    font-size: 20px;
-    font-weight: map.get(vars.$font-weight, "regular");
-    margin-right: 6px;
-    flex: 0 0 auto;
-  }
+  .map-list li::before { content: "—"; color: $red; }
 }
 
 /* ====== NOS VALEURS ====== */
@@ -398,6 +205,7 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 
   .values-grid {
+    /* grille par défaut */
     display: grid;
     grid-template-columns: repeat(1, minmax(240px, 1fr));
     gap: clamp(28px, 4vw, 48px);
@@ -405,8 +213,10 @@ $white:      map.get(vars.$theme-colors, "white");
     align-items: start;
 
     @media (min-width: 992px) {
+      /* on expose le column-gap comme variable pour centrer le trait */
+      --gap-x: clamp(80px, 10vw, 140px);
       grid-template-columns: repeat(3, 1fr);
-      column-gap: clamp(80px, 10vw, 140px);
+      column-gap: var(--gap-x);
     }
   }
 
@@ -449,222 +259,116 @@ $white:      map.get(vars.$theme-colors, "white");
     max-width: 320px;
   }
 
-  .value-item .value-desc p {
-    margin: 0;
-  }
+  .value-item .value-desc p { margin: 0; }
+  .value-item .value-desc p + p { margin-top: 6px; }
 
-  .value-item .value-desc p + p {
-    margin-top: 6px;
-  }
-
-  .value-item .divider {
-    display: none;
-  }
+  /* Traits entre les cartes — conservés, mais désormais centrés dans le gap */
+  .value-item .divider { display: none; }
 
   @media (min-width: 992px) {
     .value-item .divider {
+      /* base identique */
       display: block;
       position: absolute;
       top: calc(clamp(84px, 7vw, 96px) / 2 + 10px);
-      right: calc(-1 * clamp(40px, 5vw, 70px));
-      width: clamp(64px, 7vw, 96px);
       height: 2px;
       background: $blue-hero;
       opacity: .45;
-      transform: translateY(-50%);
+      transform: translate(-50%, -50%); /* centré verticalement + on recentre l’élément */
+
+      /* centrage HORIZONTAL dans la “zone violette” (le column-gap) :
+         on place l’origine juste au milieu du gap, à mi-distance de l’item courant */
+      left: calc(100% + (var(--gap-x, 0px) / 2));
+
+      /* largeur du trait : ta largeur d’origine,
+         mais tu peux la “clamp” pour ne pas dépasser le gap */
+      --divider-w: clamp(64px, 7vw, 96px);
+      width: min(var(--divider-w), max(48px, calc(var(--gap-x, 9999px) - 24px)));
+
+      /* Accessoire */
+      pointer-events: none;
+    }
+  }
+
+  /* ===== Hooks d’animation (même logique que News) ===== */
+  .values-title.prehide {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    will-change: transform, opacity;
+  }
+  .value-item.prehide {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    will-change: transform, opacity;
+  }
+  .value-item.is-animating .icon-wrap img { transform-origin: center; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .values-title.prehide,
+    .value-item.prehide {
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: none !important;
+      will-change: auto !important;
     }
   }
 }
 
 
-/* ===== Appartenance ===== */
-.affiliations {
-  .aff-title {
+/* ========================= */
+/* Affiliations / Déontologie*/
+/* ========================= */
+.affiliations, .deon {
+  .aff-title, .deon-title {
     color: $blue;
-    font-size: map.get(vars.$font-size, "80"); /* 36px */
-    font-weight: map.get(vars.$font-weight, "regular");
+    font-size: map.get(vars.$font-size, "80"); /* 36 */
     line-height: normal;
-    margin: 0 0 58px;
+    margin-bottom: 58.5px;
   }
 
-  .aff-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .aff-list, .deon-list {
+    list-style: none; margin: 0; padding: 0;
     border-top: map.get(vars.$border-size, "2") solid $blue-hero;
   }
 
-  /* Rangée = grille : [texte] [logo] [chevron] */
+  /* — Appartenance : 3 colonnes (nom, logo, chevron) — */
   .aff-row {
+    --row-h: 98px; /* hauteur unifiée */
     display: grid;
     grid-template-columns: 1fr auto auto;
     align-items: center;
-    column-gap: clamp(40px, 5vw, 80px);         /* espace fixe entre texte et logo */
-    padding-block: 14px;                         /* conserve le padding vertical de la maquette */
+    column-gap: clamp(24px, 4vw, 48px);
+    block-size: var(--row-h);
+    padding-block: 0;
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
   }
-
-  /* Le bloc cliquable “ligne” ne porte plus la mise en page */
-  .aff-line {
-    display: contents;
-  }
-
-  /* Colonne 1 : nom */
-  .aff-name {
-    grid-column: 1;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-  }
-  .aff-abbr {
-    color: $blue-hero;
-    font-size: 24px;
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
-  }
-  .aff-label {
-    color: $blue-hero;
-    font-size: 18px;
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
-  }
-
-  /* Colonne 2 : logo (ne touche pas les traits grâce au padding de .aff-row) */
-  .aff-logo {
-    grid-column: 2;
-    width: 75px;
-    height: 75px;
-    aspect-ratio: 1 / 1;
-    object-fit: contain;
-    justify-self: end;
-    flex-shrink: 0;
-  }
-
-  /* Colonne 3 : chevron */
-  .aff-toggle {
-    grid-column: 3;
-    background: none;
-    border: 0;
-    padding: 0;
-    color: $blue-hero;
-    cursor: pointer;
-    justify-self: end;
-  }
-  .chevron {
-    width: 24px;
-    height: 34.66px;
-    flex-shrink: 0;
-    transform: rotate(90deg);
-    transition: transform .25s ease;
-  }
+  .aff-line { display: contents; }
+  .aff-name { color: $blue-hero; font-size: 20px; }
+  .aff-logo { width: 75px; height: 75px; object-fit: contain; justify-self: end; }
+  .aff-toggle { background: none; border: 0; color: $blue-hero; justify-self: end; cursor: pointer; }
+  .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
   .aff-row.open .chevron { transform: rotate(0deg); }
+  .aff-desc { grid-column: 1 / -1; padding: 8px 0 18px; }
 
-  /* Description : reste dans la colonne 1 → s’arrête avant le logo */
-  .aff-desc {
-    grid-column: 1;
-    padding: 8px 0 18px;
-  }
-  .aff-desc-inner {
-    color: $blue;
-    font-size: map.get(vars.$font-size, "30"); /* 16px */
-    line-height: 1.55;
-  }
-  .aff-desc-inner p { margin: 0 0 10px; }
-  .aff-desc-inner p:last-child { margin-bottom: 0; }
-
-  /* Mobile : logo passe sous le titre, description sur toute la largeur */
-  @media (max-width: 640px) {
-    .aff-row {
-      grid-template-columns: 1fr auto;
-      row-gap: 10px;
-    }
-    .aff-logo {
-      grid-column: 1 / -1;
-      justify-self: start;
-    }
-    .aff-toggle { grid-column: 2; }
-    .aff-desc   { grid-column: 1 / -1; }
-  }
-}
-
-
-
-/* ===== Déontologie ===== */
-.deon {
-  .deon-title {
-    color: $blue;
-    font-size: map.get(vars.$font-size, "80"); /* 36px */
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
-    margin: 0 0 58px;
-  }
-
-  .deon-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    border-top: map.get(vars.$border-size, "2") solid $blue-hero;
-  }
-
+  /* — Déontologie : 2 colonnes (nom, chevron) avec la même hauteur que Appartenance — */
   .deon-row {
-    border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
-  }
-
-  .deon-line {
-    --row-h: 98px;
+    --row-h: 98px; /* même hauteur que .aff-row */
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
+    column-gap: clamp(24px, 4vw, 48px);
     block-size: var(--row-h);
     padding-block: 0;
+    border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
   }
-
-  .deon-name {
-    color: $blue-hero;
-    font-size: 20px;
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: 1;
-    margin: 0;
-  }
-
-  .deon-toggle {
-    background: none;
-    border: 0;
-    padding: 0;
-    color: $blue-hero;
-    cursor: pointer;
-    justify-self: end;
-  }
-
-  .chevron {
-    width: 24px;
-    height: 34.66px;
-    transform: rotate(90deg);
-    transition: transform .25s ease;
-  }
-
-  .deon-row.open .chevron {
-    transform: rotate(0deg);
-  }
-
-  .deon-desc {
-    padding: 8px 0 18px;
-  }
-
-  .deon-desc-inner {
-    color: $blue;
-    font-size: map.get(vars.$font-size, "30"); /* 16px */
-    line-height: 1.55;
-  }
-
-  .deon-desc-inner p {
-    margin: 0 0 10px;
-  }
-
-  .deon-desc-inner p:last-child {
-    margin-bottom: 0;
-  }
+  .deon-line { display: contents; }
+  .deon-name { color: $blue-hero; font-size: 20px; line-height: 1; }
+  .deon-toggle { background: none; border: 0; color: $blue-hero; justify-self: end; cursor: pointer; }
+  .deon-row .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
+  .deon-row.open .chevron { transform: rotate(0deg); }
+  .deon-desc { grid-column: 1 / -1; padding: 8px 0 18px; }
 }
 
 /* ============================  TIMELINE ============================ */
@@ -709,11 +413,12 @@ $white:      map.get(vars.$theme-colors, "white");
   .tl-rail {
     position: absolute;
     top: 0;
-    bottom: 0;
+    bottom: -20px; /* un peu de rab */
     left: calc(var(--years-col) + var(--rail-gap));
     width: var(--rail-w);
     background: $blue-hero;
-    z-index: 0;
+    transform: scaleY(0);
+    transform-origin: top;
   }
 
   .timeline-title {
@@ -739,14 +444,15 @@ $white:      map.get(vars.$theme-colors, "white");
     text-align: right;
     white-space: nowrap;
     padding-right: calc(var(--rail-gap) + var(--rail-w));
+    --dashNow: 0px; /* animé par GSAP 0 → var(--dash-w) */
   }
 
   .tl-year::after {
     content: "";
     position: absolute;
-    top: .6em;
+    top: .6em; /* Référence géométrique qu’on va reproduire en JS */
     right: calc(var(--rail-gap) - var(--dash-w) - 6px);
-    width: var(--dash-w);
+    width: var(--dashNow);
     height: 2px;
     background: $red;
   }
@@ -771,22 +477,36 @@ $white:      map.get(vars.$theme-colors, "white");
   .tl-desc {
     color: $blue;
     font-weight: map.get(vars.$font-weight, "regular");
-    font-size: map.get(vars.$font-size, "20"); /* 14px */
+    font-size: map.get(vars.$font-size, "20");
     line-height: 1.55;
   }
 
-  .tl-desc p {
-    margin: 0;
-  }
-
-  .tl-desc p + p {
-    margin-top: 6px;
-  }
+  .tl-desc p { margin: 0; }
+  .tl-desc p + p { margin-top: 6px; }
 
   @media (max-width: 720px) {
     --years-col: 110px;
     --row-gap: 64px;
     --rail-gap: clamp(28px, 8vw, 64px);
     --content-max: 92vw;
+  }
+}
+
+
+
+/* A11y helper */
+.sr-only, .visually-hidden {
+  position: absolute !important;
+  width: 1px !important; height: 1px !important;
+  padding: 0 !important; margin: -1px !important;
+  overflow: hidden !important; clip: rect(0,0,0,0) !important;
+  white-space: nowrap !important; border: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-wrapper * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
