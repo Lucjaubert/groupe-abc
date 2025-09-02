@@ -1,0 +1,271 @@
+@use "sass:map";
+@use "../../../styles/_variables.scss" as vars;
+
+$blue:       map.get(vars.$theme-colors, "light-blue");
+$red:        map.get(vars.$theme-colors, "light-red");
+$grey-100:   map.get(vars.$theme-colors, "light-grey");
+$white:      map.get(vars.$theme-colors, "white");
+
+$bd-2: map.get(vars.$border-size, "2");
+
+$fs12: map.get(vars.$font-size, "10");  // 12
+$fs16: map.get(vars.$font-size, "30");  // 16
+$fs24: map.get(vars.$font-size, "50");  // 24
+$fs36: map.get(vars.$font-size, "80");  // 36
+$fs60: map.get(vars.$font-size, "110"); // 60 approx
+
+.services-wrapper { width: 100%; }
+
+/* ===== TITRES ===== */
+.page-title {
+  color: $blue;
+  font-size: clamp(32px, 3.2vw, 60px);
+  font-weight: 400;
+  line-height: normal;
+  margin-top: 110px;
+  margin-bottom: 106.5px;
+}
+
+.ctx-title {
+  color: $blue;
+  font-size: clamp(32px, 3.2vw, 36px);
+  font-weight: 400;
+  line-height: normal;
+  margin-bottom: 19px;
+}
+
+.ctx-sub {
+  color: $blue;
+  font-size: $fs16;
+  line-height: 1.6;
+  margin-bottom: 58px;
+}
+
+/* ===================== */
+/* CONTEXTES = Accordéon */
+/* ===================== */
+.contexts {
+  .ctx-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: $bd-2 solid $blue; /* même largeur que affiliations/deon */
+  }
+
+  /* Rangée : grille 3 colonnes [icon] [title] [chevron] */
+  .ctx-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: clamp(16px, 3vw, 24px);
+    border-bottom: $bd-2 solid $blue;
+  }
+
+  /* Bloc cliquable : délègue la mise en page à la grille par "contents" */
+  .row-line {
+    display: contents;
+  }
+
+  /* Hauteur homogène de ligne */
+  .row-line > .ctx-icon,
+  .row-line > .row-name,
+  .row-line > .row-toggle {
+    block-size: 98px; /* même hauteur que Déontologie */
+    display: flex;
+    align-items: center;
+  }
+
+  /* Col 1 : icône (image seule, pas de fond) */
+  .ctx-icon {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    flex-shrink: 0;
+    justify-self: start;
+  }
+
+  /* Col 2 : titre */
+  .row-name {
+    color: $blue;
+    font-size: $fs24; /* 24 (maquette) */
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  /* Col 3 : chevron */
+  .row-toggle {
+    background: none;
+    border: 0;
+    padding: 0;
+    color: $blue;
+    cursor: pointer;
+    justify-self: end;
+  }
+  .chevron {
+    width: 24px;
+    height: 34.66px;
+    transform: rotate(90deg);
+    transition: transform .25s ease;
+  }
+  .ctx-row.open .chevron { transform: rotate(0deg); }
+
+  /* Description : s'aligne sous le TITRE (col 2) et s'arrête avant le chevron */
+  .row-desc {
+    grid-column: 2 / 3;   /* ⟵ correction : alignée au début du titre */
+    padding: 8px 0 18px;
+  }
+  .row-desc-inner {
+    color: $blue;
+    font-size: $fs12; /* 12 maquette */
+    line-height: 1.55;
+
+    p { margin: 0 0 10px; }
+    p:last-child { margin-bottom: 0; }
+  }
+
+  /* Mobile : on garde la même structure */
+}
+
+/* ===================== */
+/* CLIENTS = Accordéon   */
+/* ===================== */
+.clients {
+  .clients-title{
+    color: $blue;              /* (#444697) demandé pour "Nos Clients" */
+    font-size: $fs36;          /* 36 */
+    font-weight: 400;
+    line-height: normal;
+    margin: 105px 0 58px;
+  }
+
+  .cli-list{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: $bd-2 solid $blue; /* identique aux autres tableaux */
+  }
+
+  .cli-row{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    border-bottom: $bd-2 solid $blue;
+  }
+
+  .row-line{ display: contents; }
+
+  .row-line > .cli-name,
+  .row-line > .row-toggle{
+    block-size: 98px; /* on aligne toutes les lignes */
+    display: flex;
+    align-items: center;
+  }
+
+  .cli-name{
+    color: $blue;
+    font-size: $fs24;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .row-toggle{
+    background: none; border: 0; padding: 0;
+    color: $blue; cursor: pointer; justify-self: end;
+  }
+
+  .chevron{
+    width: 24px; height: 34.66px;
+    transform: rotate(90deg);
+    transition: transform .25s ease;
+  }
+  .cli-row.open .chevron { transform: rotate(0deg); }
+
+  .row-desc{
+    grid-column: 1 / -1; /* ici pas de colonne logo, donc pleine largeur */
+    padding: 8px 0 18px;
+  }
+  .row-desc-inner{
+    color: $blue; font-size: $fs16; line-height: 1.55;
+    p{ margin: 0 0 10px; } p:last-child{ margin-bottom: 0; }
+  }
+}
+
+/* ===================== */
+/* RÉFÉRENCES            */
+/* ===================== */
+.refs {
+  .refs-title{
+    color: $blue;
+    font-size: $fs36;
+    font-weight: 400;
+    line-height: 1.2;
+    text-align: center;
+    margin-top: 144px;
+    margin-bottom: 63px;
+  }
+
+  .refs-grid{
+    list-style: none;
+    margin: 0 0 111px 0;
+    padding: 0;
+
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    column-gap: 0;
+    row-gap: 85px;
+
+    justify-items: stretch;
+    align-items: center;
+    width: 100%;
+  }
+
+
+  .refs-grid li{
+    display: flex;
+    align-items: center;
+    /* par défaut (au cas où) */
+    justify-content: center;
+  }
+  /* Colonne 1 : logo collé à gauche */
+  .refs-grid li:nth-child(3n + 1){ justify-content: flex-start; }
+  /* Colonne 2 : logo centré */
+  .refs-grid li:nth-child(3n + 2){ justify-content: center; }
+  /* Colonne 3 : logo collé à droite */
+  .refs-grid li:nth-child(3n){ justify-content: flex-end; }
+
+  .refs-grid img{
+    width: 120px;
+    height: 120px;
+    aspect-ratio: 1 / 1;
+    object-fit: contain;
+    background: $grey-100;
+    border-radius: 6px;
+    display: block;
+  }
+
+  @media (max-width: 480px){
+    .refs-grid{
+      grid-template-columns: repeat(3, 1fr); /* on garde 3 colonnes sur mobile */
+      column-gap: 0;
+      row-gap: clamp(18px, 6vw, 28px);
+    }
+    .refs-grid img{
+      width: 82px;
+      height: 82px;
+    }
+  }
+}
+
+/* A11y helper */
+.sr-only,
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}

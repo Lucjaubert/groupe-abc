@@ -14,7 +14,12 @@ export const routes: Routes = [
       import('./pages/about/about.component').then(m => m.AboutComponent),
     title: 'Qui sommes-nous ? – Groupe ABC'
   },
-
+  {
+    path: 'nos-services',
+    loadComponent: () =>
+      import('./pages/services/services.component').then(m => m.ServicesComponent),
+    title: 'Nos services – Groupe ABC'
+  },
   {
     path: 'actualites',
     loadComponent: () =>

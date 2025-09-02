@@ -1,10 +1,31 @@
 @use "sass:map";
 @use "../../../styles/_variables.scss" as vars;
 
+/* ===== Aliases depuis _variables.scss ===== */
+$dark-blue: map.get(vars.$theme-colors, "dark-blue");      /* #2C2D62 */
+$blue:      map.get(vars.$theme-colors, "light-blue");     /* #444697 (proche #444798 de la maquette) */
+$red:       map.get(vars.$theme-colors, "light-red");      /* #EA4D4D */
+$grey-100:  map.get(vars.$theme-colors, "light-grey");     /* #F5F4F8 */
+$white:     map.get(vars.$theme-colors, "white");          /* #FFFFFF */
+
+$bd-1:      map.get(vars.$border-size, "1");
+$bd-2:      map.get(vars.$border-size, "2");
+
+$fs-13:     13px;                                          /* non défini dans la map */
+$fs-14:     map.get(vars.$font-size, "20");                /* 0.875rem (14px) */
+$fs-16:     map.get(vars.$font-size, "30");                /* 1rem (16px)   */
+$fs-36:     map.get(vars.$font-size, "80");                /* 2.25rem (36px) */
+$fs-48:     map.get(vars.$font-size, "100");               /* 3rem (48px)   */
+
+$fw-regular: map.get(vars.$font-weight, "regular");        /* 400 */
+$fw-bold:    map.get(vars.$font-weight, "bold");           /* 700 */
+
+/* ===== Wrapper ===== */
 .news-wrapper {
   width: 100%;
 }
 
+/* ===== Intro ===== */
 .news-intro {
   padding-top: 110px;
   padding-bottom: 50px;
@@ -17,9 +38,9 @@
   }
 
   .page-title {
-    color: #444798;
-    font-size: 48px;
-    font-weight: 400;
+    color: $blue;
+    font-size: clamp(32px, 3.2vw, 60px);
+    font-weight: $fw-regular;
     line-height: normal;
     margin: 0 0 24px;
   }
@@ -32,8 +53,8 @@
 
     .page-subtitle {
       flex: 1;
-      color: #444697;
-      font-size: 16px;
+      color: $blue;
+      font-size: $fs-16;
       line-height: 1.6;
       max-width: 960px;
       margin: 0;
@@ -52,6 +73,7 @@
   }
 }
 
+/* ===== Liste ===== */
 .news-list {
   .prehide-row {
     opacity: 0;
@@ -85,7 +107,7 @@
       transform: translateX(-50%);
       z-index: 0;
       pointer-events: none;
-      background: #F5F5F7;
+      background: $grey-100;      /* remplace #F5F5F7 par light-grey du thème */
 
       &.prehide-row {
         opacity: 0;
@@ -94,15 +116,15 @@
     }
 
     &.theme-expertise .news-bg {
-      background: #EEE;
+      background: #EEE;           /* pas de token dédié → on garde la valeur */
     }
 
     &.theme-juridique .news-bg {
-      background: #FFEAEB;
+      background: rgba(234, 77, 77, 0.08);  /* variante douce du $red */
     }
 
     &.theme-marche .news-bg {
-      background: rgba(88, 80, 173, 0.16);
+      background: rgba(88, 80, 173, 0.16);  /* spécifique à la maquette */
     }
 
     .news-box {
@@ -135,20 +157,21 @@
       display: inline-flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
+      gap: 6px;
       width: 133px;
       height: 23px;
       flex-shrink: 0;
       border-radius: 5px;
-      border: 1px solid #444798;
-      background: #FFF;
+      border: $bd-1 solid $blue;
+      background: $white;
       padding: 0 8px;
       cursor: pointer;
 
       .chip-label {
-        color: #444697;
+        min-width: 0;
+        color: $blue;
         font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-        font-size: 14px;
+        font-size: $fs-14;
         font-style: italic;
         font-weight: 300;
         line-height: normal;
@@ -159,21 +182,21 @@
       }
 
       .chip-icon {
+        flex: 0 0 22px;
         width: 22px;
         height: 13px;
         display: inline-grid;
         place-items: center;
-        flex-shrink: 0;
         cursor: pointer;
       }
 
       &[aria-pressed="true"] {
-        border-color: #EA4D4D;
-        box-shadow: 0 0 0 1px rgba(234, 77, 77, .18) inset;
+        border-color: $red;
+        box-shadow: 0 0 0 1px rgba(234, 77, 77, 0.18) inset;
       }
 
       .chip-icon[aria-pressed="true"] {
-        outline: 2px solid rgba(68, 72, 152, .25);
+        outline: 2px solid rgba(68, 70, 151, 0.25);
         border-radius: 3px;
       }
     }
@@ -181,13 +204,13 @@
     .meta-line {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 6px;
       margin: 16px 0 29px;
 
       .firm-logo {
         width: 40px;
         height: 40px;
-        aspect-ratio: 1/1;
+        aspect-ratio: 1 / 1;
         object-fit: contain;
         flex-shrink: 0;
       }
@@ -207,18 +230,18 @@
       }
 
       .firm-name {
-        color: #444697;
+        color: $blue;
         font-family: "Plus Jakarta Sans";
-        font-size: 14px;
+        font-size: $fs-14;
         font-weight: 500;
         line-height: normal;
       }
 
       .meta-sep {
-        color: #EA4D4D;
+        color: $red;
         font-family: "Plus Jakarta Sans";
-        font-size: 14px;
-        font-weight: 400;
+        font-size: $fs-14;
+        font-weight: $fw-regular;
         line-height: normal;
       }
 
@@ -227,20 +250,20 @@
       }
 
       .author-date {
-        color: #444697;
+        color: $blue;
         font-family: "Plus Jakarta Sans";
-        font-size: 13px;
+        font-size: $fs-13;
         font-style: italic;
-        font-weight: 400;
+        font-weight: $fw-regular;
         line-height: normal;
       }
     }
 
     .post-title {
-      color: #444697;
-      font-family: Inter, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-      font-size: 36px;
-      font-weight: 400;
+      color: $blue;
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      font-size: $fs-36;
+      font-weight: $fw-regular;
       line-height: normal;
       margin: 0 0 45px;
       max-width: 450px;
@@ -252,10 +275,10 @@
     }
 
     .excerpt-body {
-      color: #444697;
+      color: $blue;
       font-family: "Plus Jakarta Sans";
-      font-size: 14px;
-      font-weight: 400;
+      font-size: $fs-14;
+      font-weight: $fw-regular;
       line-height: 1.6;
 
       p {
@@ -291,12 +314,12 @@
         align-items: center;
         border: 0;
         border-radius: 5px;
-        background: #444798;
-        color: #fff;
+        background: $blue;
+        color: $white;
         padding-left: 12px;
         padding-right: 8px;
         cursor: pointer;
-        font-weight: 400;
+        font-weight: $fw-regular;
         font-size: clamp(11px, 1.4vw, 12px);
         line-height: 1;
         transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
@@ -304,7 +327,7 @@
         .icon-plus {
           width: 22px;
           height: 22px;
-          stroke: #EA4D4D;
+          stroke: $red;
           stroke-width: 3.2;
           stroke-linecap: round;
           fill: none;
@@ -320,7 +343,7 @@
         }
 
         &:focus-visible {
-          outline: 2px solid #EA4D4D;
+          outline: 2px solid $red;
           outline-offset: 2px;
         }
 
@@ -349,7 +372,7 @@
       }
     }
 
-    /* ==== IMAGE corrigée ==== */
+    /* ==== Image ==== */
     .news-col--image {
       display: flex;
       justify-content: flex-end;
@@ -401,32 +424,29 @@
   }
 }
 
-/* ===== Pagination (bande 66px) ===== */
-
-/* Le wrapper de la pagination — masqué au 1er paint pour éviter le flash */
+/* ===== Pagination ===== */
 .pager-wrapper {
   position: relative;
   z-index: 2;
-  background: #fff;
+  background: $white;
 }
+
 .pager-wrapper.prehide-page {
   opacity: 0;
   visibility: hidden;
 }
 
-/* Bande pagination en 3 zones, 66px de haut */
 .pager {
   position: relative;
   z-index: 2;
-  background: #fff;
-  height: 66px;                    /* maquette */
+  background: $white;
+  height: 66px;
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr; /* gauche / centre / droite */
+  grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
-  border-top: 1px solid rgba(0, 0, 0, .06); /* pas de border-bottom (conforme maquette) */
+  border-top: $bd-1 solid rgba(0, 0, 0, 0.06);
 }
 
-/* Masquage initial de la barre pour l'anim d'entrée */
 .pager.prehide-row {
   opacity: 0;
   visibility: hidden;
@@ -434,44 +454,40 @@
   will-change: transform, opacity;
 }
 
-/* Slots (gauche/centre/droite), contenu centré dans chaque zone */
 .pager-slot {
   justify-self: center;
   font-size: 15px;
-  color: #444798;
+  color: $blue;
   line-height: 1;
 }
 
-/* Compteur centré (2/6) */
 .pager-center {
   min-width: 15px;
   text-align: center;
   font-family: "Plus Jakarta Sans", sans-serif;
 }
 
-/* Boutons */
 .pager-btn {
   background: transparent;
   border: 0;
-  color: #444798;
-  font-size: 16px;
+  color: $blue;
+  font-size: $fs-16;
   line-height: 1;
   padding: 6px 8px;
   border-radius: 4px;
   cursor: pointer;
 
   &:disabled {
-    opacity: .4;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 
   &:focus-visible {
-    outline: 2px solid #EA4D4D;
+    outline: 2px solid $red;
     outline-offset: 2px;
   }
 }
 
-/* Contexte : s'assurer que la pagination passe au-dessus du fond .news-bg */
 .news-list .section-inner {
   position: relative;
   z-index: 1;

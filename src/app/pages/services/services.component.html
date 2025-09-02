@@ -1,1 +1,105 @@
-<p>services works!</p>
+<div class="services-wrapper">
+
+  <!-- ===== HERO ===== -->
+  <section class="section hero" aria-labelledby="services-title">
+    <div class="section-inner">
+      <h1 id="services-title" class="page-title">{{ pageTitle }}</h1>
+    </div>
+  </section>
+
+  <!-- ===== CONTEXTES ===== -->
+  <section class="section contexts" *ngIf="contexts?.length">
+    <div class="section-inner px-0">
+      <h2 class="ctx-title">{{ ctxIntro.title }}</h2>
+      <div class="ctx-sub" [innerHTML]="ctxIntro.html"></div>
+
+      <ul class="ctx-list" role="list">
+        <li class="ctx-row"
+            *ngFor="let c of contexts; let i = index; trackBy: trackByIndex"
+            [class.open]="ctxOpen[i]">
+
+          <!-- Ligne cliquable (mise en page par la grille de .ctx-row) -->
+          <div class="row-line">
+            <!-- Col 1 : icône (image pure, pas de fond) -->
+            <img *ngIf="c.icon"
+                 class="ctx-icon"
+                 [src]="c.icon"
+                 (error)="onImgError($event)"
+                 alt=""
+                 loading="lazy"
+                 decoding="async" />
+
+            <!-- Col 2 : titre -->
+            <span class="row-name">{{ c.title }}</span>
+
+            <!-- Col 3 : chevron -->
+            <button class="row-toggle"
+                    type="button"
+                    [attr.aria-expanded]="ctxOpen[i] ? 'true':'false'"
+                    (click)="toggleCtx(i)">
+              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="sr-only">{{ ctxOpen[i] ? 'Réduire' : 'Déployer' }}</span>
+            </button>
+          </div>
+
+          <!-- Description (affichée sous la ligne, jamais visible quand fermé) -->
+          <div class="row-desc" *ngIf="c.html && ctxOpen[i]">
+            <div class="row-desc-inner" [innerHTML]="c.html"></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== CLIENTS ===== -->
+  <section class="section clients" *ngIf="clients?.length">
+    <div class="section-inner px-0">
+      <h2 class="clients-title">{{ clientsTitle }}</h2>
+
+      <ul class="cli-list" role="list">
+        <li class="cli-row"
+            *ngFor="let c of clients; let i = index; trackBy: trackByIndex"
+            [class.open]="cliOpen[i]">
+
+          <div class="row-line">
+            <div class="cli-name">{{ c.title }}</div>
+
+            <button class="row-toggle"
+                    type="button"
+                    [attr.aria-expanded]="cliOpen[i] ? 'true':'false'"
+                    (click)="toggleCli(i)">
+              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <span class="sr-only">{{ cliOpen[i] ? 'Réduire' : 'Déployer' }}</span>
+            </button>
+          </div>
+
+          <div class="row-desc" *ngIf="c.html && cliOpen[i]">
+            <div class="row-desc-inner" [innerHTML]="c.html"></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== RÉFÉRENCES ===== -->
+  <section class="section refs" *ngIf="references?.length">
+    <div class="section-inner">
+      <h2 class="refs-title">{{ refsTitle }}</h2>
+
+      <ul class="refs-grid" role="list">
+        <li *ngFor="let logo of references; trackBy: trackByIndex">
+          <img [src]="logo"
+               alt=""
+               loading="lazy"
+               decoding="async"
+               (error)="onRefImgError($event)" />
+        </li>
+      </ul>
+    </div>
+  </section>
+
+</div>
