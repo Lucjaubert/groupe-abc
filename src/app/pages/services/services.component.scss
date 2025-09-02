@@ -14,6 +14,24 @@ $fs24: map.get(vars.$font-size, "50");  // 24
 $fs36: map.get(vars.$font-size, "80");  // 36
 $fs60: map.get(vars.$font-size, "110"); // 60 approx
 
+/* ==== prehide helpers — SCOPÉS AU COMPOSANT (même logique NEWS) ==== */
+/* (Laissez ces règles ici, PAS dans styles.scss, pour éviter le flash) */
+.hero .prehide,
+.contexts .prehide,
+.clients .prehide,
+.refs .prehide {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  will-change: transform, opacity;
+}
+.contexts .prehide-row,
+.clients  .prehide-row,
+.refs     .prehide-row {
+  opacity: 0;
+  visibility: hidden;
+}
+
 .services-wrapper { width: 100%; }
 
 /* ===== TITRES ===== */
@@ -62,9 +80,7 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   }
 
   /* Bloc cliquable : délègue la mise en page à la grille par "contents" */
-  .row-line {
-    display: contents;
-  }
+  .row-line { display: contents; }
 
   /* Hauteur homogène de ligne */
   .row-line > .ctx-icon,
@@ -101,6 +117,7 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     cursor: pointer;
     justify-self: end;
   }
+
   .chevron {
     width: 24px;
     height: 34.66px;
@@ -111,9 +128,10 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
 
   /* Description : s'aligne sous le TITRE (col 2) et s'arrête avant le chevron */
   .row-desc {
-    grid-column: 2 / 3;   /* ⟵ correction : alignée au début du titre */
+    grid-column: 2 / 3;   /* ⟵ alignée au début du titre */
     padding: 8px 0 18px;
   }
+
   .row-desc-inner {
     color: $blue;
     font-size: $fs12; /* 12 maquette */
@@ -122,8 +140,6 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     p { margin: 0 0 10px; }
     p:last-child { margin-bottom: 0; }
   }
-
-  /* Mobile : on garde la même structure */
 }
 
 /* ===================== */
@@ -131,7 +147,7 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
 /* ===================== */
 .clients {
   .clients-title{
-    color: $blue;              /* (#444697) demandé pour "Nos Clients" */
+    color: $blue;
     font-size: $fs36;          /* 36 */
     font-weight: 400;
     line-height: normal;
@@ -219,18 +235,13 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     width: 100%;
   }
 
-
   .refs-grid li{
     display: flex;
     align-items: center;
-    /* par défaut (au cas où) */
     justify-content: center;
   }
-  /* Colonne 1 : logo collé à gauche */
   .refs-grid li:nth-child(3n + 1){ justify-content: flex-start; }
-  /* Colonne 2 : logo centré */
   .refs-grid li:nth-child(3n + 2){ justify-content: center; }
-  /* Colonne 3 : logo collé à droite */
   .refs-grid li:nth-child(3n){ justify-content: flex-end; }
 
   .refs-grid img{
@@ -245,7 +256,7 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
 
   @media (max-width: 480px){
     .refs-grid{
-      grid-template-columns: repeat(3, 1fr); /* on garde 3 colonnes sur mobile */
+      grid-template-columns: repeat(3, 1fr);
       column-gap: 0;
       row-gap: clamp(18px, 6vw, 28px);
     }
@@ -268,4 +279,12 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   clip: rect(0, 0, 0, 0) !important;
   white-space: nowrap !important;
   border: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .services-wrapper * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
