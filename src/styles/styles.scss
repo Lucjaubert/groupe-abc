@@ -153,7 +153,7 @@ h6 {
    =================================================================== */
 p {
   font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
   @media (max-width: map.get(vars.$breakpoints, "md")) { font-size: 13px; }
@@ -198,3 +198,6 @@ ul, li, a {
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+
+

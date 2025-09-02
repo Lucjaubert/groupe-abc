@@ -88,6 +88,41 @@ export class AboutComponent implements OnInit {
       };
 
       /* -------------------------------------
+      *  MESH (maillage : skyline + 3 niveaux)
+      * ------------------------------------- */
+      const meshRaw = about?.mesh ?? {};
+
+      // Résout l'image : peut être une URL (string) OU un ID (number)
+      const resolveMeshImage = async (img: string | number | undefined): Promise<string> => {
+        if (!img) return '';
+        if (typeof img === 'string') return img;
+        try {
+          const url = await firstValueFrom(this.wp.getMediaUrl(img));
+          return url || '';
+        } catch {
+          return '';
+        }
+      };
+
+      const meshLevels = [
+        meshRaw.level_label_1,
+        meshRaw.level_label_2,
+        meshRaw.level_label_3,
+      ].filter(Boolean) as string[];
+
+      this.mesh = {
+        title:  (meshRaw.section_title || 'Un maillage à toutes les échelles de notre territoire').trim(),
+        image:  await resolveMeshImage(meshRaw.skyline_image as any),
+        levels: meshLevels
+      };
+
+      // Si vraiment rien (aucun titre, image vide et 0 label), ne garde pas l'objet
+      if (!this.mesh.title && !this.mesh.image && this.mesh.levels.length === 0) {
+        this.mesh = undefined;
+      }
+
+
+      /* -------------------------------------
        *  CARTE "OÙ ?"
        * ------------------------------------- */
       const mapSecRaw = about?.map_section ?? {};

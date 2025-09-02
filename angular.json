@@ -21,12 +21,7 @@
               "src/assets",
               "src/robots.txt",
               "src/sitemap.xml",
-              "src/favicon.ico",
-              {
-                "glob": "**/*",
-                "input": "src/assets",
-                "output": "assets"
-              }
+              "src/favicon.ico"
             ],
             "styles": ["src/styles/styles.scss"],
             "scripts": []
@@ -56,7 +51,7 @@
               "outputPath": "dist/groupe-abc-staging/browser",
               "outputHashing": "all",
               "optimization": true,
-              "sourceMap": true,
+              "sourceMap": false,
               "extractLicenses": true,
               "fileReplacements": [
                 {
@@ -108,7 +103,7 @@
             "staging": {
               "outputPath": "dist/groupe-abc-staging/server",
               "optimization": true,
-              "sourceMap": true,
+              "sourceMap": false,
               "extractLicenses": true,
               "fileReplacements": [
                 {

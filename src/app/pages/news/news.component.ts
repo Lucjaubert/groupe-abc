@@ -15,9 +15,12 @@ type NewsIntro = {
   linkedinUrl?: string;
 };
 
+type ThemeKey = 'expertise' | 'juridique' | 'marche' | 'autre';
+
 type NewsPost = {
+  uid?: string;
   theme?: string;
-  themeKey?: 'expertise' | 'juridique' | 'marche' | 'autre';
+  themeKey?: ThemeKey;
   firmLogo?: string;
   firmName?: string;
   author?: string;
@@ -45,19 +48,36 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     linkedinUrl: ''
   };
 
+  // Données
   posts: NewsPost[] = [];
+  private baseOrder: NewsPost[] = [];
+  viewPosts: NewsPost[] = [];
+  pagedPosts: NewsPost[] = [];
   expanded: boolean[] = [];
 
-  @ViewChildren('excerpt')   excerpts!: QueryList<ElementRef<HTMLElement>>;
-  @ViewChild('introTitle')   introTitle!: ElementRef<HTMLElement>;
-  @ViewChild('introSubtitle')introSubtitle!: ElementRef<HTMLElement>;
-  @ViewChild('introLinkedin')introLinkedin!: ElementRef<HTMLElement>;
-  @ViewChildren('newsRow')   rows!: QueryList<ElementRef<HTMLElement>>;
+  // Refs existantes
+  @ViewChildren('excerpt') excerpts!: QueryList<ElementRef<HTMLElement>>;
+  @ViewChild('introTitle') introTitle!: ElementRef<HTMLElement>;
+  @ViewChild('introSubtitle') introSubtitle!: ElementRef<HTMLElement>;
+  @ViewChild('introLinkedin') introLinkedin!: ElementRef<HTMLElement>;
+  @ViewChildren('newsRow') rows!: QueryList<ElementRef<HTMLElement>>;
   @ViewChildren('excerptClip') clips!: QueryList<ElementRef<HTMLElement>>;
   @ViewChildren('excerptBody') bodies!: QueryList<ElementRef<HTMLElement>>;
 
+  // 🔧 AJOUT : refs pour masquer/afficher la pagination proprement
+  @ViewChild('pagerWrapper') pagerWrapper!: ElementRef<HTMLElement>;
+  @ViewChild('pager') pager!: ElementRef<HTMLElement>;
 
   private rowsAnimationsInitialized = false;
+
+  // Pagination
+  pageSize = 3;
+  currentPage = 1;
+  get totalPages(): number { return Math.max(1, Math.ceil(this.viewPosts.length / this.pageSize)); }
+
+  // États
+  promoteTheme: ThemeKey | null = null; // clic libellé
+  filterTheme:  ThemeKey | null = null; // clic icône
 
   async ngOnInit(): Promise<void> {
     const list: any[] = await firstValueFrom(this.wp.getAllNews());
@@ -83,6 +103,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
       }
 
       mapped.push({
+        uid: (it?.id ? String(it.id) : '') + '|' + (p.post_title || '') + '|' + (p.date || ''),
         theme: p.theme || '',
         themeKey: this.toThemeKey(p.theme),
         firmLogo,
@@ -99,14 +120,26 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.posts = mapped;
     this.expanded = new Array(this.posts.length).fill(false);
 
+    // 1) Ordre aléatoire stable (sessionStorage) + 1ère page diversifiée
+    this.baseOrder = this.restoreOrBuildOrder(this.posts);
+
+    // 2) Vue initiale & pagination
+    this.rebuildView();
+
     this.seo.update({
       title: `${this.intro.title} – Groupe ABC`,
       description: this.strip(this.intro.html, 160),
     });
   }
 
+  /* ================= Animations ================= */
   ngAfterViewInit(): void {
     gsap.registerPlugin(ScrollTrigger);
+
+    // 🔧 AJOUT : unhide instantané du wrapper de pagination (évite le flash)
+    if (this.pagerWrapper?.nativeElement) {
+      gsap.to(this.pagerWrapper.nativeElement, { autoAlpha: 1, duration: 0.01 });
+    }
 
     this.rows.changes.subscribe(() => {
       if (!this.rowsAnimationsInitialized && this.rows.length) {
@@ -206,6 +239,126 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /* ================= Ordre / diversité ================= */
+  private shuffle<T>(arr: T[]): T[] {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  private buildInitialOrder(items: NewsPost[]): NewsPost[] {
+    const byTheme: Record<ThemeKey, NewsPost[]> = { expertise: [], juridique: [], marche: [], autre: [] };
+    for (const p of items) byTheme[p.themeKey || 'autre'].push(p);
+
+    const firstPage: NewsPost[] = [];
+    (['marche','juridique','expertise'] as ThemeKey[]).forEach(k => {
+      if (byTheme[k].length) {
+        const pick = byTheme[k].splice(Math.floor(Math.random()*byTheme[k].length), 1)[0];
+        firstPage.push(pick);
+      }
+    });
+
+    const restPool = this.shuffle([...byTheme.expertise, ...byTheme.juridique, ...byTheme.marche, ...byTheme.autre]);
+    while (firstPage.length < this.pageSize && restPool.length) firstPage.push(restPool.shift()!);
+    const remaining = restPool;
+
+    return [...firstPage, ...remaining];
+  }
+
+  private restoreOrBuildOrder(items: NewsPost[]): NewsPost[] {
+    const key = 'abc_news_order_v1';
+    const uids = items.map(p => p.uid || '').join(',');
+    const saved = sessionStorage.getItem(key);
+    if (saved) {
+      const parsed = JSON.parse(saved) as { uids: string; order: string[] };
+      if (parsed.uids === uids) {
+        const byUid = new Map(items.map(p => [p.uid, p]));
+        const ordered: NewsPost[] = [];
+        parsed.order.forEach(id => { const it = byUid.get(id); if (it) ordered.push(it); });
+        items.forEach(it => { if (!parsed.order.includes(it.uid!)) ordered.push(it); });
+        return ordered;
+      }
+    }
+    const order = this.buildInitialOrder(items);
+    sessionStorage.setItem(key, JSON.stringify({ uids, order: order.map(p => p.uid) }));
+    return order;
+  }
+
+  /* ================= Vue / Pagination ================= */
+  private rebuildView(): void {
+    let list = [...this.baseOrder];
+
+    if (this.filterTheme) {
+      list = list.filter(p => p.themeKey === this.filterTheme);
+    } else if (this.promoteTheme) {
+      const head = list.filter(p => p.themeKey === this.promoteTheme);
+      const tail = list.filter(p => p.themeKey !== this.promoteTheme);
+      list = [...head, ...tail];
+    }
+
+    this.viewPosts = list;
+    this.currentPage = 1;
+    this.slicePage();
+  }
+
+  private slicePage(): void {
+    const start = (this.currentPage - 1) * this.pageSize;
+    this.pagedPosts = this.viewPosts.slice(start, start + this.pageSize);
+
+    this.rowsAnimationsInitialized = false;
+    setTimeout(() => {
+      if (this.rows?.length) {
+        this.rowsAnimationsInitialized = true;
+        this.initIntroSequence(() => this.animateFirstRow());
+        this.initRowsScrollAnimations();
+      }
+    });
+
+    // 🔧 AJOUT : anim d’apparition de la barre de pagination
+    if (this.pager?.nativeElement) {
+      gsap.fromTo(
+        this.pager.nativeElement,
+        { autoAlpha: 0, y: 10 },
+        { autoAlpha: 1, y: 0, duration: 0.45, ease: 'power3.out', delay: 0.05 }
+      );
+    }
+  }
+
+  /* ================= Actions UI ================= */
+  onPromote(theme: ThemeKey): void {
+    this.promoteTheme = (this.promoteTheme === theme) ? null : theme;
+    this.filterTheme = null;
+    this.rebuildView();
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+  }
+
+  onFilter(theme: ThemeKey): void {
+    this.filterTheme = (this.filterTheme === theme) ? null : theme;
+    this.promoteTheme = null;
+    this.rebuildView();
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+  }
+
+  goPrev(): void {
+    if (this.currentPage > 1) {
+      this.currentPage--;
+      this.slicePage();
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    }
+  }
+
+  goNext(): void {
+    if (this.currentPage < this.totalPages) {
+      this.currentPage++;
+      this.slicePage();
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    }
+  }
+
+  /* ================= Utilitaires existants ================= */
   private nextFrame(): Promise<void> {
     return new Promise(res => requestAnimationFrame(() => res()));
   }
@@ -216,16 +369,14 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!clip || !body) return;
 
     gsap.killTweensOf(clip);
-
     const nextFrame = () => new Promise<void>(r => requestAnimationFrame(() => r()));
 
     if (!this.expanded[i]) {
-      // OUVERTURE — fige la hauteur CLAMPÉE avant de dé-clamper
-      const startH = body.getBoundingClientRect().height; // hauteur clampée réelle
+      const startH = body.getBoundingClientRect().height;
       gsap.set(clip, { height: startH, overflow: 'hidden', willChange: 'height' });
 
       body.classList.remove('is-clamped');
-      await nextFrame(); // recalcul du layout une fois dé-clampé
+      await nextFrame();
 
       const targetH = body.scrollHeight;
       this.expanded[i] = true;
@@ -245,9 +396,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
     } else {
-      // FERMETURE — calcule la hauteur clampée après ré-application du clamp
       const startH = clip.getBoundingClientRect().height || body.scrollHeight;
-
       body.classList.add('is-clamped');
       await nextFrame();
       const targetH = body.getBoundingClientRect().height;
@@ -265,9 +414,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-
-
-  private toThemeKey(raw?: string): NewsPost['themeKey'] {
+  private toThemeKey(raw?: string): ThemeKey {
     const s = (raw || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     if (s.includes('expert')) return 'expertise';
     if (s.includes('jurid'))  return 'juridique';
@@ -275,7 +422,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     return 'autre';
   }
 
-  themeClass(k: NewsPost['themeKey']) { return k ? `theme-${k}` : 'theme-autre'; }
+  themeClass(k?: ThemeKey) { return k ? `theme-${k}` : 'theme-autre'; }
   trackByIndex(i: number){ return i; }
 
   private strip(html: string, max = 160) {

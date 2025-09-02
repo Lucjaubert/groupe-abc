@@ -1,107 +1,147 @@
 @use "sass:map";
 @use "../../../styles/_variables.scss" as vars;
 
-.news-wrapper { width: 100%; }
+/* ===== Aliases depuis _variables.scss ===== */
+$dark-blue: map.get(vars.$theme-colors, "dark-blue");      /* #2C2D62 */
+$blue:      map.get(vars.$theme-colors, "light-blue");     /* #444697 (proche #444798 de la maquette) */
+$red:       map.get(vars.$theme-colors, "light-red");      /* #EA4D4D */
+$grey-100:  map.get(vars.$theme-colors, "light-grey");     /* #F5F4F8 */
+$white:     map.get(vars.$theme-colors, "white");          /* #FFFFFF */
 
-.news-intro{
-  padding-top:110px;
-  padding-bottom:50px;
+$bd-1:      map.get(vars.$border-size, "1");
+$bd-2:      map.get(vars.$border-size, "2");
 
-  .prehide{
+$fs-13:     13px;                                          /* non défini dans la map */
+$fs-14:     map.get(vars.$font-size, "20");                /* 0.875rem (14px) */
+$fs-16:     map.get(vars.$font-size, "30");                /* 1rem (16px)   */
+$fs-36:     map.get(vars.$font-size, "80");                /* 2.25rem (36px) */
+$fs-48:     map.get(vars.$font-size, "100");               /* 3rem (48px)   */
+
+$fw-regular: map.get(vars.$font-weight, "regular");        /* 400 */
+$fw-bold:    map.get(vars.$font-weight, "bold");           /* 700 */
+
+/* ===== Wrapper ===== */
+.news-wrapper {
+  width: 100%;
+}
+
+/* ===== Intro ===== */
+.news-intro {
+  padding-top: 110px;
+  padding-bottom: 50px;
+
+  .prehide {
     opacity: 0;
     visibility: hidden;
     transform: translateY(20px);
     will-change: transform, opacity;
   }
 
-  .page-title{
-    color:#444798;
-    font-size:48px;
-    font-weight:400;
-    line-height:normal;
-    margin:0 0 24px;
+  .page-title {
+    color: $blue;
+    font-size: clamp(32px, 3.2vw, 60px);
+    font-weight: $fw-regular;
+    line-height: normal;
+    margin: 0 0 24px;
   }
 
-  .intro-line{
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:20px;
+  .intro-line {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
 
-    .page-subtitle{
-      flex:1;
-      color:#444697;
-      font-size:16px;
-      line-height:1.6;
-      max-width:960px;
-      margin:0;
+    .page-subtitle {
+      flex: 1;
+      color: $blue;
+      font-size: $fs-16;
+      line-height: 1.6;
+      max-width: 960px;
+      margin: 0;
     }
 
-    .linkedin{
-      display:inline-block; /* pour l’anim et éviter les sauts */
-      img{
-        width:39.47px;
-        height:39.47px;
-        flex-shrink:0;
-        display:block;
+    .linkedin {
+      display: inline-block;
+
+      img {
+        width: 39.47px;
+        height: 39.47px;
+        flex-shrink: 0;
+        display: block;
       }
     }
   }
 }
 
-.news-list{
-
-  /* ===== Prehide helpers ===== */
-  /* Generic: use on elements that shouldn't move (e.g., .news-bg) */
-  .prehide-row{
+/* ===== Liste ===== */
+.news-list {
+  .prehide-row {
     opacity: 0;
     visibility: hidden;
   }
-  /* Moving prehide: use on inner content you want to slide up */
-  .prehide-move{
+
+  .prehide-move {
     opacity: 0;
     visibility: hidden;
     transform: translateY(20px);
     will-change: transform, opacity;
   }
 
-  .posts{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; }
+  .posts {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
 
-  .news-row{
-    position:relative; isolation:isolate;
+  .news-row {
+    position: relative;
+    isolation: isolate;
 
-    .news-bg{
-      position:absolute;
-      inset:0;
-      left:50%;
-      width:100vw;
-      transform:translateX(-50%);
-      z-index:0;
-      pointer-events:none;
-      background:#F5F5F7;
+    .news-bg {
+      position: absolute;
+      inset: 0;
+      left: 50%;
+      width: 100vw;
+      transform: translateX(-50%);
+      z-index: 0;
+      pointer-events: none;
+      background: $grey-100;      /* remplace #F5F5F7 par light-grey du thème */
 
-      /* Apply prehide to the element itself (no translate so we don't override translateX) */
-      &.prehide-row{ opacity:0; visibility:hidden; }
+      &.prehide-row {
+        opacity: 0;
+        visibility: hidden;
+      }
     }
-    &.theme-expertise .news-bg{ background:#EEE; }
-    &.theme-juridique .news-bg{ background:#FFEAEB; }
-    &.theme-marche    .news-bg{ background:rgba(88,80,173,0.16); }
 
-    .news-box{
-      position:relative; z-index:1;
-      width:100%;
-      min-height:530px;
-      margin-inline:auto;
-      display:grid;
+    &.theme-expertise .news-bg {
+      background: #EEE;           /* pas de token dédié → on garde la valeur */
+    }
+
+    &.theme-juridique .news-bg {
+      background: rgba(234, 77, 77, 0.08);  /* variante douce du $red */
+    }
+
+    &.theme-marche .news-bg {
+      background: rgba(88, 80, 173, 0.16);  /* spécifique à la maquette */
+    }
+
+    .news-box {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      min-height: 530px;
+      margin-inline: auto;
+      display: grid;
       grid-template-columns: 1fr 496px;
-      column-gap:64px;
-      align-items:center;
-      box-sizing:border-box;
-      padding-top:40px;
-      padding-bottom:40px;
+      column-gap: 64px;
+      align-items: center;
+      box-sizing: border-box;
+      padding-top: 40px;
+      padding-bottom: 40px;
 
-      /* If you used class="prehide-row" on .news-box in HTML, make it move */
-      &.prehide-row{
+      &.prehide-row {
         opacity: 0;
         visibility: hidden;
         transform: translateY(20px);
@@ -109,179 +149,270 @@
       }
     }
 
-    .news-col--text{ align-self:center; }
+    .news-col--text {
+      align-self: center;
+    }
 
-    .theme-chip{
-      display:inline-flex;
-      align-items:center;
-      justify-content:space-between;
-      gap:8px;
-      width:133px;
-      height:23px;
-      flex-shrink:0;
-      border-radius:5px;
-      border:1px solid #444798;
-      background:#FFF;
-      padding:0 8px;
-      cursor:default;
+    .theme-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      width: 133px;
+      height: 23px;
+      flex-shrink: 0;
+      border-radius: 5px;
+      border: $bd-1 solid $blue;
+      background: $white;
+      padding: 0 8px;
+      cursor: pointer;
 
-      .chip-label{
-        color:#444697;
-        font-family:"Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-        font-size:14px;
-        font-style:italic;
-        font-weight:300;
-        line-height:normal;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
+      .chip-label {
+        min-width: 0;
+        color: $blue;
+        font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+        font-size: $fs-14;
+        font-style: italic;
+        font-weight: 300;
+        line-height: normal;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
       }
 
-      .chip-icon{
-        width:22px;
-        height:13px;
-        display:inline-grid;
-        place-items:center;
-        flex-shrink:0;
+      .chip-icon {
+        flex: 0 0 22px;
+        width: 22px;
+        height: 13px;
+        display: inline-grid;
+        place-items: center;
+        cursor: pointer;
+      }
+
+      &[aria-pressed="true"] {
+        border-color: $red;
+        box-shadow: 0 0 0 1px rgba(234, 77, 77, 0.18) inset;
+      }
+
+      .chip-icon[aria-pressed="true"] {
+        outline: 2px solid rgba(68, 70, 151, 0.25);
+        border-radius: 3px;
       }
     }
 
-    .meta-line{
-      display:flex; align-items:center; gap:10px;
-      margin:16px 0 29px;
+    .meta-line {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin: 16px 0 29px;
 
-      .firm-logo{
-        width:40px; height:40px; aspect-ratio:1/1;
-        object-fit:contain; flex-shrink:0;
+      .firm-logo {
+        width: 40px;
+        height: 40px;
+        aspect-ratio: 1 / 1;
+        object-fit: contain;
+        flex-shrink: 0;
       }
 
-      .meta-text{
-        display:flex;
-        flex-direction:column;
-        justify-content:center;
-        line-height:1.2;
+      .meta-text {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        line-height: 1.2;
       }
 
-      .firm-info{
-        display:flex;
-        align-items:center;
-        gap:6px;
-        margin-bottom:2px;
+      .firm-info {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-bottom: 2px;
       }
 
-      .firm-name{
-        color:#444697;
-        font-family:"Plus Jakarta Sans";
-        font-size:14px;
-        font-weight:500;
-        line-height:normal;
+      .firm-name {
+        color: $blue;
+        font-family: "Plus Jakarta Sans";
+        font-size: $fs-14;
+        font-weight: 500;
+        line-height: normal;
       }
 
-      .meta-sep{
-        color:#EA4D4D;
-        font-family:"Plus Jakarta Sans";
-        font-size:14px;
-        font-weight:400;
-        line-height:normal;
+      .meta-sep {
+        color: $red;
+        font-family: "Plus Jakarta Sans";
+        font-size: $fs-14;
+        font-weight: $fw-regular;
+        line-height: normal;
       }
 
-      .post-meta{ margin-top:0; }
+      .post-meta {
+        margin-top: 0;
+      }
 
-      .author-date{
-        color:#444697;
-        font-family:"Plus Jakarta Sans";
-        font-size:13px;
-        font-style:italic;
-        font-weight:400;
-        line-height:normal;
+      .author-date {
+        color: $blue;
+        font-family: "Plus Jakarta Sans";
+        font-size: $fs-13;
+        font-style: italic;
+        font-weight: $fw-regular;
+        line-height: normal;
       }
     }
 
-    .post-title{
-      color:#444697;
-      font-family:Inter, system-ui, -apple-system, Segoe UI, Arial, sans-serif;
-      font-size:36px;
-      font-style:normal;
-      font-weight:400;
-      line-height:normal;
-      margin:0 0 45px;
-      max-width:450px;
+    .post-title {
+      color: $blue;
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      font-size: $fs-36;
+      font-weight: $fw-regular;
+      line-height: normal;
+      margin: 0 0 45px;
+      max-width: 450px;
     }
 
-    .post-excerpt{
-      max-width:650px;
-      overflow:hidden;
+    .post-excerpt {
+      max-width: 650px;
+      overflow: hidden;
     }
 
-    .excerpt-body{
-      color:#444697;
-      font-family:"Plus Jakarta Sans";
-      font-size:14px;
-      font-weight:400;
-      line-height:1.6;
+    .excerpt-body {
+      color: $blue;
+      font-family: "Plus Jakarta Sans";
+      font-size: $fs-14;
+      font-weight: $fw-regular;
+      line-height: 1.6;
 
-      p{ margin:0 0 10px; }
-      p:last-child{ margin-bottom:0; }
+      p {
+        margin: 0 0 10px;
+      }
+
+      p:last-child {
+        margin-bottom: 0;
+      }
     }
 
-    /* Clamp support on either wrapper or inner body (covers both implementations) */
     .post-excerpt.is-clamped,
-    .excerpt-body.is-clamped{
-      display:-webkit-box;
+    .excerpt-body.is-clamped {
+      display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 5;
       line-clamp: 5;
-      overflow:hidden;
+      overflow: hidden;
     }
 
-    .card-cta{
-      display:flex; align-items:center; gap:14px; margin-top:22px;
+    .card-cta {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 22px;
 
-      .cta-btn{
-        width:clamp(173px, 32vw, 244.5px);
-        height:clamp(27px, 2.6vw, 28.113px);
-        min-width:173px; max-width:244.5px;
-        display:flex; align-items:center;
-        border:0; border-radius:5px; background:#444798; color:#fff;
-        padding-left:12px; padding-right:8px;
-        cursor:pointer; font-weight:400; font-size:clamp(11px,1.4vw,12px); line-height:1;
-        transition:transform .12s ease, filter .12s ease, box-shadow .12s ease;
+      .cta-btn {
+        width: clamp(173px, 32vw, 244.5px);
+        height: clamp(27px, 2.6vw, 28.113px);
+        min-width: 173px;
+        max-width: 244.5px;
+        display: flex;
+        align-items: center;
+        border: 0;
+        border-radius: 5px;
+        background: $blue;
+        color: $white;
+        padding-left: 12px;
+        padding-right: 8px;
+        cursor: pointer;
+        font-weight: $fw-regular;
+        font-size: clamp(11px, 1.4vw, 12px);
+        line-height: 1;
+        transition: transform .12s ease, filter .12s ease, box-shadow .12s ease;
 
-        .icon-plus{
-          width:22px; height:22px;
-          stroke:#EA4D4D; stroke-width:3.2;
-          stroke-linecap:round; fill:none;
-          transition:transform .15s ease;
+        .icon-plus {
+          width: 22px;
+          height: 22px;
+          stroke: $red;
+          stroke-width: 3.2;
+          stroke-linecap: round;
+          fill: none;
+          transition: transform .15s ease;
         }
 
-        &:hover{ filter:brightness(1.04); }
-        &:active{ transform:translateY(1px); }
-        &:focus-visible{ outline:2px solid #EA4D4D; outline-offset:2px; }
+        &:hover {
+          filter: brightness(1.04);
+        }
 
-        &.is-open .icon-plus{ transform:rotate(45deg); }
+        &:active {
+          transform: translateY(1px);
+        }
+
+        &:focus-visible {
+          outline: 2px solid $red;
+          outline-offset: 2px;
+        }
+
+        &.is-open .icon-plus {
+          transform: rotate(45deg);
+        }
       }
 
-      .cta-label{ margin-right:12px; white-space:nowrap; }
-      .cta-plus{ margin-left:auto; display:inline-grid; place-items:center; width:22px; height:22px; }
-      .card-linkedin img{ width:27.47px; height:27px; display:block; }
+      .cta-label {
+        margin-right: 12px;
+        white-space: nowrap;
+      }
+
+      .cta-plus {
+        margin-left: auto;
+        display: inline-grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
+      }
+
+      .card-linkedin img {
+        width: 27.47px;
+        height: 27px;
+        display: block;
+      }
     }
 
-    .news-col--image{ display:flex; justify-content:flex-end; align-items:flex-start; }
-    .post-image{
-      width:496px; height:355px; flex-shrink:0;
-      object-fit:cover; display:block; border-radius:4px;
+    /* ==== Image ==== */
+    .news-col--image {
+      display: flex;
+      justify-content: flex-end;
+      align-items: flex-start;
+    }
+
+    .post-media {
+      width: clamp(320px, 34vw, 496px);
+      aspect-ratio: 496 / 355;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #e9eaef;
+    }
+
+    .post-media__img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      object-position: center;
     }
   }
 
-  @media (max-width:992px){
-    .news-row .news-box{
-      grid-template-columns:1fr;
-      min-height:auto;
-      row-gap:20px;
-      padding:24px;
+  @media (max-width: 992px) {
+    .news-row .news-box {
+      grid-template-columns: 1fr;
+      min-height: auto;
+      row-gap: 20px;
+      padding: 24px;
     }
-    .news-row .news-col--image{ justify-content:flex-start; }
-    .news-row .post-image{ width:100%; height:auto; }
+
+    .news-row .news-col--image {
+      justify-content: flex-start;
+    }
+
+    .news-row .post-media {
+      width: 100%;
+      max-width: 496px;
+      margin-inline: 0;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -293,3 +424,71 @@
   }
 }
 
+/* ===== Pagination ===== */
+.pager-wrapper {
+  position: relative;
+  z-index: 2;
+  background: $white;
+}
+
+.pager-wrapper.prehide-page {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.pager {
+  position: relative;
+  z-index: 2;
+  background: $white;
+  height: 66px;
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  border-top: $bd-1 solid rgba(0, 0, 0, 0.06);
+}
+
+.pager.prehide-row {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  will-change: transform, opacity;
+}
+
+.pager-slot {
+  justify-self: center;
+  font-size: 15px;
+  color: $blue;
+  line-height: 1;
+}
+
+.pager-center {
+  min-width: 15px;
+  text-align: center;
+  font-family: "Plus Jakarta Sans", sans-serif;
+}
+
+.pager-btn {
+  background: transparent;
+  border: 0;
+  color: $blue;
+  font-size: $fs-16;
+  line-height: 1;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $red;
+    outline-offset: 2px;
+  }
+}
+
+.news-list .section-inner {
+  position: relative;
+  z-index: 1;
+}

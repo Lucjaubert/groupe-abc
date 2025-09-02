@@ -10,39 +10,49 @@
         </p>
 
         <a *ngIf="intro.linkedinUrl as li"
-          #introLinkedin
-          class="linkedin prehide"
-          [href]="li"
-          target="_blank"
-          rel="noopener"
-          aria-label="Voir notre page LinkedIn">
+           #introLinkedin
+           class="linkedin prehide"
+           [href]="li"
+           target="_blank"
+           rel="noopener"
+           aria-label="Voir notre page LinkedIn">
           <img src="assets/icons/linkedin.webp"
-              alt=""
-              aria-hidden="true"
-              loading="lazy"
-              decoding="async"
-              fetchpriority="low" />
+               alt=""
+               aria-hidden="true"
+               loading="lazy"
+               decoding="async"
+               fetchpriority="low" />
         </a>
       </div>
     </div>
   </section>
 
-
-  <section class="section news-list" *ngIf="posts.length">
+  <section class="section news-list" *ngIf="pagedPosts.length">
     <div class="section-inner px-0">
       <ul class="posts" role="list">
         <li #newsRow class="news-row"
-            *ngFor="let p of posts; let i = index; trackBy: trackByIndex"
+            *ngFor="let p of pagedPosts; let i = index; trackBy: trackByIndex"
             [ngClass]="themeClass(p.themeKey)">
           <div class="news-bg prehide-row" aria-hidden="true"></div>
 
-          <!-- pré-cachée : pas de flash au chargement -->
           <div class="news-box prehide-row">
             <div class="news-col news-col--text">
-              <button class="theme-chip" type="button" aria-label="Thème" disabled>
+              <!-- CHIP : libellé = PRIORISER ; icône = FILTRER -->
+              <button class="theme-chip"
+                      type="button"
+                      [attr.aria-pressed]="promoteTheme === p.themeKey"
+                      (click)="onPromote(p.themeKey!)"
+                      title="Mettre ce thème en premier (sans filtrer)">
                 <span class="chip-label">{{ p.theme }}</span>
-                <span class="chip-icon" aria-hidden="true">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="13" viewBox="0 0 22 13" fill="none">
+
+                <span class="chip-icon"
+                      role="button"
+                      tabindex="0"
+                      [attr.aria-pressed]="filterTheme === p.themeKey"
+                      (click)="$event.stopPropagation(); onFilter(p.themeKey!)"
+                      (keydown.enter)="$event.stopPropagation(); onFilter(p.themeKey!)"
+                      title="Afficher uniquement ce thème">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="22" height="13" viewBox="0 0 22 13" fill="none" aria-hidden="true">
                     <path d="M16.2703 9.79272H20.0868" stroke="#444898" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M2.09473 9.79272H10.7704" stroke="#444898" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M13.4678 3.59302H20.0869" stroke="#444898" stroke-linecap="round" stroke-linejoin="round"/>
@@ -70,16 +80,14 @@
 
               <h2 class="post-title" *ngIf="p.title">{{ p.title }}</h2>
 
-              <!-- Extrait -->
               <div class="post-excerpt" #excerptClip>
                 <div class="excerpt-body"
-                    #excerptBody
-                    [class.is-clamped]="!expanded[i]"
-                    *ngIf="p.html"
-                    [innerHTML]="p.html">
+                     #excerptBody
+                     [class.is-clamped]="!expanded[i]"
+                     *ngIf="p.html"
+                     [innerHTML]="p.html">
                 </div>
               </div>
-
 
               <div class="card-cta">
                 <button class="cta-btn"
@@ -106,11 +114,46 @@
             </div>
 
             <div class="news-col news-col--image">
-              <img *ngIf="p.imageUrl" [src]="p.imageUrl" alt="" class="post-image" />
+              <div class="post-media">
+                <img *ngIf="p.imageUrl"
+                    [src]="p.imageUrl"
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    class="post-media__img" />
+              </div>
             </div>
+
           </div>
         </li>
       </ul>
     </div>
   </section>
+  <div #pagerWrapper class="pager-wrapper prehide-page">
+    <!-- Pagination -->
+    <nav #pager class="pager prehide-row" aria-label="Pagination des actualités">
+      <div class="pager-slot pager-left">
+        <button class="pager-btn"
+                type="button"
+                (click)="goPrev()"
+                [disabled]="currentPage === 1">
+          Précédent
+        </button>
+      </div>
+
+      <div class="pager-slot pager-center" aria-live="polite">
+        {{ currentPage }}/{{ totalPages }}
+      </div>
+
+      <div class="pager-slot pager-right">
+        <button class="pager-btn"
+                type="button"
+                (click)="goNext()"
+                [disabled]="currentPage === totalPages">
+          Suivant
+        </button>
+      </div>
+    </nav>
+  </div>
+
 </div>
