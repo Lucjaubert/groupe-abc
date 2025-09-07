@@ -21,15 +21,18 @@ export const routes: Routes = [
     title: 'Nos services – Groupe ABC'
   },
   {
+    path: 'biens-et-methodes',
+    loadComponent: () =>
+      import('./pages/methods/methods.component').then(m => m.MethodsComponent),
+    title: 'Biens & Méthodes – Groupe ABC'
+  },
+  {
     path: 'actualites',
     loadComponent: () =>
       import('./pages/news/news.component').then(m => m.NewsComponent),
     title: 'Actualités – Groupe ABC'
   },
-  {
-    path: '**',
-    redirectTo: ''
-  }
+  { path: '**', redirectTo: '' }
 ];
 
 export default routes;

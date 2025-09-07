@@ -1,0 +1,460 @@
+@use "sass:map";
+@use "../../../styles/_variables.scss" as vars;
+
+$blue:       map.get(vars.$theme-colors, "light-blue");
+$red:        map.get(vars.$theme-colors, "light-red");
+$grey-100:   map.get(vars.$theme-colors, "light-grey");
+$white:      map.get(vars.$theme-colors, "white");
+$bd-2:       map.get(vars.$border-size, "2");
+
+$fs12: map.get(vars.$font-size, "10");  // 12
+$fs16: map.get(vars.$font-size, "30");  // 16
+$fs20: map.get(vars.$font-size, "40");  // ~20
+$fs24: map.get(vars.$font-size, "50");  // 24
+$fs36: map.get(vars.$font-size, "80");  // 36
+$fs60: map.get(vars.$font-size, "110"); // ~60
+
+.methods-wrapper { width: 100%; }
+
+/* ==== prehide helpers — SCOPÉS AU COMPOSANT ==== */
+.hero .prehide,
+.assets .prehide,
+.values .prehide,
+.evals .prehide,
+.piloting .prehide {
+  opacity: 0; visibility: hidden; transform: translateY(20px);
+  will-change: transform, opacity;
+}
+.assets .prehide-row,
+.values .prehide-row,
+.evals  .prehide-row,
+.piloting .prehide-row {
+  opacity: 0; visibility: hidden;
+}
+
+/* ===== HERO ===== */
+.page-title{
+  color: $blue;
+  font-size: clamp(32px, 3.2vw, 60px);
+  font-weight: 400;
+  line-height: normal;
+  margin-top: 110px;
+  margin-bottom: 8px;
+}
+.page-sub{
+  color: $blue;
+  font-size: $fs24;
+  margin: 0 0 18px 0;
+}
+.page-intro{
+  color: $blue;
+  font-size: $fs16;
+  line-height: 1.6;
+
+}
+
+/* ===================== */
+/* DOMAINES D’ACTIFS     */
+/* ===================== */
+.assets{
+  /* hauteur de la bande + centrage vertical */
+  --band-h: 488.057px;
+
+  position: relative;
+  isolation: isolate;
+   margin-top: clamp(36px, 5vw, 74px);
+
+  /* ---- Bande de fond FULL-BLEED ---- */
+  .assets-bg{
+    position: absolute;
+    top: 0;
+    left: calc(-1 * var(--content-gutter));
+    right: calc(-1 * var(--content-gutter));
+    height: var(--band-h);
+    pointer-events: none;
+    z-index: 0;
+
+    &:not(.is-ready) .assets-layer { transition: none !important; }
+
+    .assets-layer{
+      position: absolute;
+      inset: 0;
+      background: #F5F4F8;
+    }
+  }
+
+  /* ---- Contenu centré VERTICALEMENT dans la bande ---- */
+  .section-inner{
+    position: relative;
+    z-index: 1;
+
+    /* on retire le padding vertical pour ne pas fausser la hauteur */
+    padding-block: 0;
+
+    /* centre tout le contenu au milieu de la bande */
+    min-height: var(--band-h);
+    display: flex;
+    align-items: center;   /* ⟵ centrage vertical */
+  }
+
+  /* grille 3 colonnes */
+  .assets-grid{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(20px, 3.5vw, 40px);
+    width: 100%;
+  }
+
+  /* entêtes de colonne */
+  .asset-head{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .asset-icon{ width: 32px; height: 32px; object-fit: contain; }
+  .asset-title{
+    color: $blue;
+    font-size: $fs20;
+    font-weight: 600;
+    margin: 0;
+    line-height: 1.1;
+  }
+
+  /* ===== Liste au trait rouge (panel-list) ===== */
+  .panel-list{
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li{
+      display: flex;
+      align-items: baseline;
+      margin: 8px 0;
+
+      color: $blue;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: $fs16;
+      font-weight: map.get(vars.$font-weight, "regular");
+      line-height: normal;
+      will-change: transform, opacity;
+    }
+
+    /* trait rouge avant chaque item */
+    li::before{
+      content: "—";
+      color: $red;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 22px;
+      font-weight: map.get(vars.$font-weight, "regular");
+      line-height: normal;
+      margin-right: 6px;
+      flex: 0 0 auto;
+    }
+
+    .li-text, .li-group{ flex: 1 1 auto; }
+  }
+
+  /* sous-liste (puces) */
+  .sub-list{
+    list-style: none;
+    margin: 6px 0 0;
+    padding: 0;
+
+    /* chaque item = [•] [texte] → baseline alignée */
+    li{
+      display: flex;
+      align-items: baseline;
+      gap: 10px;            /* espace entre la puce et le texte */
+      margin: 6px 0 0;
+      color: $blue;
+      line-height: 1.35;
+
+      /* puce visuelle (pas absolue → meilleur alignement) */
+      &::before{
+        content: "•";
+        flex: 0 0 auto;     /* largeur auto, ne s’écrase pas */
+        color: $blue;
+        font-size: 0.9em;   /* ajuste si tu veux une puce un peu plus petite */
+        line-height: 1;
+        transform: translateY(-.05em); /* micro-ajustement vertical */
+      }
+    }
+  }
+
+  @media (max-width: 900px){
+    .assets-grid{ grid-template-columns: 1fr; }
+
+    /* option: desserre un peu en mobile */
+    .section-inner{
+      min-height: auto;
+      padding-block: 24px;
+    }
+    .assets-bg{ height: auto; min-height: var(--band-h); }
+  }
+}
+
+/* ===================== */
+/* WHEEL / VALUES        */
+/* ===================== */
+.values{
+  /* écart entre la section précédente et le H2 */
+  --values-top-gap: 74px;
+
+  /* réglages par défaut (titre ↔ image) */
+  --gap-title-wheel: 4px;   /* espace sous le titre (0–8px) */
+  --tighten: 28px;          /* remonte l’image (marge négative) */
+
+  /* structure */
+  display: grid;
+  grid-template-rows: auto 1fr; /* ligne 1: titre / ligne 2: image */
+
+  /* place le H2 exactement à 74px de ce qui précède */
+  .section-inner{
+    padding-top: var(--values-top-gap);
+  }
+
+  .values-title{
+    color: $blue;
+    font-size: $fs36;
+    font-weight: 400;
+    line-height: 1.2;
+    margin: 0 0 var(--gap-title-wheel); /* 0 en haut pour ne pas casser les 74px */
+    align-self: start;
+  }
+
+  .wheel{
+    --size: clamp(560px, 66vw, 960px);
+    position: relative;
+    width: var(--size);
+    height: var(--size);
+    align-self: start;
+    margin-top: calc(-1 * var(--tighten));  /* augmente --tighten pour coller davantage */
+    margin-left: auto;
+    margin-right: auto;
+    overflow: visible;
+  }
+
+  .wheel-img{
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);       /* centrage parfait dans son conteneur */
+    width: min(100%, calc(var(--size) * 0.96));
+    height: auto;
+    display: block;
+    background: transparent;
+  }
+
+  @media (max-width: 900px){
+    --values-top-gap: 40px;                 /* un peu moins d’air en mobile */
+    --gap-title-wheel: 2px;
+    --tighten: 14px;
+
+    .wheel{ --size: clamp(420px, 92vw, 760px); }
+    .wheel-img{ width: min(100%, calc(var(--size) * 0.98)); }
+  }
+}
+
+/* ===== Desktop : écart Titre ↔ Image = 64px exactement ===== */
+@media (min-width: 1024px){
+  .values{
+    --title-image-gap: 64px;
+
+    /* on sort du layout “grid” pour contrôler l’écart précisément */
+    display: block;
+
+    .values-title{
+      margin-bottom: var(--title-image-gap); /* ⟵ écart exact */
+    }
+
+    .wheel{
+      --size: clamp(560px, 66vw, 960px);
+      width: var(--size);
+      height: auto;
+      margin: 0 auto;               /* centré horizontalement */
+      align-self: auto;
+      overflow: visible;
+
+      /* annule la remontée mobile */
+      margin-top: 0 !important;
+    }
+
+    /* image “statique” : le haut de l’image = haut du conteneur */
+    .wheel-img{
+      position: static;
+      transform: none;
+      width: 100%;
+      height: auto;
+      margin: 0 auto;
+      background: transparent;
+    }
+  }
+}
+
+
+
+/* ===================== */
+/* MÉTHODES = Accordéon  */
+/* ===================== */
+.evals {
+  /* écart exact entre la section précédente (image au-dessus) et le H2 ci-dessous */
+  --evals-top-gap: 105px;
+  /* espace sous le titre avant le tableau (à ajuster si besoin) */
+  --evals-title-bottom-gap: 57px;
+
+  /* on applique le gap en padding pour fiabiliser la mesure */
+  .section-inner{
+    padding-top: var(--evals-top-gap);
+  }
+
+  .eval-title{
+    color: $blue;
+    font-size: $fs36;
+    font-weight: 400;
+    line-height: normal;
+    margin: 0 0 var(--evals-title-bottom-gap); /* 0 en haut, gap contrôlé en bas */
+  }
+
+  .eval-list{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: $bd-2 solid $blue;
+  }
+
+  .eval-row{
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: clamp(16px, 3vw, 24px);
+    border-bottom: $bd-2 solid $blue;
+  }
+
+  .row-line{ display: contents; }
+
+  .row-line > .eval-icon,
+  .row-line > .row-name,
+  .row-line > .row-toggle{
+    block-size: 98px;
+    display: flex;
+    align-items: center;
+  }
+
+  .eval-icon{
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    justify-self: start;
+  }
+
+  .row-name{
+    color: $blue;
+    font-size: $fs24;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .row-toggle{
+    background: none;
+    border: 0;
+    padding: 0;
+    color: $blue;
+    cursor: pointer;
+    justify-self: end;
+  }
+
+  .chevron{
+    width: 24px;
+    height: 34.66px;
+    transform: rotate(90deg);
+    transition: transform .25s ease;
+  }
+  .eval-row.open .chevron{ transform: rotate(0deg); }
+
+  .row-desc{
+    grid-column: 2 / 3;
+    padding: 8px 0 18px;
+  }
+
+  .row-desc-inner{
+    color: $blue;
+    font-size: $fs12;
+    line-height: 1.55;
+
+    p{ margin: 0 0 10px; }
+    p:last-child{ margin-bottom: 0; }
+  }
+}
+
+
+/* ===================== */
+/* PILOTAGE DES MISSIONS */
+/* ===================== */
+.piloting {
+  margin-bottom: 105px;
+  .pilot-title{
+    color: $blue;
+    font-size: $fs36;
+    font-weight: 400;
+    line-height: 1.2;
+    margin: clamp(80px, 10vw, 120px) 0 16px;
+  }
+  .pilot-intro{
+    color: $blue;
+    font-size: $fs16;
+    line-height: 1.55;
+    margin-bottom: clamp(24px, 5vw, 48px);
+  }
+
+  .pilot-grid{
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: clamp(24px, 4vw, 48px);
+  }
+  .pilot-figure{
+    margin: 0;
+    text-align: center;
+
+    img{
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    figcaption{
+      color: $blue;
+      font-size: $fs12;
+      margin-top: 8px;
+    }
+  }
+
+  @media (max-width: 900px){
+    .pilot-grid{ grid-template-columns: 1fr; }
+  }
+}
+
+/* A11y helper */
+.sr-only,
+.visually-hidden {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .methods-wrapper * {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
