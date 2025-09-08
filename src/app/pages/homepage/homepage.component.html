@@ -1,41 +1,44 @@
 <div class="homepage-wrapper pt-6" *ngIf="acf">
   <section id="hero"
-           class="hero-section"
-           (mouseenter)="pauseAutoplay()"
-           (mouseleave)="resumeAutoplay()"
-           tabindex="0"
-           role="region"
-           aria-label="Carrousel d'images – section Héro"
-           (keydown)="onKeydown($event)"
-           (pointerdown)="onPointerDown($event)"
-           (pointerup)="onPointerUp($event)">
+         class="hero-section"
+         (mouseenter)="pauseAutoplay()"
+         (mouseleave)="resumeAutoplay()"
+         tabindex="0"
+         role="region"
+         aria-label="Carrousel d'images – section Héro"
+         (keydown)="onKeydown($event)"
+         (pointerdown)="onPointerDown($event)"
+         (pointerup)="onPointerUp($event)">
 
-    <div class="hero-bg">
-      <div class="hero-layer"
-           *ngFor="let s of heroSlides; let i = index; trackBy: trackByIndex"
-           [class.active]="i === heroIndex"
-           [style.backgroundImage]="'url(' + s.bg + ')'">
-      </div>
+  <div class="hero-bg" #heroBg>
+    <div class="hero-layer"
+         #heroLayer
+         *ngFor="let s of heroSlides; let i = index; trackBy: trackByIndex"
+         [class.active]="i === heroIndex"
+         [style.backgroundImage]="'url(' + s.bg + ')'">
+    </div>
+  </div>
+
+  <div class="hero-overlay pb-10">
+    <div class="hero-content" aria-live="polite">
+      <h1 class="hero-title" #heroTitle>{{ currentSlide?.title }}</h1>
+      <p class="hero-subtitle" #heroSubtitle>{{ currentSlide?.subtitle }}</p>
     </div>
 
-    <div class="hero-overlay pb-10">
-      <div class="hero-content" aria-live="polite">
-        <h1 class="hero-title">{{ currentSlide?.title }}</h1>
-        <p class="hero-subtitle">{{ currentSlide?.subtitle }}</p>
-      </div>
-
-      <div class="hero-dots" *ngIf="heroSlides.length > 1">
-        <button *ngFor="let s of heroSlides; let i = index; trackBy: trackByIndex"
-                type="button"
-                class="hero-dot"
-                [class.active]="i === heroIndex"
-                [attr.aria-label]="'Aller au slide ' + (i + 1)"
-                [attr.aria-current]="i === heroIndex ? 'true' : null"
-                (click)="goTo(i)">
-        </button>
-      </div>
+    <div class="hero-dots" *ngIf="heroSlides.length > 1">
+      <button *ngFor="let s of heroSlides; let i = index; trackBy: trackByIndex"
+              type="button"
+              class="hero-dot"
+              [class.active]="i === heroIndex"
+              [attr.aria-label]="'Aller au slide ' + (i + 1)"
+              [attr.aria-current]="i === heroIndex ? 'true' : null"
+              (click)="goTo(i)">
+      </button>
     </div>
-  </section>
+  </div>
+</section>
+
+
 
   <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">
     <ul>
@@ -180,41 +183,40 @@
       </div>
     </div>
   </section>
-  <!-- ===== Contextes d’intervention ===== -->
-  <section class="contexts" aria-labelledby="contexts-title" *ngIf="contexts?.items?.length">
-    <!-- Fond full-bleed (même principe que .hero-bg) -->
-    <div class="contexts-bg" aria-hidden="true"></div>
 
-    <div class="contexts-inner px-0">
-      <div class="contexts-head">
-        <h3 id="contexts-title" class="contexts-title">{{ contexts?.title }}</h3>
+ <!-- ===== Contextes d’intervention ===== -->
+<section class="contexts" aria-labelledby="contexts-title" *ngIf="contexts?.items?.length">
+  <!-- Fond full-bleed -->
+  <div class="contexts-bg" aria-hidden="true"></div>
 
-        <div class="contexts-actions">
-          <button type="button" class="cta-btn">
-            <span class="cta-label">Plus d'infos</span>
-            <span class="cta-plus" aria-hidden="true">
-              <svg viewBox="0 0 24 24" class="icon-plus">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </span>
-          </button>
-        </div>
+  <div class="contexts-inner px-0">
+    <div class="contexts-head">
+      <h3 id="contexts-title" class="contexts-title">{{ contexts?.title }}</h3>
+
+      <div class="contexts-actions">
+        <button type="button" class="cta-btn">
+          <span class="cta-label">Plus d'infos</span>
+          <span class="cta-plus" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-plus">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </span>
+        </button>
       </div>
-
-      <ul class="contexts-grid px-0 pb-4" role="list">
-        <li class="ctx-item" *ngFor="let it of contexts?.items; let i = index; trackBy: trackByIndex">
-          <!-- .ctx-icon devient le carré, l'image est décorative -->
-          <div class="ctx-icon" role="img" [attr.aria-label]="it.label || ('Contexte ' + (i+1))">
-            <img class="ctx-img"
-                [src]="it.icon"
-                alt=""
-                loading="lazy">
-          </div>
-          <div class="ctx-label" [innerHTML]="it.label"></div>
-        </li>
-      </ul>
     </div>
-  </section>
+
+    <ul class="contexts-grid px-0 pb-4" role="list">
+      <li class="ctx-item" *ngFor="let it of contexts?.items; let i = index; trackBy: trackByIndex">
+        <!-- .ctx-icon = le carré ; l'image interne est décorative -->
+        <div class="ctx-icon" role="img" [attr.aria-label]="it.label || ('Contexte ' + (i+1))">
+          <img class="ctx-img" [src]="it.icon" alt="" loading="lazy">
+        </div>
+        <div class="ctx-label" [innerHTML]="it.label"></div>
+      </li>
+    </ul>
+  </div>
+</section>
+
 
   <!-- ===== Nos clients ===== -->
   <section class="clients" aria-labelledby="clients-title" *ngIf="clients?.items?.length">

@@ -1,4 +1,3 @@
-// src/app/services/wordpress.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { map, catchError, switchMap } from 'rxjs/operators';
@@ -8,7 +7,7 @@ import { Observable, of } from 'rxjs';
 @Injectable({ providedIn: 'root' })
 export class WordpressService {
   private http = inject(HttpClient);
-  private api = environment.apiWpV2; // ex: 'http://localhost/groupe-abc/wp-json/wp/v2'
+  private api = environment.apiWpV2;
 
   /* ========== HOMEPAGE (déjà OK) ========== */
   getHomepageData() {
@@ -70,24 +69,46 @@ export class WordpressService {
   }
 
   /* =====================================================
-   *                 🚀  SERVICES (NOUVEAU)
+   *                     SERVICES (OK)
    * ===================================================== */
-
-  /** Renvoie brut: tableau WP des posts "services" (pour debug ou besoins spéciaux). */
   getServicesRaw(): Observable<any[]> {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/services`, { params });
   }
 
-
   getServicesData(): Observable<any> {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/services`, { params }).pipe(
       map(list => list?.[0] ?? {}),
-      catchError(err => {
-        console.error('[WP] getServicesData error:', err);
-        return of({});
-      })
+      catchError(err => { console.error('[WP] getServicesData error:', err); return of({}); })
+    );
+  }
+
+  /* =====================================================
+   *               📌 BIENS & MÉTHODES (NOUVEAU)
+   * ===================================================== */
+
+  /** Brut (debug) */
+  getMethodsRaw(): Observable<any[]> {
+    const params = new HttpParams().set('per_page', '1');
+    return this.http.get<any[]>(`${this.api}/methods`, { params });
+  }
+
+  /** Données pour <app-methods> (on renvoie l’objet complet comme pour Services) */
+  getMethodsData(): Observable<any> {
+    const params = new HttpParams().set('per_page', '1');
+    return this.http.get<any[]>(`${this.api}/methods`, { params }).pipe(
+      map(list => list?.[0] ?? {}),
+      catchError(err => { console.error('[WP] getMethodsData error:', err); return of({}); })
+    );
+  }
+
+  /* ========== TEAM (Équipes) ========== */
+  getTeamData() {
+    const params = new HttpParams().set('per_page', '1');
+    return this.http.get<any[]>(`${this.api}/team`, { params }).pipe(
+      map(list => list?.[0] ?? {}),
+      catchError(err => { console.error('[WP] getTeamData error:', err); return of({}); })
     );
   }
 }
