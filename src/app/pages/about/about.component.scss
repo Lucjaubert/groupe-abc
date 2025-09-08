@@ -90,9 +90,18 @@ $white:      map.get(vars.$theme-colors, "white");
 .panel-list.about-where-list li {
   display: flex; align-items: center; gap: 10px;
   color: $blue-hero; font-size: 20px;
+
+  /* 🔎 Hover doux UNIQUEMENT sur les items de lieux */
+  transform-origin: left center;
+  transition: transform .28s cubic-bezier(.22,.61,.36,1);
+  will-change: transform;
 }
 .panel-list.about-where-list li::before {
   content: "—"; color: $red; font-size: 18px; margin-right: 6px;
+}
+.panel-list.about-where-list li:hover,
+.panel-list.about-where-list li:focus-visible {
+  transform: scale(1.04);
 }
 
 /* ========================= */
@@ -147,17 +156,32 @@ $white:      map.get(vars.$theme-colors, "white");
 /* ========================= */
 .map-section {
   .map-grid {
-    display: grid; gap: clamp(24px, 4vw, 48px);
+    display: grid;
+    gap: clamp(24px, 4vw, 48px);
     grid-template-columns: 1fr;
-    @media (min-width: 992px) { grid-template-columns: 2fr 400px; column-gap: clamp(80px, 10vw, 140px); }
+
+    @media (min-width: 992px) {
+      grid-template-columns: 2fr 400px;
+      column-gap: clamp(80px, 10vw, 140px);
+      align-items: center; /* centre verticalement la colonne "Où ?" par rapport à la carte */
+    }
   }
+
+  /* Sécurité : si le parent change, on garde chaque colonne centrée */
+  .map-image,
+  .map-list {
+    align-self: center;
+  }
+
   .map-image img { display:block; width:100%; height:auto; }
+
   .map-title {
     color: $blue-hero;
     font-size: map.get(vars.$font-size, "100"); /* 48 */
     font-weight: map.get(vars.$font-weight, "regular");
     margin: 0 0 8px;
   }
+
   .map-list ul {
     list-style: none; margin: 0; padding: 0;
     display: flex; flex-direction: column; gap: clamp(8px, 1.6vw, 12px);
@@ -165,8 +189,24 @@ $white:      map.get(vars.$theme-colors, "white");
   .map-list li {
     display: flex; align-items: center; gap: 10px;
     color: $blue-hero; font-size: 20px;
+
+    /* 🔎 Hover doux UNIQUEMENT sur les items de lieux */
+    transform-origin: left center;
+    transition: transform .28s cubic-bezier(.22,.61,.36,1);
+    will-change: transform;
   }
   .map-list li::before { content: "—"; color: $red; }
+  .map-list li:hover,
+  .map-list li:focus-visible {
+    transform: scale(1.04);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .map-list li {
+      transition: none !important;
+      transform: none !important;
+    }
+  }
 }
 
 /* ====== NOS VALEURS ====== */
@@ -335,41 +375,75 @@ $white:      map.get(vars.$theme-colors, "white");
 
   /* — Appartenance : 3 colonnes (nom, logo, chevron) — */
   .aff-row {
-    --row-h: 98px; /* hauteur unifiée */
+    --row-h: 98px; /* hauteur minimale de l’entête */
     display: grid;
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: 1fr auto auto; /* texte | logo | chevron */
     align-items: center;
     column-gap: clamp(24px, 4vw, 48px);
-    block-size: var(--row-h);
+    /* >>> on laisse la ligne grandir quand la description est ouverte */
+    min-block-size: var(--row-h);  /* au lieu de block-size */
     padding-block: 0;
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
   }
   .aff-line { display: contents; }
-  .aff-name { color: $blue-hero; font-size: 20px; }
+
+  /* Typo à 18px comme demandé */
+  .aff-name { color: $blue-hero; font-size: 18px; line-height: 1.3; font-weight: 600; }
+  .aff-name .aff-abbr { font-weight: map.get(vars.$font-weight, "600"); }
+  .aff-name .aff-label { font-weight: map.get(vars.$font-weight, "600"); }
+
   .aff-logo { width: 75px; height: 75px; object-fit: contain; justify-self: end; }
+
   .aff-toggle { background: none; border: 0; color: $blue-hero; justify-self: end; cursor: pointer; }
   .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
   .aff-row.open .chevron { transform: rotate(0deg); }
-  .aff-desc { grid-column: 1 / -1; padding: 8px 0 18px; }
 
-  /* — Déontologie : 2 colonnes (nom, chevron) avec la même hauteur que Appartenance — */
+  /* La description n’occupe QUE la 1ère colonne (texte).
+     Du coup elle ne passe plus derrière le logo/chevron. */
+  .aff-desc { grid-column: 1 / 2; padding: 8px 0 16px; }
+  .aff-desc-inner {
+    color: $blue;
+    font-size: 16px !important;      /* taille demandée */
+    line-height: 1.55;
+  }
+  .aff-desc-inner p { margin: 0 0 8px; }
+  .aff-desc-inner p:last-child { margin-bottom: 0; }
+
+  /* — Déontologie : 2 colonnes (nom, chevron) — */
   .deon-row {
-    --row-h: 98px; /* même hauteur que .aff-row */
+    --row-h: 98px;
     display: grid;
-    grid-template-columns: 1fr auto;
+    grid-template-columns: 1fr auto; /* texte | chevron */
     align-items: center;
     column-gap: clamp(24px, 4vw, 48px);
-    block-size: var(--row-h);
+    /* même correction : hauteur minimale, pas fixe */
+    min-block-size: var(--row-h);
     padding-block: 0;
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
   }
   .deon-line { display: contents; }
-  .deon-name { color: $blue-hero; font-size: 20px; line-height: 1; }
+
+  /* Harmonisation à 18px ici aussi */
+  .deon-name {
+    color: $blue-hero;
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 600;
+  }
   .deon-toggle { background: none; border: 0; color: $blue-hero; justify-self: end; cursor: pointer; }
   .deon-row .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
   .deon-row.open .chevron { transform: rotate(0deg); }
+
   .deon-desc { grid-column: 1 / -1; padding: 8px 0 18px; }
+  .deon-desc-inner {
+    color: $blue;
+    font-size: 16px !important;         /* taille unifiée */
+    line-height: 1.55;
+  }
+  .deon-desc-inner p { margin: 0 0 8px; }
+  .deon-desc-inner p:last-child { margin-bottom: 0; }
 }
+
 
 /* ============================  TIMELINE ============================ */
 .timeline {

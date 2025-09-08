@@ -1,1 +1,33 @@
-<p>team works!</p>
+<div class="team-wrapper">
+
+  <!-- ===== HERO ===== -->
+  <section class="section hero" *ngIf="heroTitle || heroIntroHtml">
+    <div class="section-inner">
+      <h1 #heroTitleEl class="page-title prehide mb-5">{{ heroTitle }}</h1>
+
+      <div
+        #heroIntroEl
+        class="hero-intro prehide"
+        *ngIf="heroIntroHtml"
+        [innerHTML]="heroIntroHtml">
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Carte / Où ? ===== -->
+  <section class="section map-section" *ngIf="mapSection as ms">
+  <div class="map-bg" aria-hidden="true"><div class="map-layer"></div></div>
+  <div class="section-inner">
+    <div class="map-grid">
+      <div #mapImageEl class="map-image prehide"><img [src]="ms.image" alt="" /></div>
+      <div class="map-list">
+        <h2 #mapTitleEl class="map-title prehide">{{ ms.title }}</h2>
+        <ul class="panel-list">
+          <li #mapItem *ngFor="let item of ms.items; trackBy: trackByIndex">{{ item }}</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div>

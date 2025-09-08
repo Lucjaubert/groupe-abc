@@ -102,4 +102,13 @@ export class WordpressService {
       catchError(err => { console.error('[WP] getMethodsData error:', err); return of({}); })
     );
   }
+
+  /* ========== TEAM (Équipes) ========== */
+  getTeamData() {
+    const params = new HttpParams().set('per_page', '1');
+    return this.http.get<any[]>(`${this.api}/team`, { params }).pipe(
+      map(list => list?.[0] ?? {}),
+      catchError(err => { console.error('[WP] getTeamData error:', err); return of({}); })
+    );
+  }
 }

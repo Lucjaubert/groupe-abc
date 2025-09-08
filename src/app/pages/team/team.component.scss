@@ -1,0 +1,170 @@
+@use "sass:map";
+@use "../../../styles/_variables.scss" as vars;
+
+/* ===== Aliases ===== */
+$blue:       map.get(vars.$theme-colors, "light-blue");
+$blue-hero:  #444798;
+$red:        map.get(vars.$theme-colors, "light-red");
+$grey-100:   map.get(vars.$theme-colors, "light-grey");
+$white:      map.get(vars.$theme-colors, "white");
+
+.team-wrapper { width: 100%; }
+
+/* ===== Section wrapper commun ===== */
+.section{
+  position: relative;
+  isolation: isolate;
+
+  .section-inner{
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    margin-inline: auto;
+    padding-block: var(--pad-y);
+    padding-top: 112px; /* header fixe */
+  }
+
+  .prehide{ opacity:0; visibility:hidden; transform: translateY(20px); will-change: transform,opacity; }
+  .prehide-row{ opacity:0; visibility:hidden; }
+}
+
+/* ===== HERO ===== */
+.page-title{
+  color: $blue-hero;
+  font-size: clamp(32px, 3.2vw, 60px);
+  font-weight: map.get(vars.$font-weight, "regular");
+  line-height: 1.1;
+  margin: 0 0 clamp(12px, 2vw, 18px);
+}
+
+.hero-intro{
+  color: $blue;
+  font-size: map.get(vars.$font-size, "30"); /* 16px */
+  line-height: 1.6;
+  p{ margin: 0 !important; }
+  p + p{ margin-top: 0 !important; }
+}
+
+/* ===== MAP (Où ?) ===== */
+.map-section{
+  /* marges demandées sous le bloc intro */
+  margin-top: 48.5px;
+  margin-bottom: 148.9px;
+
+  /* variables responsive + verrous desktop */
+  --map-gap-x: clamp(40px, 8vw, 133px);       /* gap carte ↔ liste */
+  --map-right-col: clamp(360px, 31vw, 498px); /* largeur colonne droite */
+  --map-title-offset: clamp(24px, 7vw, 116px);/* décalage vertical titre */
+
+  /* fond pleine largeur */
+  .map-bg{
+    position: absolute;
+    inset: 0;
+    left: calc(-1 * var(--content-gutter));
+    right: calc(-1 * var(--content-gutter));
+    pointer-events: none;
+    z-index: 0;
+  }
+  .map-bg .map-layer{
+    position: absolute;
+    inset: 0;
+    background: $grey-100;
+  }
+
+  .section-inner{ padding-inline: 0; }
+
+  .map-grid{
+    display: grid;
+    grid-template-columns: 1fr;             /* mobile */
+    row-gap: clamp(24px, 4vw, 48px);
+
+    @media (min-width: 992px){
+      grid-template-columns: 2fr var(--map-right-col);
+      column-gap: var(--map-gap-x);
+      align-items: start;
+    }
+  }
+
+  .map-image img{ display:block; width:100%; height:auto; }
+
+  .map-list{
+    /* place “Où ?” 116px sous le haut de la carte (desktop) */
+    padding-top: var(--map-title-offset);
+  }
+
+  .map-title{
+    color: $blue-hero;
+    font-size: map.get(vars.$font-size, "100"); /* 48 */
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.1;
+    margin: 0 0 8px;
+  }
+
+  /* === panel-list (tiret rouge + zoom smooth au hover/focus) === */
+  .panel-list{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex; flex-direction: column;
+    gap: clamp(8px, 1.6vw, 12px);
+  }
+
+  .panel-list li{
+    display: flex;
+    align-items: baseline;
+    color: $blue-hero;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 20px;
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: normal;
+    margin: 0;
+
+    /* 👇 zoom smooth CSS (fallback si JS off) */
+    transform: translateZ(0) scale(1);
+    transform-origin: left center;
+    will-change: transform;
+    transition: transform 220ms cubic-bezier(.2,.7,.2,1);
+  }
+
+  .panel-list li::before{
+    content: "—";
+    color: $red;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 20px;
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: normal;
+    margin-right: 6px;
+    flex: 0 0 auto;
+  }
+
+  @media (hover: hover) and (pointer: fine){
+    .panel-list li:hover,
+    .panel-list li:focus-visible{
+      transform: scale(1.045);
+    }
+  }
+
+  /* 🔒 verrou exact aux grands écrans (respect strict des mesures) */
+  @media (min-width: 1280px){
+    .map-grid{
+      grid-template-columns: 2fr 498px;  /* largeur colonne droite */
+      column-gap: 133px;                 /* écart carte ↔ liste */
+    }
+    .map-list{ padding-top: 116px; }     /* offset du titre */
+  }
+}
+
+/* A11y */
+@media (prefers-reduced-motion: reduce){
+  .section .prehide,
+  .section .prehide-row{
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+  .map-section .panel-list li{
+    transition: none !important;
+    transform: none !important;
+  }
+}

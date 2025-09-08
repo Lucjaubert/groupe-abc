@@ -27,6 +27,12 @@ export const routes: Routes = [
     title: 'Biens & Méthodes – Groupe ABC'
   },
   {
+    path: 'notre-equipe',
+    loadComponent: () =>
+      import('./pages/team/team.component').then(m => m.TeamComponent),
+    title: 'Équipe – Groupe ABC'
+  },
+  {
     path: 'actualites',
     loadComponent: () =>
       import('./pages/news/news.component').then(m => m.NewsComponent),
