@@ -41,6 +41,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   /* Handlers hover GSAP -> cleanup */
   private hoverCleanup: Array<() => void> = [];
 
+  /* ===== Flags anti “double flash / double play” ===== */
+  private bindScheduled = false;
+  private heroPlayed = false; // ⟵ le H1 ne rejoue jamais même si rebind
+
   ngOnInit(): void {
     this.wp.getTeamData().subscribe((root: any) => {
       const acf = root?.acf ?? {};
@@ -90,8 +94,8 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Nettoie l'HTML WP: supprime les <p> vides (&nbsp;, espaces, <br>) puis assainit */
   private squashWpGaps(html: string): SafeHtml {
     const compact = (html || '')
-      .replace(/<p>(?:&nbsp;|&#160;|\s|<br\s*\/?>)*<\/p>/gi, '') // vire <p>&nbsp;</p>, <p><br></p>, etc.
-      .replace(/>\s+</g, '><');                                 // compresse les blancs inter-balises
+      .replace(/<p>(?:&nbsp;|&#160;|\s|<br\s*\/?>)*<\/p>/gi, '')
+      .replace(/>\s+</g, '><');
     return this.sanitizer.bypassSecurityTrustHtml(compact);
   }
 
@@ -105,6 +109,14 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private prefersReducedMotion(): boolean {
     try { return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false; }
     catch { return false; }
+  }
+
+  /** Force l’état initial (évite tout flash si la CSS tarde) */
+  private forceInitialHidden(host: HTMLElement){
+    const pre  = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));
+    const rows = Array.from(host.querySelectorAll<HTMLElement>('.prehide-row'));
+    if (pre.length)  gsap.set(pre,  { autoAlpha: 0, y: 20 });
+    if (rows.length) gsap.set(rows, { autoAlpha: 0 });
   }
 
   /** Ajoute un zoom GSAP doux au hover/focus sur chaque li */
@@ -152,7 +164,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.hoverCleanup = [];
   }
 
-  private bindScheduled = false;
   private scheduleBind(){
     if (this.bindScheduled) return;
     this.bindScheduled = true;
@@ -163,9 +174,15 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private bindAnimations(): void {
+    // 1) Force l’état initial (anti flash) + kill propre avant rebind
+    const host = (document.querySelector('.team-wrapper') as HTMLElement) || document.body;
+    this.forceInitialHidden(host);
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
+
     const EASE = 'power3.out';
-    const rm = (el?: Element | null) => el && el.classList.remove('prehide','prehide-row');
+    const rmPrehide = (els: Element | Element[]) => {
+      (Array.isArray(els) ? els : [els]).forEach(el => el.classList.remove('prehide','prehide-row'));
+    };
 
     const h1  = this.heroTitleEl?.nativeElement;
     const hi  = this.heroIntroEl?.nativeElement;
@@ -174,34 +191,51 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const items = (this.mapItemEls?.toArray() || []).map(r => r.nativeElement);
     const list  = items[0]?.parentElement as HTMLElement | null;
 
-    if (h1) gsap.fromTo(h1, {autoAlpha:0, y:18}, {
-      autoAlpha:1, y:0, duration:.55, ease:EASE,
-      onStart:()=>rm(h1)
-    });
+    /* ---------- HERO : H1 ne joue qu’une fois ---------- */
+    if (h1 && !this.heroPlayed) {
+      gsap.fromTo(h1, { autoAlpha: 0, y: 18 }, {
+        autoAlpha: 1, y: 0, duration: .55, ease: EASE,
+        onStart: () => { rmPrehide(h1); },
+        onComplete: () => { this.heroPlayed = true; gsap.set(h1, { clearProps: 'all' }); }
+      });
+    }
 
-    if (hi) gsap.fromTo(hi, {autoAlpha:0, y:16}, {
-      autoAlpha:1, y:0, duration:.5, ease:EASE, delay:.05,
-      onStart:()=>rm(hi)
-    });
+    if (hi){
+      gsap.fromTo(hi, { autoAlpha: 0, y: 16 }, {
+        autoAlpha: 1, y: 0, duration: .5, ease: EASE, delay: .05,
+        onStart: () => { rmPrehide(hi); },
+        onComplete: () => { gsap.set(hi, { clearProps: 'all' }); }
+      });
+    }
 
-    if (mi) gsap.fromTo(mi, {autoAlpha:0, y:14}, {
-      autoAlpha:1, y:0, duration:.5, ease:EASE,
-      scrollTrigger:{trigger:mi,start:'top 85%',once:true},
-      onStart:()=>rm(mi)
-    });
+    /* ---------- MAP (image + titre + items) ---------- */
+    if (mi){
+      gsap.fromTo(mi, { autoAlpha: 0, y: 14 }, {
+        autoAlpha: 1, y: 0, duration: .5, ease: EASE,
+        scrollTrigger: { trigger: mi, start: 'top 85%', once: true },
+        onStart: () => { rmPrehide(mi); },
+        onComplete: () => { gsap.set(mi, { clearProps: 'all' }); }
+      });
+    }
 
-    if (mt) gsap.fromTo(mt, {autoAlpha:0, y:16}, {
-      autoAlpha:1, y:0, duration:.5, ease:EASE, delay:.05,
-      scrollTrigger:{trigger:mt,start:'top 85%',once:true},
-      onStart:()=>rm(mt)
-    });
+    if (mt){
+      gsap.fromTo(mt, { autoAlpha: 0, y: 16 }, {
+        autoAlpha: 1, y: 0, duration: .5, ease: EASE, delay: .05,
+        scrollTrigger: { trigger: mt, start: 'top 85%', once: true },
+        onStart: () => { rmPrehide(mt); },
+        onComplete: () => { gsap.set(mt, { clearProps: 'all' }); }
+      });
+    }
 
     if (list && items.length) {
-      gsap.fromTo(items, {autoAlpha:0, y:12}, {
-        autoAlpha:1, y:0, duration:.45, ease:EASE, stagger:.08,
-        scrollTrigger:{trigger:list,start:'top 90%',once:true},
-        onStart:()=>items.forEach(rm)
-      });
+      gsap.set(items, { autoAlpha: 0, y: 12 });
+      gsap.timeline({
+        defaults: { ease: EASE },
+        scrollTrigger: { trigger: list, start: 'top 90%', once: true },
+        onStart: () => { rmPrehide([list, ...items]); }
+      })
+      .to(items, { autoAlpha: 1, y: 0, duration: .45, stagger: .08 }, 0)
+      .add(() => { gsap.set(items, { clearProps: 'transform,opacity,willChange' }); });
     }
 
     /* 👇 bind le zoom au hover/focus (GSAP) */

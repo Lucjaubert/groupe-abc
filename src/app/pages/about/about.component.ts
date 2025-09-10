@@ -89,6 +89,9 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChildren('tlYearEl') tlYearEls!: QueryList<ElementRef<HTMLElement>>;
   @ViewChildren('tlBodyEl') tlBodyEls!: QueryList<ElementRef<HTMLElement>>;
 
+  /* Hover handlers cleanup */
+  private hoverCleanup: Array<() => void> = [];
+
   /* ========================= */
   /* Data loading              */
   /* ========================= */
@@ -209,12 +212,52 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   toggleAff(i: number){ this.setSingleOpen(this.affOpen, i); }
   toggleDeon(i: number){ this.setSingleOpen(this.deonOpen, i); }
 
-  /** "RICS : Royal Institution..." -> { abbr:"RICS", label:"Royal Institution..." } */
   splitAffName(raw: string): { abbr: string; label: string }{
     const s = (raw || '').trim();
     const idx = s.indexOf(':');
     if (idx === -1) return { abbr: s, label: '' };
     return { abbr: s.slice(0, idx).trim(), label: s.slice(idx + 1).trim() };
+  }
+
+  private prefersReducedMotion(): boolean {
+    try { return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false; }
+    catch { return false; }
+  }
+
+  /* ===== Hover zoom (GSAP) ===== */
+  private clearHoverBindings(){
+    this.hoverCleanup.forEach(fn => { try { fn(); } catch {} });
+    this.hoverCleanup = [];
+  }
+
+  private attachHoverZoom(
+    elements: HTMLElement[] | undefined,
+    originLeft = true,
+    scale = 1.045
+  ){
+    if (!elements || !elements.length || this.prefersReducedMotion()) return;
+
+    elements.forEach(el => {
+      if (!el) return;
+      el.style.transformOrigin = originLeft ? 'left center' : 'center center';
+      el.style.willChange = 'transform';
+
+      const enter = () => gsap.to(el, { scale, duration: 0.18, ease: 'power3.out' });
+      const leave = () => gsap.to(el, { scale: 1,  duration: 0.22, ease: 'power2.out' });
+
+      el.addEventListener('mouseenter', enter);
+      el.addEventListener('mouseleave', leave);
+      el.addEventListener('focus', enter, true);
+      el.addEventListener('blur', leave, true);
+
+      this.hoverCleanup.push(() => {
+        el.removeEventListener('mouseenter', enter);
+        el.removeEventListener('mouseleave', leave);
+        el.removeEventListener('focus', enter, true);
+        el.removeEventListener('blur', leave, true);
+        gsap.set(el, { clearProps: 'transform' });
+      });
+    });
   }
 
   /* ========================= */
@@ -238,6 +281,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     this.killAllScrollTriggers();
     try { this._ro?.disconnect(); } catch {}
     try { gsap.globalTimeline.clear(); } catch {}
+    this.clearHoverBindings();
   }
 
   private bindScheduled = false;
@@ -309,7 +353,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
     if (meshLevels && meshLevelItems.length) {
-      // Trait 2px qui s'étire + labels au fur et à mesure
       gsap.set(meshLevels, { '--lineW': '0%' });
       gsap.set(meshLevelItems, { autoAlpha: 0, y: 10 });
 
@@ -320,7 +363,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
       tl.to(meshLevels, { duration: 1.6, '--lineW': '100%' }, 0);
 
-      // Apparition des trois labels quand le trait “passe” leur position
       const steps = [0.15, 0.85, 1.55];
       meshLevelItems.forEach((el, i) => {
         tl.to(el, { autoAlpha: 1, y: 0, duration: 0.45, ease: EASE }, steps[Math.min(i, steps.length - 1)]);
@@ -328,15 +370,15 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /* ===== MAP ===== */
-    const mapImg = this.mapImageEl?.nativeElement;
+    const mapImgWrap = this.mapImageEl?.nativeElement;
     const mapTitle = this.mapTitleEl?.nativeElement;
     const mapItemEls = (this.mapItems?.toArray() || []).map(r => r.nativeElement);
     const mapList = mapItemEls[0]?.parentElement as HTMLElement | null;
 
-    if (mapImg) {
-      gsap.fromTo(mapImg, { autoAlpha: 0, y: 18 }, {
+    if (mapImgWrap) {
+      gsap.fromTo(mapImgWrap, { autoAlpha: 0, y: 18 }, {
         autoAlpha: 1, y: 0, duration: 0.55, ease: EASE,
-        scrollTrigger: { trigger: mapImg, start: 'top 85%', once: true }
+        scrollTrigger: { trigger: mapImgWrap, start: 'top 85%', once: true }
       });
     }
     if (mapTitle) {
@@ -352,12 +394,11 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    /* ===== VALUES (icônes+traits → titres → textes, en 3 phases synchronisées) ===== */
+    /* ===== VALUES ===== */
     const valuesTitle = this.valuesTitleEl?.nativeElement;
     const valueItems  = (this.valueItemEls?.toArray() || []).map(r => r.nativeElement);
     const valuesGrid  = valueItems[0]?.parentElement as HTMLElement | null;
 
-    // Titre seul
     if (valuesTitle) {
       gsap.fromTo(valuesTitle, { autoAlpha: 0, y: 16 }, {
         autoAlpha: 1, y: 0, duration: 0.5, ease: EASE,
@@ -365,7 +406,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    // Grille : 3 phases
     if (valuesGrid && valueItems.length) {
       const icons: HTMLElement[]    = [];
       const titles: HTMLElement[]   = [];
@@ -387,27 +427,23 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         if (divider){ dividers.push(divider); gsap.set(divider, { scaleX: 0, transformOrigin: '50% 50%' }); }
       });
 
-      const D = 0.7; // ~0.7s par phase (total ~2.1s)
+      const D = 0.7;
 
       const tl = gsap.timeline({
         defaults: { ease: EASE },
         scrollTrigger: { trigger: valuesGrid, start: 'top 85%', once: true }
       });
 
-      // Phase 1 : icônes + traits en même temps
       tl.add('phase1')
         .to(icons,    { autoAlpha: 1, y: 0, scale: 1, duration: D }, 'phase1')
         .to(dividers, { scaleX: 1,                duration: D }, 'phase1');
 
-      // Phase 2 : titres en même temps
       tl.add('phase2')
         .to(titles, { autoAlpha: 1, y: 0, duration: D }, 'phase2');
 
-      // Phase 3 : textes en même temps
       tl.add('phase3')
         .to(descs, { autoAlpha: 1, y: 0, duration: D }, 'phase3');
 
-      // Nettoyage
       tl.add(() => {
         const toClear = [...icons, ...titles, ...descs];
         gsap.set(toClear, { clearProps: 'transform,opacity,willChange' });
@@ -415,13 +451,12 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    /* ===== AFFILIATIONS : titre puis tableau (au scroll) ===== */
+    /* ===== AFFILIATIONS ===== */
     {
       const affTitle = this.affTitleEl?.nativeElement;
       const affRows  = (this.affRowEls?.toArray() || []).map(r => r.nativeElement);
       const affSection = affTitle?.closest('.affiliations') as HTMLElement | null;
 
-      // Pré-cachage
       if (affTitle) gsap.set(affTitle, { autoAlpha: 0, y: 16 });
       if (affRows.length) gsap.set(affRows, { autoAlpha: 0, y: 16 });
 
@@ -435,13 +470,12 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    /* ===== DÉONTOLOGIE : titre puis tableau (au scroll) ===== */
+    /* ===== DÉONTOLOGIE ===== */
     {
       const deonTitle  = this.deonTitleEl?.nativeElement;
       const deonRows   = (this.deonRowEls?.toArray() || []).map(r => r.nativeElement);
       const deonSection = deonTitle?.closest('.deon') as HTMLElement | null;
 
-      // Pré-cachage
       if (deonTitle) gsap.set(deonTitle, { autoAlpha: 0, y: 16 });
       if (deonRows.length) gsap.set(deonRows, { autoAlpha: 0, y: 16 });
 
@@ -456,13 +490,11 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     /* ===== TIMELINE ===== */
-    // Hypothèses : gsap et ScrollTrigger déjà importés/registrés, EASE défini.
     const tlTitleEl = this.tlTitleEl?.nativeElement as HTMLElement | undefined;
     const tlRailEl  = this.tlRail?.nativeElement  as HTMLElement | undefined;
     const tlYears   = (this.tlYearEls?.toArray() || []).map(r => r.nativeElement as HTMLElement);
     const tlBodies  = (this.tlBodyEls?.toArray() || []).map(r => r.nativeElement as HTMLElement);
 
-    // Titre
     if (tlTitleEl) {
       gsap.fromTo(tlTitleEl, { autoAlpha: 0, y: 16 }, {
         autoAlpha: 1, y: 0, duration: 0.5, ease: EASE,
@@ -474,7 +506,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       const timelineSection = tlRailEl.closest('.timeline') as HTMLElement | null;
       const tlGrid          = tlRailEl.closest('.tl-grid') as HTMLElement | null;
 
-      // États init : années/corps masqués + trait rouge replié
       tlYears.forEach(y => {
         (y as any).__revealed = false;
         gsap.set(y, { autoAlpha: 0, y: 10 });
@@ -491,18 +522,10 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
         checkpoints = tlYears.map((yEl) => {
           const yBox = yEl.getBoundingClientRect();
-
-          // Position EXACTE du petit tiret rouge : top + 0.6em
           const fs = parseFloat(getComputedStyle(yEl).fontSize) || 16;
-          const dashOffset = 0.6 * fs; // correspond à .tl-year::after { top: .6em; }
-
-          // Position absolue (viewport) de l’intersection horizontale
+          const dashOffset = 0.6 * fs;
           const cutYAbs = yBox.top + dashOffset;
-
-          // Convertir en relatif à la rail top
           const cutYRel = cutYAbs - railBox.top;
-
-          // Clamp pour éviter débordements
           return Math.max(0, Math.min(railHeight, cutYRel));
         });
       };
@@ -517,11 +540,8 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         onUpdate: (self) => {
           const p = self.progress;
           const drawPx = railHeight * p;
-
-          // Dessin du rail
           gsap.set(tlRailEl, { scaleY: p, transformOrigin: 'top' });
 
-          // Révélations synchronisées à l’INTERSECTION précise
           for (let i = 0; i < Math.min(tlYears.length, tlBodies.length); i++) {
             const yEl = tlYears[i];
             const bEl = tlBodies[i];
@@ -529,8 +549,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
             if (drawPx >= (checkpoints[i] || 0)) {
               (yEl as any).__revealed = true;
-
-              // Tiret rouge + apparition année/texte
               gsap.to(yEl, {
                 autoAlpha: 1, y: 0, duration: 0.45, ease: EASE,
                 onStart: () => yEl.style.setProperty('--dashNow', 'var(--dash-w)')
@@ -541,7 +559,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         onRefreshInit: () => {
           computeLayout();
-          // Reset visuel au refresh pour éviter un flash
           gsap.set(tlRailEl, { scaleY: 0, transformOrigin: 'top' });
           tlYears.forEach((y) => {
             (y as any).__revealed = false;
@@ -552,13 +569,17 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       });
 
-      // Sécurité : re-mesure si images/iframed contenus se chargent après coup
       const ro = this.getResizeObserver(() => {
         computeLayout();
         try { ScrollTrigger.refresh(); } catch {}
       });
       if (ro) ro.observe(tlGrid || tlRailEl);
     }
+
+    /* ====== Hover zoom bindings : UNIQUEMENT les <li> des “Où ?” ====== */
+    this.clearHoverBindings();
+    this.attachHoverZoom(whereEls, true, 1.045);   // Core → liste “Où ?”
+    this.attachHoverZoom(mapItemEls, true, 1.045); // Map → liste “Où ?”
 
     try { ScrollTrigger.refresh(); } catch {}
   }
@@ -567,17 +588,14 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   /* Utils                     */
   /* ========================= */
 
-  /** Vrai si on est côté navigateur (SSR safe) */
   private isBrowser(): boolean {
     return typeof window !== 'undefined' && typeof document !== 'undefined';
   }
 
-  /** Clamp numérique simple */
   private clamp(n: number, min: number, max: number): number {
     return Math.max(min, Math.min(max, n));
   }
 
-  /** Throttle via requestAnimationFrame (utile si tu bindes des handlers scroll/resize maison) */
   private rafThrottle<T extends (...args: any[]) => void>(fn: T): T {
     let ticking = false;
     let lastArgs: any[] = [];
@@ -593,17 +611,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     }) as T;
   }
 
-  /** Respecte le prefers-reduced-motion : à utiliser si tu veux court-circuiter certaines anims */
-  private prefersReducedMotion(): boolean {
-    if (!this.isBrowser()) return false;
-    try {
-      return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
-    } catch {
-      return false;
-    }
-  }
-
-  /** ResizeObserver safe (unique instance) */
   private _ro?: ResizeObserver;
   private getResizeObserver(cb: ResizeObserverCallback): ResizeObserver | null {
     if (!this.isBrowser() || !('ResizeObserver' in window)) return null;
@@ -611,12 +618,10 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     return this._ro;
   }
 
-  /** Kill propre des ScrollTriggers (utile si tu navigues entre routes Angular) */
   private killAllScrollTriggers(): void {
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
   }
 
-  /** Strip HTML → texte (pour extraits) */
   private strip(html: string, max = 160): string {
     const t = (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
