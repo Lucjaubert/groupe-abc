@@ -77,9 +77,9 @@
 
               <div class="ff-desc mt-2" *ngIf="f.partnerDescHtml" [innerHTML]="f.partnerDescHtml"></div>
 
-              <a class="ff-mail" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
+              <!-- <a class="ff-mail mt-lg-4" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
                 {{ f.contactEmail }}
-              </a>
+              </a> -->
             </div>
 
             <div class="ff-right prehide">
@@ -136,5 +136,64 @@
       </ul>
     </div>
   </section>
+
+<!-- ===== TEACHING ===== -->
+<section class="section teaching" *ngIf="teachingCourses?.length">
+  <div class="section-inner">
+    <h2 #teachingTitleEl class="teach-title prehide">{{ teachingTitle }}</h2>
+
+    <div #teachingIntroEl class="teach-intro prehide mt-lg-5"
+         *ngIf="teachingIntroHtml" [innerHTML]="teachingIntroHtml"></div>
+
+    <ul class="teach-list" role="list">
+      <li #teachingRowEl class="teach-row prehide-row"
+          *ngFor="let c of teachingCourses; trackBy: trackByIndex">
+
+        <!-- Colonne gauche : logo école + infos -->
+        <div class="teach-left">
+          <div class="teach-logo" *ngIf="c.schoolLogoUrl">
+            <img [src]="c.schoolLogoUrl" alt="">
+          </div>
+          <div class="teach-school">
+            <div class="ts-school-name">{{ c.schoolName }}</div>
+            <div class="ts-level" *ngIf="c.programLevel">{{ c.programLevel }}</div>
+            <a class="ts-link" *ngIf="c.schoolUrl" [href]="c.schoolUrl"
+               target="_blank" rel="noopener">Visiter le site</a>
+          </div>
+        </div>
+
+        <!-- Colonne centre : photo + nom + LinkedIn -->
+        <div class="teach-speaker" *ngIf="c.speakerName || c.speakerLinkedin || true">
+          <!-- on affiche TOUJOURS une photo (fallback si manquante) -->
+          <img class="ts-photo"
+               [src]="c.speakerPhotoUrl || defaultPortrait"
+               (error)="onTeachImgError($event)"
+               [alt]="c.speakerName || ''">
+
+          <div class="ts-person py-2">
+            <div class="ts-name" *ngIf="c.speakerName">{{ c.speakerName }}</div>
+
+            <a class="lk" *ngIf="c.speakerLinkedin" [href]="c.speakerLinkedin"
+               target="_blank" rel="noopener" aria-label="LinkedIn">
+              <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+                <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5H34.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
+                <path d="M7 14.5833H12.4167V33H7V14.5833ZM9.692 12.417H9.662C8.045 12.417 7 11.212 7 9.707 7 8.17 8.078 7 9.724 7 11.371 7 12.386 8.17 12.417 9.707c0 1.504-1.046 2.71-2.725 2.71ZM33 33h-5.417V23.143c0-2.381-1.327-4.006-3.458-4.006-1.626 0-2.506 1.096-2.933 2.155-.156.38-.109 1.428-.109 1.959V33H15.667V14.583h5.416v2.834c.781-1.209 2.004-2.834 5.133-2.834 3.876 0 6.783 2.438 6.783 7.88V33Z" fill="#fff"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Colonne droite : titre + ville (alignés à gauche) -->
+        <div class="teach-course py-2">
+          <div class="tc-title">{{ c.courseTitle }}</div>
+          <div class="tc-city" *ngIf="c.city">{{ c.city }}</div>
+        </div>
+
+      </li>
+    </ul>
+  </div>
+</section>
+
+
 
 </div>

@@ -122,8 +122,17 @@ $white:      map.get(vars.$theme-colors, "white");
 
   @media (min-width: 1280px){
     .map-grid{ grid-template-columns: 2fr 498px; column-gap: 133px; }
-    .map-list{ padding-top: 116px; }
+    .map-list{ padding-top: 100px; }
   }
+}
+
+.section[_ngcontent-ng-c3898745656] .section-inner[_ngcontent-ng-c3898745656] {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    margin-inline: auto;
+    padding-block: var(--pad-y);
+    padding-top: 62px;
 }
 
 
@@ -137,7 +146,7 @@ $white:      map.get(vars.$theme-colors, "white");
 
 .firms {
   --row-h: 98px;
-  --logo: 60px;
+  --logo: 80px;
   --gap: clamp(16px, 3vw, 24px);
   /* colonne visuelle de la région : 582px depuis le bord gauche de la ligne */
   --region-left: 582px;
@@ -204,7 +213,7 @@ $white:      map.get(vars.$theme-colors, "white");
   /* Région : alignée à 582px (desktop) */
   .fr-region{
     color: $red;
-    font-size: 16px;
+    font-size: 18px;
     white-space: nowrap;
   }
 
@@ -283,7 +292,8 @@ $white:      map.get(vars.$theme-colors, "white");
   .ff-mail{
     color: $blue;
     font-size: 14px;
-    text-decoration: none;
+    text-decoration: overline;
+    font-weight: 600;
   }
 
   /* ===== Bloc de droite resserré ===== */
@@ -427,5 +437,95 @@ $white:      map.get(vars.$theme-colors, "white");
     .firm-row.open .fr-details{
       margin-top: 0;
     }
+  }
+}
+
+
+/* ===== Teaching ===== */
+.section.teaching{
+  --row-h: 98px;
+  --gap: clamp(16px, 3vw, 24px);
+
+  .teach-list{
+    list-style: none; margin: 0; padding: 0;
+    border-top: map.get(vars.$border-size, "2") solid $blue-hero;
+    margin-top: 50px;
+    margin-bottom: 100px;
+  }
+
+  /* LIGNE = 3 TIERS ÉGAUX + HAUTEUR FIXE */
+  .teach-row{
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr)); /* ← 3 colonnes égales */
+    column-gap: var(--gap);
+    align-items: center;
+    block-size: var(--row-h);                     /* ← même hauteur pour toutes */
+    border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
+  }
+  .teach-row > *{ min-height: 0; }                /* évite l’étirement interne */
+
+  /* --- Colonne gauche (logo + textes) --- */
+  .teach-left{
+    display: grid;
+    grid-template-columns: 95px 1fr;              /* logo | textes */
+    align-items: center;
+    column-gap: var(--gap);
+    justify-self: start;                          /* colle bien à gauche du tiers */
+  }
+  .teach-logo{ width: 80px; height: 80px; }
+  .teach-logo img{ width: 100%; height: 100%; object-fit: contain; display:block; }
+
+  .teach-school{ display:flex; flex-direction:column; gap:6px; }
+  .ts-school-name{ color:$blue-hero; font-size: clamp(18px, 2.1vw, 22px); line-height: 1.25; }
+  .ts-level, .ts-link{ color:$blue; font-size:14px; text-decoration:none; }
+
+  /* --- Colonne centre (photo + nom + LK) --- */
+  .teach-speaker{
+    display: grid;
+    grid-template-columns: 92px 1fr;              /* photo | nom+LK */
+    column-gap: 16px;
+    align-items: center;
+    justify-self: start;                          /* décalé à gauche du 2e tiers */
+  }
+  .ts-photo{
+    width: 80px; height: 80px;
+    object-fit: cover; display:block; background:#f5e1dd;
+  }
+  .ts-person{
+    display:flex; flex-direction:column;
+    justify-content: space-between;
+    gap:6px; min-height: 100%;
+  }
+  .ts-name{ color:$blue-hero; font-size: clamp(16px, 1.9vw, 20px); line-height: 1.1; }
+  .lk{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; }
+  .lk-ico{ width:26px; height:26px; }
+
+  /* --- Colonne droite (titre + ville) --- */
+  .teach-course{
+    display:flex; flex-direction:column;
+    align-items:flex-start;                       /* aligné à GAUCHE du 3e tiers */
+    justify-content: space-between;
+    gap: 20px;
+    text-align:left;
+  }
+
+  .tc-title{
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    font-family: "Plus Jakarta Sans";
+    font-size: 16px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+
+  }
+  .tc-city{ color:$red; font-size: 16px; }
+
+  @media (max-width: 1199.98px){
+    .teach-row{ grid-template-columns: 1fr; row-gap: 14px; block-size: auto; }
+    .teach-left{ grid-template-columns: 80px 1fr; }
+    .tc-title{ white-space: normal; overflow: visible; text-overflow: clip; }
   }
 }

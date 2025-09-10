@@ -26,6 +26,18 @@ type Firm = {
   partnerLinkedin?: string;
 };
 
+type TeachingCourse = {
+  schoolLogoUrl?: string;
+  schoolName?: string;
+  programLevel?: string;
+  city?: string;
+  courseTitle?: string;
+  speakerName?: string;
+  speakerPhotoUrl?: string;
+  speakerLinkedin?: string;
+  schoolUrl?: string;
+};
+
 @Component({
   selector: 'app-team',
   standalone: true,
@@ -47,6 +59,13 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   firms: Firm[] = [];
   openFirmIndex: number | null = null;
 
+  /* Teaching */
+  teachingTitle = '';
+  teachingIntroHtml: SafeHtml | '' = '';
+  teachingCourses: TeachingCourse[] = [];
+
+  defaultPortrait = 'assets/fallbacks/portrait-placeholder.svg';
+
   /* Fallback */
   private defaultMap = 'assets/fallbacks/image-placeholder.svg';
 
@@ -60,6 +79,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('firmsTitleEl') firmsTitleEl!: ElementRef<HTMLElement>;
   @ViewChildren('firmRowEl') firmRowEls!: QueryList<ElementRef<HTMLElement>>;
   @ViewChildren('detailEl')  detailEls!: QueryList<ElementRef<HTMLElement>>;
+
+  /* Teaching refs */
+  @ViewChild('teachingTitleEl') teachingTitleEl!: ElementRef<HTMLElement>;
+  @ViewChild('teachingIntroEl') teachingIntroEl!: ElementRef<HTMLElement>;
+  @ViewChildren('teachingRowEl') teachingRowEls!: QueryList<ElementRef<HTMLElement>>;
 
   private hoverCleanup: Array<() => void> = [];
   private bindScheduled = false;
@@ -89,7 +113,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.mapSection = { title: ms?.section_title || 'Où ?', image: mapImgUrl || this.defaultMap, items };
 
-      /* FIRMS (inclut firm_1) */
+      /* FIRMS */
       const fr = acf?.firms ?? {};
       this.firmsTitle = fr?.section_title || 'Les membres du Groupe ABC';
 
@@ -119,7 +143,50 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       this.firms = rows;
       this.openFirmIndex = null;
 
-      /* SEO */
+      /* TEACHING */
+      const teaching = acf?.teaching ?? {};
+      this.teachingTitle = teaching?.section_title || 'Enseignement & formation';
+      this.teachingIntroHtml = this.sanitizeTrimParagraphs(teaching?.intro_body || '');
+
+      const toCourse = (ci: any): TeachingCourse | null => {
+        if (!ci) return null;
+        const c: TeachingCourse = {
+          schoolLogoUrl   : this.pickImg(ci.school_logo),
+          schoolName      : (ci.school_name || '').trim(),
+          programLevel    : (ci.program_level || '').trim(),
+          city            : (ci.city || '').trim(),
+          courseTitle     : (ci.course_title || '').trim(),
+          speakerName     : (ci.speaker_name || '').trim(),
+          speakerPhotoUrl : this.pickImg(ci.speaker_photo),
+          speakerLinkedin : (ci.speaker_linkedin_url || '').trim(),
+          schoolUrl       : (ci.school_url || '').trim(),
+        };
+        return (c.schoolName || c.courseTitle) ? c : null;
+      };
+
+      const courses: TeachingCourse[] = [];
+      for (let i = 1; i <= 9; i++) {
+        const mapped = toCourse(teaching[`course_${i}`]);
+        if (mapped) courses.push(mapped);
+      }
+
+      /* Fallback photo : si pas de speaker_photo, on tente de retrouver
+         la photo du partenaire correspondant dans Firms (Prénom Nom). */
+      if (courses.length && this.firms.length){
+        const norm = (s: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+        courses.forEach(c => {
+          if (!c.speakerPhotoUrl && c.speakerName){
+            const match = this.firms.find(f =>
+              norm(`${f.partnerLastname} ${f.partnerFamilyname}`) === norm(c.speakerName!)
+            );
+            if (match?.partnerImageUrl) c.speakerPhotoUrl = match.partnerImageUrl;
+          }
+        });
+      }
+
+      this.teachingCourses = courses;
+
+      /* SEO basique */
       const introText = (acf?.hero?.intro_body || '').toString();
       this.seo.update({
         title: `${this.heroTitle} – Groupe ABC`,
@@ -141,7 +208,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const f = this.firms[i];
     if (!f || !this.firmHasDetails(f)) return;
     this.openFirmIndex = (this.openFirmIndex === i) ? null : i;
-    this.scheduleBind(); // pour animer les détails qui apparaissent
+    this.scheduleBind();
   }
   isOpen(i: number){ return this.openFirmIndex === i; }
   chevronAriaExpanded(i: number){ return this.isOpen(i) ? 'true' : 'false'; }
@@ -212,6 +279,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.mapItemEls?.changes?.subscribe(() => this.scheduleBind());
     this.firmRowEls?.changes?.subscribe(() => this.scheduleBind());
     this.detailEls?.changes?.subscribe(() => this.scheduleBind());
+    this.teachingRowEls?.changes?.subscribe(() => this.scheduleBind());
     this.scheduleBind();
   }
 
@@ -334,6 +402,47 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
+    /* ---------- TEACHING ---------- */
+    const tt = this.teachingTitleEl?.nativeElement;
+    const ti = this.teachingIntroEl?.nativeElement;
+    const trows = (this.teachingRowEls?.toArray() || []).map(r => r.nativeElement);
+    // liste : ul.teach-list
+    const tlist = document.querySelector('.teach-list') as HTMLElement | null;
+
+    if (tt){
+      gsap.fromTo(tt, { autoAlpha: 0, y: 16 }, {
+        autoAlpha: 1, y: 0, duration: .5, ease: EASE,
+        scrollTrigger: { trigger: tt, start: 'top 85%', once: true },
+        onStart: () => { rmPrehide(tt); },
+        onComplete: () => { gsap.set(tt, { clearProps: 'all' }); }
+      });
+    }
+    if (ti){
+      gsap.fromTo(ti, { autoAlpha: 0, y: 14 }, {
+        autoAlpha: 1, y: 0, duration: .5, ease: EASE,
+        scrollTrigger: { trigger: ti, start: 'top 85%', once: true },
+        onStart: () => { rmPrehide(ti); },
+        onComplete: () => { gsap.set(ti, { clearProps: 'all' }); }
+      });
+    }
+    if (tlist && trows.length){
+      gsap.set(trows, { autoAlpha: 0, y: 12 });
+      gsap.timeline({
+        defaults: { ease: EASE },
+        scrollTrigger: { trigger: tlist, start: 'top 85%', once: true },
+        onStart: () => { rmPrehide([tlist, ...trows]); }
+      })
+      .to(trows, { autoAlpha: 1, y: 0, duration: .45, stagger: .06 }, 0)
+      .add(() => { gsap.set(trows, { clearProps: 'transform,opacity' }); });
+    }
+
     try { ScrollTrigger.refresh(); } catch {}
+  }
+
+  onTeachImgError(e: Event){
+    const img = e.target as HTMLImageElement;
+    if (img && img.src !== this.defaultPortrait){
+      img.src = this.defaultPortrait;
+    }
   }
 }
