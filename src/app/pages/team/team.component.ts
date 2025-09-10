@@ -170,8 +170,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         if (mapped) courses.push(mapped);
       }
 
-      /* Fallback photo : si pas de speaker_photo, on tente de retrouver
-         la photo du partenaire correspondant dans Firms (Prénom Nom). */
+      /* Fallback photo via Firms si besoin */
       if (courses.length && this.firms.length){
         const norm = (s: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
         courses.forEach(c => {
@@ -186,7 +185,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.teachingCourses = courses;
 
-      /* SEO basique */
+      /* SEO */
       const introText = (acf?.hero?.intro_body || '').toString();
       this.seo.update({
         title: `${this.heroTitle} – Groupe ABC`,
@@ -388,7 +387,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       .add(() => { gsap.set(rows, { clearProps: 'transform,opacity' }); });
     }
 
-    // Animer le panneau de l'item actuellement ouvert (s'il existe)
+    // Détails de la ligne ouverte (si existants)
     const openDetail = document.querySelector('.firm-row.open .fr-details') as HTMLElement | null;
     if (openDetail){
       const left  = openDetail.querySelector('.ff-left') as HTMLElement | null;
@@ -406,7 +405,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const tt = this.teachingTitleEl?.nativeElement;
     const ti = this.teachingIntroEl?.nativeElement;
     const trows = (this.teachingRowEls?.toArray() || []).map(r => r.nativeElement);
-    // liste : ul.teach-list
     const tlist = document.querySelector('.teach-list') as HTMLElement | null;
 
     if (tt){
