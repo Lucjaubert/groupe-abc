@@ -534,8 +534,8 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
       ScrollTrigger.create({
         trigger: timelineSection || tlGrid || tlRailEl,
-        start: 'top 70%',
-        end: 'bottom 30%',
+        start: 'top 90%',
+        end: 'bottom 75%',
         scrub: 0.6,
         onUpdate: (self) => {
           const p = self.progress;

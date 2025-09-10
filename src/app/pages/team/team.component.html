@@ -16,18 +16,125 @@
 
   <!-- ===== Carte / Où ? ===== -->
   <section class="section map-section" *ngIf="mapSection as ms">
-  <div class="map-bg" aria-hidden="true"><div class="map-layer"></div></div>
-  <div class="section-inner">
-    <div class="map-grid">
-      <div #mapImageEl class="map-image prehide"><img [src]="ms.image" alt="" /></div>
-      <div class="map-list">
-        <h2 #mapTitleEl class="map-title prehide">{{ ms.title }}</h2>
-        <ul class="panel-list">
-          <li #mapItem *ngFor="let item of ms.items; trackBy: trackByIndex">{{ item }}</li>
-        </ul>
+    <div class="map-bg" aria-hidden="true"><div class="map-layer"></div></div>
+    <div class="section-inner">
+      <div class="map-grid">
+        <div #mapImageEl class="map-image prehide">
+          <img [src]="ms.image" alt="" (error)="onMapImgError($event)" />
+        </div>
+        <div class="map-list">
+          <h2 #mapTitleEl class="map-title prehide">{{ ms.title }}</h2>
+          <ul class="panel-list">
+            <li #mapItem *ngFor="let item of ms.items; trackBy: trackByIndex">
+              {{ item }}
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
+
+  <!-- ===== Firms / Les membres du Groupe ABC ===== -->
+  <section class="section firms" *ngIf="firms?.length">
+    <div class="section-inner">
+
+      <!-- Titre -->
+      <h2 #firmsTitleEl class="firms-title prehide">{{ firmsTitle }}</h2>
+
+      <!-- Liste des firms (chaque <li> gère son propre panneau ouvert) -->
+      <ul class="firm-list" role="list">
+        <li
+          #firmRowEl
+          class="firm-row prehide-row"
+          *ngFor="let f of firms; index as i; trackBy: trackByIndex"
+          [class.open]="isOpen(i)">
+
+          <!-- Entête de ligne (logo | nom | région | chevron) -->
+          <div class="fr-head">
+            <div class="fr-logo" *ngIf="f.logoUrl">
+              <img [src]="f.logoUrl" alt="" aria-hidden="true" />
+            </div>
+
+            <div class="fr-name">{{ f.name }}</div>
+
+            <div class="fr-region" *ngIf="f.region">{{ f.region }}</div>
+
+            <button
+              type="button"
+              class="fr-toggle"
+              [attr.aria-expanded]="chevronAriaExpanded(i)"
+              (click)="toggleFirm(i)">
+              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 10l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Panneau détaillé INSÉRÉ DANS LA LIGNE ouverte -->
+          <div class="fr-details" *ngIf="isOpen(i)" #detailEl>
+            <div class="ff-left prehide">
+              <div class="ff-region" *ngIf="f.region">{{ f.region }}</div>
+
+              <div class="ff-desc mt-2" *ngIf="f.partnerDescHtml" [innerHTML]="f.partnerDescHtml"></div>
+
+              <a class="ff-mail" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
+                {{ f.contactEmail }}
+              </a>
+            </div>
+
+            <div class="ff-right prehide">
+              <img class="ff-portrait" *ngIf="f.partnerImageUrl" [src]="f.partnerImageUrl" alt="" aria-hidden="true" />
+
+              <div class="ff-person mt-lg-4" *ngIf="f.partnerLastname">
+                <div class="ff-person-name">{{ f.partnerLastname }}</div>
+                <div class="ff-person-name">{{ f.partnerFamilyname }}</div>
+
+
+                <div class="ff-person-meta">
+                  <img class="ff-org my-lg-3" *ngIf="f.organismLogoUrl" [src]="f.organismLogoUrl" alt="" aria-hidden="true" />
+                </div>
+
+                <div class="ff-titles my-lg-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>
+
+                <div class="ff-cta">
+                  <a class="btn-contact" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
+                    <span>Contact</span>
+                    <span class="ico-mail" aria-hidden="true">
+                      <!-- ton SVG enveloppe (traits #A33536) -->
+                      <svg xmlns="http://www.w3.org/2000/svg" width="31" height="19" viewBox="0 0 31 19" fill="none">
+                        <path d="M24.7339 12.681L21.2219 9.38599" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16.524 9.38501L13.011 12.685" stroke="#A33536" stroke-linecap="round"/>
+                        <mask id="mask0_mail" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="31" height="19">
+                          <path d="M30.642 0.285889H0V18.3539H30.642V0.285889Z" fill="white"/>
+                        </mask>
+                        <g mask="url(#mask0_mail)">
+                          <path d="M26.0319 2.896H11.7129C10.6083 2.896 9.71289 3.79143 9.71289 4.896V13.744C9.71289 14.8486 10.6083 15.744 11.7129 15.744H26.0319C27.1365 15.744 28.0319 14.8486 28.0319 13.744V4.896C28.0319 3.79143 27.1365 2.896 26.0319 2.896Z" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M10.5088 3.7771L18.8678 11.0211L27.2308 3.7771" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M2.60986 6.01196H9.71286" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M4.44092 9.32007H9.71292" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                          <path d="M6.27295 12.6289H9.71395" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                        </g>
+                      </svg>
+                    </span>
+                  </a>
+
+                  <!-- LinkedIn (tu avais déjà l’ancre ; on garde le SVG fourni) -->
+                  <a class="lk" *ngIf="f.partnerLinkedin" [href]="f.partnerLinkedin" target="_blank" rel="noopener" aria-label="LinkedIn">
+                    <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">
+                      <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5H34.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
+                      <path d="M7 14.5833H12.4167V33H7V14.5833ZM9.69208 12.4167H9.66175C8.04542 12.4167 7 11.212 7 9.70725C7 8.17 8.07792 7 9.7235 7C11.3712 7 12.3863 8.17 12.4167 9.70725C12.4167 11.2109 11.3712 12.4167 9.69208 12.4167ZM33 33H27.5833V23.1427C27.5833 20.7616 26.2562 19.1366 24.1253 19.1366C22.4992 19.1366 21.6196 20.2329 21.1927 21.2924C21.0367 21.6716 21.0833 22.7202 21.0833 23.25V33H15.6667V14.5833H21.0833V17.4173C21.8644 16.2083 23.0875 14.5833 26.2162 14.5833C30.0923 14.5833 32.9989 17.0208 32.9989 22.4635L33 33Z" fill="white"/>
+                    </svg>
+                  </a>
+                </div>
+
+
+              </div>
+            </div>
+          </div>
+
+        </li>
+      </ul>
+    </div>
+  </section>
 
 </div>
