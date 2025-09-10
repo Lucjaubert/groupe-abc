@@ -9,7 +9,22 @@ import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
+/* ===== Types ===== */
 type MapSection = { title?: string; image?: string; items: string[] };
+
+type Firm = {
+  logoUrl?: string;
+  name: string;
+  region?: string;
+  partnerDescHtml?: SafeHtml | '';
+  contactEmail?: string;
+  partnerImageUrl?: string;
+  partnerLastname?: string;
+  partnerFamilyname?: string;
+  organismLogoUrl?: string;
+  titlesHtml?: SafeHtml | '';
+  partnerLinkedin?: string;
+};
 
 @Component({
   selector: 'app-team',
@@ -28,50 +43,81 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   heroIntroHtml: SafeHtml | '' = '';
   mapSection: MapSection | null = null;
 
-  /* Fallback image */
+  firmsTitle = '';
+  firms: Firm[] = [];
+  openFirmIndex: number | null = null;
+
+  /* Fallback */
   private defaultMap = 'assets/fallbacks/image-placeholder.svg';
 
-  /* Refs pour anims */
+  /* ===== Refs anims ===== */
   @ViewChild('heroTitleEl') heroTitleEl!: ElementRef<HTMLElement>;
   @ViewChild('heroIntroEl') heroIntroEl!: ElementRef<HTMLElement>;
   @ViewChild('mapTitleEl')  mapTitleEl!: ElementRef<HTMLElement>;
   @ViewChild('mapImageEl')  mapImageEl!: ElementRef<HTMLElement>;
   @ViewChildren('mapItem')  mapItemEls!: QueryList<ElementRef<HTMLElement>>;
 
-  /* Handlers hover GSAP -> cleanup */
-  private hoverCleanup: Array<() => void> = [];
+  @ViewChild('firmsTitleEl') firmsTitleEl!: ElementRef<HTMLElement>;
+  @ViewChildren('firmRowEl') firmRowEls!: QueryList<ElementRef<HTMLElement>>;
+  @ViewChildren('detailEl')  detailEls!: QueryList<ElementRef<HTMLElement>>;
 
+  private hoverCleanup: Array<() => void> = [];
+  private bindScheduled = false;
+  private heroPlayed = false;
+
+  /* ===== Init ===== */
   ngOnInit(): void {
     this.wp.getTeamData().subscribe((root: any) => {
       const acf = root?.acf ?? {};
 
       /* HERO */
       this.heroTitle = acf?.hero?.section_title || 'Équipes';
-      this.heroIntroHtml = this.squashWpGaps(acf?.hero?.intro_body || '');
+      this.heroIntroHtml = this.sanitizeTrimParagraphs(acf?.hero?.intro_body || '');
 
       /* MAP */
       const ms = acf?.map_section ?? {};
       const img = ms?.map_image;
       let mapImgUrl = '';
-
-      if (typeof img === 'string' && img.trim()) {
-        mapImgUrl = img.trim();
-      } else if (img && typeof img === 'object') {
-        mapImgUrl = img.url || img.source_url || '';
-      }
+      if (typeof img === 'string' && img.trim()) mapImgUrl = img.trim();
+      else if (img && typeof img === 'object') mapImgUrl = img.url || img.source_url || '';
 
       const items = [
         ms?.region_name_1, ms?.region_name_2, ms?.region_name_3, ms?.region_name_4,
         ms?.region_name_5, ms?.region_name_6, ms?.region_name_7, ms?.region_name_8
-      ]
-        .filter((s: any) => (s || '').toString().trim())
-        .map((s: string) => s.trim());
+      ].filter((s: any) => (s || '').toString().trim())
+       .map((s: string) => s.trim());
 
-      this.mapSection = {
-        title: ms?.section_title || 'Où ?',
-        image: mapImgUrl || this.defaultMap,
-        items
+      this.mapSection = { title: ms?.section_title || 'Où ?', image: mapImgUrl || this.defaultMap, items };
+
+      /* FIRMS (inclut firm_1) */
+      const fr = acf?.firms ?? {};
+      this.firmsTitle = fr?.section_title || 'Les membres du Groupe ABC';
+
+      const toFirm = (fi: any): Firm | null => {
+        if (!fi) return null;
+        const f: Firm = {
+          logoUrl: this.pickImg(fi.logo),
+          name: (fi.name || '').trim(),
+          region: (fi.region_name || '').trim(),
+          partnerDescHtml: fi.partner_description ? this.sanitizeTrimParagraphs(fi.partner_description) : '',
+          contactEmail: (fi.contact_email || '').trim() || '',
+          partnerImageUrl: this.pickImg(fi.partner_image),
+          partnerLastname: (fi.partner_lastname || '').trim(),
+          partnerFamilyname: (fi.partner_familyname || '').trim(),
+          organismLogoUrl: this.pickImg(fi.organism_logo),
+          titlesHtml: this.sanitizeTrimParagraphs(fi.titles_partner_ || ''),
+          partnerLinkedin: (fi.partner_lk || '').trim()
+        };
+        return (f.name || f.region || f.logoUrl) ? f : null;
       };
+
+      const rows: Firm[] = [];
+      for (let i = 1; i <= 12; i++) {
+        const mapped = toFirm(fr[`firm_${i}`]);
+        if (mapped) rows.push(mapped);
+      }
+      this.firms = rows;
+      this.openFirmIndex = null;
 
       /* SEO */
       const introText = (acf?.hero?.intro_body || '').toString();
@@ -85,18 +131,40 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /* ========= Helpers ========= */
+  /* ===== Accordéon ===== */
+  private firmHasDetails(f: Firm): boolean {
+    return !!(f.partnerDescHtml || f.partnerImageUrl || f.partnerLastname || f.partnerFamilyname ||
+              f.titlesHtml || f.contactEmail || f.partnerLinkedin || f.organismLogoUrl);
+  }
 
-  /** Nettoie l'HTML WP: supprime les <p> vides (&nbsp;, espaces, <br>) puis assainit */
-  private squashWpGaps(html: string): SafeHtml {
+  toggleFirm(i: number){
+    const f = this.firms[i];
+    if (!f || !this.firmHasDetails(f)) return;
+    this.openFirmIndex = (this.openFirmIndex === i) ? null : i;
+    this.scheduleBind(); // pour animer les détails qui apparaissent
+  }
+  isOpen(i: number){ return this.openFirmIndex === i; }
+  chevronAriaExpanded(i: number){ return this.isOpen(i) ? 'true' : 'false'; }
+
+  /* ===== Utils ===== */
+  trackByIndex(i: number){ return i; }
+
+  private pickImg(input: any): string {
+    if (!input) return '';
+    if (typeof input === 'string') return input;
+    if (typeof input === 'object') return input.url || input.source_url || input.medium_large || input.large || '';
+    return '';
+  }
+
+  private sanitizeTrimParagraphs(html: string): SafeHtml {
     const compact = (html || '')
-      .replace(/<p>(?:&nbsp;|&#160;|\s|<br\s*\/?>)*<\/p>/gi, '') // vire <p>&nbsp;</p>, <p><br></p>, etc.
-      .replace(/>\s+</g, '><');                                 // compresse les blancs inter-balises
+      .replace(/<p>(?:&nbsp;|&#160;|\s|<br\s*\/?>)*<\/p>/gi, '')
+      .replace(/>\s+</g, '><');
     return this.sanitizer.bypassSecurityTrustHtml(compact);
   }
 
-  trackByIndex(i: number){ return i; }
   onMapImgError(e: Event){ const img = e.target as HTMLImageElement; if (img) img.src = this.defaultMap; }
+
   private strip(html: string, max = 160): string {
     const t = (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
@@ -107,26 +175,27 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     catch { return false; }
   }
 
-  /** Ajoute un zoom GSAP doux au hover/focus sur chaque li */
+  private forceInitialHidden(host: HTMLElement){
+    const pre  = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));
+    const rows = Array.from(host.querySelectorAll<HTMLElement>('.prehide-row'));
+    if (pre.length)  gsap.set(pre,  { autoAlpha: 0, y: 20 });
+    if (rows.length) gsap.set(rows, { autoAlpha: 0 });
+  }
+
   private attachListHoverZoom(items: HTMLElement[]) {
-    // Nettoie d’anciens bindings si rebind
     this.hoverCleanup.forEach(fn => { try { fn(); } catch {} });
     this.hoverCleanup = [];
-
     if (!items?.length || this.prefersReducedMotion()) return;
 
     items.forEach((el) => {
       el.style.transformOrigin = 'left center';
       el.style.willChange = 'transform';
-
-      const enter = () => gsap.to(el, { scale: 1.045, duration: 0.18, ease: 'power3.out' });
-      const leave = () => gsap.to(el, { scale: 1,     duration: 0.22, ease: 'power2.out' });
-
+      const enter = () => { gsap.to(el, { scale: 1.045, duration: 0.18, ease: 'power3.out' }); };
+      const leave = () => { gsap.to(el, { scale: 1,     duration: 0.22, ease: 'power2.out' }); };
       el.addEventListener('mouseenter', enter);
       el.addEventListener('mouseleave', leave);
       el.addEventListener('focus',      enter, true);
       el.addEventListener('blur',       leave, true);
-
       this.hoverCleanup.push(() => {
         el.removeEventListener('mouseenter', enter);
         el.removeEventListener('mouseleave', leave);
@@ -141,18 +210,18 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     gsap.registerPlugin(ScrollTrigger);
     this.mapItemEls?.changes?.subscribe(() => this.scheduleBind());
+    this.firmRowEls?.changes?.subscribe(() => this.scheduleBind());
+    this.detailEls?.changes?.subscribe(() => this.scheduleBind());
     this.scheduleBind();
   }
 
   ngOnDestroy(): void {
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
     try { gsap.globalTimeline.clear(); } catch {}
-    // Cleanup hover handlers
     this.hoverCleanup.forEach(fn => { try { fn(); } catch {} });
     this.hoverCleanup = [];
   }
 
-  private bindScheduled = false;
   private scheduleBind(){
     if (this.bindScheduled) return;
     this.bindScheduled = true;
@@ -163,49 +232,107 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private bindAnimations(): void {
+    const host = (document.querySelector('.team-wrapper') as HTMLElement) || document.body;
+    this.forceInitialHidden(host);
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
-    const EASE = 'power3.out';
-    const rm = (el?: Element | null) => el && el.classList.remove('prehide','prehide-row');
 
+    const EASE = 'power3.out';
+    const rmPrehide = (els: Element | Element[]) => {
+      (Array.isArray(els) ? els : [els]).forEach(el => el?.classList?.remove('prehide','prehide-row'));
+    };
+
+    /* ---------- HERO ---------- */
     const h1  = this.heroTitleEl?.nativeElement;
     const hi  = this.heroIntroEl?.nativeElement;
+
+    if (h1 && !this.heroPlayed) {
+      gsap.fromTo(h1, { autoAlpha: 0, y: 18 }, {
+        autoAlpha: 1, y: 0, duration: .55, ease: EASE,
+        onStart: () => { rmPrehide(h1); },
+        onComplete: () => { this.heroPlayed = true; gsap.set(h1, { clearProps: 'all' }); }
+      });
+    }
+    if (hi){
+      gsap.fromTo(hi, { autoAlpha: 0, y: 16 }, {
+        autoAlpha: 1, y: 0, duration: .5, ease: EASE, delay: .05,
+        onStart: () => { rmPrehide(hi); },
+        onComplete: () => { gsap.set(hi, { clearProps: 'all' }); }
+      });
+    }
+
+    /* ---------- MAP ---------- */
     const mt  = this.mapTitleEl?.nativeElement;
     const mi  = this.mapImageEl?.nativeElement;
     const items = (this.mapItemEls?.toArray() || []).map(r => r.nativeElement);
     const list  = items[0]?.parentElement as HTMLElement | null;
 
-    if (h1) gsap.fromTo(h1, {autoAlpha:0, y:18}, {
-      autoAlpha:1, y:0, duration:.55, ease:EASE,
-      onStart:()=>rm(h1)
-    });
-
-    if (hi) gsap.fromTo(hi, {autoAlpha:0, y:16}, {
-      autoAlpha:1, y:0, duration:.5, ease:EASE, delay:.05,
-      onStart:()=>rm(hi)
-    });
-
-    if (mi) gsap.fromTo(mi, {autoAlpha:0, y:14}, {
-      autoAlpha:1, y:0, duration:.5, ease:EASE,
-      scrollTrigger:{trigger:mi,start:'top 85%',once:true},
-      onStart:()=>rm(mi)
-    });
-
-    if (mt) gsap.fromTo(mt, {autoAlpha:0, y:16}, {
-      autoAlpha:1, y:0, duration:.5, ease:EASE, delay:.05,
-      scrollTrigger:{trigger:mt,start:'top 85%',once:true},
-      onStart:()=>rm(mt)
-    });
-
+    if (mi){
+      gsap.fromTo(mi, { autoAlpha: 0, y: 14 }, {
+        autoAlpha: 1, y: 0, duration: .5, ease: EASE,
+        scrollTrigger: { trigger: mi, start: 'top 85%', once: true },
+        onStart: () => { rmPrehide(mi); },
+        onComplete: () => { gsap.set(mi, { clearProps: 'all' }); }
+      });
+    }
+    if (mt){
+      gsap.fromTo(mt, { autoAlpha: 0, y: 16 }, {
+        autoAlpha: 1, y: 0, duration: .5, ease: EASE, delay: .05,
+        scrollTrigger: { trigger: mt, start: 'top 85%', once: true },
+        onStart: () => { rmPrehide(mt); },
+        onComplete: () => { gsap.set(mt, { clearProps: 'all' }); }
+      });
+    }
     if (list && items.length) {
-      gsap.fromTo(items, {autoAlpha:0, y:12}, {
-        autoAlpha:1, y:0, duration:.45, ease:EASE, stagger:.08,
-        scrollTrigger:{trigger:list,start:'top 90%',once:true},
-        onStart:()=>items.forEach(rm)
+      gsap.set(items, { autoAlpha: 0, y: 12 });
+      gsap.timeline({
+        defaults: { ease: EASE },
+        scrollTrigger: { trigger: list, start: 'top 90%', once: true },
+        onStart: () => { rmPrehide([list, ...items]); }
+      })
+      .to(items, { autoAlpha: 1, y: 0, duration: .45, stagger: .08 }, 0)
+      .add(() => { gsap.set(items, { clearProps: 'transform,opacity,willChange' }); });
+    }
+
+    this.attachListHoverZoom(items);
+
+    /* ---------- FIRMS ---------- */
+    const ft  = this.firmsTitleEl?.nativeElement;
+    const rows = (this.firmRowEls?.toArray() || []).map(r => r.nativeElement);
+    const listWrap = rows[0]?.closest('.firm-list') as HTMLElement | null;
+
+    if (ft){
+      gsap.fromTo(ft, { autoAlpha: 0, y: 16 }, {
+        autoAlpha: 1, y: 0, duration: .55, ease: EASE,
+        scrollTrigger: { trigger: ft, start: 'top 85%', once: true },
+        onStart: () => { rmPrehide(ft); },
+        onComplete: () => { gsap.set(ft, { clearProps: 'all' }); }
       });
     }
 
-    /* 👇 bind le zoom au hover/focus (GSAP) */
-    this.attachListHoverZoom(items);
+    if (listWrap && rows.length){
+      gsap.set(rows, { autoAlpha: 0, y: 14 });
+      gsap.timeline({
+        defaults: { ease: EASE },
+        scrollTrigger: { trigger: listWrap, start: 'top 85%', once: true },
+        onStart: () => { rmPrehide([listWrap, ...rows]); }
+      })
+      .to(rows, { autoAlpha: 1, y: 0, duration: .45, stagger: .06 }, 0)
+      .add(() => { gsap.set(rows, { clearProps: 'transform,opacity' }); });
+    }
+
+    // Animer le panneau de l'item actuellement ouvert (s'il existe)
+    const openDetail = document.querySelector('.firm-row.open .fr-details') as HTMLElement | null;
+    if (openDetail){
+      const left  = openDetail.querySelector('.ff-left') as HTMLElement | null;
+      const right = openDetail.querySelector('.ff-right') as HTMLElement | null;
+      if (left || right){
+        gsap.timeline({ defaults: { ease: EASE },
+          onStart: () => { rmPrehide([left, right].filter(Boolean) as Element[]); }
+        })
+        .fromTo(left,  { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: .45 }, 0)
+        .fromTo(right, { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: .45 }, 0.06);
+      }
+    }
 
     try { ScrollTrigger.refresh(); } catch {}
   }

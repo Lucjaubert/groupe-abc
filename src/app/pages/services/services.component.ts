@@ -59,6 +59,9 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChildren('refLogo') refLogos!: QueryList<ElementRef<HTMLImageElement>>;
   @ViewChild('refsGrid')  refsGridRef!: ElementRef<HTMLElement>;
 
+  /* ===== Guards pour éviter les doubles animations ===== */
+  private heroPlayed = false;
+
   ngOnInit(): void {
     this.wp.getServicesData().subscribe((payload: any) => {
       const root = Array.isArray(payload) ? payload[0] : payload;
@@ -158,20 +161,33 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
-    gsap.globalTimeline.clear();
+    try { gsap.globalTimeline.clear(); } catch {}
   }
 
   private bindScheduled = false;
   private scheduleBind(){
     if (this.bindScheduled) return;
     this.bindScheduled = true;
-    queueMicrotask(() => requestAnimationFrame(() => {
-      this.bindScheduled = false;
-      this.bindAnimations();
-    }));
+    queueMicrotask(() =>
+      requestAnimationFrame(() => {
+        this.bindScheduled = false;
+        this.bindAnimations();
+      })
+    );
+  }
+
+  /** Force l’état initial comme sur About (évite le flash si la CSS charge tard) */
+  private forceInitialHidden(root: HTMLElement){
+    const pre = Array.from(root.querySelectorAll<HTMLElement>('.prehide'));
+    const rows = Array.from(root.querySelectorAll<HTMLElement>('.prehide-row'));
+    if (pre.length)  gsap.set(pre,  { autoAlpha: 0, y: 20 });
+    if (rows.length) gsap.set(rows, { autoAlpha: 0 });
   }
 
   private bindAnimations(): void {
+    const host = document.querySelector('.services-wrapper') as HTMLElement | null;
+    if (host) this.forceInitialHidden(host);
+
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
     const EASE = 'power3.out';
 
@@ -180,8 +196,8 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       list.forEach(el => el.classList.remove('prehide', 'prehide-row'));
     };
 
-    /* ---------- HERO ---------- */
-    if (this.heroTitle?.nativeElement) {
+    /* ---------- HERO (joué une seule fois) ---------- */
+    if (this.heroTitle?.nativeElement && !this.heroPlayed) {
       const el = this.heroTitle.nativeElement;
       gsap.fromTo(
         el,
@@ -189,7 +205,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
         {
           autoAlpha: 1, y: 0, duration: 0.6, ease: EASE,
           onStart: () => { rmPrehide(el); },
-          onComplete: () => { gsap.set(el, { clearProps: 'all' }); }
+          onComplete: () => { gsap.set(el, { clearProps: 'all' }); this.heroPlayed = true; }
         }
       );
     }
@@ -216,7 +232,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
         onComplete: () => { gsap.set(ctxSubEl, { clearProps: 'all' }); }
       });
     }
-    // tout le tableau en même temps
     if (ctxListEl && ctxRowEls.length) {
       gsap.fromTo(
         ctxListEl,
@@ -256,7 +271,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       );
     }
 
-    /* ---------- RÉFÉRENCES : rangée par rangée ---------- */
+    /* ---------- RÉFÉRENCES ---------- */
     const refsTitleEl = this.refsTitleRef?.nativeElement;
     const refsGridEl  = this.refsGridRef?.nativeElement;
     const logoEls     = (this.refLogos?.toArray() || []).map(r => r.nativeElement);
@@ -271,7 +286,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     if (refsGridEl && logoEls.length) {
-      // parent visible d’abord
       const tl = gsap.timeline({
         defaults: { ease: EASE },
         scrollTrigger: { trigger: refsGridEl, start: 'top 88%', once: true }
@@ -282,7 +296,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
         onStart: () => { rmPrehide(refsGridEl); }
       });
 
-      // logos 1,2,3 puis 4,5,6 ... (ordre DOM), un peu plus lent pour lisibilité
       tl.fromTo(
         logoEls,
         { autoAlpha: 0, y: 12, scale: 0.985 },
@@ -290,7 +303,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
           autoAlpha: 1, y: 0, scale: 1,
           duration: 0.42,
           ease: 'power2.out',
-          stagger: 0.12, // DOM order → 1,2,3 / 4,5,6 / ...
+          stagger: 0.12,
           onStart: () => { rmPrehide(logoEls); },
           onComplete: () => { gsap.set([refsGridEl, ...logoEls], { clearProps: 'all' }); }
         },

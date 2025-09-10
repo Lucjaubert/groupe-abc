@@ -487,7 +487,7 @@ $white:      map.get(vars.$theme-colors, "white");
   .tl-rail {
     position: absolute;
     top: 0;
-    bottom: -20px; /* un peu de rab */
+    bottom: 0; /* ← couvre toute la hauteur du grid */
     left: calc(var(--years-col) + var(--rail-gap));
     width: var(--rail-w);
     background: $blue-hero;
@@ -524,7 +524,7 @@ $white:      map.get(vars.$theme-colors, "white");
   .tl-year::after {
     content: "";
     position: absolute;
-    top: .6em; /* Référence géométrique qu’on va reproduire en JS */
+    top: .6em; /* repère pour la petite barre rouge */
     right: calc(var(--rail-gap) - var(--dash-w) - 6px);
     width: var(--dashNow);
     height: 2px;
@@ -565,7 +565,6 @@ $white:      map.get(vars.$theme-colors, "white");
     --content-max: 92vw;
   }
 }
-
 
 
 /* A11y helper */

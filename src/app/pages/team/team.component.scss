@@ -24,8 +24,8 @@ $white:      map.get(vars.$theme-colors, "white");
     padding-top: 112px; /* header fixe */
   }
 
-  .prehide{ opacity:0; visibility:hidden; transform: translateY(20px); will-change: transform,opacity; }
-  .prehide-row{ opacity:0; visibility:hidden; }
+  .prehide     { opacity:0; visibility:hidden; transform: translateY(20px); will-change: transform, opacity; }
+  .prehide-row { opacity:0; visibility:hidden; }
 }
 
 /* ===== HERO ===== */
@@ -47,16 +47,13 @@ $white:      map.get(vars.$theme-colors, "white");
 
 /* ===== MAP (Où ?) ===== */
 .map-section{
-  /* marges demandées sous le bloc intro */
   margin-top: 48.5px;
   margin-bottom: 148.9px;
 
-  /* variables responsive + verrous desktop */
-  --map-gap-x: clamp(40px, 8vw, 133px);       /* gap carte ↔ liste */
-  --map-right-col: clamp(360px, 31vw, 498px); /* largeur colonne droite */
-  --map-title-offset: clamp(24px, 7vw, 116px);/* décalage vertical titre */
+  --map-gap-x: clamp(40px, 8vw, 133px);
+  --map-right-col: clamp(360px, 31vw, 498px);
+  --map-title-offset: clamp(24px, 7vw, 116px);
 
-  /* fond pleine largeur */
   .map-bg{
     position: absolute;
     inset: 0;
@@ -75,7 +72,7 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .map-grid{
     display: grid;
-    grid-template-columns: 1fr;             /* mobile */
+    grid-template-columns: 1fr;
     row-gap: clamp(24px, 4vw, 48px);
 
     @media (min-width: 992px){
@@ -87,10 +84,7 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .map-image img{ display:block; width:100%; height:auto; }
 
-  .map-list{
-    /* place “Où ?” 116px sous le haut de la carte (desktop) */
-    padding-top: var(--map-title-offset);
-  }
+  .map-list{ padding-top: var(--map-title-offset); }
 
   .map-title{
     color: $blue-hero;
@@ -100,57 +94,297 @@ $white:      map.get(vars.$theme-colors, "white");
     margin: 0 0 8px;
   }
 
-  /* === panel-list (tiret rouge + zoom smooth au hover/focus) === */
   .panel-list{
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex; flex-direction: column;
-    gap: clamp(8px, 1.6vw, 12px);
+    list-style: none; margin: 0; padding: 0;
+    display: flex; flex-direction: column; gap: clamp(8px, 1.6vw, 12px);
   }
 
   .panel-list li{
-    display: flex;
-    align-items: baseline;
+    display: flex; align-items: baseline;
     color: $blue-hero;
     font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 20px;
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
-    margin: 0;
-
-    /* 👇 zoom smooth CSS (fallback si JS off) */
+    font-size: 20px; font-weight: map.get(vars.$font-weight, "regular");
+    line-height: normal; margin: 0;
     transform: translateZ(0) scale(1);
     transform-origin: left center;
     will-change: transform;
     transition: transform 220ms cubic-bezier(.2,.7,.2,1);
   }
-
   .panel-list li::before{
-    content: "—";
-    color: $red;
+    content: "—"; color: $red;
     font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 20px;
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
-    margin-right: 6px;
-    flex: 0 0 auto;
+    font-size: 20px; font-weight: map.get(vars.$font-weight, "regular");
+    line-height: normal; margin-right: 6px; flex: 0 0 auto;
   }
-
   @media (hover: hover) and (pointer: fine){
-    .panel-list li:hover,
-    .panel-list li:focus-visible{
-      transform: scale(1.045);
+    .panel-list li:hover, .panel-list li:focus-visible{ transform: scale(1.045); }
+  }
+
+  @media (min-width: 1280px){
+    .map-grid{ grid-template-columns: 2fr 498px; column-gap: 133px; }
+    .map-list{ padding-top: 116px; }
+  }
+}
+
+
+/* ========================= */
+/* FIRMS (Les membres)       */
+/* ========================= */
+
+/* évite l’anchor jump quand on ouvre/ferme */
+.team-wrapper,
+.section.firms { overflow-anchor: none; }
+
+.firms {
+  --row-h: 98px;
+  --logo: 60px;
+  --gap: clamp(16px, 3vw, 24px);
+  /* colonne visuelle de la région : 582px depuis le bord gauche de la ligne */
+  --region-left: 582px;
+
+  .section-inner {
+    padding-top: 0 !important;
+  }
+
+  .firms-title{
+    color: $blue;
+    font-size: map.get(vars.$font-size, "80"); /* 36 */
+    line-height: normal;
+    margin: 0 0 56px;
+  }
+
+  /* ===== Liste ===== */
+  .firm-list{
+    list-style: none; margin: 0; padding: 0;
+    border-top: map.get(vars.$border-size, "2") solid $blue-hero; /* reste en haut */
+  }
+
+  .firm-row{
+    position: relative; /* nécessaire pour positionner .fr-region */
+    display: block;
+    border-bottom: map.get(vars.$border-size, "2") solid $blue-hero; /* ligne sous tout le contenu */
+  }
+
+  /* Entête de ligne (logo | nom | chevron) */
+  .fr-head{
+    display: grid;
+    grid-template-columns: var(--logo) 1fr auto; /* logo | nom | chevron */
+    align-items: center;
+    column-gap: var(--gap);
+    min-block-size: var(--row-h);
+  }
+
+  /* ====== LOGO ====== */
+  .fr-logo{
+    inline-size: var(--logo);
+    block-size: var(--logo);
+    flex-shrink: 0;
+    aspect-ratio: 1 / 1;
+  }
+  .fr-logo img{
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  @media (max-width: 720px){
+    .fr-logo{
+      inline-size: 45px;
+      block-size: 45px;
     }
   }
 
-  /* 🔒 verrou exact aux grands écrans (respect strict des mesures) */
-  @media (min-width: 1280px){
-    .map-grid{
-      grid-template-columns: 2fr 498px;  /* largeur colonne droite */
-      column-gap: 133px;                 /* écart carte ↔ liste */
+  .fr-name{
+    color: $blue-hero;
+    font-size: clamp(18px, 2.1vw, 22px);
+    line-height: 1.25;
+    min-width: 0; /* pour éviter l’overflow en grid */
+  }
+
+  /* Région : alignée à 582px (desktop) */
+  .fr-region{
+    color: $red;
+    font-size: 16px;
+    white-space: nowrap;
+  }
+
+  /* Chevron */
+  .fr-toggle{
+    background: none; border: 0; color: $blue-hero; cursor: pointer; justify-self: end;
+    display: grid; place-items: center; width: 34px; height: 34px;
+  }
+  /* ====== CHEVRON : GAUCHE fermé → BAS ouvert ====== */
+  .chevron{ width: 24px; height: 35px; transform: rotate(90deg); transition: transform .25s ease; }
+  .firm-row.open .chevron{ transform: rotate(0deg); }
+
+  /* ---------- Alignement fixe de la région (desktop) ---------- */
+  @media (min-width: 1200px){
+    /* place la région à 582px du bord gauche de la ligne */
+    .fr-region{
+      position: absolute;
+      left: var(--region-left);
+      top: 50%;
+      transform: translateY(-50%);
+      margin: 0;
+      text-align: left;
     }
-    .map-list{ padding-top: 116px; }     /* offset du titre */
+    /* réserve la place pour le nom avant la colonne région */
+    .fr-name{
+      /* largeur max = 582px - logo - gap */
+      max-width: calc(var(--region-left) - (var(--logo) + var(--gap)));
+    }
+  }
+
+  /* ---------- Comportement par défaut (tablettes / mobile) ---------- */
+  @media (max-width: 1199.98px){
+    .fr-region{
+      position: static;
+      justify-self: end;
+      margin-right: clamp(12px, 2vw, 18px);
+    }
+    .fr-name{ max-width: none; }
+  }
+
+  /* Panneau détaillé (dans la ligne ouverte) */
+  .fr-details{
+    display: grid;
+    grid-template-columns: 1fr clamp(240px, 24vw, 300px);
+    gap: clamp(24px, 4vw, 40px);
+    padding-bottom: 24px;   /* respire avant la ligne de séparation */
+    align-items: stretch;   /* colonnes à même hauteur */
+  }
+
+  /* Quand c'est ouvert, on cache la petite région rouge de l’entête */
+  .firm-row.open .fr-region{ display: none; }
+  .ff-region{ color: $red; font-size: 18px; margin-bottom: 6px; }
+
+  /* Colonnes internes en flex pour caler le bas */
+
+  .ff-left {
+    margin-top: 5rem;
+  }
+  .ff-left,
+  .ff-right{
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+  }
+
+  .ff-desc{
+    color: $blue;
+    font-size: map.get(vars.$font-size, "20");
+    line-height: 1.55;
+    p{ margin: 0 0 6px; }
+    p:last-child{ margin: 0; }
+    ul{ margin: 8px 0 0 16px; }
+  }
+
+  /* l’email est plaqué en bas de la colonne gauche */
+  .ff-mail{
+    color: $blue;
+    font-size: 14px;
+    text-decoration: none;
+  }
+
+  /* ===== Bloc de droite resserré ===== */
+  .ff-right{
+    align-items: flex-start;
+    gap: 6px; /* ↓ rapproché */
+  }
+
+  .ff-portrait{
+    width: clamp(200px, 22vw, 238px);
+    height: clamp(200px, 22vw, 240px);
+    object-fit: cover; display: block; background: #f5e1dd;
+  }
+
+  /* === Nom partenaire (spécifications exactes) === */
+  .ff-person-name{
+    color: #444697;
+    font-size: 36px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: 1;   /* compact */
+    margin: 0 0 4px;
+  }
+
+  /* Logo organisme (RICS…) */
+  .ff-org{
+    width: 68px;
+    height: 25px;
+    flex-shrink: 0;
+    aspect-ratio: 68 / 25;
+    object-fit: contain;
+    display: block;
+  }
+  @media (max-width: 720px){
+    .ff-org{
+      width: 56px;
+      height: 21px;
+      aspect-ratio: 56 / 21;
+    }
+  }
+
+  /* Titres plus rapprochés */
+  .ff-titles{
+    color: $blue;
+    font-size: 13px;
+    line-height: 1.15;   /* ↓ plus serré */
+    margin-top: 2px;
+  }
+
+  /* CTA (Contact + LinkedIn) — plaqué en bas de la colonne droite */
+  .ff-cta{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: auto;  /* aligne avec ff-mail */
+  }
+
+  /* Bouton Contact (dimensions imposées) */
+  .btn-contact{
+    width: 185px;
+    height: 39px;
+    flex-shrink: 0;
+    display: inline-grid;
+    grid-template-columns: 1fr auto; /* texte | icône enveloppe */
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px 0 14px;
+    border: 0;
+    border-radius: 6px;
+    background: $red;
+    color: #FFF;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 400;
+    line-height: normal;
+  }
+  .btn-contact .ico-mail{
+    inline-size: 31px;
+    block-size: 19px;
+    display: grid;
+    place-items: center;
+  }
+  .btn-contact .ico-mail svg{ display: block; }
+
+  /* Lien LinkedIn (icône 39x39) */
+  .lk{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 39px;
+    height: 39px;
+    flex-shrink: 0;
+    padding: 0;
+    border-radius: 6px;
+    background: none; /* le SVG inclut sa pastille */
+    text-decoration: none;
+  }
+  .lk-ico{ width: 40px; height: 40px; }
+
+  @media (max-width: 720px){
+    .fr-details{ grid-template-columns: 1fr; }
   }
 }
 
@@ -166,5 +400,32 @@ $white:      map.get(vars.$theme-colors, "white");
   .map-section .panel-list li{
     transition: none !important;
     transform: none !important;
+  }
+}
+
+/* les <p> injectés via [innerHTML] n'ont pas l'attribut _ngcontent,
+   on force donc le style avec ::ng-deep (uniquement pour cette zone) */
+:host ::ng-deep .ff-titles p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.10;
+}
+:host ::ng-deep .ff-titles p + p {
+  margin-top: 2px !important;
+}
+
+/* Remonter le panneau détaillé (les 2 colonnes ensemble) sous le trait
+   sans casser l’alignement bas ff-mail ↔ CTA */
+.firms {
+  --overlap-right: calc(var(--row-h) - 20px);
+
+  .firm-row.open .fr-details{
+    margin-top: calc(-1 * var(--overlap-right));
+  }
+
+  @media (max-width: 1024px){
+    .firm-row.open .fr-details{
+      margin-top: 0;
+    }
   }
 }

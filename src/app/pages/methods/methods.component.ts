@@ -5,31 +5,16 @@ import {
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { WordpressService } from '../../services/wordpress.service';
-import { SeoService } from '../../services/seo.service';
+  import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 /* ===== Types ===== */
 type Hero = { title: string; subtitle?: string; html?: SafeHtml | string };
-
-type DomainItem = {
-  kind: 'text' | 'group';
-  text?: string;
-  title?: string;
-  sub?: string[];
-};
-
+type DomainItem = { kind: 'text' | 'group'; text?: string; title?: string; sub?: string[] };
 type Domain = { title: string; icon?: string; items: DomainItem[] };
-
-/** Wheel sans labels : on n’affiche que l’image centrale */
-type Wheel = {
-  title: string;
-  image?: string;
-  centerAlt?: string;
-};
-
+type Wheel = { title: string; image?: string; centerAlt?: string };
 type EvalMethod = { icon?: string; title: string; html?: SafeHtml | string };
-
 type Piloting = { html?: SafeHtml | string; flows: { src: string; caption?: string }[] };
 
 @Component({
@@ -81,6 +66,12 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('pilotTitle') pilotTitleRef!: ElementRef<HTMLElement>;
   @ViewChild('pilotIntro') pilotIntroRef!: ElementRef<HTMLElement>;
   @ViewChild('pilotGrid')  pilotGridRef!: ElementRef<HTMLElement>;
+
+  /* ===== Flags anti “double flash / double play” ===== */
+  /** Le bloc Hero (H1/H2/Intro) ne se bind qu’UNE fois */
+  private heroBound = false;
+  /** Coalesce des rebinds */
+  private bindScheduled = false;
 
   /* ===== Init ===== */
   ngOnInit(): void {
@@ -159,8 +150,8 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
       this.piloting = {
         html: this.safe(pil?.intro_body || ''),
         flows: [
-          pil?.flow_1 ? { src: pil.flow_1, caption: 'Demande d’expertise régionale (bien)' } : null,
-          pil?.flow_2 ? { src: pil.flow_2, caption: 'Demande d’expertise nationale (portefeuille)' } : null
+          pil?.flow_1 ? { src: pil.flow_1, caption: '' } : null,
+          pil?.flow_2 ? { src: pil.flow_2, caption: '' } : null
         ].filter(Boolean) as {src: string; caption?: string}[]
       };
 
@@ -199,8 +190,11 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ================= Animations ================= */
   ngAfterViewInit(): void {
     gsap.registerPlugin(ScrollTrigger);
+
+    // Re-binder si des listes changent (sans double-play grâce aux gardes)
     this.assetCols?.changes?.subscribe(() => this.scheduleBind());
     this.evalRows?.changes?.subscribe(() => this.scheduleBind());
+
     this.scheduleBind();
   }
 
@@ -209,7 +203,6 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     try { gsap.globalTimeline.clear(); } catch {}
   }
 
-  private bindScheduled = false;
   private scheduleBind(){
     if (this.bindScheduled) return;
     this.bindScheduled = true;
@@ -219,45 +212,65 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     }));
   }
 
+  /** Force l’état initial (évite tout flash si la CSS tarde) */
+  private forceInitialHidden(host: HTMLElement){
+    const pre  = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));
+    const rows = Array.from(host.querySelectorAll<HTMLElement>('.prehide-row'));
+    if (pre.length)  gsap.set(pre,  { autoAlpha: 0, y: 20 });
+    if (rows.length) gsap.set(rows, { autoAlpha: 0 });
+  }
+
   private bindAnimations(): void {
+    const host = document.querySelector('.methods-wrapper') as HTMLElement | null;
+    if (host) this.forceInitialHidden(host);
+
+    // Kill propre avant rebind (anti doublons)
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
+
     const EASE = 'power3.out';
     const rmPrehide = (els: Element | Element[]) => {
       (Array.isArray(els) ? els : [els]).forEach(el => el.classList.remove('prehide','prehide-row'));
     };
 
-    /* ---------- HERO ---------- */
+    /* ---------- HERO (protégé contre tout rebind) ---------- */
     const h1 = this.heroTitleRef?.nativeElement;
     const h2 = this.heroSubRef?.nativeElement;
     const hi = this.heroIntroRef?.nativeElement;
 
-    if (h1) gsap.fromTo(
-      h1,
-      { autoAlpha: 0, y: 20 },
-      {
-        autoAlpha: 1, y: 0, duration: 0.6, ease: EASE,
+    // Toujours tuer d’éventuels tweens résiduels avant de faire quoi que ce soit
+    gsap.killTweensOf([h1, h2, hi].filter(Boolean) as HTMLElement[]);
+
+    if (!this.heroBound) {
+      // Première et unique animation du bloc Hero (timeline groupée)
+      const tl = gsap.timeline({ defaults: { ease: EASE } });
+
+      if (h1) tl.fromTo(h1, { autoAlpha: 0, y: 20 }, {
+        autoAlpha: 1, y: 0, duration: 0.6,
         onStart: () => { rmPrehide(h1); },
         onComplete: () => { gsap.set(h1, { clearProps: 'all' }); }
-      }
-    );
-    if (h2) gsap.fromTo(
-      h2,
-      { autoAlpha: 0, y: 18 },
-      {
-        autoAlpha: 1, y: 0, duration: 0.5, ease: EASE, delay: 0.08,
+      }, 0);
+
+      if (h2) tl.fromTo(h2, { autoAlpha: 0, y: 18 }, {
+        autoAlpha: 1, y: 0, duration: 0.5, delay: 0.08,
         onStart: () => { rmPrehide(h2); },
         onComplete: () => { gsap.set(h2, { clearProps: 'all' }); }
-      }
-    );
-    if (hi) gsap.fromTo(
-      hi,
-      { autoAlpha: 0, y: 18 },
-      {
-        autoAlpha: 1, y: 0, duration: 0.5, ease: EASE, delay: 0.14,
+      }, 0);
+
+      if (hi) tl.fromTo(hi, { autoAlpha: 0, y: 18 }, {
+        autoAlpha: 1, y: 0, duration: 0.5, delay: 0.14,
         onStart: () => { rmPrehide(hi); },
         onComplete: () => { gsap.set(hi, { clearProps: 'all' }); }
-      }
-    );
+      }, 0);
+
+      this.heroBound = true;
+    } else {
+      // Rebinds ultérieurs : on se contente de “fixer” l’état sans animation
+      [h1, h2, hi].forEach(el => {
+        if (!el) return;
+        rmPrehide(el);
+        gsap.set(el, { autoAlpha: 1, y: 0, clearProps: 'transform,opacity,visibility' });
+      });
+    }
 
     /* ---------- DOMAINES ---------- */
     const assetsList = this.assetsListRef?.nativeElement;
