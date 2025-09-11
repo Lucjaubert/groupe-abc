@@ -5,11 +5,11 @@ import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 export interface SeoConfig {
   title:        string;
   description?: string;
-  keywords?:    string;                 // utile pour certains moteurs/outils
+  keywords?:    string;
   image?:       string;                 // URL absolue recommandée
   type?:        'website' | 'article';  // og:type
-  canonical?:   string;                 // si non fourni, déduit de currentUrl()
-  jsonLd?:      object;                 // JSON-LD principal (@graph ou objet)
+  canonical?:   string;
+  jsonLd?:      object;                 // JSON-LD de page (@graph ou objet)
   robots?:      string;                 // ex: 'index,follow' | 'noindex,nofollow'
 }
 
@@ -29,7 +29,7 @@ export class SeoService {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
-  /** Mise à jour standard (Title + metas + OG/Twitter + Canonical + JSON-LD) */
+  /** Mise à jour standard (Title + metas + OG/Twitter + Canonical + JSON-LD page) */
   update(cfg: SeoConfig): void {
     // Title
     if (cfg.title) this.title.setTitle(cfg.title);
@@ -54,9 +54,10 @@ export class SeoService {
       'og:url':         pageUrl
     });
 
-    // Twitter
+    // Twitter (si pas d'image → carte texte "summary")
+    const twitterCard = cfg.image ? 'summary_large_image' : 'summary';
     this.setTwitter({
-      'twitter:card':        'summary_large_image',
+      'twitter:card':        twitterCard,
       'twitter:title':       cfg.title,
       'twitter:description': cfg.description ?? '',
       'twitter:image':       cfg.image || ''
@@ -65,9 +66,22 @@ export class SeoService {
     // Canonical
     this.setCanonical(pageUrl || undefined);
 
-    // JSON-LD
+    // JSON-LD de page (remplace les précédents de page)
     this.clearJsonLd();
     if (cfg.jsonLd) this.addJsonLd(cfg.jsonLd);
+  }
+
+  /** JSON-LD “sitewide” (WebSite/Organization…), injecté une fois et persistant */
+  setSitewideJsonLd(obj: object): void {
+    if (!this.isBrowser || !obj) return;
+    let script = this.doc.getElementById('ld-sitewide') as HTMLScriptElement | null;
+    if (!script) {
+      script = this.rnd.createElement('script') as HTMLScriptElement;
+      script.id = 'ld-sitewide';
+      script.type = 'application/ld+json';
+      this.rnd.appendChild(this.doc.head, script);
+    }
+    script.text = JSON.stringify(obj);
   }
 
   /** Ajoute/merge des propriétés Open Graph (property="og:*") */
@@ -88,7 +102,7 @@ export class SeoService {
 
   /** Définit (ou retire) le canonical */
   setCanonical(url?: string): void {
-    if (!this.isBrowser) return; // côté serveur: ignore (Angular Universal gère le head différemment)
+    if (!this.isBrowser) return; // côté serveur: ignore
     let link = this.doc.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!url) {
       if (link) link.remove();
@@ -102,13 +116,13 @@ export class SeoService {
     link.setAttribute('href', url);
   }
 
-  /** Supprime tous les scripts JSON-LD précédemment injectés par ce service */
+  /** Supprime tous les scripts JSON-LD “page” injectés par ce service */
   clearJsonLd(): void {
     if (!this.isBrowser) return;
     this.doc.querySelectorAll<HTMLScriptElement>('script[data-jsonld="1"]').forEach(s => s.remove());
   }
 
-  /** Ajoute un script JSON-LD */
+  /** Ajoute un script JSON-LD “page” */
   addJsonLd(obj: object): void {
     if (!this.isBrowser || !obj) return;
     const script = this.rnd.createElement('script') as HTMLScriptElement;
@@ -132,20 +146,6 @@ export class SeoService {
       return loc ? `${loc.protocol}//${loc.host}` : '';
     } catch { return ''; }
   }
-
-  /** JSON-LD “sitewide” (WebSite/Organization…), injecté une fois et persistant */
-  setSitewideJsonLd(obj: object): void {
-    if (!this.isBrowser || !obj) return;
-    let script = this.doc.getElementById('ld-sitewide') as HTMLScriptElement | null;
-    if (!script) {
-      script = this.rnd.createElement('script') as HTMLScriptElement;
-      script.id = 'ld-sitewide';
-      script.type = 'application/ld+json';
-      this.rnd.appendChild(this.doc.head, script);
-    }
-    script.text = JSON.stringify(obj);
-  }
-
 
   /* ======================
    * Helpers internes
