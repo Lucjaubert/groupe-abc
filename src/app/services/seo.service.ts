@@ -5,11 +5,12 @@ import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 export interface SeoConfig {
   title:        string;
   description?: string;
-  keywords?:    string;            // utile pour certains moteurs/outils
-  image?:       string;            // URL absolue recommandée
-  type?:        'website' | 'article';
-  canonical?:   string;            // si non fourni, déduit de currentUrl()
-  jsonLd?:      object;            // JSON-LD principal (optionnel)
+  keywords?:    string;                 // utile pour certains moteurs/outils
+  image?:       string;                 // URL absolue recommandée
+  type?:        'website' | 'article';  // og:type
+  canonical?:   string;                 // si non fourni, déduit de currentUrl()
+  jsonLd?:      object;                 // JSON-LD principal (@graph ou objet)
+  robots?:      string;                 // ex: 'index,follow' | 'noindex,nofollow'
 }
 
 @Injectable({ providedIn: 'root' })
@@ -28,22 +29,29 @@ export class SeoService {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
-  /** Mise à jour standard (Title + Description + OG/Twitter + Canonical + JSON-LD optionnel) */
+  /** Mise à jour standard (Title + metas + OG/Twitter + Canonical + JSON-LD) */
   update(cfg: SeoConfig): void {
     // Title
     if (cfg.title) this.title.setTitle(cfg.title);
 
-    // Meta de base
+    // Metas de base
     this.setNamedMeta('description', cfg.description);
     this.setNamedMeta('keywords', cfg.keywords);
 
-    // Open Graph (propriétés)
+    // Robots (et googlebot en miroir, optionnel)
+    this.setNamedMeta('robots', cfg.robots);
+    this.setNamedMeta('googlebot', cfg.robots);
+
+    // URL de page cohérente (canonical prioritaire)
+    const pageUrl = cfg.canonical || this.currentUrl() || '';
+
+    // Open Graph
     this.setOpenGraph({
       'og:type':        cfg.type ?? 'website',
       'og:title':       cfg.title,
       'og:description': cfg.description ?? '',
       'og:image':       cfg.image || '',
-      'og:url':         this.currentUrl() || ''
+      'og:url':         pageUrl
     });
 
     // Twitter
@@ -55,9 +63,9 @@ export class SeoService {
     });
 
     // Canonical
-    this.setCanonical(cfg.canonical || this.currentUrl() || undefined);
+    this.setCanonical(pageUrl || undefined);
 
-    // JSON-LD principal
+    // JSON-LD
     this.clearJsonLd();
     if (cfg.jsonLd) this.addJsonLd(cfg.jsonLd);
   }
@@ -80,7 +88,7 @@ export class SeoService {
 
   /** Définit (ou retire) le canonical */
   setCanonical(url?: string): void {
-    if (!this.isBrowser) return; // pas d’head côté serveur avec ce renderer
+    if (!this.isBrowser) return; // côté serveur: ignore (Angular Universal gère le head différemment)
     let link = this.doc.querySelector<HTMLLinkElement>('link[rel="canonical"]');
     if (!url) {
       if (link) link.remove();
@@ -124,6 +132,20 @@ export class SeoService {
       return loc ? `${loc.protocol}//${loc.host}` : '';
     } catch { return ''; }
   }
+
+  /** JSON-LD “sitewide” (WebSite/Organization…), injecté une fois et persistant */
+  setSitewideJsonLd(obj: object): void {
+    if (!this.isBrowser || !obj) return;
+    let script = this.doc.getElementById('ld-sitewide') as HTMLScriptElement | null;
+    if (!script) {
+      script = this.rnd.createElement('script') as HTMLScriptElement;
+      script.id = 'ld-sitewide';
+      script.type = 'application/ld+json';
+      this.rnd.appendChild(this.doc.head, script);
+    }
+    script.text = JSON.stringify(obj);
+  }
+
 
   /* ======================
    * Helpers internes

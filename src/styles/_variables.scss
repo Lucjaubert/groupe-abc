@@ -1,16 +1,19 @@
 @use "sass:map";
 
+/* =========================
+   1) TOKENS / DESIGN MAPS
+   ========================= */
+
 /* Couleurs du thème */
 $theme-colors: (
-  "dark-blue": #2C2D62,
+  "dark-blue":  #2C2D62,
   "light-blue": #444697,
-  "light-red": #EA4D4D,
-  "dark-red": #A23536,
-  "pink": #E2AAB3,
-  "dark-grey": #5E5E5E,
+  "light-red":  #EA4D4D,
+  "dark-red":   #A23536,
+  "pink":       #E2AAB3,
+  "dark-grey":  #5E5E5E,
   "light-grey": #F5F4F8,
-  "white": #FFFFFF,
-
+  "white":      #FFFFFF,
 );
 
 /* Tailles des bordures */
@@ -29,78 +32,78 @@ $border-size: (
 
 /* Tailles de police */
 $font-size: (
-  "10": 0.75rem, // 12px
-  "20": 0.875rem, // 14px
-  "30": 1rem, // 16px
-  "40": 1.25rem, // 20px
-  "50": 1.5rem, // 24px
-  "60": 1.75rem, // 28px
-  "70": 2rem, // 32px
-  "80": 2.25rem, // 36px
-  "90": 2.5rem, // 40px
-  "100": 3rem, // 48px
-  "110": 3.5rem, // 56px
-  "120": 4rem, // 64px
-  "130": 4.5rem, // 72px
-  "140": 5rem, // 80px
-  "150": 5.5rem, // 88px
-  "160": 6rem, // 96px
-  "170": 6.5rem, // 104px
-  "180": 7rem, // 112px
-  "190": 7.5rem, // 120px
-  "200": 8rem, // 128px
-  "210": 8.5rem, // 136px
-  "220": 9rem, // 144px
-  "230": 9.5rem, // 152px
-  "240": 10rem, // 160px
-  "250": 10.5rem, // 168px
-  "260": 11rem, // 176px
+  "10": 0.75rem,   // 12px
+  "20": 0.875rem,  // 14px
+  "30": 1rem,      // 16px
+  "40": 1.25rem,   // 20px
+  "50": 1.5rem,    // 24px
+  "60": 1.75rem,   // 28px
+  "70": 2rem,      // 32px
+  "80": 2.25rem,   // 36px
+  "90": 2.5rem,    // 40px
+  "100": 3rem,     // 48px
+  "110": 3.5rem,   // 56px
+  "120": 4rem,     // 64px
+  "130": 4.5rem,   // 72px
+  "140": 5rem,     // 80px
+  "150": 5.5rem,   // 88px
+  "160": 6rem,     // 96px
+  "170": 6.5rem,   // 104px
+  "180": 7rem,     // 112px
+  "190": 7.5rem,   // 120px
+  "200": 8rem,     // 128px
+  "210": 8.5rem,   // 136px
+  "220": 9rem,     // 144px
+  "230": 9.5rem,   // 152px
+  "240": 10rem,    // 160px
+  "250": 10.5rem,  // 168px
+  "260": 11rem,    // 176px
 );
 
 /* Poids des polices */
 $font-weight: (
-  "bold": 700,
   "regular": 400,
+  "bold":    700,
 );
 
 /* Points de rupture */
 $breakpoints: (
-  "xs": 375px,
-  "sm": 425px,
-  "md": 768px,
-  "lg": 1024px,
-  "xl": 1440px,
+  "xs":  375px,
+  "sm":  425px,
+  "md":  768px,
+  "lg":  1024px,
+  "xl":  1440px,
   "xxl": 1980px,
   "3xl": 2560px
 );
 
+/* Spacers (marges/paddings utilitaires) */
 $spacers: (
-  "0": 0rem,     // .mt-0 => margin-top: 0
-  "1": 0.25rem,  // .mt-1 => margin-top: 4px
-  "2": 0.5rem,   // .mt-2 => 8px
-  "3": 0.75rem,  // .mt-3 => 12px
-  "4": 1rem,     // .mt-4 => 16px
-  "5": 1.5rem,   // .mt-5 => 24px
-  "6": 2rem,     // .mt-6 => 32px
-  "7": 3rem,     // .mt-7 => 48px
-  "8": 4rem,     // .mt-8 => 64px
-  "9": 6rem,     // .mt-9 => 96px
-  "10": 8rem,     // .mt-10 => 128px
-  "11": 10rem,    // .mt-11 => 160px
-  "12": 12rem,    // .mt-12 => 192px
-  "13": 14rem,    // .mt-13 => 224px
-  "14": 16rem,    // .mt-14 => 256px
-  "15": 18rem,    // .mt-15 => 288px
-  "16": 20rem,    // .mt-16 => 320px
-  "17": 22rem,    // .mt-17 => 352px
-  "18": 24rem,    // .mt-18 => 384px
-  "19": 26rem,    // .mt-19 => 416px
-  "20": 28rem,    // .mt-20 => 448px
+  "0": 0rem,
+  "1": 0.25rem,  // 4px
+  "2": 0.5rem,   // 8px
+  "3": 0.75rem,  // 12px
+  "4": 1rem,     // 16px
+  "5": 1.5rem,   // 24px
+  "6": 2rem,     // 32px
+  "7": 3rem,     // 48px
+  "8": 4rem,     // 64px
+  "9": 6rem,     // 96px
+  "10": 8rem,    // 128px
+  "11": 10rem,   // 160px
+  "12": 12rem,   // 192px
+  "13": 14rem,   // 224px
+  "14": 16rem,   // 256px
+  "15": 18rem,   // 288px
+  "16": 20rem,   // 320px
+  "17": 22rem,   // 352px
+  "18": 24rem,   // 384px
+  "19": 26rem,   // 416px
+  "20": 28rem,   // 448px
 );
 
-
 /* =========================
-   7) GÉNÉRATION DE CLASSES
+   2) UTILITAIRES GLOBALES
    ========================= */
 
 /* --- A) Couleurs de fond et texte --- */
@@ -141,45 +144,80 @@ $icon-sizes: (
 }
 
 /* --- E) SPACERS SANS BREAKPOINTS ---
-   => Génère .mt-0, .mt-1, .mt-2, ..., .mt-10, etc.
-*/
-@each $spacer-name, $spacer-value in $spacers {
-  .mt-#{$spacer-name} { margin-top: $spacer-value; }
-  .mb-#{$spacer-name} { margin-bottom: $spacer-value; }
-  .ml-#{$spacer-name} { margin-left: $spacer-value; }
-  .mr-#{$spacer-name} { margin-right: $spacer-value; }
-  .mx-#{$spacer-name} { margin-left: $spacer-value; margin-right: $spacer-value; }
-  .my-#{$spacer-name} { margin-top: $spacer-value; margin-bottom: $spacer-value; }
+   -> .m-8 / .mt-8 / .mx-8 / .p-8 / .py-8 ...
+/* --- E) SPACERS SANS BREAKPOINTS --- */
+@each $n, $v in $spacers {
+  /* margin */
+  .m-#{$n}  { margin: $v !important; }
+  .mt-#{$n} { margin-top: $v !important; }
+  .mb-#{$n} { margin-bottom: $v !important; }
+  .ml-#{$n} { margin-left: $v !important; }
+  .mr-#{$n} { margin-right: $v !important; }
+  .mx-#{$n} { margin-left: $v !important; margin-right: $v !important; }
+  .my-#{$n} { margin-top: $v !important; margin-bottom: $v !important; }
 
-  .pt-#{$spacer-name} { padding-top: $spacer-value; }
-  .pb-#{$spacer-name} { padding-bottom: $spacer-value; }
-  .pl-#{$spacer-name} { padding-left: $spacer-value; }
-  .pr-#{$spacer-name} { padding-right: $spacer-value; }
-  .px-#{$spacer-name} { padding-left: $spacer-value; padding-right: $spacer-value; }
-  .py-#{$spacer-name} { padding-top: $spacer-value; padding-bottom: $spacer-value; }
+  /* padding */
+  .p-#{$n}  { padding: $v !important; }
+  .pt-#{$n} { padding-top: $v !important; }
+  .pb-#{$n} { padding-bottom: $v !important; }
+  .pl-#{$n} { padding-left: $v !important; }
+  .pr-#{$n} { padding-right: $v !important; }
+  .px-#{$n} { padding-left: $v !important; padding-right: $v !important; }
+  .py-#{$n} { padding-top: $v !important; padding-bottom: $v !important; }
 }
 
-/* --- F) SPACERS AVEC BREAKPOINTS ---
-   => Génère .mt-0-md, .mt-0-lg, etc.
-*/
-@each $breakpoint-name, $breakpoint-value in $breakpoints {
-  @media (min-width: #{$breakpoint-value}) {
-    @each $spacer-name, $spacer-value in $spacers {
-      .p-#{$spacer-name}-#{$breakpoint-name}  { padding: $spacer-value; }
-      .pt-#{$spacer-name}-#{$breakpoint-name} { padding-top: $spacer-value; }
-      .pb-#{$spacer-name}-#{$breakpoint-name} { padding-bottom: $spacer-value; }
-      .pl-#{$spacer-name}-#{$breakpoint-name} { padding-left: $spacer-value; }
-      .pr-#{$spacer-name}-#{$breakpoint-name} { padding-right: $spacer-value; }
-      .px-#{$spacer-name}-#{$breakpoint-name} { padding-left: $spacer-value; padding-right: $spacer-value; }
-      .py-#{$spacer-name}-#{$breakpoint-name} { padding-top: $spacer-value;  padding-bottom: $spacer-value; }
+/* --- F) SPACERS AVEC BREAKPOINTS --- */
+@each $bp-name, $bp-val in $breakpoints {
+  @media (min-width: #{$bp-val}) {
+    @each $n, $v in $spacers {
+      /* postfixe (.mt-8-lg) */
+      .m-#{$n}-#{$bp-name}  { margin: $v !important; }
+      .mt-#{$n}-#{$bp-name} { margin-top: $v !important; }
+      .mb-#{$n}-#{$bp-name} { margin-bottom: $v !important; }
+      .ml-#{$n}-#{$bp-name} { margin-left: $v !important; }
+      .mr-#{$n}-#{$bp-name} { margin-right: $v !important; }
+      .mx-#{$n}-#{$bp-name} { margin-left: $v !important; margin-right: $v !important; }
+      .my-#{$n}-#{$bp-name} { margin-top: $v !important; margin-bottom: $v !important; }
 
-      .m-#{$spacer-name}-#{$breakpoint-name}  { margin: $spacer-value; }
-      .mt-#{$spacer-name}-#{$breakpoint-name} { margin-top: $spacer-value; }
-      .mb-#{$spacer-name}-#{$breakpoint-name} { margin-bottom: $spacer-value; }
-      .ml-#{$spacer-name}-#{$breakpoint-name} { margin-left: $spacer-value; }
-      .mr-#{$spacer-name}-#{$breakpoint-name} { margin-right: $spacer-value; }
-      .mx-#{$spacer-name}-#{$breakpoint-name} { margin-left: $spacer-value; margin-right: $spacer-value; }
-      .my-#{$spacer-name}-#{$breakpoint-name} { margin-top: $spacer-value;  margin-bottom: $spacer-value; }
+      .p-#{$n}-#{$bp-name}  { padding: $v !important; }
+      .pt-#{$n}-#{$bp-name} { padding-top: $v !important; }
+      .pb-#{$n}-#{$bp-name} { padding-bottom: $v !important; }
+      .pl-#{$n}-#{$bp-name} { padding-left: $v !important; }
+      .pr-#{$n}-#{$bp-name} { padding-right: $v !important; }
+      .px-#{$n}-#{$bp-name} { padding-left: $v !important; padding-right: $v !important; }
+      .py-#{$n}-#{$bp-name} { padding-top: $v !important; padding-bottom: $v !important; }
+
+      /* préfixe (.mt-lg-8) */
+      .m-#{$bp-name}-#{$n}  { margin: $v !important; }
+      .mt-#{$bp-name}-#{$n} { margin-top: $v !important; }
+      .mb-#{$bp-name}-#{$n} { margin-bottom: $v !important; }
+      .ml-#{$bp-name}-#{$n} { margin-left: $v !important; }
+      .mr-#{$bp-name}-#{$n} { margin-right: $v !important; }
+      .mx-#{$bp-name}-#{$n} { margin-left: $v !important; margin-right: $v !important; }
+      .my-#{$bp-name}-#{$n} { margin-top: $v !important; margin-bottom: $v !important; }
+
+      .p-#{$bp-name}-#{$n}  { padding: $v !important; }
+      .pt-#{$bp-name}-#{$n} { padding-top: $v !important; }
+      .pb-#{$bp-name}-#{$n} { padding-bottom: $v !important; }
+      .pl-#{$bp-name}-#{$n} { padding-left: $v !important; }
+      .pr-#{$bp-name}-#{$n} { padding-right: $v !important; }
+      .px-#{$bp-name}-#{$n} { padding-left: $v !important; padding-right: $v !important; }
+      .py-#{$bp-name}-#{$n} { padding-top: $v !important; padding-bottom: $v !important; }
     }
   }
 }
+/* --- G) BORDERS (optionnel utile) ---
+   .border-1 / .border-2 … et .border-light-blue, etc.
+*/
+@each $b-name, $b-size in $border-size {
+  .border-#{$b-name} {
+    border-width: $b-size;
+    border-style: solid;
+  }
+}
+@each $c-name, $c-val in $theme-colors {
+  .border-#{$c-name} {
+    border-color: $c-val;
+  }
+}
+

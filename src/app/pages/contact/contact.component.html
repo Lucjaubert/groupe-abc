@@ -1,1 +1,110 @@
-<p>contact works!</p>
+<section class="section contact-page" aria-labelledby="contact-title">
+  <div class="section-inner">
+    <header class="contact-head">
+      <h1 #contactTitle id="contact-title" class="page-title prehide">Contactez-nous</h1>
+
+      <a *ngIf="linkedinUrl as li"
+         #contactLinkedin
+         class="linkedin prehide"
+         [href]="li"
+         target="_blank"
+         rel="noopener"
+         aria-label="Voir notre page LinkedIn">
+        <img
+          src="assets/icons/linkedin.webp"
+          alt=""
+          aria-hidden="true"
+          loading="lazy"
+          decoding="async"
+          fetchpriority="low" />
+      </a>
+    </header>
+
+    <form class="form-card" novalidate>
+      <fieldset #radiosEl class="radios" aria-label="Civilité / Type">
+        <legend class="sr-only">Civilité / Type</legend>
+
+        <div class="rad-row">
+          <div class="rad-left">
+            <label #radioItem class="radio prehide-row">
+              <input type="radio" name="civ" value="madame">
+              <span>Madame</span>
+            </label>
+
+            <label #radioItem class="radio prehide-row">
+              <input type="radio" name="civ" value="monsieur">
+              <span>Monsieur</span>
+            </label>
+          </div>
+
+          <div class="rad-right">
+            <label #radioItem class="radio prehide-row">
+              <input type="radio" name="profil" value="pro">
+              <span>Professionnel</span>
+            </label>
+
+            <label #radioItem class="radio prehide-row">
+              <input type="radio" name="profil" value="part">
+              <span>Particulier</span>
+            </label>
+          </div>
+        </div>
+      </fieldset>
+
+      <div #formGridEl class="form-grid">
+        <label #fgLabel class="prehide-row">
+          <span class="sr-only">Prénom*</span>
+          <input type="text" name="firstname" placeholder="Prénom*" autocomplete="given-name">
+        </label>
+        <label #fgLabel class="prehide-row">
+          <span class="sr-only">eMail*</span>
+          <input type="email" name="email" placeholder="eMail*" autocomplete="email">
+        </label>
+        <label #fgLabel class="prehide-row">
+          <span class="sr-only">Nom*</span>
+          <input type="text" name="lastname" placeholder="Nom*" autocomplete="family-name">
+        </label>
+        <label #fgLabel class="prehide-row">
+          <span class="sr-only">Téléphone</span>
+          <input type="tel" name="phone" placeholder="Téléphone" autocomplete="tel">
+        </label>
+
+        <label #fgLabel class="full prehide-row">
+          <span class="sr-only">Message</span>
+          <textarea name="message" placeholder="Message"></textarea>
+        </label>
+      </div>
+
+      <div class="form-actions">
+        <a #sendBtn class="btn-contact prehide" href="#" role="button">
+          <span>Envoyer</span>
+          <span class="ico-mail" aria-hidden="true">
+            <!-- SVG mail inchangé -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="31" height="19" viewBox="0 0 31 19" fill="none">
+              <path d="M24.7339 12.681L21.2219 9.38599" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M16.524 9.38501L13.011 12.685" stroke="#A33536" stroke-linecap="round"/>
+              <mask id="mask0_mail" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="31" height="19">
+                <path d="M30.642 0.285889H0V18.3539H30.642V0.285889Z" fill="white"/>
+              </mask>
+              <g mask="url(#mask0_mail)">
+                <path d="M26.0319 2.896H11.7129C10.6083 2.896 9.71289 3.79143 9.71289 4.896V13.744C9.71289 14.8486 10.6083 15.744 11.7129 15.744H26.0319C27.1365 15.744 28.0319 14.8486 28.0319 13.744V4.896C28.0319 3.79143 27.1365 2.896 26.0319 2.896Z" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M10.5088 3.7771L18.8678 11.0211L27.2308 3.7771" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M2.60986 6.01196H9.71286" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4.44092 9.32007H9.71292" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6.27295 12.6289H9.71395" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+            </svg>
+          </span>
+        </a>
+      </div>
+    </form>
+
+    <div #bigInfosEl class="big-infos">
+      <p #bigLine class="prehide">18 rue Pasquier</p>
+      <p #bigLine class="prehide">75008 Paris</p>
+      <p #bigLine class="prehide"><a href="tel:+33178414441">T. 01 78 41 44 41</a></p>
+      <p #bigLine class="prehide"><a href="mailto:contact@groupe-abc.fr">contact&#64;groupe-abc.fr</a></p>
+      <p #bigLine class="site mt-8 prehide">groupe-abc.fr</p>
+    </div>
+  </div>
+</section>
