@@ -4,6 +4,7 @@
 $logo-w: 140px;
 $rail-w: 40px;
 
+/* ================== DESKTOP (inchangé) ================== */
 .header {
   position: relative;
   padding-top: 60px;
@@ -44,9 +45,7 @@ $rail-w: 40px;
   overflow-y: hidden;
 }
 
-.tagline {
-  grid-column: 2 / span 1;
-}
+.tagline { grid-column: 2 / span 1; }
 .tagline-text {
   display: inline-block;
   font-family: "Plus Jakarta Sans", sans-serif;
@@ -72,31 +71,23 @@ $rail-w: 40px;
 /* ===== MENU ===== */
 .menu {
   display: grid;
-  grid-template-columns: repeat(6, 1fr); /* 6 cases égales */
+  grid-template-columns: repeat(6, 1fr);
   align-items: stretch;
   list-style: none;
   margin: 0;
   padding: 0;
   width: 100%;
-  border-top: 1px solid transparent; /* optionnel pour debug */
+  border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
 }
-
-/* Chaque case */
 .menu li {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center; /* centrage horizontal */
+  justify-content: center;
   min-width: 0;
 }
-
-/* Séparateurs verticaux */
-.menu li + li {
-  border-left: 1px solid rgba(68, 71, 152, .5);
-}
-
-/* Liens */
+.menu li + li { border-left: 1px solid rgba(68, 71, 152, .5); }
 .menu a {
   display: block;
   width: 100%;
@@ -107,12 +98,10 @@ $rail-w: 40px;
   font-weight: 500;
   line-height: 1;
   color: #444697;
-  text-align: center;     /* texte centré */
+  text-align: center;
   padding: 8px 0;
 }
-.menu a:hover {
-  color: map.get(vars.$theme-colors, "dark-orange");
-}
+.menu a:hover { color: map.get(vars.$theme-colors, "dark-orange"); }
 
 /* ----- RAIL DROIT ----- */
 .right-rail {
@@ -126,7 +115,6 @@ $rail-w: 40px;
   gap: 10px;
   z-index: 20;
 }
-
 .lang-switch {
   width: $rail-w;
   height: $rail-w;
@@ -143,7 +131,6 @@ $rail-w: 40px;
   justify-content: center;
   border-radius: 2px;
 }
-
 .extranet-badge {
   width: $rail-w;
   height: 204px;
@@ -170,28 +157,170 @@ $rail-w: 40px;
   }
 }
 
-/* ----- RESPONSIVE ----- */
+/* ================== TABLETTE (≤ lg) ==================
+   On cache seulement la baseline ici, pour ne PAS toucher au desktop. */
 @media (max-width: map.get(vars.$breakpoints, "lg")) {
-  .tagline {
-    display: none !important;
-  }
-  .header-inner {
-    grid-template-columns: minmax($logo-w, 1fr);
-  }
-  .menu-bar {
-    grid-column: 1 / -1;
-  }
+  .tagline { display: none !important; }
 }
 
+/* ================== MOBILE (≤ md ≈ 768px) ================== */
 @media (max-width: map.get(vars.$breakpoints, "md")) {
-  .menu {
+
+  .header{
+    padding-top: clamp(16px, 4vw, 28px);
+    /* réserve la place du rail droit (extranet/burger) + safe area iOS */
+    padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
+    background: map.get(vars.$theme-colors, "white");
+  }
+
+  .header-inner{
+    display: grid;
+    grid-template-columns: 1fr auto; /* brand | (espace de droite) */
+    align-items: start;
+    row-gap: clamp(8px, 3vw, 16px);
+  }
+
+  /* ---- Brand (logo + slogan rouge) ---- */
+  .brand{
+    grid-column: 1 / 2;
+    grid-template-columns: 90px 12px 1fr; /* logo | gap | texte */
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+  }
+  .logo{
+    inline-size: 89.654px;
+    block-size: 90px;
+    aspect-ratio: 89.654 / 90;
+  }
+  .slogan{
+    max-width: clamp(260px, 64vw, 420px); /* ← on “allonge” la zone texte */
+    text-align: left;
+    font-size: 20px;      /* maquette */
+    line-height: 1.15;
+    font-weight: 400;
+    color: map.get(vars.$theme-colors, "light-red");
+    overflow: visible;     /* évite tout clipping du texte */
+  }
+
+  /* ---- Baseline (2 lignes) ---- */
+  .tagline{
+    grid-column: 1 / -1;
+    display: block !important;            /* override du hide tablette */
+    align-items: flex-start !important;    /* annule align-items-end */
+    margin-top: clamp(6px, 2vw, 12px);
+  }
+  .tagline-text{
+    display: inline-block;
+    font-size: 16px;      /* maquette */
+    font-weight: 400;
+    color: map.get(vars.$theme-colors, "light-blue");
+    text-align: left !important;
+    line-height: normal;
+  }
+  /* On force 2 lignes : on cache seulement le 2e <br> en mobile */
+  .tagline-text br:nth-of-type(2){ display: none; }
+
+  .rics{
+    margin-top: 10px;
+    inline-size: 57px;    /* maquette */
+    block-size: 21px;     /* maquette */
+    aspect-ratio: 19 / 7;
+    margin-left: 0;
+  }
+
+  /* ---- Menu : fermé par défaut, ouvert quand .menu-open ---- */
+  .menu-bar{ grid-column: 1 / -1; padding: 0; width: 100%; }
+  .menu{ display: none !important; }
+  .header.menu-open .menu,
+  .menu-bar.open .menu{
+    display: grid !important;
+    grid-template-columns: 1fr;
+    border-top: 1px solid rgba(68,71,152,.5);
+    margin-top: 12px;
+  }
+  .header.menu-open .menu li + li,
+  .menu-bar.open .menu li + li{
+    border-left: 0;
+    border-top: 1px solid rgba(68,71,152,.5);
+  }
+  .header.menu-open .menu a,
+  .menu-bar.open .menu a{
+    text-align: left; padding: 14px 0; font-size: 18px;
+  }
+
+  /* ---- Rail droit : Burger (à la place du FR) + EXTRANET ---- */
+  .right-rail{
+    position: fixed;
+    top: clamp(8px, 3vw, 16px);  /* burger plaqué en haut à droite */
+    right: 0;
+    width: $rail-w;             /* 40px */
     display: flex;
-    gap: 1rem;
-    justify-content: flex-start;
-    overflow-x: auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 20;
   }
-  .menu li {
-    flex: 0 0 auto;
+
+  /* .lang-switch devient l’icône Burger (on masque “FR”) */
+  .lang-switch{
+    inline-size: $rail-w;
+    block-size: $rail-w;        /* 40×40 */
+    background: transparent;    /* pas de pastille violette */
+    border-radius: 2px;
+    font-size: 0;               /* masque le texte, garde l’ARIA */
+    writing-mode: initial;
+    transform: none;
+    position: relative;
+    cursor: pointer;
+
+    /* 3 traits alignés à gauche, tailles exactes de la maquette */
+    background-image:
+      linear-gradient(#444697, #444697),  /* grand 29.668×2 */
+      linear-gradient(#444697, #444697),  /* moyen 22.039×2 */
+      linear-gradient(#444697, #444697);  /* petit 15.258×2 */
+    background-repeat: no-repeat;
+    background-size:
+      29.668px 2px,
+      22.039px 2px,
+      15.258px 2px;
+    background-position:
+      left 6px top 8px,   /* grand */
+      left 6px top 14px,  /* moyen */
+      left 6px top 20px;  /* petit */
+  }
+
+    /* Badge EXTRANET vertical, collé au bord droit, sous le burger */
+  .extranet-badge{
+    inline-size: $rail-w;       /* 40 */
+    block-size: 180px;          /* 180 */
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(-90deg);  /* lecture de bas en haut comme maquette */
+    background: rgba(68,70,151,.68);
+    border-radius: 2px;
+    display: flex;
+    align-items: center;
     justify-content: center;
+
+    /* >>> AJOUT pour coller à droite et aligner au burger <<< */
+    margin: 0;                   /* supprime tout décalage */
+    position: relative;
+    right: 0;                     /* colle au bord droit */
+    align-self: center;         /* s’aligne avec le burger au-dessus */
   }
+
+  .extranet-badge .extranet-text{
+    white-space: nowrap;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    transform: rotate(-90deg);
+    font-size: 11px;
+    font-weight: 400;
+    line-height: normal;
+    color: #FFF;
+  }
+  .extranet-badge .extranet-slash{
+    color: map.get(vars.$theme-colors, "light-red");
+  }
+
 }

@@ -18,7 +18,7 @@
       <ul #ctxList class="ctx-list prehide-row" role="list">
         <li
           #ctxRow
-          class="ctx-row"
+          class="ctx-row py-2"
           *ngFor="let c of contexts; let i = index; trackBy: trackByIndex"
           [class.open]="ctxOpen[i]"
         >
@@ -64,7 +64,7 @@
       <ul #cliList class="cli-list prehide-row" role="list">
         <li
           #cliRow
-          class="cli-row"
+          class="cli-row py-2"
           *ngFor="let c of clients; let i = index; trackBy: trackByIndex"
           [class.open]="cliOpen[i]"
         >

@@ -362,27 +362,39 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   private extractKeyFigures(): void {
     const fig = this.acf?.key_figures_section || {};
     const out: KeyFigure[] = [];
-    for (let i = 1; i <= 10; i++) {
+
+    let i = 1;
+    while (fig[`figure_value_${i}`] || fig[`figure_label_${i}`] || fig[`figure_value_${i}_bis`]) {
       const vRaw = fig[`figure_value_${i}`];
       const l = fig[`figure_label_${i}`];
-      const lBis = fig[`figure_label_${i}_bis`];
-      if (vRaw && (l || lBis)) {
+      const lBisMerge = fig[`figure_label_${i}_bis`]; // concatène si pas de value_bis
+
+      if (vRaw && (l || lBisMerge)) {
         const value = Number(String(vRaw).replace(/[^\d]/g, '')) || 0;
-        const fullLabel = (l || '') + (lBis ? ` ${lBis}` : '');
+        const fullLabel = (l || '') + (lBisMerge ? ` ${lBisMerge}` : '');
         out.push({
-          value,
-          label: l || '',
-          labelBis: lBis || '',
-          display: '',
-          typed: '',
-          fullLabel,
-          digits: String(value).length || 1,
-          played: false
+          value, label: l || '', labelBis: lBisMerge || '',
+          display: '', typed: '', fullLabel,
+          digits: String(value).length || 1, played: false
         });
       }
+
+      // si jamais il existe une ligne bis avec une valeur propre
+      if (fig[`figure_value_${i}_bis`] && fig[`figure_label_${i}_bis`]) {
+        const v2 = Number(String(fig[`figure_value_${i}_bis`]).replace(/[^\d]/g, '')) || 0;
+        const l2 = String(fig[`figure_label_${i}_bis`]);
+        out.push({
+          value: v2, label: l2, labelBis: '',
+          display: '', typed: '', fullLabel: l2,
+          digits: String(v2).length || 1, played: false
+        });
+      }
+      i++;
     }
+
     this.keyFigures = out;
   }
+
 
   private playFigure(index: number): void {
     const f = this.keyFigures[index];
