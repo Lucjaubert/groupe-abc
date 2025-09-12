@@ -7,7 +7,7 @@
 
       <div
         #heroIntroEl
-        class="hero-intro prehide"
+        class="hero-intro mt-7 prehide"
         *ngIf="heroIntroHtml"
         [innerHTML]="heroIntroHtml">
       </div>
@@ -15,16 +15,16 @@
   </section>
 
   <!-- ===== Carte / Où ? ===== -->
-  <section class="section map-section" *ngIf="mapSection as ms">
+  <section class="section map-section py-8 my-6" *ngIf="mapSection as ms">
     <div class="map-bg" aria-hidden="true"><div class="map-layer"></div></div>
-    <div class="section-inner">
+    <div class="section-team">
       <div class="map-grid">
         <div #mapImageEl class="map-image prehide">
           <img [src]="ms.image" alt="" (error)="onMapImgError($event)" />
         </div>
-        <div class="map-list">
+        <div class="map-list ps-3 ps-lg-0">
           <h2 #mapTitleEl class="map-title prehide">{{ ms.title }}</h2>
-          <ul class="panel-list">
+          <ul class="panel-list mt-3">
             <li #mapItem *ngFor="let item of ms.items; trackBy: trackByIndex">
               {{ item }}
             </li>
@@ -35,8 +35,8 @@
   </section>
 
   <!-- ===== Firms / Les membres du Groupe ABC ===== -->
-  <section class="section firms" *ngIf="firms?.length">
-    <div class="section-inner">
+  <section class="section firms py-6 my-6" *ngIf="firms?.length">
+    <div class="section-member">
 
       <!-- Titre -->
       <h2 #firmsTitleEl class="firms-title prehide">{{ firmsTitle }}</h2>
@@ -80,15 +80,15 @@
             <div class="ff-right prehide">
               <img class="ff-portrait" *ngIf="f.partnerImageUrl" [src]="f.partnerImageUrl" alt="" aria-hidden="true" />
 
-              <div class="ff-person mt-lg-4" *ngIf="f.partnerLastname">
+              <div class="ff-person mt-4" *ngIf="f.partnerLastname">
                 <div class="ff-person-name">{{ f.partnerLastname }}</div>
                 <div class="ff-person-name">{{ f.partnerFamilyname }}</div>
 
                 <div class="ff-person-meta">
-                  <img class="ff-org my-lg-3" *ngIf="f.organismLogoUrl" [src]="f.organismLogoUrl" alt="" aria-hidden="true" />
+                  <img class="ff-org my-3" *ngIf="f.organismLogoUrl" [src]="f.organismLogoUrl" alt="" aria-hidden="true" />
                 </div>
 
-                <div class="ff-titles my-lg-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>
+                <div class="ff-titles my-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>
 
                 <div class="ff-cta">
                   <a class="btn-contact" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
@@ -128,11 +128,11 @@
   </section>
 
   <!-- ===== TEACHING ===== -->
-  <section class="section teaching" *ngIf="teachingCourses?.length">
-    <div class="section-inner">
+  <section class="section teaching py-6 my-6" *ngIf="teachingCourses?.length">
+    <div class="section-teaching mt-lg-10">
       <h2 #teachingTitleEl class="teach-title prehide">{{ teachingTitle }}</h2>
 
-      <div #teachingIntroEl class="teach-intro prehide mt-lg-5"
+      <div #teachingIntroEl class="teach-intro prehide mt-5"
            *ngIf="teachingIntroHtml" [innerHTML]="teachingIntroHtml"></div>
 
       <ul class="teach-list" role="list">

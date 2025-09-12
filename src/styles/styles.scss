@@ -199,5 +199,13 @@ ul, li, a {
   border: 0 !important;
 }
 
+ .section-inner{
+    padding-top: 100px;
+
+    @media (max-width: 768px) {
+      padding-top: 70px;
+    }
+  }
+
 
 
