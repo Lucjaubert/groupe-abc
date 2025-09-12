@@ -1515,6 +1515,10 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
       border-radius: 16px;
       z-index: 0;
       background: transparent; /* fixé par .theme-* ci-dessous */
+
+      @media (max-width: 768px) {
+        border-radius: 0px;
+      }
     }
 
     /* contenu au-dessus du fond */

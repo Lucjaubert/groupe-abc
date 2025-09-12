@@ -159,23 +159,21 @@ $rail-w: 40px;
 
 /* ================== TABLETTE (≤ lg) ==================
    On cache seulement la baseline ici, pour ne PAS toucher au desktop. */
-@media (max-width: map.get(vars.$breakpoints, "lg")) {
-  .tagline { display: none !important; }
-}
+
+$rail-w: 40px;
 
 /* ================== MOBILE (≤ md ≈ 768px) ================== */
 @media (max-width: map.get(vars.$breakpoints, "md")) {
 
   .header{
     padding-top: clamp(16px, 4vw, 28px);
-    /* réserve la place du rail droit (extranet/burger) + safe area iOS */
     padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
     background: map.get(vars.$theme-colors, "white");
   }
 
   .header-inner{
     display: grid;
-    grid-template-columns: 1fr auto; /* brand | (espace de droite) */
+    grid-template-columns: 1fr auto; /* brand | rail droit */
     align-items: start;
     row-gap: clamp(8px, 3vw, 16px);
   }
@@ -183,7 +181,7 @@ $rail-w: 40px;
   /* ---- Brand (logo + slogan rouge) ---- */
   .brand{
     grid-column: 1 / 2;
-    grid-template-columns: 90px 12px 1fr; /* logo | gap | texte */
+    display: grid;
     align-items: center;
     text-decoration: none;
     color: inherit;
@@ -192,44 +190,46 @@ $rail-w: 40px;
     inline-size: 89.654px;
     block-size: 90px;
     aspect-ratio: 89.654 / 90;
+    flex-shrink: 0;
   }
   .slogan{
-    max-width: clamp(260px, 64vw, 420px); /* ← on “allonge” la zone texte */
+    max-width: clamp(260px, 64vw, 420px);
     text-align: left;
-    font-size: 20px;      /* maquette */
-    line-height: 1.15;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 20px;             /* maquette */
     font-weight: 400;
-    color: map.get(vars.$theme-colors, "light-red");
-    overflow: visible;     /* évite tout clipping du texte */
+    line-height: normal;         /* maquette = normal */
+    color: #EA4D4D;              /* maquette */
+    overflow: visible;
   }
 
-  /* ---- Baseline (2 lignes) ---- */
+  /* ---- Baseline (texte bleu + logo RICS) ---- */
   .tagline{
     grid-column: 1 / -1;
-    display: block !important;            /* override du hide tablette */
-    align-items: flex-start !important;    /* annule align-items-end */
+    display: block !important;
+    align-items: flex-start !important;
     margin-top: clamp(6px, 2vw, 12px);
   }
   .tagline-text{
     display: inline-block;
-    font-size: 16px;      /* maquette */
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 16px;             /* maquette */
     font-weight: 400;
-    color: map.get(vars.$theme-colors, "light-blue");
-    text-align: left !important;
     line-height: normal;
+    color: #444697;              /* maquette */
+    text-align: left !important;
   }
-  /* On force 2 lignes : on cache seulement le 2e <br> en mobile */
-  .tagline-text br:nth-of-type(2){ display: none; }
-
+  .tagline-text br:nth-of-type(2){ display: none; } /* forcer 2 lignes */
   .rics{
     margin-top: 10px;
-    inline-size: 57px;    /* maquette */
-    block-size: 21px;     /* maquette */
+    inline-size: 57px;           /* maquette */
+    block-size: 21px;            /* maquette */
     aspect-ratio: 19 / 7;
+    flex-shrink: 0;
     margin-left: 0;
   }
 
-  /* ---- Menu : fermé par défaut, ouvert quand .menu-open ---- */
+  /* ---- Menu (inline sous header en mobile quand ouvert) ---- */
   .menu-bar{ grid-column: 1 / -1; padding: 0; width: 100%; }
   .menu{ display: none !important; }
   .header.menu-open .menu,
@@ -249,12 +249,12 @@ $rail-w: 40px;
     text-align: left; padding: 14px 0; font-size: 18px;
   }
 
-  /* ---- Rail droit : Burger (à la place du FR) + EXTRANET ---- */
+  /* ---- Rail droit : Burger (remplace FR) + EXTRANET ---- */
   .right-rail{
     position: fixed;
-    top: clamp(8px, 3vw, 16px);  /* burger plaqué en haut à droite */
+    top: clamp(8px, 3vw, 16px);
     right: 0;
-    width: $rail-w;             /* 40px */
+    width: $rail-w;                 /* 40px */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -262,19 +262,20 @@ $rail-w: 40px;
     z-index: 20;
   }
 
-  /* .lang-switch devient l’icône Burger (on masque “FR”) */
+  /* Burger : trois traits EXACTS (29.668 / 22.039 / 15.258 × 2px) */
   .lang-switch{
     inline-size: $rail-w;
-    block-size: $rail-w;        /* 40×40 */
-    background: transparent;    /* pas de pastille violette */
+    block-size: $rail-w;            /* 40×40 */
+    background: transparent;        /* pas de pastille */
     border-radius: 2px;
-    font-size: 0;               /* masque le texte, garde l’ARIA */
+    font-size: 0;                   /* masque le texte */
     writing-mode: initial;
     transform: none;
     position: relative;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
 
-    /* 3 traits alignés à gauche, tailles exactes de la maquette */
+    /* 3 traits alignés à gauche, positions maquette */
     background-image:
       linear-gradient(#444697, #444697),  /* grand 29.668×2 */
       linear-gradient(#444697, #444697),  /* moyen 22.039×2 */
@@ -288,39 +289,188 @@ $rail-w: 40px;
       left 6px top 8px,   /* grand */
       left 6px top 14px,  /* moyen */
       left 6px top 20px;  /* petit */
+
+    /* Focus visible accessible */
+    &:focus-visible{
+      outline: 2px solid #444697;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
   }
 
-    /* Badge EXTRANET vertical, collé au bord droit, sous le burger */
+  /* Badge EXTRANET : 40 × 180, texte blanc 11px */
   .extranet-badge{
-    inline-size: $rail-w;       /* 40 */
-    block-size: 180px;          /* 180 */
+    inline-size: 40px;
+    block-size: 180px;
+    flex-shrink: 0;
     writing-mode: vertical-rl;
     text-orientation: mixed;
-    transform: rotate(-90deg);  /* lecture de bas en haut comme maquette */
+    transform: rotate(-90deg);      /* lecture de bas en haut */
     background: rgba(68,70,151,.68);
     border-radius: 2px;
     display: flex;
     align-items: center;
     justify-content: center;
-
-    /* >>> AJOUT pour coller à droite et aligner au burger <<< */
-    margin: 0;                   /* supprime tout décalage */
+    margin: 0;
     position: relative;
-    right: 0;                     /* colle au bord droit */
-    align-self: center;         /* s’aligne avec le burger au-dessus */
-  }
+    right: 0;
+    align-self: center;
+    text-decoration: none;
 
-  .extranet-badge .extranet-text{
+    .extranet-text{
+      white-space: nowrap;
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 11px;              /* maquette */
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
+      color: #FFF;
+      transform: rotate(-90deg);    /* remet le texte à l’endroit */
+    }
+    .extranet-slash{ color: map.get(vars.$theme-colors, "light-red"); }
+  }
+}
+
+
+/* ===== Overlay plein écran ===== */
+.menu-overlay{
+  position: fixed; inset: 0; background: #fff; z-index: 50;
+  opacity: 0; visibility: hidden;
+  transition: opacity .25s ease, visibility .25s step-end;
+  display: grid; place-items: start stretch;
+
+  &.open{ opacity: 1; visibility: visible; transition: opacity .25s ease, visibility 0s; }
+}
+
+/* ===== Inner : grille 2 colonnes (contenu | rail 40px) ===== */
+.menu-overlay-inner{
+  --step: clamp(35px, 4.8vh, 70px);
+  --pad: 13px;
+
+  --rail-w: 40px;
+  --logo-h: 90px;
+  --offset-under-logo: 21px;     /* Y de FR/ENG + haut du badge */
+  /* le badge et FR/ENG sont alignés en Y grâce à cette variable */
+
+  padding: var(--pad);
+  padding-right: calc(var(--pad) + env(safe-area-inset-right));
+  padding-left:  calc(var(--pad) + env(safe-area-inset-left));
+  padding-top:   calc(var(--pad) + env(safe-area-inset-top));
+  padding-bottom:calc(var(--pad) + env(safe-area-inset-bottom));
+
+  display: grid;
+  grid-template-columns: 1fr calc(var(--rail-w) + env(safe-area-inset-right));
+  grid-template-areas:
+    "top rail"
+    "nav rail"
+    "bottom rail";
+  column-gap: clamp(8px, 2vw, 16px);
+  row-gap: var(--step);
+  min-height: 100dvh;
+}
+
+/* Haut : logo (colonne 1) */
+.overlay-top{
+  grid-area: top;
+  display: grid;
+  align-items: center;
+}
+.overlay-brand{
+  text-decoration: none; color: inherit;
+  img{ inline-size: 89.654px; block-size: 90px; aspect-ratio: 89.654 / 90; flex-shrink: 0; }
+  .brand-text{
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 20px; font-weight: 400; line-height: normal; color: #EA4D4D;
+  }
+}
+
+/* ===== Wrapper des items : FR/ENG + liste ===== */
+.overlay{
+  grid-area: nav;                 /* occupe la ligne "nav" */
+  display: grid;
+  align-content: start;
+  row-gap: var(--step);           /* rythme vertical entre FR/ENG et la liste */
+}
+
+/* FR / ENG AU-DESSUS de la liste (plus de overlap) */
+.overlay-lang{
+  margin: 0 !important;
+  display: inline-flex; align-items: center; gap: 6px;
+
+  .lang-btn{
+    background: none; border: 0; padding: 0; cursor: pointer;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 14px; color: #444697; opacity: .6;
+    &.active{ opacity: 1; font-weight: 600; }
+  }
+  .sep{ color: #444697; opacity: .6; }
+}
+
+/* Liste : on supprime l'ancien margin-top négatif */
+.overlay-nav{
+  margin: 0;                      /* IMPORTANT: écrase toute règle précédente */
+  display: grid;
+  gap: var(--step);
+  a{
+    text-decoration: none;
+    color: #444697;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 1.1;
+    &:hover{ color: map.get(vars.$theme-colors, "dark-orange"); }
+  }
+}
+
+/* === EXTRANET : TA BASE, placée en colonne 'rail', collé à droite et
+       aligné verticalement avec FR/ENG =============================== */
+.menu-overlay .extranet-badge{
+  grid-area: rail;
+  justify-self: center;
+  align-self: center;
+  margin: 0 !important;
+  margin-top: var(--offset-under-logo);
+  inline-size: 40px;
+  block-size: 180px;
+  flex-shrink: 0;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(-90deg);
+  background: rgba(68, 70, 151, 0.68);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  right: 0;
+  text-decoration: none;
+  bottom: 130px;
+
+  .extranet-text{
     white-space: nowrap;
     font-family: "Plus Jakarta Sans", sans-serif;
-    transform: rotate(-90deg);
     font-size: 11px;
     font-weight: 400;
     line-height: normal;
     color: #FFF;
+    transform: rotate(-90deg);    /* remet le texte à l’endroit */
   }
-  .extranet-badge .extranet-slash{
-    color: map.get(vars.$theme-colors, "light-red");
-  }
+  .extranet-slash{ color: map.get(vars.$theme-colors, "light-red"); }
+}
 
+/* Bas */
+.overlay-bottom{ grid-area: bottom; }
+.overlay-social.linkedin{
+  inline-size: 32px; block-size: 32px;
+  display: inline-grid; place-items: center;
+  img{ inline-size: 100%; block-size: 100%; }
+}
+.overlay-legal{
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12px; color: #444697; opacity: .8;
+}
+
+/* Hauteurs faibles */
+@media (max-height: 680px){
+  .menu-overlay-inner{ --step: clamp(14px, 4.2vh, 28px); }
 }

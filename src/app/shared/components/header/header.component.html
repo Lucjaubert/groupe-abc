@@ -1,4 +1,4 @@
-<header class="header main-wrapper">
+<header class="header main-wrapper" [class.menu-open]="menuOpen">
   <div class="header-inner">
 
     <a routerLink="/" class="brand">
@@ -19,7 +19,8 @@
       <img class="rics mt-6 mt-lg-5" src="assets/img/logos-organisms/rics-logo.svg" alt="RICS">
     </div>
 
-    <nav class="menu-bar">
+    <!-- ACTIVE le menu mobile quand menuOpen = true -->
+    <nav class="menu-bar" [class.open]="menuOpen">
       <ul class="menu">
         <li><a routerLink="/qui-sommes-nous">Qui sommes-nous ?</a></li>
         <li><a routerLink="/nos-services">Nos Services</a></li>
@@ -33,23 +34,96 @@
   </div>
 
   <div class="right-rail d-flex flex-column align-items-end">
+    <!-- Même balise .lang-switch :
+         - en MOBILE : c’est le BURGER -> ouvre/ferme le menu
+         - en DESKTOP : reste le switch de langue -->
     <span class="lang-switch d-flex align-items-center justify-content-center"
           role="button"
           tabindex="0"
-          [attr.aria-label]="'Changer la langue. Langue actuelle: ' + (currentLang | uppercase)"
-          (click)="onToggleLang()"
-          (keydown.enter)="onToggleLang()">
+          [attr.aria-expanded]="menuOpen ? 'true' : 'false'"
+          (click)="onPrimaryAction()"
+          (keydown.enter)="onPrimaryAction()">
       {{ (currentLang | uppercase) }}
     </span>
 
     <a class="extranet-badge d-flex align-items-center justify-content-center mt-8 mt-lg-0"
-      href="#"
-      rel="nofollow"
-      aria-label="Espace Extranet Groupe ABC">
+       href="#"
+       rel="nofollow"
+       aria-label="Espace Extranet Groupe ABC">
       <span class="extranet-text">
         GROUPE ABC <span class="extranet-slash">/</span> EXTRANET
       </span>
     </a>
   </div>
-
 </header>
+
+
+
+<!-- MENU OVERLAY (plein écran, fond blanc) -->
+<div
+  class="menu-overlay"
+  [class.open]="menuOpen"
+  (click)="closeOnBackdrop($event)"
+  [attr.aria-hidden]="menuOpen ? 'false' : 'true'">
+
+  <div class="menu-overlay-inner pe-0 pe-lg-3"
+       role="dialog"
+       [attr.aria-modal]="'true'">
+
+    <!-- Haut : logo + FR/ENG (FR/ENG aligné à 21px sous le haut du logo) -->
+    <div class="overlay-top">
+      <a routerLink="/" class="overlay-brand d-flex" (click)="closeAfterNav()">
+        <img src="assets/img/header/logo-groupe-abc.webp" alt="Groupe ABC">
+        <span class="brand-text ps-3">
+          Groupement<br>d’Experts immobiliers<br>indépendants
+        </span>
+      </a>
+    </div>
+
+    <a class="extranet-badge d-flex align-items-center justify-content-center mt-13 mt-lg-0"
+       href="#"
+       rel="nofollow"
+       aria-label="Espace Extranet Groupe ABC">
+      <span class="extranet-text">
+        GROUPE ABC <span class="extranet-slash">/</span> EXTRANET
+      </span>
+    </a>
+
+    <!-- Liens (rythme vertical géré en SCSS via --step à 35px modulable) -->
+     <div class="overlay">
+      <div class="overlay-lang">
+        <button type="button"
+                class="lang-btn"
+                [class.active]="currentLang==='fr'"
+                (click)="setLang('fr')">FR</button>
+        <span class="sep">/</span>
+        <button type="button"
+                class="lang-btn"
+                [class.active]="currentLang==='en'"
+                (click)="setLang('en')">ENG</button>
+      </div>
+      <nav class="overlay-nav">
+        <a routerLink="/qui-sommes-nous" (click)="closeAfterNav()">QUI SOMMES-NOUS ?</a>
+        <a routerLink="/nos-services" (click)="closeAfterNav()">NOS SERVICES</a>
+        <a routerLink="/biens-et-methodes" (click)="closeAfterNav()">BIENS ET MÉTHODES</a>
+        <a routerLink="/notre-equipe" (click)="closeAfterNav()">ÉQUIPE</a>
+        <a routerLink="/actualites" (click)="closeAfterNav()">ACTUALITÉS</a>
+        <a routerLink="/contact" (click)="closeAfterNav()">CONTACT</a>
+    </nav>
+     </div>
+
+
+    <!-- Bas : logo LinkedIn puis mentions (espacés par --step) -->
+    <div class="overlay-bottom">
+      <a class="mm-social" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
+        <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 45 45" fill="none" aria-hidden="true" focusable="false">
+          <path d="M39.375 34.6875C39.375 37.2769 37.2769 39.375 34.6875 39.375H10.3125C7.72406 39.375 5.625 37.2769 5.625 34.6875V10.3125C5.625 7.72312 7.72406 5.625 10.3125 5.625H34.6875C37.2769 5.625 39.375 7.72312 39.375 10.3125V34.6875Z" fill="#444798"/>
+          <path d="M11.25 17.8125H15.9375V33.75H11.25V17.8125ZM13.5797 15.9375H13.5534C12.1547 15.9375 11.25 14.895 11.25 13.5928C11.25 12.2625 12.1828 11.25 13.6069 11.25C15.0328 11.25 15.9112 12.2625 15.9375 13.5928C15.9375 14.8941 15.0328 15.9375 13.5797 15.9375ZM33.75 33.75H29.0625V25.2197C29.0625 23.1591 27.9141 21.7528 26.07 21.7528C24.6628 21.7528 23.9016 22.7016 23.5322 23.6184C23.3972 23.9466 23.4375 24.8541 23.4375 25.3125V33.75H18.75V17.8125H23.4375V20.265C24.1134 19.2187 25.1719 17.8125 27.8794 17.8125C31.2337 17.8125 33.749 19.9219 33.749 24.6319L33.75 33.75Z" fill="white"/>
+        </svg>
+      </a>
+
+      <p class="mm-legal mt-6">©2025 - Mentions Légales - Crédits</p>
+    </div>
+  </div>
+</div>
+
