@@ -6,9 +6,9 @@
       <h1 #heroTitle id="methods-title" class="page-title prehide">
         {{ hero.title }}
       </h1>
-      <p *ngIf="hero.subtitle" #heroSubtitle class="page-sub prehide">
+      <h3 *ngIf="hero.subtitle" #heroSubtitle class="page-sub mt-6 prehide">
         {{ hero.subtitle }}
-      </p>
+      </h3>
       <div *ngIf="hero.html" #heroIntro class="page-intro prehide" [innerHTML]="hero.html"></div>
     </div>
   </section>
@@ -19,9 +19,9 @@
       <div class="assets-layer"></div>
     </div>
 
-    <div class="section-inner">
+    <div class="section-inner ps-3 ps-lg-0">
       <ul #assetsList class="assets-grid prehide-row" role="list">
-        <li #assetCol class="asset-col" *ngFor="let d of domains; trackBy: trackByIndex">
+        <li #assetCol class="asset-col mt-4 mt-lg-0" *ngFor="let d of domains; trackBy: trackByIndex">
           <div class="asset-head">
             <img
               *ngIf="d.icon"

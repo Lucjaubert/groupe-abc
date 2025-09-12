@@ -1,0 +1,423 @@
+@use "sass:map";
+@use "../../../styles/_variables.scss" as vars;
+
+$blue-hero: #444798; // titres & gros textes (60px)
+$blue: #444697;      // petits textes + contours (14px)
+$red: #E44D4D;       // bouton
+$grey-100: #F5F4F8;
+$dark-blue: map.get(vars.$theme-colors, "dark-blue", #26285e);
+
+/* ===== Hooks d’animation (scopés au composant) ===== */
+.contact-page {
+  .prehide {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    will-change: transform, opacity;
+  }
+  .prehide-row {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .contact-page .prehide,
+  .contact-page .prehide-row{
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+}
+
+/* ===== Section / container ===== */
+.section {
+  position: relative;
+  isolation: isolate;
+
+  .section-inner {
+    width: 100%;
+    max-width: 1440px;
+    margin-inline: auto;
+    padding-block-start: clamp(56px, 8vw, 120px);
+    padding-block-end: 0;
+  }
+}
+
+/* ===== Titre + LinkedIn ===== */
+.contact-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  margin-block-end: clamp(45px, 5vw, 72px);
+
+  .page-title {
+    color: $blue-hero;
+    font-size: clamp(32px, 3.6vw, 60px);
+    font-weight: 400;
+    line-height: 1.1;
+    margin: 0;
+  }
+
+  .linkedin {
+    display: inline-block;
+    line-height: 0;
+
+    img {
+      width: 39.47px;
+      height: 39.47px;
+      flex-shrink: 0;
+      display: block;
+      object-fit: cover;
+    }
+  }
+}
+
+/* ===== Form principal ===== */
+.form-card {
+  inline-size: 100%;
+  border: 0;
+  padding: 0;
+  margin: 0 0 71.5px 0;
+}
+
+/* =========================================================================
+   RADIOS — 2 groupes sur la ligne, alignés sur les colonnes de .form-grid
+   ========================================================================= */
+.radios {
+  width: 100%;
+  margin: 0 0 14px 0;
+  padding: 0;
+  border: 0;
+  --r: 17px;
+}
+
+.rad-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 18px;
+  align-items: start;
+}
+
+.rad-left,
+.rad-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 28px;
+}
+
+/* ===== Radio custom (input masqué + cercle CSS) ===== */
+.radio {
+  position: relative;
+  display: inline-flex !important;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.radio input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.radio > span {
+  position: relative;
+  padding-left: calc(var(--r) + 20px);
+  color: $blue;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: normal;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.radio > span::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: var(--r);
+  height: var(--r);
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid $blue;
+  flex-shrink: 0;
+}
+
+.radio input[type="radio"]:checked + span::after {
+  content: "";
+  position: absolute;
+  left: calc(var(--r) / 2);
+  top: 50%;
+  width: calc(var(--r) * 0.53);
+  height: calc(var(--r) * 0.53);
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: $blue;
+}
+
+.radio input[type="radio"]:focus-visible + span::before {
+  outline: 3px solid rgba(68, 71, 152, .25);
+  outline-offset: 2px;
+}
+
+/* ===== Grille des champs ===== */
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 18px;
+  row-gap: 18px;
+}
+
+.form-grid label {
+  display: grid;
+}
+
+.form-grid label.full {
+  grid-column: 1 / -1;
+}
+
+/* Champs */
+input,
+textarea {
+  width: 100%;
+  border: 1px solid $blue;
+  border-radius: 6px;
+  padding: 10px 12px;
+  font: inherit;
+  color: $blue;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+input {
+  min-block-size: 40px;
+}
+
+textarea {
+  min-block-size: 199px;
+  resize: vertical;
+}
+
+input:focus,
+textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(68, 71, 152, .15);
+}
+
+/* ===== Bouton Envoyer ===== */
+.btn-contact {
+  width: 185px;
+  height: 39px;
+  flex-shrink: 0;
+  display: inline-grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px 0 14px;
+  border: 0;
+  border-radius: 6px;
+  background: $red;
+  color: #FFF;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.btn-contact .ico-mail {
+  inline-size: 31px;
+  block-size: 19px;
+  display: grid;
+  place-items: center;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+/* ===== Bloc coordonnées – grand texte (60px partout) ===== */
+.big-infos {
+  inline-size: 601px;
+  color: $blue-hero;
+  margin-bottom: 40px;
+  --gap-lines: 10px;
+  --gap-site: 67px !important; // ← sera disponible pour .big-infos et tous ses descendants
+}
+
+.big-infos p {
+  margin: 0;
+  font-size: 60px;
+  font-weight: 400;
+  line-height: normal;
+  color: $blue-hero;
+}
+
+.big-infos p + p {
+  margin-top: var(--gap-lines);
+}
+
+.big-infos a {
+  color: inherit;
+  text-decoration: none;
+  font-size: 60px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.big-infos a:hover {
+  text-decoration: underline;
+}
+
+.big-infos .site {
+  margin-top: var(--gap-site);
+}
+
+
+/* ==== Bande “Prise de contact rapide” (si présente) ==== */
+.contact-quick {
+  background: $dark-blue;
+  color: #fff;
+}
+
+.quick-title {
+  font-size: clamp(16px, 2vw, 20px);
+  font-weight: 400;
+  margin: 0 0 12px 0;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.9fr 0.9fr 1fr auto;
+  gap: 12px;
+}
+
+.quick-grid label {
+  display: grid;
+}
+
+.quick-grid input {
+  background: #fff;
+  color: $blue-hero;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, .1);
+  padding: 12px 14px;
+  min-block-size: 42px;
+}
+
+.quick-grid .full {
+  grid-column: 1 / 2;
+}
+
+.send-mini {
+  align-self: center;
+}
+
+.quick-foot {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  margin-top: clamp(16px, 3vw, 24px);
+}
+
+.quick-foot p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #fff;
+  opacity: .85;
+}
+
+/* ===== Accessibilité ===== */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* =======================================================================
+   RESPONSIVE — unique breakpoint à 768px
+   ======================================================================= */
+@media (max-width: 768px) {
+  .rad-left,
+  .rad-right {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: 14px;
+    row-gap: 14px;
+  }
+
+  .contact-head .linkedin img {
+    width: 34.908px;
+    height: 35px;
+    flex-shrink: 0;
+  }
+
+  .contact-head .page-title {
+    color: #444798;
+    font-family: "Plus Jakarta Sans",
+                 system-ui,
+                 -apple-system,
+                 Segoe UI,
+                 Roboto,
+                 "Helvetica Neue",
+                 Arial,
+                 "Noto Sans",
+                 "Apple Color Emoji",
+                 "Segoe UI Emoji",
+                 "Segoe UI Symbol",
+                 "Noto Color Emoji";
+    font-size: 32px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 30px;
+  }
+
+  .big-infos {
+    color: #444697;
+  }
+
+  .big-infos p,
+  .big-infos a {
+    color: #444697;
+    font-family: "Plus Jakarta Sans",
+                 system-ui,
+                 -apple-system,
+                 Segoe UI,
+                 Roboto,
+                 "Helvetica Neue",
+                 Arial,
+                 "Noto Sans",
+                 "Apple Color Emoji",
+                 "Segoe UI Emoji",
+                 "Segoe UI Symbol",
+                 "Noto Color Emoji";
+    font-size: 30px;
+    font-style: normal;
+    font-weight: 300;
+    line-height: 50px;
+  }
+}

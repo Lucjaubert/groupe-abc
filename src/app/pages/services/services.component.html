@@ -12,8 +12,8 @@
   <!-- ===== CONTEXTES ===== -->
   <section class="section contexts" *ngIf="contexts?.length">
     <div class="section-inner px-0">
-      <h2 #ctxTitle class="ctx-title prehide">{{ ctxIntro.title }}</h2>
-      <div #ctxSub class="ctx-sub prehide" [innerHTML]="ctxIntro.html"></div>
+      <h3 #ctxTitle class="ctx-title mt-6 prehide">{{ ctxIntro.title }}</h3>
+      <div #ctxSub class="ctx-sub mt-4 prehide" [innerHTML]="ctxIntro.html"></div>
 
       <ul #ctxList class="ctx-list prehide-row" role="list">
         <li
@@ -59,7 +59,7 @@
   <!-- ===== CLIENTS ===== -->
   <section class="section clients" *ngIf="clients?.length">
     <div class="section-inner px-0">
-      <h2 #clientsTitleEl class="clients-title prehide">{{ clientsTitle }}</h2>
+      <h3 #clientsTitleEl class="clients-title prehide">{{ clientsTitle }}</h3>
 
       <ul #cliList class="cli-list prehide-row" role="list">
         <li
@@ -95,7 +95,7 @@
   <!-- ===== RÉFÉRENCES ===== -->
   <section class="section refs" *ngIf="references?.length">
     <div class="section-inner">
-      <h2 #refsTitleEl class="refs-title prehide">{{ refsTitle }}</h2>
+      <h3 #refsTitleEl class="refs-title prehide">{{ refsTitle }}</h3>
 
       <ul #refsGrid class="refs-grid prehide-row" role="list">
         <li *ngFor="let logo of references; trackBy: trackByIndex">

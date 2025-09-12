@@ -38,6 +38,12 @@ export const routes: Routes = [
       import('./pages/news/news.component').then(m => m.NewsComponent),
     title: 'Actualités – Groupe ABC'
   },
+  {
+    path: 'contact',
+    loadComponent: () =>
+      import('./pages/contact/contact.component').then(m => m.ContactComponent),
+    title: 'Contact – Groupe ABC'
+  },
   { path: '**', redirectTo: '' }
 ];
 

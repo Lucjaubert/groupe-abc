@@ -38,12 +38,28 @@ $white:      map.get(vars.$theme-colors, "white");
 }
 
 .hero-intro{
-  color: $blue;
-  font-size: map.get(vars.$font-size, "30"); /* 16px */
-  line-height: 1.6;
+  /* typo */
+  color: #444697;          /* = $blue-hero */
+  font-size: 16px;         /* tu peux garder map.get(...,"30") si tu préfères */
+  font-weight: 400;
+  line-height: 1.35;       /* ↓ interligne plus serré (1.30–1.40 est idéal) */
+  letter-spacing: 0;       /* optionnel : garantit aucun écart supplémentaire */
+
+  /* Paragraphes injectés via [innerHTML] */
   p{ margin: 0 !important; }
-  p + p{ margin-top: 0 !important; }
+  p + p{ margin-top: 6px !important; }   /* petit écart entre les 2 lignes */
+
+  /* au cas où un style global ajouterait encore un offset */
+  p:first-child{ margin-top: 0 !important; }
+  p:last-child { margin-bottom: 0 !important; }
 }
+
+@media (max-width: 480px){
+  .hero-intro{ font-size: 15px; line-height: 1.32; }
+  .hero-intro p + p{ margin-top: 5px; }
+}
+
+
 
 /* ===== MAP (Où ?) ===== */
 .map-section{
@@ -122,10 +138,9 @@ $white:      map.get(vars.$theme-colors, "white");
 
   @media (min-width: 1280px){
     .map-grid{ grid-template-columns: 2fr 498px; column-gap: 133px; }
-    .map-list{ padding-top: 116px; }
+    .map-list{ padding-top: 100px; }
   }
 }
-
 
 /* ========================= */
 /* FIRMS (Les membres)       */
@@ -137,14 +152,11 @@ $white:      map.get(vars.$theme-colors, "white");
 
 .firms {
   --row-h: 98px;
-  --logo: 60px;
+  --logo: 80px;
   --gap: clamp(16px, 3vw, 24px);
-  /* colonne visuelle de la région : 582px depuis le bord gauche de la ligne */
   --region-left: 582px;
 
-  .section-inner {
-    padding-top: 0 !important;
-  }
+  .section-inner { padding-top: 0 !important; }
 
   .firms-title{
     color: $blue;
@@ -153,19 +165,17 @@ $white:      map.get(vars.$theme-colors, "white");
     margin: 0 0 56px;
   }
 
-  /* ===== Liste ===== */
   .firm-list{
     list-style: none; margin: 0; padding: 0;
-    border-top: map.get(vars.$border-size, "2") solid $blue-hero; /* reste en haut */
+    border-top: map.get(vars.$border-size, "2") solid $blue-hero;
   }
 
   .firm-row{
-    position: relative; /* nécessaire pour positionner .fr-region */
+    position: relative;
     display: block;
-    border-bottom: map.get(vars.$border-size, "2") solid $blue-hero; /* ligne sous tout le contenu */
+    border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
   }
 
-  /* Entête de ligne (logo | nom | chevron) */
   .fr-head{
     display: grid;
     grid-template-columns: var(--logo) 1fr auto; /* logo | nom | chevron */
@@ -174,52 +184,39 @@ $white:      map.get(vars.$theme-colors, "white");
     min-block-size: var(--row-h);
   }
 
-  /* ====== LOGO ====== */
   .fr-logo{
     inline-size: var(--logo);
     block-size: var(--logo);
     flex-shrink: 0;
     aspect-ratio: 1 / 1;
   }
-  .fr-logo img{
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    display: block;
-  }
+  .fr-logo img{ width: 100%; height: 100%; object-fit: contain; display: block; }
+
   @media (max-width: 720px){
-    .fr-logo{
-      inline-size: 45px;
-      block-size: 45px;
-    }
+    .fr-logo{ inline-size: 45px; block-size: 45px; }
   }
 
   .fr-name{
     color: $blue-hero;
     font-size: clamp(18px, 2.1vw, 22px);
     line-height: 1.25;
-    min-width: 0; /* pour éviter l’overflow en grid */
+    min-width: 0;
   }
 
-  /* Région : alignée à 582px (desktop) */
   .fr-region{
     color: $red;
-    font-size: 16px;
+    font-size: 18px;
     white-space: nowrap;
   }
 
-  /* Chevron */
   .fr-toggle{
     background: none; border: 0; color: $blue-hero; cursor: pointer; justify-self: end;
     display: grid; place-items: center; width: 34px; height: 34px;
   }
-  /* ====== CHEVRON : GAUCHE fermé → BAS ouvert ====== */
   .chevron{ width: 24px; height: 35px; transform: rotate(90deg); transition: transform .25s ease; }
   .firm-row.open .chevron{ transform: rotate(0deg); }
 
-  /* ---------- Alignement fixe de la région (desktop) ---------- */
   @media (min-width: 1200px){
-    /* place la région à 582px du bord gauche de la ligne */
     .fr-region{
       position: absolute;
       left: var(--region-left);
@@ -228,47 +225,31 @@ $white:      map.get(vars.$theme-colors, "white");
       margin: 0;
       text-align: left;
     }
-    /* réserve la place pour le nom avant la colonne région */
     .fr-name{
-      /* largeur max = 582px - logo - gap */
       max-width: calc(var(--region-left) - (var(--logo) + var(--gap)));
     }
   }
 
-  /* ---------- Comportement par défaut (tablettes / mobile) ---------- */
   @media (max-width: 1199.98px){
-    .fr-region{
-      position: static;
-      justify-self: end;
-      margin-right: clamp(12px, 2vw, 18px);
-    }
+    .fr-region{ position: static; justify-self: end; margin-right: clamp(12px, 2vw, 18px); }
     .fr-name{ max-width: none; }
   }
 
-  /* Panneau détaillé (dans la ligne ouverte) */
   .fr-details{
     display: grid;
     grid-template-columns: 1fr clamp(240px, 24vw, 300px);
     gap: clamp(24px, 4vw, 40px);
-    padding-bottom: 24px;   /* respire avant la ligne de séparation */
-    align-items: stretch;   /* colonnes à même hauteur */
+    padding-bottom: 24px;
+    align-items: stretch;
   }
 
-  /* Quand c'est ouvert, on cache la petite région rouge de l’entête */
   .firm-row.open .fr-region{ display: none; }
   .ff-region{ color: $red; font-size: 18px; margin-bottom: 6px; }
 
-  /* Colonnes internes en flex pour caler le bas */
-
-  .ff-left {
-    margin-top: 5rem;
-  }
   .ff-left,
-  .ff-right{
-    display: flex;
-    flex-direction: column;
-    min-height: 100%;
-  }
+  .ff-right{ display: flex; flex-direction: column; min-height: 100%; }
+
+  .ff-left { margin-top: 5rem; }
 
   .ff-desc{
     color: $blue;
@@ -279,18 +260,14 @@ $white:      map.get(vars.$theme-colors, "white");
     ul{ margin: 8px 0 0 16px; }
   }
 
-  /* l’email est plaqué en bas de la colonne gauche */
   .ff-mail{
     color: $blue;
     font-size: 14px;
-    text-decoration: none;
+    text-decoration: overline;
+    font-weight: 600;
   }
 
-  /* ===== Bloc de droite resserré ===== */
-  .ff-right{
-    align-items: flex-start;
-    gap: 6px; /* ↓ rapproché */
-  }
+  .ff-right{ align-items: flex-start; gap: 6px; }
 
   .ff-portrait{
     width: clamp(200px, 22vw, 238px);
@@ -298,93 +275,135 @@ $white:      map.get(vars.$theme-colors, "white");
     object-fit: cover; display: block; background: #f5e1dd;
   }
 
-  /* === Nom partenaire (spécifications exactes) === */
   .ff-person-name{
     color: #444697;
     font-size: 36px;
-    font-style: normal;
     font-weight: 400;
-    line-height: 1;   /* compact */
+    line-height: 1;
     margin: 0 0 4px;
   }
 
-  /* Logo organisme (RICS…) */
   .ff-org{
-    width: 68px;
-    height: 25px;
-    flex-shrink: 0;
-    aspect-ratio: 68 / 25;
-    object-fit: contain;
-    display: block;
+    width: 68px; height: 25px; flex-shrink: 0; aspect-ratio: 68 / 25; object-fit: contain; display: block;
   }
   @media (max-width: 720px){
-    .ff-org{
-      width: 56px;
-      height: 21px;
-      aspect-ratio: 56 / 21;
-    }
+    .ff-org{ width: 56px; height: 21px; aspect-ratio: 56 / 21; }
   }
 
-  /* Titres plus rapprochés */
   .ff-titles{
     color: $blue;
     font-size: 13px;
-    line-height: 1.15;   /* ↓ plus serré */
+    line-height: 1.15;
     margin-top: 2px;
   }
 
-  /* CTA (Contact + LinkedIn) — plaqué en bas de la colonne droite */
   .ff-cta{
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: auto;  /* aligne avec ff-mail */
+    display: flex; align-items: center; gap: 12px; margin-top: auto;
   }
 
-  /* Bouton Contact (dimensions imposées) */
   .btn-contact{
-    width: 185px;
-    height: 39px;
-    flex-shrink: 0;
-    display: inline-grid;
-    grid-template-columns: 1fr auto; /* texte | icône enveloppe */
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 10px 0 14px;
-    border: 0;
-    border-radius: 6px;
-    background: $red;
-    color: #FFF;
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 400;
-    line-height: normal;
+    width: 185px; height: 39px; flex-shrink: 0;
+    display: inline-grid; grid-template-columns: 1fr auto; align-items: center; justify-content: space-between;
+    padding: 0 10px 0 14px; border: 0; border-radius: 6px; background: $red; color: #FFF;
+    text-decoration: none; font-size: 13px; font-weight: 400; line-height: normal;
   }
-  .btn-contact .ico-mail{
-    inline-size: 31px;
-    block-size: 19px;
-    display: grid;
-    place-items: center;
-  }
-  .btn-contact .ico-mail svg{ display: block; }
+  .btn-contact .ico-mail{ inline-size: 31px; block-size: 19px; display: grid; place-items: center; }
 
-  /* Lien LinkedIn (icône 39x39) */
   .lk{
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 39px;
-    height: 39px;
-    flex-shrink: 0;
-    padding: 0;
-    border-radius: 6px;
-    background: none; /* le SVG inclut sa pastille */
-    text-decoration: none;
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 39px; height: 39px; flex-shrink: 0; padding: 0; border-radius: 6px; background: none; text-decoration: none;
   }
   .lk-ico{ width: 40px; height: 40px; }
 
   @media (max-width: 720px){
     .fr-details{ grid-template-columns: 1fr; }
+  }
+}
+
+/* Remonter le panneau détaillé sous le trait */
+.firms {
+  --overlap-right: calc(var(--row-h) - 20px);
+
+  .firm-row.open .fr-details{
+    margin-top: calc(-1 * var(--overlap-right));
+  }
+
+  @media (max-width: 1024px){
+    .firm-row.open .fr-details{ margin-top: 0; }
+  }
+}
+
+/* ===== Teaching ===== */
+.section.teaching{
+  --row-h: 98px;
+  --gap: clamp(16px, 3vw, 24px);
+
+  .teach-list{
+    list-style: none; margin: 0; padding: 0;
+    border-top: map.get(vars.$border-size, "2") solid $blue-hero;
+    margin-top: 50px;
+    margin-bottom: 100px;
+  }
+
+  .teach-row{
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: var(--gap);
+    align-items: center;
+    block-size: var(--row-h);
+    border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
+  }
+  .teach-row > *{ min-height: 0; }
+
+  .teach-left{
+    display: grid;
+    grid-template-columns: 95px 1fr;
+    align-items: center;
+    column-gap: var(--gap);
+    justify-self: start;
+  }
+  .teach-logo{ width: 80px; height: 80px; }
+  .teach-logo img{ width: 100%; height: 100%; object-fit: contain; display:block; }
+
+  .teach-school{ display:flex; flex-direction:column; gap:6px; }
+  .ts-school-name{ color:$blue-hero; font-size: clamp(18px, 2.1vw, 22px); line-height: 1.25; }
+  .ts-level, .ts-link{ color:$blue; font-size:14px; text-decoration:none; font-weight: 400;
+    line-height: normal;}
+
+  .teach-speaker{
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    column-gap: 16px;
+    align-items: center;
+    justify-self: start;
+  }
+  .ts-photo{ width: 80px; height: 80px; object-fit: cover; display:block; background:#f5e1dd; }
+  .ts-person{ display:flex; flex-direction:column; justify-content: space-between; gap:6px; min-height: 100%; }
+  .ts-name{ color:$blue-hero; font-size: clamp(16px, 1.9vw, 20px); line-height: 1.1; }
+  .lk{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; }
+  .lk-ico{ width:26px; height:26px; }
+
+  .teach-course{
+    display:flex; flex-direction:column; align-items:flex-start; justify-content: space-between;
+    gap: 20px; text-align:left;
+  }
+
+  .tc-title{
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    white-space: normal;
+    font-family: "Plus Jakarta Sans";
+    font-size: 16px;
+    font-weight: 400;
+    line-height: normal;
+  }
+  .tc-city{ color:$red; font-size: 16px; }
+
+  @media (max-width: 1199.98px){
+    .teach-row{ grid-template-columns: 1fr; row-gap: 14px; block-size: auto; }
+    .teach-left{ grid-template-columns: 80px 1fr; }
+    .tc-title{ white-space: normal; overflow: visible; text-overflow: clip; }
   }
 }
 
@@ -403,8 +422,7 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 }
 
-/* les <p> injectés via [innerHTML] n'ont pas l'attribut _ngcontent,
-   on force donc le style avec ::ng-deep (uniquement pour cette zone) */
+/* ::ng-deep pour les <p> injectés dans ff-titles */
 :host ::ng-deep .ff-titles p {
   margin: 0 !important;
   padding: 0 !important;
@@ -412,20 +430,4 @@ $white:      map.get(vars.$theme-colors, "white");
 }
 :host ::ng-deep .ff-titles p + p {
   margin-top: 2px !important;
-}
-
-/* Remonter le panneau détaillé (les 2 colonnes ensemble) sous le trait
-   sans casser l’alignement bas ff-mail ↔ CTA */
-.firms {
-  --overlap-right: calc(var(--row-h) - 20px);
-
-  .firm-row.open .fr-details{
-    margin-top: calc(-1 * var(--overlap-right));
-  }
-
-  @media (max-width: 1024px){
-    .firm-row.open .fr-details{
-      margin-top: 0;
-    }
-  }
 }

@@ -104,13 +104,126 @@ $white:      map.get(vars.$theme-colors, "white");
   transform: scale(1.04);
 }
 
+
+
+/* =====  Partenaires dans About ===== */
+.core-block.core-right.partners {
+  /* on veut que l’image touche le bas du core-block */
+  padding: 0;                 /* <- on neutralise le padding du core-block */
+  display: flex;              /* pour pouvoir étirer la carte sur toute la hauteur */
+  flex-direction: column;
+  gap: clamp(16px, 2.6vw, 24px);
+
+  /* largeur colonne photo */
+  --team-tile-w: 220px;       /* ajuste si besoin */
+
+  /* petites flèches si tu les utilises */
+  .partners-controls {
+    position: absolute;
+    top: 8px; right: 8px;
+    display: flex; gap: 8px; z-index: 2;
+    .ctrl {
+      appearance: none; border: 0; border-radius: 999px;
+      width: 32px; height: 32px; line-height: 32px;
+      text-align: center; cursor: pointer;
+      background: rgba(0,0,0,.06); color: #26336f;
+      transition: background .2s ease, transform .15s ease;
+      &:hover { background: rgba(0,0,0,.12); }
+      &:active { transform: scale(.96); }
+    }
+  }
+
+  /* La carte occupe 100% de la hauteur du core-block */
+  .member-card {
+    display: grid;
+    grid-template-columns: var(--team-tile-w) 1fr;
+    align-items: stretch;     /* la photo s’étire comme la colonne texte */
+    column-gap: clamp(16px, 2vw, 20px);
+    min-width: 0;
+    flex: 1 1 auto;           /* <- occupe toute la hauteur disponible */
+    /* on remet un padding interne à la carte (puisqu’on a enlevé celui du core-block) */
+    padding: clamp(16px, 2vw, 24px);
+    box-sizing: border-box;
+  }
+
+  .photo-tile {
+    align-self: stretch;      /* s’aligne sur la hauteur de .member-card */
+    width: var(--team-tile-w);
+    height: 100%;             /* prend toute la hauteur disponible */
+    display: grid;
+    place-items: end center;
+    overflow: hidden;
+    background: #F1D2DB;
+  }
+
+  .photo-tile img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;        /* couvre toute la tuile */
+  }
+
+  .member-text {
+    /* la hauteur de référence = celle de la carte, donc la photo suit */
+    height: auto;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .member-area {
+    color: $red;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.2;
+    margin-bottom: 6px;
+  }
+  .member-name .first,
+  .member-name .last {
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 18px;
+    font-weight: 500;
+    line-height: 1.3;
+    margin: 0;
+    white-space: nowrap;
+  }
+  .member-job {
+    margin-top: auto;
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: map.get(vars.$font-size, "30"); /* ~16px */
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.2;
+    p { margin: 0 0 2px 0; }
+    p:last-child { margin-bottom: 0; }
+  }
+}
+
+/* Effet hover léger */
+.core-right.partners .member-card {
+  transform-origin: left center;
+  transition: transform .22s cubic-bezier(.22,.61,.36,1);
+  will-change: transform;
+  &:hover,
+  &:focus-within { transform: scale(1.03); }
+}
+
+/* Mobile : photo un peu moins large */
+@media (max-width: 720px) {
+  .core-right.partners { --team-tile-w: 140px; }
+}
+
+
 /* ========================= */
 /* MESH (maillage)          */
 /* ========================= */
 .mesh {
   .mesh-title {
     color: $blue;
-    font-size: map.get(vars.$font-size, "80"); /* 36 */
+    font-size: map.get(vars.$font-size, "80");
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: normal;
     text-align: center;
@@ -149,6 +262,17 @@ $white:      map.get(vars.$theme-colors, "white");
   .mesh-levels li:first-child { left: 0; }
   .mesh-levels li:nth-child(2) { left: 50%; transform: translateX(-50%); }
   .mesh-levels li:last-child { right: 0; }
+
+  @media (max-width: 768px) {
+
+    .mesh-title {
+      font-size: map.get(vars.$font-size, "50");
+    }
+
+    .mesh-levels li {
+      font-size: 14px;
+    }
+  }
 }
 
 /* ========================= */
@@ -160,7 +284,7 @@ $white:      map.get(vars.$theme-colors, "white");
     gap: clamp(24px, 4vw, 48px);
     grid-template-columns: 1fr;
 
-    @media (min-width: 992px) {
+    @media (min-width: 768px) {
       grid-template-columns: 2fr 400px;
       column-gap: clamp(80px, 10vw, 140px);
       align-items: center; /* centre verticalement la colonne "Où ?" par rapport à la carte */
@@ -205,6 +329,20 @@ $white:      map.get(vars.$theme-colors, "white");
     .map-list li {
       transition: none !important;
       transform: none !important;
+    }
+  }
+
+  @media (max-width: 768px) {
+
+    .map-title {
+      font-size: 24px;
+      font-style: normal;
+      font-weight: 300;
+      line-height: normal;
+    }
+
+    .map-list li {
+      font-size: 18px;
     }
   }
 }
@@ -356,7 +494,6 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 }
 
-
 /* ========================= */
 /* Affiliations / Déontologie*/
 /* ========================= */
@@ -373,75 +510,147 @@ $white:      map.get(vars.$theme-colors, "white");
     border-top: map.get(vars.$border-size, "2") solid $blue-hero;
   }
 
-  /* — Appartenance : 3 colonnes (nom, logo, chevron) — */
+  /* ===== Appartenance ===== */
   .aff-row {
-    --row-h: 98px; /* hauteur minimale de l’entête */
+    --row-h: 98px;
+    --gap-x: 14px; /* petit espace entre logo et texte */
     display: grid;
-    grid-template-columns: 1fr auto auto; /* texte | logo | chevron */
+
+    /* COLONNES : [logo] [texte] [chevron] */
+    grid-template-columns: auto 1fr auto;
     align-items: center;
-    column-gap: clamp(24px, 4vw, 48px);
-    /* >>> on laisse la ligne grandir quand la description est ouverte */
-    min-block-size: var(--row-h);  /* au lieu de block-size */
+    column-gap: var(--gap-x);
+
+    min-block-size: var(--row-h);
     padding-block: 0;
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
   }
+
+  /* Les enfants de .aff-row (logo, nom, bouton) prennent les colonnes de la grille */
   .aff-line { display: contents; }
 
-  /* Typo à 18px comme demandé */
-  .aff-name { color: $blue-hero; font-size: 18px; line-height: 1.3; font-weight: 600; }
-  .aff-name .aff-abbr { font-weight: map.get(vars.$font-weight, "600"); }
-  .aff-name .aff-label { font-weight: map.get(vars.$font-weight, "600"); }
+  /* LOGO collé à la marge gauche */
+  .aff-logo {
+    grid-column: 1;                /* colonne 1 = la plus à gauche */
+    justify-self: start;
+    width: 75px;
+    height: 75px;
+    min-width: 75px;               /* évite les compressions */
+    object-fit: contain;
+    object-position: center left;  /* visuel ancré à gauche */
+    /* aucun padding/margin gauche pour être au bord de la section */
+    margin-left: 0;
+  }
 
-  .aff-logo { width: 75px; height: 75px; object-fit: contain; justify-self: end; }
+  /* TEXTE dans la colonne 2 (pas centré) */
+  .aff-name {
+    grid-column: 2;
+    color: $blue-hero;
+    font-size: 18px;
+    line-height: 1.3;
+    font-weight: 600;
+    text-align: left;
 
-  .aff-toggle { background: none; border: 0; color: $blue-hero; justify-self: end; cursor: pointer; }
-  .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
-  .aff-row.open .chevron { transform: rotate(0deg); }
+    .aff-abbr  { font-weight: map.get(vars.$font-weight, "600"); }
+    .aff-label { font-weight: map.get(vars.$font-weight, "600"); }
+  }
 
-  /* La description n’occupe QUE la 1ère colonne (texte).
-     Du coup elle ne passe plus derrière le logo/chevron. */
-  .aff-desc { grid-column: 1 / 2; padding: 8px 0 16px; }
+  /* CHEVRON complètement à droite */
+  .aff-toggle {
+    grid-column: 3;
+    justify-self: end;
+    background: none;
+    border: 0;
+    color: $blue-hero;
+    cursor: pointer;
+
+    .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
+    &[aria-expanded='true'] .chevron { transform: rotate(0deg); }
+  }
+
+  /* DESCRIPTION sous le texte uniquement (colonne 2) */
+  .aff-desc {
+    grid-column: 2 / 3;           /* alignée sous le nom, pas sous le logo */
+    padding: 8px 0 16px;
+  }
   .aff-desc-inner {
     color: $blue;
-    font-size: 16px !important;      /* taille demandée */
+    font-size: 16px !important;
     line-height: 1.55;
-  }
-  .aff-desc-inner p { margin: 0 0 8px; }
-  .aff-desc-inner p:last-child { margin-bottom: 0; }
 
-  /* — Déontologie : 2 colonnes (nom, chevron) — */
+    p { margin: 0 0 8px; }
+    p:last-child { margin-bottom: 0; }
+  }
+
+  /* ===== Déontologie (inchangé côté structure) ===== */
   .deon-row {
     --row-h: 98px;
     display: grid;
     grid-template-columns: 1fr auto; /* texte | chevron */
     align-items: center;
     column-gap: clamp(24px, 4vw, 48px);
-    /* même correction : hauteur minimale, pas fixe */
     min-block-size: var(--row-h);
     padding-block: 0;
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
   }
   .deon-line { display: contents; }
 
-  /* Harmonisation à 18px ici aussi */
   .deon-name {
     color: $blue-hero;
     font-size: 18px;
     line-height: 1.3;
     font-weight: 600;
+    text-align: left;
   }
-  .deon-toggle { background: none; border: 0; color: $blue-hero; justify-self: end; cursor: pointer; }
-  .deon-row .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
-  .deon-row.open .chevron { transform: rotate(0deg); }
+
+  .deon-toggle {
+    grid-column: 2;
+    justify-self: end;
+    background: none;
+    border: 0;
+    color: $blue-hero;
+    cursor: pointer;
+
+    .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
+    &[aria-expanded='true'] .chevron { transform: rotate(0deg); }
+  }
 
   .deon-desc { grid-column: 1 / -1; padding: 8px 0 18px; }
   .deon-desc-inner {
     color: $blue;
-    font-size: 16px !important;         /* taille unifiée */
+    font-size: 16px !important;
     line-height: 1.55;
+
+    p { margin: 0 0 8px; }
+    p:last-child { margin-bottom: 0; }
   }
-  .deon-desc-inner p { margin: 0 0 8px; }
-  .deon-desc-inner p:last-child { margin-bottom: 0; }
+
+  /* Responsive : logo un peu plus petit */
+  @media (max-width: 768px) {
+    .aff-logo { width: 58px; height: 58px; min-width: 58px; }
+    .aff-row  { --gap-x: 10px; }
+
+    .aff-abbr {
+      font-size: 18px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 30px
+    }
+
+    .aff-title, .deon-title {
+      font-size: 24px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: 30px
+    }
+
+    .aff-label, .deon-name {
+      font-size: 14px;
+      font-style: normal;
+      font-weight: 500;
+      line-height: 10px
+    }
+  }
 }
 
 
@@ -497,13 +706,13 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .timeline-title {
     grid-column: 1 / -1;
-    margin: 0 0 clamp(28px, 4vw, 40px);
+    margin: 0 0 clamp(24px, 4vw, 40px);
     max-width: var(--content-max);
     margin-inline: auto;
     text-align: center;
     color: $blue-hero;
     font-weight: map.get(vars.$font-weight, "regular");
-    font-size: clamp(28px, 3.2vw, 40px);
+    font-size: clamp(24px, 3.2vw, 36px);
     line-height: 1.1;
   }
 
@@ -511,7 +720,7 @@ $white:      map.get(vars.$theme-colors, "white");
     justify-self: end;
     align-self: start;
     color: $blue-hero;
-    font-size: 24px;
+    font-size: clamp(18px, 3.2vw, 24px);
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: 1;
     position: relative;
@@ -543,7 +752,7 @@ $white:      map.get(vars.$theme-colors, "white");
   .tl-item-title {
     color: $blue-hero;
     font-weight: map.get(vars.$font-weight, "regular");
-    font-size: clamp(18px, 2vw, 22px);
+    font-size: clamp(18px, 2vw, 24px);
     line-height: 1.25;
     margin: 0 0 10px;
   }
@@ -558,11 +767,23 @@ $white:      map.get(vars.$theme-colors, "white");
   .tl-desc p { margin: 0; }
   .tl-desc p + p { margin-top: 6px; }
 
-  @media (max-width: 720px) {
+  @media (max-width: 768px) {
     --years-col: 110px;
     --row-gap: 64px;
     --rail-gap: clamp(28px, 8vw, 64px);
     --content-max: 92vw;
+
+    .timeline-title {
+      font-size: 20px;
+      font-style: normal;
+      font-weight: 400;
+      line-height: normal;
+      margin-bottom: 32px;
+    }
+
+    .tl-rail {
+      top: 75px;
+    }
   }
 }
 

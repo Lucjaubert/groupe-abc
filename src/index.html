@@ -5,7 +5,23 @@
     <title>Groupe ABC</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+
+    <!-- Favicon classique (copié à la racine du build par Angular) -->
+    <link rel="icon" href="/favicon.ico" />
+
+    <!-- Variantes favicon servies depuis /assets -->
+    <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/assets/favicons/favicon-96x96.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png" />
+    <link rel="manifest" href="/assets/favicons/site.webmanifest" />
+
+    <!-- Preload des fontes critiques (mêmes noms que dans fonts.scss) -->
+    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Medium.woff2"  as="font" type="font/woff2" crossorigin>
+
+
+    <!-- Couleur de thème (barre d'adresse mobile) -->
+    <meta name="theme-color" content="#444697" />
   </head>
   <body>
     <app-root></app-root>

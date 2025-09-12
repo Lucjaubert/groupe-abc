@@ -41,7 +41,7 @@
       <!-- Titre -->
       <h2 #firmsTitleEl class="firms-title prehide">{{ firmsTitle }}</h2>
 
-      <!-- Liste des firms (chaque <li> gère son propre panneau ouvert) -->
+      <!-- Liste des firms -->
       <ul class="firm-list" role="list">
         <li
           #firmRowEl
@@ -70,16 +70,11 @@
             </button>
           </div>
 
-          <!-- Panneau détaillé INSÉRÉ DANS LA LIGNE ouverte -->
+          <!-- Panneau détaillé ↓ -->
           <div class="fr-details" *ngIf="isOpen(i)" #detailEl>
             <div class="ff-left prehide">
               <div class="ff-region" *ngIf="f.region">{{ f.region }}</div>
-
               <div class="ff-desc mt-2" *ngIf="f.partnerDescHtml" [innerHTML]="f.partnerDescHtml"></div>
-
-              <a class="ff-mail" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
-                {{ f.contactEmail }}
-              </a>
             </div>
 
             <div class="ff-right prehide">
@@ -88,7 +83,6 @@
               <div class="ff-person mt-lg-4" *ngIf="f.partnerLastname">
                 <div class="ff-person-name">{{ f.partnerLastname }}</div>
                 <div class="ff-person-name">{{ f.partnerFamilyname }}</div>
-
 
                 <div class="ff-person-meta">
                   <img class="ff-org my-lg-3" *ngIf="f.organismLogoUrl" [src]="f.organismLogoUrl" alt="" aria-hidden="true" />
@@ -100,7 +94,6 @@
                   <a class="btn-contact" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
                     <span>Contact</span>
                     <span class="ico-mail" aria-hidden="true">
-                      <!-- ton SVG enveloppe (traits #A33536) -->
                       <svg xmlns="http://www.w3.org/2000/svg" width="31" height="19" viewBox="0 0 31 19" fill="none">
                         <path d="M24.7339 12.681L21.2219 9.38599" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
                         <path d="M16.524 9.38501L13.011 12.685" stroke="#A33536" stroke-linecap="round"/>
@@ -118,7 +111,6 @@
                     </span>
                   </a>
 
-                  <!-- LinkedIn (tu avais déjà l’ancre ; on garde le SVG fourni) -->
                   <a class="lk" *ngIf="f.partnerLinkedin" [href]="f.partnerLinkedin" target="_blank" rel="noopener" aria-label="LinkedIn">
                     <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">
                       <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5H34.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
@@ -126,10 +118,64 @@
                     </svg>
                   </a>
                 </div>
-
-
               </div>
             </div>
+          </div>
+
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== TEACHING ===== -->
+  <section class="section teaching" *ngIf="teachingCourses?.length">
+    <div class="section-inner">
+      <h2 #teachingTitleEl class="teach-title prehide">{{ teachingTitle }}</h2>
+
+      <div #teachingIntroEl class="teach-intro prehide mt-lg-5"
+           *ngIf="teachingIntroHtml" [innerHTML]="teachingIntroHtml"></div>
+
+      <ul class="teach-list" role="list">
+        <li #teachingRowEl class="teach-row prehide-row"
+            *ngFor="let c of teachingCourses; trackBy: trackByIndex">
+
+          <!-- Colonne gauche -->
+          <div class="teach-left">
+            <div class="teach-logo" *ngIf="c.schoolLogoUrl">
+              <img [src]="c.schoolLogoUrl" alt="">
+            </div>
+            <div class="teach-school">
+              <div class="ts-school-name">{{ c.schoolName }}</div>
+              <div class="ts-level" *ngIf="c.programLevel">{{ c.programLevel }}</div>
+              <a class="ts-link" *ngIf="c.schoolUrl" [href]="c.schoolUrl"
+                 target="_blank" rel="noopener">Visiter le site</a>
+            </div>
+          </div>
+
+          <!-- Colonne centre -->
+          <div class="teach-speaker" *ngIf="c.speakerName || c.speakerLinkedin || true">
+            <img class="ts-photo"
+                 [src]="c.speakerPhotoUrl || defaultPortrait"
+                 (error)="onTeachImgError($event)"
+                 [alt]="c.speakerName || ''">
+
+            <div class="ts-person py-2">
+              <div class="ts-name" *ngIf="c.speakerName">{{ c.speakerName }}</div>
+
+              <a class="lk" *ngIf="c.speakerLinkedin" [href]="c.speakerLinkedin"
+                 target="_blank" rel="noopener" aria-label="LinkedIn">
+                <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
+                  <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5H34.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
+                  <path d="M7 14.5833H12.4167V33H7V14.5833ZM9.692 12.417H9.662C8.045 12.417 7 11.212 7 9.707 7 8.17 8.078 7 9.724 7 11.371 7 12.386 8.17 12.417 9.707c0 1.504-1.046 2.71-2.725 2.71ZM33 33h-5.417V23.143c0-2.381-1.327-4.006-3.458-4.006-1.626 0-2.506 1.096-2.933 2.155-.156.38-.109 1.428-.109 1.959V33H15.667V14.583h5.416v2.834c.781-1.209 2.004-2.834 5.133-2.834 3.876 0 6.783 2.438 6.783 7.88V33Z" fill="#fff"/>
+                </svg>
+              </a>
+            </div>
+          </div>
+
+          <!-- Colonne droite -->
+          <div class="teach-course py-2">
+            <div class="tc-title">{{ c.courseTitle }}</div>
+            <div class="tc-city" *ngIf="c.city">{{ c.city }}</div>
           </div>
 
         </li>

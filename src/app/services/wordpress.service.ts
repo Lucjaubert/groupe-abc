@@ -1,22 +1,80 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
-import { Observable, of } from 'rxjs';
+
+/* ===== Types exportés (utilisés par About & Team) ===== */
+export interface PartnerCard {
+  photo: string;
+  area: string;        // = region_name
+  nameFirst: string;   // = partner_lastname (prénom)
+  nameLast: string;    // = partner_familyname (nom)
+  jobHtml: string;     // = titles_partner_ | titles_partner
+  linkedin?: string;
+  email?: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class WordpressService {
   private http = inject(HttpClient);
   private api = environment.apiWpV2;
 
-  /* ========== HOMEPAGE (déjà OK) ========== */
+  /* ========== Utils ========== */
+  private shuffle<T>(arr: T[]): T[] {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  /* ========== HOMEPAGE ========== */
   getHomepageData() {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/homepage`, { params })
       .pipe(map(list => list?.[0]?.acf ?? {}));
   }
 
-  /* ========== ABOUT (déjà OK) ========== */
+  getHomepageFeaturedNews(limit = 2): Observable<any[]> {
+    const params = new HttpParams().set('per_page', '1');
+
+    return this.http.get<any[]>(`${this.api}/homepage`, { params }).pipe(
+      map(list => list?.[0]?.acf ?? {}),
+      switchMap(acf => {
+        const rel = acf?.news_featured || [];
+        const ids: number[] = (rel as any[])
+          .map(r => (typeof r === 'number' ? r : (r?.ID ?? r?.id)))
+          .filter((v: any) => Number.isFinite(v));
+
+        if (!ids.length) return of([]);
+
+        const picked = this.shuffle(ids).slice(0, limit);
+        const p = new HttpParams()
+          .set('per_page', String(picked.length))
+          .set('include', picked.join(','))
+          .set('orderby', 'include');
+
+        return this.http.get<any[]>(`${this.api}/news`, { params: p });
+      }),
+      map(posts => posts.map(p => {
+        const post = p?.acf?.post ?? {};
+        return {
+          link: p?.link || '',
+          title: post.post_title || p?.title?.rendered || '',
+          html: post.post_content || p?.excerpt?.rendered || '',
+          logo: post.logo_firm || '',
+          firm: post.nam_firm || '',
+          theme: post.theme || '',
+          authorDate: [post.author, post.date].filter(Boolean).join(' – ')
+        };
+      })),
+      catchError(() => of([]))
+    );
+  }
+
+  /* ========== ABOUT ========== */
   getAboutData() {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/about`, { params })
@@ -37,7 +95,7 @@ export class WordpressService {
     );
   }
 
-  /* ========== NEWS (déjà OK) ========== */
+  /* ========== NEWS ========== */
   getAllNews(): Observable<any[]> {
     const perPage = 100;
     const fetchPage = (page: number): Observable<any[]> => {
@@ -45,9 +103,11 @@ export class WordpressService {
         .set('per_page', String(perPage))
         .set('page', String(page))
         .set('orderby', 'date')
-        .set('order', 'desc');
+        .set('order', 'desc')
+        .set('_embed', '1');
       return this.http.get<any[]>(`${this.api}/news`, { params });
     };
+
     const loop = (page: number, acc: any[]): Observable<any[]> =>
       fetchPage(page).pipe(
         switchMap(batch => {
@@ -57,10 +117,17 @@ export class WordpressService {
         }),
         catchError(() => of(acc))
       );
+
     return loop(1, []);
   }
 
-  /** Résout un ID média WP -> URL publique. */
+  getRandomNews(count = 2): Observable<any[]> {
+    return this.getAllNews().pipe(
+      map(list => this.shuffle(list).slice(0, count)),
+      catchError(() => of([]))
+    );
+  }
+
   getMediaUrl(id: number): Observable<string> {
     return this.http.get<any>(`${this.api}/media/${id}`).pipe(
       map(res => res?.source_url || ''),
@@ -68,9 +135,7 @@ export class WordpressService {
     );
   }
 
-  /* =====================================================
-   *                     SERVICES (OK)
-   * ===================================================== */
+  /* ========== SERVICES (OK) ========== */
   getServicesRaw(): Observable<any[]> {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/services`, { params });
@@ -84,17 +149,12 @@ export class WordpressService {
     );
   }
 
-  /* =====================================================
-   *               📌 BIENS & MÉTHODES (NOUVEAU)
-   * ===================================================== */
-
-  /** Brut (debug) */
+  /* ========== BIENS & MÉTHODES ========== */
   getMethodsRaw(): Observable<any[]> {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/methods`, { params });
   }
 
-  /** Données pour <app-methods> (on renvoie l’objet complet comme pour Services) */
   getMethodsData(): Observable<any> {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/methods`, { params }).pipe(
@@ -103,12 +163,62 @@ export class WordpressService {
     );
   }
 
-  /* ========== TEAM (Équipes) ========== */
+  /* ========== TEAM (inchangé + helpers “partners”) ========== */
   getTeamData() {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/team`, { params }).pipe(
       map(list => list?.[0] ?? {}),
       catchError(err => { console.error('[WP] getTeamData error:', err); return of({}); })
+    );
+  }
+
+  /** Normalise acf.firms -> PartnerCard[] (robuste si c’est au niveau acf directement). */
+  private normalizeTeamPartnersFrom(acfRoot: any): PartnerCard[] {
+    const firms = (acfRoot?.firms ?? acfRoot) || {};
+    const out: PartnerCard[] = [];
+
+    Object.keys(firms).forEach(key => {
+      if (!/^firm_\d+$/i.test(key)) return;
+      const f = firms[key] || {};
+
+      const area     = (f.region_name ?? '').toString().trim();
+      const first    = (f.partner_lastname ?? '').toString().trim();
+      const last     = (f.partner_familyname ?? '').toString().trim();
+      const jobHtml  = (f.titles_partner_ ?? f.titles_partner ?? '').toString();
+      const photo    = (f.partner_image ?? '').toString().trim();
+      const linkedin = (f.partner_lk ?? '').toString().trim();
+      const email    = (f.contact_email ?? '').toString().trim();
+
+      if ((first || last) && photo) {
+        out.push({ photo, area, nameFirst: first, nameLast: last, jobHtml, linkedin, email });
+      }
+    });
+
+    return out;
+  }
+
+  /** Tous les partenaires (pour About). */
+  getTeamPartners(): Observable<PartnerCard[]> {
+    const params = new HttpParams().set('per_page', '1');
+    return this.http.get<any[]>(`${this.api}/team`, { params }).pipe(
+      map(list => this.normalizeTeamPartnersFrom(list?.[0]?.acf ?? {})),
+      catchError(err => {
+        console.error('[WP] getTeamPartners error:', err);
+        return of([]);
+      })
+    );
+  }
+
+  /** Cherche un partenaire par nom “Prénom Nom” (insensible à la casse). */
+  getTeamPartnerByName(namePart: string): Observable<PartnerCard | null> {
+    const q = (namePart || '').trim().toLowerCase();
+    if (!q) return of(null);
+
+    return this.getTeamPartners().pipe(
+      map((cards: PartnerCard[]) =>
+        cards.find(c => (`${c.nameFirst} ${c.nameLast}`.toLowerCase()).includes(q)) || null
+      ),
+      catchError(() => of(null))
     );
   }
 }

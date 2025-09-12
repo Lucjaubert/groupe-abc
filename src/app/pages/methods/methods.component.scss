@@ -43,7 +43,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 }
 .page-sub{
   color: $blue;
-  font-size: $fs24;
+  font-size: clamp(24px, 3.2vw, 36px);
   margin: 0 0 18px 0;
 }
 .page-intro{
@@ -114,12 +114,12 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 12px;
+    margin-bottom: 20px;
   }
   .asset-icon{ width: 32px; height: 32px; object-fit: contain; }
   .asset-title{
     color: $blue;
-    font-size: $fs20;
+    font-size: clamp(18px, 2.5vw, 24px);
     font-weight: 600;
     margin: 0;
     line-height: 1.1;
@@ -138,9 +138,9 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 
       color: $blue;
       font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: $fs16;
+      font-size: clamp(14px, 2.2vw, 16px);
       font-weight: map.get(vars.$font-weight, "regular");
-      line-height: normal;
+      line-height: 25px;
       will-change: transform, opacity;
     }
 
@@ -149,7 +149,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
       content: "—";
       color: $red;
       font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 22px;
+      font-size: clamp(14px, 2.2vw, 16px);
       font-weight: map.get(vars.$font-weight, "regular");
       line-height: normal;
       margin-right: 6px;
@@ -173,6 +173,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
       margin: 6px 0 0;
       color: $blue;
       line-height: 1.35;
+      font-size: clamp(14px, 2.2vw, 16px);
 
       /* puce visuelle (pas absolue → meilleur alignement) */
       &::before{
@@ -186,7 +187,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     }
   }
 
-  @media (max-width: 900px){
+  @media (max-width: 768px){
     .assets-grid{ grid-template-columns: 1fr; }
 
     /* option: desserre un peu en mobile */
@@ -194,7 +195,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
       min-height: auto;
       padding-block: 24px;
     }
-    .assets-bg{ height: auto; min-height: var(--band-h); }
+    .assets-bg{ height: -webkit-fill-available; min-height: var(--band-h); }
   }
 }
 
@@ -220,7 +221,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 
   .values-title{
     color: $blue;
-    font-size: $fs36;
+    font-size: clamp(24px, 3.2vw, 36px);
     font-weight: 400;
     line-height: 1.2;
     margin: 0 0 var(--gap-title-wheel); /* 0 en haut pour ne pas casser les 74px */
@@ -255,7 +256,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     --gap-title-wheel: 2px;
     --tighten: 14px;
 
-    .wheel{ --size: clamp(420px, 92vw, 760px); }
+    .wheel{ --size: clamp(100px, 92vw, 760px); }
     .wheel-img{ width: min(100%, calc(var(--size) * 0.98)); }
   }
 }
@@ -314,7 +315,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 
   .eval-title{
     color: $blue;
-    font-size: $fs36;
+    font-size: clamp(24px, 3.2vw, 36px);
     font-weight: 400;
     line-height: normal;
     margin: 0 0 var(--evals-title-bottom-gap); /* 0 en haut, gap contrôlé en bas */
@@ -340,7 +341,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   .row-line > .eval-icon,
   .row-line > .row-name,
   .row-line > .row-toggle{
-    block-size: 98px;
+    block-size: clamp(78px, 10vw, 98px);
     display: flex;
     align-items: center;
   }
@@ -354,7 +355,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 
   .row-name{
     color: $blue;
-    font-size: $fs24;
+    font-size: clamp(14px, 3vw, 24px);
     font-weight: 400;
     line-height: 1;
   }
@@ -389,6 +390,16 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     p{ margin: 0 0 10px; }
     p:last-child{ margin-bottom: 0; }
   }
+
+  @media (max-width: 768px) {
+
+    .chevron {
+      width: 18px;
+      height: 18px;
+      transform: rotate(90deg);
+      transition: transform .25s ease;
+    }
+  }
 }
 
 
@@ -399,7 +410,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   margin-bottom: 105px;
   .pilot-title{
     color: $blue;
-    font-size: $fs36;
+    font-size: clamp(24px, 3.2vw, 36px);
     font-weight: 400;
     line-height: 1.2;
     margin: clamp(80px, 10vw, 120px) 0 16px;
