@@ -5,13 +5,13 @@ import {
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { forkJoin, firstValueFrom } from 'rxjs';
-import { WordpressService } from '../../services/wordpress.service';
+import { WordpressService, PartnerCard } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
 /* =========================
- *  Types
+ *  Types locaux
  * ========================= */
 type Intro        = { title: string; content: string };
 type CoreValue    = { title?: string; html?: string; icon?: string|number };
@@ -52,45 +52,49 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   mesh?: Mesh;
   mapSection?: MapSection;
 
+  /** Cartes partenaires affichées (1 visible à la fois) */
+  partners: PartnerCard[] = [];
+  /** Tous les partenaires (source du carrousel) */
+  private allPartners: PartnerCard[] = [];
+  private partnerIndex = 0;
+  private autoMs = 4000;              // ← 3 secondes entre deux partenaires
+  private autoTimer: any;
+
   /* =========================
    *  Refs pour animations
    * ========================= */
-  // CORE
   @ViewChild('coreTitle') coreTitle!: ElementRef<HTMLElement>;
   @ViewChild('coreLeft') coreLeft!: ElementRef<HTMLElement>;
   @ViewChildren('whereItem') whereItems!: QueryList<ElementRef<HTMLElement>>;
-
-  // MESH
-  @ViewChild('meshTitleEl') meshTitleEl!: ElementRef<HTMLElement>;
+  @ViewChild('meshTitleEl')  meshTitleEl!: ElementRef<HTMLElement>;
   @ViewChild('meshSkylineEl') meshSkylineEl!: ElementRef<HTMLElement>;
   @ViewChild('meshLevelsEl') meshLevelsEl!: ElementRef<HTMLElement>;
   @ViewChildren('meshLevelEl') meshLevelEls!: QueryList<ElementRef<HTMLElement>>;
-
-  // MAP
   @ViewChild('mapImageEl') mapImageEl!: ElementRef<HTMLElement>;
   @ViewChild('mapTitleEl') mapTitleEl!: ElementRef<HTMLElement>;
   @ViewChildren('mapItem') mapItems!: QueryList<ElementRef<HTMLElement>>;
-
-  // VALUES
   @ViewChild('valuesTitleEl') valuesTitleEl!: ElementRef<HTMLElement>;
   @ViewChildren('valueItemEl') valueItemEls!: QueryList<ElementRef<HTMLElement>>;
-
-  // AFFILIATIONS
   @ViewChild('affTitleEl') affTitleEl!: ElementRef<HTMLElement>;
   @ViewChildren('affRowEl') affRowEls!: QueryList<ElementRef<HTMLElement>>;
-
-  // DEONTOLOGY
   @ViewChild('deonTitleEl') deonTitleEl!: ElementRef<HTMLElement>;
   @ViewChildren('deonRowEl') deonRowEls!: QueryList<ElementRef<HTMLElement>>;
-
-  // TIMELINE
   @ViewChild('tlRail') tlRail!: ElementRef<HTMLElement>;
   @ViewChild('tlTitleEl') tlTitleEl!: ElementRef<HTMLElement>;
   @ViewChildren('tlYearEl') tlYearEls!: QueryList<ElementRef<HTMLElement>>;
   @ViewChildren('tlBodyEl') tlBodyEls!: QueryList<ElementRef<HTMLElement>>;
 
-  /* Hover handlers cleanup */
   private hoverCleanup: Array<() => void> = [];
+
+  // Petit utilitaire local pour mélanger un tableau
+  private shuffle<T>(arr: T[]): T[] {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
 
   /* ========================= */
   /* Data loading              */
@@ -99,7 +103,8 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     forkJoin({
       about: this.wp.getAboutData(),
       whereFromHome: this.wp.getHomepageIdentityWhereItems(),
-    }).subscribe(async ({ about, whereFromHome }) => {
+      teamPartners: this.wp.getTeamPartners(),
+    }).subscribe(async ({ about, whereFromHome, teamPartners }) => {
       /* Intro */
       const hero = about?.hero ?? {};
       const introBody: string = about?.intro_body || '';
@@ -190,6 +195,15 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       this.timeline = events;
 
+      /* ===== PARTENAIRES (carrousel auto) =====
+         - Mélange la liste
+         - Démarre sur un index aléatoire
+      */
+      this.allPartners = Array.isArray(teamPartners) ? this.shuffle(teamPartners) : [];
+      const startOn = Math.floor(Math.random() * Math.max(1, this.allPartners.length));
+      this.setActivePartner(startOn);
+      this.startAutoRotate();
+
       /* SEO */
       this.seo.update({
         title: this.intro.title || 'Qui sommes-nous ? – Groupe ABC',
@@ -200,6 +214,23 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       /* Bind anims quand DOM prêt */
       this.scheduleBind();
     });
+  }
+
+  /* ===== Carrousel partenaires ===== */
+  private setActivePartner(i: number) {
+    if (!this.allPartners.length) { this.partners = []; return; }
+    this.partnerIndex = (i + this.allPartners.length) % this.allPartners.length;
+    this.partners = [ this.allPartners[this.partnerIndex] ];
+  }
+  nextPartner() { this.setActivePartner(this.partnerIndex + 1); }
+  prevPartner() { this.setActivePartner(this.partnerIndex - 1); }
+  startAutoRotate() {
+    this.stopAutoRotate();
+    if (this.allPartners.length <= 1) return;
+    this.autoTimer = setInterval(() => this.nextPartner(), this.autoMs);
+  }
+  stopAutoRotate() {
+    if (this.autoTimer) { clearInterval(this.autoTimer); this.autoTimer = null; }
   }
 
   /* ========================= */
@@ -282,6 +313,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     try { this._ro?.disconnect(); } catch {}
     try { gsap.globalTimeline.clear(); } catch {}
     this.clearHoverBindings();
+    this.stopAutoRotate(); // ← important pour le carrousel
   }
 
   private bindScheduled = false;
@@ -349,7 +381,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     if (skyline) {
       gsap.fromTo(skyline, { autoAlpha: 0, y: 18 }, {
         autoAlpha: 1, y: 0, duration: 0.55, ease: EASE, delay: 0.05,
-        scrollTrigger: { trigger: skyline, start: 'top 85%', once: true }
+        scrollTrigger: { trigger: skyline, start: 'top 75%', once: true }
       });
     }
     if (meshLevels && meshLevelItems.length) {

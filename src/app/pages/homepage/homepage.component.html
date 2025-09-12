@@ -20,7 +20,7 @@
   </div>
 
   <div class="hero-overlay pb-10">
-    <div class="hero-content" aria-live="polite">
+    <div class="hero-content mt-9 mt-lg-0" aria-live="polite">
       <h1 class="hero-title" #heroTitle>{{ currentSlide?.title }}</h1>
       <p class="hero-subtitle" #heroSubtitle>{{ currentSlide?.subtitle }}</p>
     </div>
@@ -38,7 +38,7 @@
   </div>
 </section>
 
-
+<!-- ===== Key figure ===== -->
 
   <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">
     <ul>
@@ -60,7 +60,7 @@
     <div class="identity-grid">
 
       <!-- Qui ? (colonne gauche) -->
-      <article class="who">
+      <article class="who py-5 py-lg-5">
         <h2 class="block-title">{{ identity.whoTitle }}</h2>
 
         <div class="who-text mt-5" [innerHTML]="identity.whoHtml"></div>
@@ -78,7 +78,7 @@
       </article>
 
       <!-- Où ? (colonne droite) -->
-      <div class="where" [class.open]="whereOpen">
+      <div class="where py-5 py-lg-5" [class.open]="whereOpen">
         <div class="where-head">
           <h3 class="block-title">{{ identity.whereTitle }}</h3>
 
@@ -116,7 +116,7 @@
   <section class="wh mt-lg-5" *ngIf="whatHow">
     <div class="wh-grid">
       <div class="wh-left">
-        <article class="what">
+        <article class="what py-5 py-lg-5">
           <h3 class="block-title">{{ whatHow.whatTitle }}</h3>
 
           <ul class="dash-list mt-5">
@@ -136,7 +136,7 @@
         </article>
 
         <!-- Download : rendu même si pas de fichier pour garder l’alignement -->
-        <article class="download">
+        <article class="download py-5 py-lg-5">
           <a class="dl-link"
             [class.disabled]="!presentation.file"
             [attr.href]="presentation.file || null"
@@ -191,9 +191,9 @@
 
   <div class="contexts-inner px-0">
     <div class="contexts-head">
-      <h3 id="contexts-title" class="contexts-title">{{ contexts?.title }}</h3>
+      <h3 id="contexts-title" class="contexts-title mt-lg-0 mt-8">{{ contexts?.title }}</h3>
 
-      <div class="contexts-actions">
+      <div class="contexts-actions mt-6 mt-lg-0 mb-5 mb-lg-0">
         <button type="button" class="cta-btn">
           <span class="cta-label">Plus d'infos</span>
           <span class="cta-plus" aria-hidden="true">
@@ -294,7 +294,8 @@
         </div>
 
         <div class="team-cta">
-          <button type="button" class="cta-btn">
+          <button type="button" class="cta-btn"
+                [routerLink]="['/notre-equipe']">
             <span class="cta-label">Découvrez notre équipe</span>
             <span class="cta-plus" aria-hidden="true">
               <svg viewBox="0 0 24 24" class="icon-plus"><path d="M12 5v14M5 12h14"/></svg>

@@ -87,7 +87,7 @@ $rail-w: 40px;
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center; /* centrage par défaut */
+  justify-content: center; /* centrage horizontal */
   min-width: 0;
 }
 
@@ -107,45 +107,12 @@ $rail-w: 40px;
   font-weight: 500;
   line-height: 1;
   color: #444697;
-  text-align: center;
+  text-align: center;     /* texte centré */
   padding: 8px 0;
 }
 .menu a:hover {
   color: map.get(vars.$theme-colors, "dark-orange");
 }
-
-/* Item 1 collé à gauche */
-.menu li:first-child {
-  justify-content: flex-start;
-}
-.menu li:first-child a {
-  text-align: left;
-  padding-left: 0;   /* collé au bord gauche */
-}
-
-/* Item 6 collé à droite */
-.menu li:last-child {
-  justify-content: flex-end;
-}
-.menu li:last-child a {
-  text-align: right;
-  padding-right: 0;  /* collé au bord droit */
-}
-
-/* Items centraux (2 → 5) parfaitement centrés */
-.menu li:nth-child(2),
-.menu li:nth-child(3),
-.menu li:nth-child(4),
-.menu li:nth-child(5) {
-  justify-content: center;
-}
-.menu li:nth-child(2) a,
-.menu li:nth-child(3) a,
-.menu li:nth-child(4) a,
-.menu li:nth-child(5) a {
-  text-align: center;
-}
-
 
 /* ----- RAIL DROIT ----- */
 .right-rail {
@@ -225,9 +192,6 @@ $rail-w: 40px;
   }
   .menu li {
     flex: 0 0 auto;
-  }
-  .menu li + li::before {
-    left: -10px;
-    height: 14px;
+    justify-content: center;
   }
 }

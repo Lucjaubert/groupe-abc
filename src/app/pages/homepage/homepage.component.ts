@@ -64,9 +64,10 @@ type TeamMember = {
 type NewsItem = {
   logo?: string;
   firm?: string;
+  theme?: string;
   authorDate?: string;
   title?: string;
-  html?: string;   // contenu riche (excerpt)
+  html?: string;
   link?: string;
 };
 type News = { title: string; items: NewsItem[] };
@@ -131,7 +132,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ---------- TEAM ---------- */
   teamTitle = '';
   teamMembers: TeamMember[] = [];
-  teamPages: TeamMember[][] = [];      // groupes de 2
+  teamPages: TeamMember[][] = [];
   teamPageIndex = 0;
   private teamAutoplayRef: any = null;
   teamAutoplayMs = 5000;
@@ -153,7 +154,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /*                        LIFECYCLE                     */
   /* ==================================================== */
   ngOnInit(): void {
-    // Registre ScrollTrigger au plus tôt (idempotent)
     try { gsap.registerPlugin(ScrollTrigger); } catch {}
 
     this.wp.getHomepageData().subscribe(acf => {
@@ -177,10 +177,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.extractTeamSection();
       this.startTeamAutoplay();
 
-      // NEWS
-      this.extractNewsSection();
+      // NEWS (depuis le champ Relation `news_featured`)
+      this.loadFeaturedNews();
 
-      // (Re)lier les animations une fois les *ngIf rendus
       setTimeout(() => { this.bindScrollAnimations(); }, 0);
     });
 
@@ -188,7 +187,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    // IO Key Figures
     const io = new IntersectionObserver(entries => {
       for (const e of entries) {
         if (e.isIntersecting) {
@@ -207,13 +205,12 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.viewReady = true;
     this.tryInitHeroIntro();
 
-    // Ce rappel “sécurité” si le contenu était déjà prêt
     setTimeout(() => { this.bindScrollAnimations(); }, 0);
   }
 
   ngOnDestroy(): void {
-    this.clearAutoplay();        // hero
-    this.clearTeamAutoplay();    // team
+    this.clearAutoplay();
+    this.clearTeamAutoplay();
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
     try { gsap.globalTimeline.clear(); } catch {}
@@ -243,15 +240,11 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /** Essaie d’initialiser l’intro quand (1) la vue est prête et (2) les slides sont chargés */
   private tryInitHeroIntro(): void {
-    if (this.heroIntroDone) return;
-    if (!this.viewReady) return;
-    if (!this.heroDataReady) return;
+    if (this.heroIntroDone || !this.viewReady || !this.heroDataReady) return;
     queueMicrotask(() => setTimeout(() => this.initHeroIntroNow(), 0));
   }
 
-  /** Intro immédiate : H1 → P → dots (BG déjà visible) */
   private initHeroIntroNow(): void {
     if (this.heroIntroDone) return;
 
@@ -271,6 +264,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (titleEl) gsap.set(titleEl, { autoAlpha: 0, y: 16, willChange: 'transform,opacity' });
     if (subEl)   gsap.set(subEl,   { autoAlpha: 0, y: 12, willChange: 'transform,opacity' });
+
     const heroEl = document.getElementById('hero');
     const dots = heroEl ? Array.from(heroEl.querySelectorAll<HTMLButtonElement>('.hero-dots .hero-dot')) : [];
     if (dots.length) gsap.set(dots, { autoAlpha: 0, y: 10, willChange: 'transform,opacity' });
@@ -301,7 +295,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /** Navigation Hero */
+  /* Navigation Hero */
   goTo(i: number): void {
     if (!this.heroSlides.length) return;
     const len = this.heroSlides.length;
@@ -310,7 +304,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   next(): void { this.goTo(this.heroIndex + 1); }
   prev(): void { this.goTo(this.heroIndex - 1); }
 
-  /** Autoplay */
+  /* Autoplay */
   startAutoplay(): void {
     this.clearAutoplay();
     if (this.heroSlides.length > 1) {
@@ -483,8 +477,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ==================================================== */
-  /*       ANIMS: Identity + WH + Contexts + Clients      */
-  /*                + Team + News (ScrollTrigger)         */
+  /*       ANIMS (ScrollTrigger)                          */
   /* ==================================================== */
   private bindScrollAnimations(): void {
     const EASE = 'power3.out';
@@ -493,17 +486,16 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         ? (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false)
         : false;
 
-    // Durées / cadence (toutes sections)
     const DUR_TITLE   = prefersReduced ? 0.001 : 0.55;
     const DUR_BLOCK   = prefersReduced ? 0.001 : 0.45;
     const STAG_SMALL  = prefersReduced ? 0     : 0.06;
-    const STAG_ITEM   = prefersReduced ? 0     : 0.10; // “domino” pour grilles
+    const STAG_ITEM   = prefersReduced ? 0     : 0.10;
     const STAG_CARD   = prefersReduced ? 0     : 0.08;
 
     const els = <T extends Element>(xs: (T | null | undefined)[]) =>
       xs.filter(Boolean) as T[];
 
-    /* ======================= IDENTITY (Qui / Où) ======================= */
+    // Identity
     {
       const identity = document.getElementById('identity');
       if (identity) {
@@ -529,7 +521,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    /* ===================== WH (Quoi / Comment / DL) ==================== */
+    // WH
     {
       const wh = document.querySelector<HTMLElement>('.wh');
       if (wh) {
@@ -572,14 +564,12 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    /* ======================= CONTEXTES (domino) ======================== */
+    // Contexts
     {
       const ctx = document.querySelector<HTMLElement>('.contexts');
       if (ctx) {
         const title = ctx.querySelector<HTMLElement>('.contexts-title');
-        const grid  = ctx.querySelector<HTMLElement>('.contexts-grid');
         const items = Array.from(ctx.querySelectorAll<HTMLElement>('.contexts-grid .ctx-item'));
-
         const icons = items.map(li => li.querySelector<HTMLElement>('.ctx-icon, .ctx-img') || null);
         const labels = items.map(li => li.querySelector<HTMLElement>('.ctx-label') || null);
 
@@ -592,20 +582,19 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
           scrollTrigger: { trigger: ctx, start: 'top 75%', once: true }
         });
 
-        tl.to(title, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0);
+        tl.to(title, { autoAlpha: 1, y: 0, duration: 0.55 }, 0);
 
-        // Domino : pour chaque case -> icône, puis label ; cases de gauche à droite.
         items.forEach((_, i) => {
-          const at = 0.12 + i * STAG_ITEM;
+          const at = 0.12 + i * (prefersReduced ? 0 : 0.10);
           const ico = icons[i];
           const lbl = labels[i];
-          if (ico) tl.to(ico, { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, at);
-          if (lbl) tl.to(lbl, { autoAlpha: 1, y: 0, duration: DUR_BLOCK * 0.9 }, at + 0.08);
+          if (ico) tl.to(ico, { autoAlpha: 1, y: 0, duration: 0.45 }, at);
+          if (lbl) tl.to(lbl, { autoAlpha: 1, y: 0, duration: 0.40 }, at + 0.08);
         });
       }
     }
 
-    /* =========================== CLIENTS ============================== */
+    // Clients
     {
       const clients = document.querySelector<HTMLElement>('.clients');
       if (clients) {
@@ -619,50 +608,20 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         const tl = gsap.timeline({
           defaults: { ease: EASE },
           scrollTrigger: { trigger: clients, start: 'top 80%', once: true }
-        } as any); // typing guard if needed
+        } as any);
 
-        // fix typo: using gsap correctly
         (tl as gsap.core.Timeline)
-          .to(icon,  { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, 0.00)
-          .to(title, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0.10);
+          .to(icon,  { autoAlpha: 1, y: 0, duration: 0.45 }, 0.00)
+          .to(title, { autoAlpha: 1, y: 0, duration: 0.55 }, 0.10);
 
         if (listItems.length) {
-          (tl as gsap.core.Timeline).to(listItems, { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_SMALL }, 0.28);
+          (tl as gsap.core.Timeline)
+            .to(listItems, { autoAlpha: 1, y: 0, duration: 0.45, stagger: prefersReduced ? 0 : 0.06 }, 0.28);
         }
       }
     }
 
-    /* ============================= TEAM =============================== */
-    {
-      const team = document.querySelector<HTMLElement>('#team.team');
-      if (team) {
-        const line1 = team.querySelector<HTMLElement>('.team-title .line1');
-        const line2 = team.querySelector<HTMLElement>('.team-title .line2');
-        const cards = Array.from(team.querySelectorAll<HTMLElement>('.team-grid .member-card'));
-        const dots  = team.querySelector<HTMLElement>('.team-dots');
-        const cta   = team.querySelector<HTMLElement>('.team-cta');
-
-        gsap.set(els([line1, line2]), { autoAlpha: 0, y: 16 });
-        if (cards.length) gsap.set(cards, { autoAlpha: 0, y: 14 });
-        gsap.set(els([dots, cta]), { autoAlpha: 0, y: 10 });
-
-        const tl = gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: team, start: 'top 78%', once: true }
-        });
-
-        tl.to(line1, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0)
-          .to(line2, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0.10);
-
-        if (cards.length) {
-          tl.to(cards, { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_CARD }, 0.28);
-        }
-
-        tl.to(els([dots, cta]), { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, '+=0.10');
-      }
-    }
-
-    /* ============================== NEWS ============================== */
+    // News
     {
       const news = document.querySelector<HTMLElement>('.news');
       if (news) {
@@ -672,25 +631,31 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
         gsap.set(title, { autoAlpha: 0, y: 16 });
         if (cards.length) gsap.set(cards, { autoAlpha: 0, y: 14 });
-        gsap.set(side, { autoAlpha: 0, y: 10 });
+        if (side) gsap.set(side, { autoAlpha: 0, y: 10 });
 
         const tl = gsap.timeline({
           defaults: { ease: EASE },
           scrollTrigger: { trigger: news, start: 'top 80%', once: true }
         });
 
-        tl.to(title, { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0);
+        tl.to(title, { autoAlpha: 1, y: 0, duration: 0.55 }, 0);
 
         if (cards.length) {
-          tl.to(cards, { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_CARD }, 0.15);
+          tl.to(cards, { autoAlpha: 1, y: 0, duration: 0.45, stagger: prefersReduced ? 0 : 0.08 }, 0.15);
         }
 
-        tl.to(side, { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, '+=0.10');
+        if (side) tl.to(side, { autoAlpha: 1, y: 0, duration: 0.45 }, '+=0.10');
       }
     }
 
-    // Clean + reposition
     try { ScrollTrigger.refresh(); } catch {}
+  }
+
+  /* ===== NEWS (Home) ===== */
+  private loadFeaturedNews(): void {
+    this.wp.getHomepageFeaturedNews(2).subscribe(items => {
+      this.news = items.length ? { title: 'Actualités', items } : null;
+    });
   }
 
   /* ==================================================== */
@@ -708,7 +673,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ==================================================== */
-  /*                         CLIENTS                       */
+  /*                         CLIENTS                      */
   /* ==================================================== */
   private extractClientsSection(): void {
     const c = this.acf?.clients_section || {};
@@ -717,28 +682,20 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       c.client_item_4, c.client_item_5, c.client_item_6
     ].filter(Boolean) as string[];
 
-    if (c.clients_title || items.length) {
-      this.clients = {
-        icon: c.clients_icon || '',
-        title: c.clients_title || 'Nos clients',
-        items
-      };
-    } else {
-      this.clients = null;
-    }
+    this.clients = (c.clients_title || items.length)
+      ? { icon: c.clients_icon || '', title: c.clients_title || 'Nos clients', items }
+      : null;
   }
 
   /* ==================================================== */
-  /*                           TEAM                        */
+  /*                           TEAM                       */
   /* ==================================================== */
   private extractTeamSection(): void {
     const t = this.acf?.team_section || {};
 
-    // 1) Titre
     this.teamTitle = t.team_title_1 || 'Une équipe de 8 experts à vos côtés';
     this.setTeamTitleTwoLines(this.teamTitle);
 
-    // 2) Mapping
     const tmp: TeamMember[] = [];
     for (let i = 1; i <= 8; i++) {
       const photo = t[`team_photo_${i}`];
@@ -757,16 +714,11 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    // 3) Shuffle à chaque visite
     this.teamMembers = this.shuffleArray(tmp);
-
-    // 4) Groupes de 2 (pages)
     this.teamPages = [];
     for (let i = 0; i < this.teamMembers.length; i += 2) {
       this.teamPages.push(this.teamMembers.slice(i, i + 2));
     }
-
-    // 5) Page de départ aléatoire
     if (this.teamPages.length) {
       this.teamPageIndex = Math.floor(Math.random() * this.teamPages.length);
     }
@@ -795,7 +747,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /* Navigation Team -> stop autoplay */
+  /* Navigation Team */
   goTeamTo(i: number): void {
     if (!this.teamPages.length) return;
     const len = this.teamPages.length;
@@ -833,31 +785,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ==================================================== */
-  /*                        UTILS                          */
+  /*                        UTILS                         */
   /* ==================================================== */
   trackByIndex(i: number): number { return i; }
-
-  /* ===== NEWS: mapping ACF ===== */
-  private extractNewsSection(): void {
-    const n = this.acf?.news_section || {};
-    const items: NewsItem[] = [];
-    for (let i = 1; i <= 2; i++) {
-      const item: NewsItem = {
-        logo: n[`news_logo_firm_${i}`] || '',
-        firm: n[`news_details_${i}`] || '',
-        authorDate: n[`news_details_${i}_bis`] || '',
-        title: n[`news_title_${i}`] || '',
-        html: n[`news_bloc_${i}`] || '',
-        link: n[`news_link_${i}`] || ''
-      };
-      if (item.title || item.html || item.logo || item.firm || item.authorDate) {
-        items.push(item);
-      }
-    }
-    if (items.length) {
-      this.news = { title: n.news_title || 'Actualités', items };
-    } else {
-      this.news = null;
-    }
-  }
 }

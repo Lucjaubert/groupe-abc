@@ -2,25 +2,50 @@
 
   <!-- ===== Core (Qui sommes-nous ? / Groupe ABC à droite) ===== -->
   <section class="section core" *ngIf="core.length && mapSection as ms">
-    <div class="section-inner px-0">
-      <!-- Titre : on garde celui du bloc gauche -->
-      <h2 #coreTitle class="block-title prehide" *ngIf="core[0]?.title">{{ core[0].title }}</h2>
+  <div class="section-inner px-0">
+    <!-- Titre : on garde celui du bloc gauche -->
+    <h2 #coreTitle class="block-title prehide" *ngIf="core[0]?.title">{{ core[0].title }}</h2>
 
-      <div class="core-grid px-0">
-        <!-- Colonne gauche : intro -->
-        <article #coreLeft class="core-block core-left">
-          <div class="block-html prehide" [innerHTML]="core[0].html"></div>
+    <div class="core-grid px-0">
+      <!-- Colonne gauche : intro -->
+      <article #coreLeft class="core-block core-left">
+        <div class="block-html prehide" [innerHTML]="core[0].html"></div>
+      </article>
+
+      <!-- Colonne droite : Partenaires (carrousel) -->
+      <aside
+        class="core-block core-right partners"
+        *ngIf="partners?.length"
+        (mouseenter)="stopAutoRotate()"
+        (mouseleave)="startAutoRotate()"
+      >
+
+        <!-- Une seule carte visible (le TS remplace le contenu de `partners`) -->
+        <article class="member-card p-0" *ngFor="let m of partners; trackBy: trackByIndex">
+          <div class="photo-tile">
+            <img
+              [src]="m.photo"
+              [alt]="'Portrait de ' + m.nameFirst + ' ' + m.nameLast"
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+
+          <!-- Colonne texte ; la photo prend exactement la même hauteur -->
+          <div class="member-text pt-3">
+            <div class="member-area">{{ m.area }}</div>
+            <div class="member-name">
+              <div class="first">{{ m.nameFirst }}</div>
+              <div class="last">{{ m.nameLast }}</div>
+            </div>
+            <div class="member-job" [innerHTML]="m.jobHtml"></div>
+          </div>
         </article>
-
-        <!-- Colonne droite : liste “Où ?” provenant de mapSection -->
-        <aside class="core-block core-right">
-          <ul class="panel-list about-where-list" *ngIf="ms.items?.length">
-            <li #whereItem class="prehide-row" *ngFor="let item of ms.items; trackBy: trackByIndex">{{ item }}</li>
-          </ul>
-        </aside>
-      </div>
+      </aside>
     </div>
-  </section>
+  </div>
+</section>
+
 
   <!-- ===== Mesh / Maillage ===== -->
   <section class="section mesh" *ngIf="mesh?.title || mesh?.image || mesh?.levels?.length">
@@ -91,25 +116,38 @@
       <h2 #affTitleEl class="aff-title prehide" *ngIf="affTitle">{{ affTitle }}</h2>
 
       <ul class="aff-list" role="list">
-        <li #affRowEl class="aff-row prehide-row"
-            *ngFor="let a of affiliations; let i = index; trackBy: trackByIndex"
-            [class.open]="affOpen[i]">
-
+        <li
+          #affRowEl
+          class="aff-row prehide-row"
+          *ngFor="let a of affiliations; let i = index; trackBy: trackByIndex"
+          [class.open]="affOpen[i]"
+        >
           <div class="aff-line">
+            <!-- LOGO AVANT LE NOM -->
+            <img
+              class="aff-logo"
+              *ngIf="a.logo"
+              [src]="a.logo"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+
             <div class="aff-name" *ngIf="a.excerpt as n">
               <span class="aff-abbr">{{ splitAffName(n).abbr }} :</span>
               <span class="aff-label">{{ splitAffName(n).label }}</span>
             </div>
 
-            <img class="aff-logo" *ngIf="a.logo" [src]="a.logo" alt="" aria-hidden="true" />
-
-            <button class="aff-toggle"
-                    type="button"
-                    [attr.aria-expanded]="affOpen[i] ? 'true':'false'"
-                    (click)="toggleAff(i)">
+            <button
+              class="aff-toggle"
+              type="button"
+              [attr.aria-expanded]="affOpen[i] ? 'true':'false'"
+              (click)="toggleAff(i)"
+            >
               <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
+              <span class="sr-only">{{ affOpen[i] ? 'Réduire' : 'Déployer' }}</span>
             </button>
           </div>
 
@@ -121,6 +159,7 @@
 
     </div>
   </section>
+
 
   <!-- ===== Déontologie ===== -->
   <section class="section deon" *ngIf="deontology?.length">
@@ -147,7 +186,7 @@
           </div>
 
           <div class="deon-desc" *ngIf="d.html && deonOpen[i]">
-            <div class="deon-desc-inner" [innerHTML]="d.html"></div>
+            <div class="deon-desc-inner pe-5" [innerHTML]="d.html"></div>
           </div>
         </li>
       </ul>
