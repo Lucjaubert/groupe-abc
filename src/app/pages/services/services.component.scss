@@ -41,7 +41,6 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   font-weight: 400;
   line-height: normal;
   margin-top: 110px;
-  margin-bottom: 106.5px;
 }
 
 .ctx-title {
@@ -49,7 +48,6 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   font-size: clamp(24px, 3.2vw, 36px);
   font-weight: 400;
   line-height: normal;
-  margin-bottom: 19px;
 }
 
 .ctx-sub {
@@ -141,15 +139,14 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   }
   .ctx-row.open .chevron { transform: rotate(0deg); }
 
-  /* Description : s'aligne sous le TITRE (col 2) et s'arrête avant le chevron */
   .row-desc {
-    grid-column: 2 / 3;   /* ⟵ alignée au début du titre */
+    grid-column: 2 / 3;
     padding: 8px 0 18px;
   }
 
   .row-desc-inner {
     color: $blue;
-    font-size: $fs12; /* 12 maquette */
+    font-size: $fs12;
     line-height: 1.55;
 
     p { margin: 0 0 10px; }
@@ -157,11 +154,6 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   }
 
   @media (max-width: 768px) {
-    /* Hauteur mobile uniforme */
-    .ctx-row {
-      min-height: 78px;
-      min-block-size: 78px;
-    }
 
     .chevron {
       width: 18px;
