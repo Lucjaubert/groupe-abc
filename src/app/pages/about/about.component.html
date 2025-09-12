@@ -4,7 +4,7 @@
   <section class="section core" *ngIf="core.length && mapSection as ms">
   <div class="section-inner px-0">
     <!-- Titre : on garde celui du bloc gauche -->
-    <h2 #coreTitle class="block-title prehide" *ngIf="core[0]?.title">{{ core[0].title }}</h2>
+    <h3 #coreTitle class="block-title prehide" *ngIf="core[0]?.title">{{ core[0].title }}</h3>
 
     <div class="core-grid px-0">
       <!-- Colonne gauche : intro -->
@@ -51,7 +51,7 @@
   <section class="section mesh" *ngIf="mesh?.title || mesh?.image || mesh?.levels?.length">
     <div class="section-inner px-0">
 
-      <h2 #meshTitleEl class="mesh-title mb-5 prehide" *ngIf="mesh?.title">{{ mesh?.title }}</h2>
+      <h3 #meshTitleEl class="mesh-title mb-5 prehide" *ngIf="mesh?.title">{{ mesh?.title }}</h3>
 
       <div #meshSkylineEl class="mesh-skyline mt-5 prehide" *ngIf="mesh?.image">
         <img [src]="mesh?.image" alt="" aria-hidden="true" />
@@ -75,8 +75,8 @@
         </div>
 
         <!-- Colonne droite : titre + liste -->
-        <div class="map-list">
-          <h2 #mapTitleEl class="map-title prehide" *ngIf="ms.title">{{ ms.title }}</h2>
+        <div class="map-list ps-lg-0 ps-5">
+          <h3 #mapTitleEl class="map-title prehide" *ngIf="ms.title">{{ ms.title }}</h3>
 
           <ul *ngIf="ms.items?.length">
             <li #mapItem class="prehide-row" *ngFor="let item of ms.items; trackBy: trackByIndex">{{ item }}</li>
@@ -94,7 +94,7 @@
     </div>
 
     <div class="section-inner">
-      <h2 #valuesTitleEl class="values-title prehide" *ngIf="coreValuesTitle">{{ coreValuesTitle }}</h2>
+      <h3 #valuesTitleEl class="values-title prehide" *ngIf="coreValuesTitle">{{ coreValuesTitle }}</h3>
 
       <ul class="values-grid" role="list">
         <li #valueItemEl class="value-item prehide" *ngFor="let v of coreValues; index as i; trackBy: trackByIndex">
@@ -113,7 +113,7 @@
   <section class="section affiliations" *ngIf="affiliations?.length">
     <div class="section-inner px-0">
 
-      <h2 #affTitleEl class="aff-title prehide" *ngIf="affTitle">{{ affTitle }}</h2>
+      <h3 #affTitleEl class="aff-title prehide" *ngIf="affTitle">{{ affTitle }}</h3>
 
       <ul class="aff-list" role="list">
         <li
@@ -165,7 +165,7 @@
   <section class="section deon" *ngIf="deontology?.length">
     <div class="section-inner px-0">
 
-      <h2 #deonTitleEl class="deon-title prehide" *ngIf="deonTitle">{{ deonTitle }}</h2>
+      <h3 #deonTitleEl class="deon-title prehide" *ngIf="deonTitle">{{ deonTitle }}</h3>
 
       <ul class="deon-list" role="list">
         <li #deonRowEl class="deon-row prehide-row"
@@ -202,7 +202,7 @@
     <div class="tl-grid">
       <span #tlRail class="tl-rail" aria-hidden="true"></span>
 
-      <h2 #tlTitleEl class="timeline-title prehide">{{ timelineTitle }}</h2>
+      <h3 #tlTitleEl class="timeline-title prehide">{{ timelineTitle }}</h3>
 
       <ng-container *ngFor="let s of timeline; trackBy: trackByIndex">
         <div #tlYearEl class="tl-year prehide">{{ s.year }}</div>

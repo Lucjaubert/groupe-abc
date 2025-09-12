@@ -112,11 +112,11 @@ h2 {
   }
 }
 h3 {
-  @include heading-styles(32px, 32px);
+  @include heading-styles(36px, 36px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
   @media (max-width: map.get(vars.$breakpoints, "md")) {
-    @include heading-styles(28px, 28px);
+    @include heading-styles(24px, 24px);
     font-weight: 400;
   }
 }
