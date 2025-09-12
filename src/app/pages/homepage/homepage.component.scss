@@ -625,21 +625,29 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
 }
 
 
-
 /* ====================== CONTEXTES (base desktop) ====================== */
 .contexts {
   position: relative;
   isolation: isolate;
+
   --ctx-sep-top: 164px;
   --ctx-gap-title-grid: 50px;
   --ctx-square: 90px;
   --ctx-gap-x: 60px;
   --ctx-gap-y: 24px;
+  --ctx-line-h: 1.25em; /* hauteur de la 1ʳᵉ ligne (alignement) */
+
+  /* NEW: padding dissocié top/bottom (plus d’air en bas) */
+  --ctx-pad-top: clamp(32px, 4vw, 40px);
+  --ctx-pad-bottom: clamp(72px, 6.5vw, 120px);
+
   margin-top: clamp(56px, 10vw, var(--ctx-sep-top));
   display: grid;
   place-items: center;
   min-height: clamp(553px, 60vh, 560px);
-  padding-block: clamp(32px, 4vw, 40px);
+
+  padding-block-start: var(--ctx-pad-top);
+  padding-block-end: var(--ctx-pad-bottom);
 }
 
 .contexts .contexts-bg {
@@ -727,12 +735,14 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   }
 }
 
+/* ===== Carte ===== */
 .contexts .ctx-item {
   display: grid;
-  grid-template-rows: auto auto;
+  /* icône (hauteur fixe) | espace fixe | label */
+  grid-template-rows: var(--ctx-square) 12px auto;
   justify-items: center;
   text-align: center;
-  gap: 12px;
+  gap: 0; /* l’espace vertical est la 2e rangée (12px) */
   min-width: 0;
 }
 
@@ -773,6 +783,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   background: rgba(255, 255, 255, 0.14);
 }
 
+/* ===== Libellé avec 1ʳᵉ ligne “bloquée” pour aligner les premiers mots ===== */
 .contexts .ctx-label {
   max-width: calc(var(--ctx-square) + 60px);
   color: rgba(255, 255, 255, 0.88);
@@ -780,21 +791,38 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   font-weight: map.get(vars.$font-weight, "regular");
   font-size: clamp(12px, 1.4vw, 14px);
   line-height: 1.25;
+
+  /* grille interne : 1ʳᵉ ligne à hauteur fixe + reste auto */
+  display: grid;
+  grid-template-rows: var(--ctx-line-h) auto;
+}
+
+/* 1er mot : baseline alignée en bas de la 1ʳᵉ rangée */
+.contexts .ctx-line1 {
+  align-self: end;
+  white-space: nowrap;
+}
+
+/* Reste du libellé : peut se couper librement */
+.contexts .ctx-rest {
+  overflow-wrap: anywhere;
 }
 
 /* ====================== CONTEXTES (mobile ≤768px) ====================== */
 @media (max-width: 768px) {
-
   .contexts {
     margin-top: 32px;
-    padding-block: 20px;
+
+    /* NEW: padding mobile ajusté (bas plus grand) */
+    --ctx-pad-top: 20px;
+    --ctx-pad-bottom: 106px;
+
     min-height: auto;
     --ctx-square: 60px;
+    --ctx-line-h: 1.2em; /* ajuste la 1ʳᵉ ligne au line-height mobile */
   }
 
-  .contexts .contexts-inner {
-    row-gap: 16px;
-  }
+  .contexts .contexts-inner { row-gap: 16px; }
 
   .contexts .contexts-head {
     display: grid;
@@ -815,28 +843,21 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     line-height: normal;
   }
 
-  .contexts .contexts-actions {
-    justify-self: start;
-  }
+  .contexts .contexts-actions { justify-self: start; }
 
-  .contexts .contexts-actions .cta-btn {
-    margin-top: 0;
-  }
+  .contexts .contexts-actions .cta-btn { margin-top: 0; }
 
   .contexts .contexts-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     column-gap: 12px;
     row-gap: 12px;
     justify-items: center;
+    /* léger coussin sous la grille */
+    margin-bottom: 6px;
   }
 
-  .contexts .ctx-icon {
-    border-radius: 12px;
-  }
-
-  .contexts .ctx-item > .ctx-img {
-    border-radius: 12px;
-  }
+  .contexts .ctx-icon { border-radius: 12px; }
+  .contexts .ctx-item > .ctx-img { border-radius: 12px; }
 
   .contexts .ctx-label {
     max-width: none;
@@ -844,6 +865,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     line-height: 1.2;
   }
 }
+
 
 
 /* ===================================================================== */
@@ -1404,17 +1426,35 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   }
 }
 
+/* Aliases utiles */
+$blue:  map.get(vars.$theme-colors, "light-blue");
+$red:   map.get(vars.$theme-colors, "light-red");
+$grey:  map.get(vars.$theme-colors, "light-grey");
+$white: map.get(vars.$theme-colors, "white");
 
+/* === Couleurs EXACTES de la page NEWS === */
+$bg-expertise: #EEE;
+$bg-juridique: rgba(234, 77, 77, 0.08);
+$bg-marche:    rgba(88, 80, 173, 0.16);
 
-/* ===================================================================== */
-/* ================================ NEWS =============================== */
-/* ===================================================================== */
+/* =================================================================== */
+/* =============================== NEWS =============================== */
+/* =================================================================== */
 
 .news {
   position: relative;
   isolation: isolate;
+
+  /* distances du ruban latéral */
   --news-side-right: 4px !important;
   --news-side-gap: clamp(28px, 6vw, 83px);
+
+  /* variables d’alignement/hauteurs */
+  --head-min: 48px;   /* header (logo + meta) */
+  --title-lh: 1.25;
+  --title-rows: 2;
+  --excerpt-lh: 1.6;
+  --excerpt-rows: 6;
 
   .news-bg {
     position: absolute;
@@ -1422,7 +1462,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     left: 50%;
     width: 100vw;
     transform: translateX(-50%);
-    background: $grey-100;
+    background: $grey;
     z-index: 0;
     pointer-events: none;
   }
@@ -1439,142 +1479,136 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   .news-title {
     margin: 0 0 clamp(28px, 4vw, 40px);
     color: $blue;
-    font-size: map.get(vars.$font-size, "80"); /* 36px */
+    font-size: map.get(vars.$font-size, "80");
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: normal;
   }
 
-  .news-row {
-    position: relative;
-  }
+  .news-row { position: relative; }
 
   .news-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: clamp(28px, 5vw, 56px);
     align-items: stretch;
-  }
 
-  @media (min-width: 992px) {
-    .news-grid {
+    @media (min-width: 992px) {
       grid-template-columns: 1fr 1fr;
       column-gap: clamp(48px, 6vw, 120px);
     }
   }
 
+  /* ---------- Carte ---------- */
   .news-card {
+    position: relative;
     display: grid;
-    grid-template-rows: auto auto 1fr auto;
+    grid-template-rows: auto auto 1fr auto; /* head | title | excerpt | cta */
     row-gap: clamp(14px, 2vw, 18px);
     min-width: 0;
+
+    /* grande plaque colorée, plus d’air sous le CTA (desktop) */
+    &::before {
+      content: "";
+      position: absolute;
+      inset: -16px -16px -36px -16px; /* bottom plus négatif = marge visuelle */
+      border-radius: 16px;
+      z-index: 0;
+      background: transparent; /* fixé par .theme-* ci-dessous */
+    }
+
+    /* contenu au-dessus du fond */
+    > * { position: relative; z-index: 1; }
   }
+
+  /* Thèmes — EXACTEMENT comme NEWS */
+  .news-card.theme-expertise::before { background: $bg-expertise; }
+  .news-card.theme-juridique::before { background: $bg-juridique; }
+  .news-card.theme-marche::before    { background: $bg-marche; }
 
   .news-head {
     display: grid;
     grid-template-columns: 40px 1fr;
     align-items: start;
     column-gap: 12px;
+    min-height: var(--head-min);
   }
 
-  .news-logo {
-    width: 40px;
-    height: 40px;
-    aspect-ratio: 1 / 1;
-    object-fit: contain;
-    display: block;
-  }
+  .news-logo  { width: 40px; height: 40px; object-fit: contain; display: block; }
+  .news-meta  { display: grid; row-gap: 4px; }
+  .news-firm  { color: $blue; font-size: map.get(vars.$font-size,"20"); font-weight: 500; }
+  .news-author{ color: $blue; font-size: 13px; font-style: italic; }
 
-  .news-meta {
-    display: grid;
-    row-gap: 4px;
-  }
-
-  .news-firm {
-    color: $blue;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: map.get(vars.$font-size, "20"); /* 14px */
-    font-weight: 500;
-    line-height: normal;
-  }
-
-  .news-author {
-    color: $blue;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 13px; /* pas de token exact */
-    font-style: italic;
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
-  }
-
+  /* ----- Titre borné (aligne le départ de l’extrait) ----- */
   .news-item-title {
-    margin: 0;
+    margin: 6px 0 6px;
     color: $blue;
-    font-size: map.get(vars.$font-size, "50"); /* 24px */
+    font-size: map.get(vars.$font-size, "50");
     font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
+
+    line-height: var(--title-lh);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--title-rows);
+    line-clamp: var(--title-rows); /* compat */
+    overflow: hidden;
+    min-height: calc(var(--title-rows) * var(--title-lh) * 1em);
   }
 
+  /* ----- Extrait borné à 6 lignes + “…” (immédiatement après le dernier mot) ----- */
   .news-body {
     color: $blue;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: map.get(vars.$font-size, "20"); /* 14px */
-    font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal;
-  }
+    font-size: map.get(vars.$font-size, "20");
 
-  .news-body p {
-    margin: 0 0 10px;
-  }
+    /* multi-ligne clamp */
+    line-height: var(--excerpt-lh);
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: var(--excerpt-rows);
+    line-clamp: var(--excerpt-rows); /* compat */
+    overflow: hidden;
+    max-height: calc(var(--excerpt-rows) * var(--excerpt-lh) * 1em);
 
-  .news-body p:last-child {
-    margin-bottom: 0;
+    /* le texte “coule” → l’ellipsis apparaît juste après le dernier mot visible */
+    p { display: inline; margin: 0; }
+    p + p::before { content: " "; } /* espace entre paragraphes fusionnés */
   }
 
   .news-cta {
     display: flex;
     justify-content: flex-end;
+    margin-top: clamp(16px, 2.2vw, 24px);
   }
 
   .news-cta .cta-btn {
     text-decoration: none;
+    background: $blue; color: $white;
+    border-radius: 5px; height: 28px; padding: 0 8px 0 12px;
+    display: flex; align-items: center;
+
+    .icon-plus { width: 22px; height: 22px; stroke: $red; stroke-width: 3.2; fill: none; }
   }
 
+  /* Ruban vertical */
   .news-side-btn {
     position: absolute;
-    top: 0;
-    bottom: 0;
+    top: 0; bottom: 0;
     right: var(--news-side-right);
     writing-mode: vertical-rl;
     text-orientation: mixed;
     transform: translateX(calc(100% + var(--news-side-gap))) rotate(180deg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: $blue;
-    color: $white;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 12px;
-    font-weight: 500;
-    padding: 0 8px;
-    border-radius: 6px;
-    z-index: 2;
+    display: flex; align-items: center; justify-content: center;
+    background: $blue; color: $white;
+    font-size: 12px; font-weight: 500;
+    padding: 0 8px; border-radius: 6px; z-index: 2;
   }
 
-  @media (max-width: 1200px) {
-    .news-side-btn {
-      --news-side-gap: clamp(24px, 5vw, 72px);
-      --news-side-right: 32px;
-    }
-  }
-
-  @media (max-width: 992px) {
-    .news-side-btn {
-      --news-side-gap: clamp(20px, 4.5vw, 56px);
-      --news-side-right: 24px;
-    }
-  }
-
+  /* =================== MOBILE ≤ 768px =================== */
   @media (max-width: 768px) {
+    /* espace visible entre les cartes ET leurs fonds */
+    .news-grid { row-gap: 50px; } /* plus d’écart entre éléments réels */
+    .news-card::before { inset: -12px -12px -12px -12px; } /* fond moins “long” → laisse voir le gris */
+    .news-cta { margin-top: 18px; } /* un peu d’air avant le bouton */
+
     .news-side-btn {
       --news-side-gap: clamp(16px, 5vw, 40px);
       --news-side-right: 16px;
@@ -1582,13 +1616,13 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   }
 }
 
+
+
 /* ===================================================================== */
 /* ============================ MEDIA FIXES ============================= */
 /* ===================================================================== */
 
-.news-row .news-box {
-  /* (Si tu utilises .news-box ailleurs, laisse ce bloc) */
-}
+.news-row .news-box { /* réservé si besoin */ }
 
 .news-col--image {
   display: flex;
@@ -1601,7 +1635,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   aspect-ratio: 496 / 355;
   border-radius: 8px;
   overflow: hidden;
-  background: #e9eaef; /* pas de token dédié */
+  background: #e9eaef;
 }
 
 .post-media__img {
@@ -1612,17 +1646,13 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   object-position: center;
 }
 
-/* Optionnel : helper pour pré-cacher (si tu ajoutes .prehide dans le HTML plus tard) */
 .prehide {
   opacity: 0;
   visibility: hidden;
   transform: translateY(16px);
   will-change: transform, opacity;
 }
-.prehide-row {
-  opacity: 0;
-  visibility: hidden;
-}
+.prehide-row { opacity: 0; visibility: hidden; }
 @media (prefers-reduced-motion: reduce) {
   .prehide, .prehide-row {
     opacity: 1 !important;
@@ -1631,6 +1661,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     will-change: auto !important;
   }
 }
+
 
 
 

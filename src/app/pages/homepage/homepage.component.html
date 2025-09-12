@@ -206,12 +206,12 @@
     </div>
 
     <ul class="contexts-grid px-0 pb-4" role="list">
-      <li class="ctx-item" *ngFor="let it of contexts?.items; let i = index; trackBy: trackByIndex">
+      <li class="ctx-item mt-lg-0 mt-5" *ngFor="let it of contexts?.items; let i = index; trackBy: trackByIndex">
         <!-- .ctx-icon = le carré ; l'image interne est décorative -->
         <div class="ctx-icon" role="img" [attr.aria-label]="it.label || ('Contexte ' + (i+1))">
           <img class="ctx-img" [src]="it.icon" alt="" loading="lazy">
         </div>
-        <div class="ctx-label" [innerHTML]="it.label"></div>
+        <div class="ctx-label mt-4" [appAlignFirstWord]="it.label"></div>
       </li>
     </ul>
   </div>
@@ -306,24 +306,22 @@
     </div>
   </section>
 
-  <!-- ===================== NEWS ===================== -->
-<section class="news"
-         *ngIf="news"
-         style="
-           --news-side-right: 40px;   /* marge du bord droit du conteneur */
-           --news-side-gap: 83px;     /* écart horizontal entre CTA (bord droit) et ruban */
-         ">
+<!-- ===================== NEWS ===================== -->
+<section class="news" *ngIf="news"
+         style="--news-side-right:40px; --news-side-gap:83px">
   <div class="news-bg" aria-hidden="true"></div>
 
   <div class="news-inner px-0">
     <h3 class="news-title">{{ news.title }}</h3>
 
-    <!-- WRAPPER qui définit la hauteur de référence -->
     <div class="news-row">
-      <!-- Grille 2 colonnes -->
       <div class="news-grid">
         <article class="news-card"
-                 *ngFor="let it of news?.items; let i = index; trackBy: trackByIndex">
+                 *ngFor="let it of news?.items; let i = index; trackBy: trackByIndex"
+                 [ngClass]="themeClass(it.themeKey)">
+          <!-- Calque décoratif coloré (thème) -->
+          <span class="news-card-bg" aria-hidden="true"></span>
+
           <!-- Header -->
           <header class="news-head">
             <img *ngIf="it.logo" class="news-logo" [src]="it.logo" alt="" aria-hidden="true" />
@@ -339,13 +337,11 @@
           <!-- Excerpt -->
           <div class="news-body" [innerHTML]="it.html"></div>
 
-          <!-- CTA aligné à droite -->
+          <!-- CTA -->
           <div class="news-cta">
             <a class="cta-btn"
-               [class.disabled]="!it.link"
-               [attr.href]="it.link || null"
-               [attr.tabindex]="it.link ? null : '-1'"
-               [attr.aria-disabled]="!it.link ? 'true' : null">
+               [routerLink]="['/actualites']"
+               [queryParams]="{ open: it.slug || it.id }">
               <span class="cta-label">Lire la suite</span>
               <span class="cta-plus" aria-hidden="true">
                 <svg viewBox="0 0 24 24" class="icon-plus"><path d="M12 5v14M5 12h14"/></svg>
@@ -355,12 +351,17 @@
         </article>
       </div>
 
-      <!-- Ruban vertical DANS LA MARGE, haut=bas=grille -->
-      <aside class="news-side-btn" aria-label="Accès aux articles publiés">
+      <a
+        class="news-side-btn"
+        [routerLink]="['/actualites']"
+        aria-label="Voir toutes les actualités"
+      >
         Retrouvez nos derniers articles publiés ici
-      </aside>
+      </a>
+
     </div>
   </div>
 </section>
+
 
 </div>
