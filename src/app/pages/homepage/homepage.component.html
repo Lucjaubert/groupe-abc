@@ -40,7 +40,7 @@
 
 <!-- ===== Key figure ===== -->
 <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">
-  <ul>
+  <ul [style.--n]="maxValueCh">
     <li
       *ngFor="let fig of keyFigures; let i = index; trackBy: trackByIndex"
       #kfItem
@@ -60,6 +60,8 @@
     </li>
   </ul>
 </section>
+
+
 
 
 <!-- ===== Identity : Qui / Où ===== -->

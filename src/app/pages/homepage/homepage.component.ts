@@ -114,6 +114,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ---------- KEY FIGURES ---------- */
   keyFigures: KeyFigure[] = [];
   @ViewChildren('kfItem') kfItems!: QueryList<ElementRef<HTMLLIElement>>;
+  /** Largeur (en ch) réservée à la colonne chiffres en mobile (non bloquante) */
+  maxValueCh = 6; // fallback
 
   /* ---------- IDENTITY / WHAT-HOW / DOWNLOAD ---------- */
   identity: Identity = {
@@ -362,14 +364,16 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   private extractKeyFigures(): void {
     const fig = this.acf?.key_figures_section || {};
     const out: KeyFigure[] = [];
+    const widths: number[] = [];
 
     let i = 1;
     while (fig[`figure_value_${i}`] || fig[`figure_label_${i}`] || fig[`figure_value_${i}_bis`]) {
       const vRaw = fig[`figure_value_${i}`];
       const l = fig[`figure_label_${i}`];
-      const lBisMerge = fig[`figure_label_${i}_bis`]; // concatène si pas de value_bis
+      const lBisMerge = fig[`figure_label_${i}_bis`];
 
       if (vRaw && (l || lBisMerge)) {
+        widths.push(this.widthChFromRaw(vRaw));
         const value = Number(String(vRaw).replace(/[^\d]/g, '')) || 0;
         const fullLabel = (l || '') + (lBisMerge ? ` ${lBisMerge}` : '');
         out.push({
@@ -379,9 +383,10 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         });
       }
 
-      // si jamais il existe une ligne bis avec une valeur propre
       if (fig[`figure_value_${i}_bis`] && fig[`figure_label_${i}_bis`]) {
-        const v2 = Number(String(fig[`figure_value_${i}_bis`]).replace(/[^\d]/g, '')) || 0;
+        const v2raw = fig[`figure_value_${i}_bis`];
+        widths.push(this.widthChFromRaw(v2raw));
+        const v2 = Number(String(v2raw).replace(/[^\d]/g, '')) || 0;
         const l2 = String(fig[`figure_label_${i}_bis`]);
         out.push({
           value: v2, label: l2, labelBis: '',
@@ -393,8 +398,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.keyFigures = out;
+    this.maxValueCh = Math.max(6, ...(widths.length ? widths : [6]));
   }
-
 
   private playFigure(index: number): void {
     const f = this.keyFigures[index];
@@ -426,6 +431,15 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     };
 
     requestAnimationFrame(step);
+  }
+
+  /**** UTILS ****/
+  private widthChFromRaw(raw: any): number {
+    // Calcule une largeur "ch" approximative pour la valeur brute (gère espaces + virgule/point)
+    const s = String(raw ?? '').replace(/\s/g, '');     // retire espaces (y compris insécables)
+    const digits = (s.match(/\d/g) ?? []).length;       // nombre de chiffres
+    const hasDecimal = /[,.]/.test(s);                  // virgule/point présent ?
+    return Math.max(digits + (hasDecimal ? 2 : 0), 1);  // réserve 1–2ch pour la virgule
   }
 
   /* ==================================================== */
@@ -509,6 +523,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     const DUR_BLOCK   = prefersReduced ? 0.001 : 0.45;
     const STAG_SMALL  = prefersReduced ? 0     : 0.06;
     const STAG_ITEM   = prefersReduced ? 0     : 0.10;
+    const STAG_CARD   = prefersReduced ? 0     : 0.08;
 
     const els = <T extends Element>(xs: (T | null | undefined)[]) =>
       xs.filter(Boolean) as T[];
@@ -539,12 +554,140 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    // Clients & autres blocs… (inchangé)
+    // WH
+    {
+      const wh = document.querySelector<HTMLElement>('.wh');
+      if (wh) {
+        const whatTitle = wh.querySelector<HTMLElement>('.what .block-title') ??
+                          wh.querySelector<HTMLElement>('.wh-left  .block-title');
+        const howTitle  = wh.querySelector<HTMLElement>('.how  .block-title') ??
+                          wh.querySelector<HTMLElement>('.wh-right .block-title');
+
+        const whatItems = Array.from(
+          wh.querySelectorAll<HTMLElement>('.what .dash-list li, .wh-left .dash-list li')
+        );
+        const howItems = Array.from(
+          wh.querySelectorAll<HTMLElement>('.how .dash-list li, .wh-right .dash-list li')
+        );
+
+        const rightBtn = wh.querySelector<HTMLElement>('.wh-right .wh-actions .cta-btn') ??
+                         wh.querySelector<HTMLElement>('.wh-actions .cta-btn');
+        const dlLink   = wh.querySelector<HTMLElement>('.download .dl-link');
+
+        gsap.set(els([whatTitle, howTitle]), { autoAlpha: 0, y: 16 });
+        if (whatItems.length) gsap.set(whatItems, { autoAlpha: 0, y: 12 });
+        if (howItems.length)  gsap.set(howItems,  { autoAlpha: 0, y: 12 });
+        gsap.set(els([rightBtn, dlLink]), { autoAlpha: 0, y: 10 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: wh, start: 'top 78%', once: true }
+        });
+
+        tl.to(els([whatTitle, howTitle]), { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0);
+
+        if (whatItems.length) {
+          tl.to(whatItems, { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_SMALL }, 0.12);
+        }
+        if (howItems.length) {
+          tl.to(howItems,  { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: STAG_SMALL }, 0.12);
+        }
+
+        tl.to(els([dlLink, rightBtn]), { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, '+=0.10');
+      }
+    }
+
+    // Contexts
+    {
+      const ctx = document.querySelector<HTMLElement>('.contexts');
+      if (ctx) {
+        const title = ctx.querySelector<HTMLElement>('.contexts-title');
+        const items = Array.from(ctx.querySelectorAll<HTMLElement>('.contexts-grid .ctx-item'));
+        const icons = items.map(li => li.querySelector<HTMLElement>('.ctx-icon, .ctx-img') || null);
+        const labels = items.map(li => li.querySelector<HTMLElement>('.ctx-label') || null);
+
+        gsap.set(title, { autoAlpha: 0, y: 16 });
+        gsap.set(els(icons),  { autoAlpha: 0, y: 14 });
+        gsap.set(els(labels), { autoAlpha: 0, y: 10 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: ctx, start: 'top 75%', once: true }
+        });
+
+        tl.to(title, { autoAlpha: 1, y: 0, duration: 0.55 }, 0);
+
+        items.forEach((_, i) => {
+          const at = 0.12 + i * (prefersReduced ? 0 : 0.10);
+          const ico = icons[i];
+          const lbl = labels[i];
+          if (ico) tl.to(ico, { autoAlpha: 1, y: 0, duration: 0.45 }, at);
+          if (lbl) tl.to(lbl, { autoAlpha: 1, y: 0, duration: 0.40 }, at + 0.08);
+        });
+      }
+    }
+
+    // Clients
+    {
+      const clients = document.querySelector<HTMLElement>('.clients');
+      if (clients) {
+        const icon  = clients.querySelector<HTMLElement>('.clients-icon');
+        const title = clients.querySelector<HTMLElement>('.clients-title');
+        const listItems = Array.from(clients.querySelectorAll<HTMLElement>('.clients-list li'));
+
+        gsap.set(els([icon, title]), { autoAlpha: 0, y: 16 });
+        if (listItems.length) gsap.set(listItems, { autoAlpha: 0, y: 12 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: clients, start: 'top 80%', once: true }
+        } as any);
+
+        (tl as gsap.core.Timeline)
+          .to(icon,  { autoAlpha: 1, y: 0, duration: 0.45 }, 0.00)
+          .to(title, { autoAlpha: 1, y: 0, duration: 0.55 }, 0.10);
+
+        if (listItems.length) {
+          (tl as gsap.core.Timeline)
+            .to(listItems, { autoAlpha: 1, y: 0, duration: 0.45, stagger: prefersReduced ? 0 : 0.06 }, 0.28);
+        }
+      }
+    }
+
+    // News
+    {
+      const news = document.querySelector<HTMLElement>('.news');
+      if (news) {
+        const title = news.querySelector<HTMLElement>('.news-title');
+        const cards = Array.from(news.querySelectorAll<HTMLElement>('.news-card'));
+        const side  = news.querySelector<HTMLElement>('.news-side-btn');
+
+        gsap.set(title, { autoAlpha: 0, y: 16 });
+        if (cards.length) gsap.set(cards, { autoAlpha: 0, y: 14 });
+        if (side) gsap.set(side, { autoAlpha: 0, y: 10 });
+
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: news, start: 'top 80%', once: true }
+        });
+
+        tl.to(title, { autoAlpha: 1, y: 0, duration: 0.55 }, 0);
+
+        if (cards.length) {
+          tl.to(cards, { autoAlpha: 1, y: 0, duration: 0.45, stagger: prefersReduced ? 0 : 0.08 }, 0.15);
+        }
+
+        if (side) tl.to(side, { autoAlpha: 1, y: 0, duration: 0.45 }, '+=0.10');
+      }
+    }
+
+    try { ScrollTrigger.refresh(); } catch {}
   }
 
   /* ===== NEWS (Home) ===== */
   private loadFeaturedNews(): void {
     this.wp.getHomepageFeaturedNews(2).subscribe((items: any[]) => {
+      // enrichit les items : ajoute themeKey + slug (si absent)
       const mapped: NewsItem[] = (items || []).map((it: any) => {
         const themeKey = this.toThemeKey(it?.theme);
         const slug = it?.slug || this.slugFromLink(it?.link);
@@ -572,12 +715,13 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     const m = (label || '').trim().match(/^\S+/);
     return m ? m[0] : '';
   }
+
   restWords(label: string = ''): string {
     return (label || '').trim().replace(/^\S+\s*/, '');
   }
 
   /* ==================================================== */
-  /*                           TEAM, CLIENTS …            */
+  /*                         CLIENTS                      */
   /* ==================================================== */
   private extractClientsSection(): void {
     const c = this.acf?.clients_section || {};
@@ -591,6 +735,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       : null;
   }
 
+  /* ==================================================== */
+  /*                           TEAM                       */
+  /* ==================================================== */
   private extractTeamSection(): void {
     const t = this.acf?.team_section || {};
 
@@ -648,6 +795,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /* Navigation Team */
   goTeamTo(i: number): void {
     if (!this.teamPages.length) return;
     const len = this.teamPages.length;
@@ -687,6 +835,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ==================================================== */
   /*                        UTILS                         */
   /* ==================================================== */
+
+  /** Transforme le libellé WP en clé de thème normalisée */
   private toThemeKey(raw?: string): ThemeKey {
     const s = (raw || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     if (s.includes('march'))   return 'marche';
@@ -695,8 +845,10 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     return 'autre';
   }
 
+  /** Classe CSS de thème pour le template */
   themeClass(k?: ThemeKey): string { return `theme-${k || 'autre'}`; }
 
+  /** Récupère le slug depuis l’URL fournie par WP (ex: /actualites/article-5/) */
   private slugFromLink(link?: string): string | undefined {
     if (!link) return undefined;
     try {

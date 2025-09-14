@@ -1608,34 +1608,52 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
   }
 
   /* =================== MOBILE ≤ 768px =================== */
-  @media (max-width: 768px) {
-    /* espace visible entre les cartes ET leurs fonds */
-    .news-grid { row-gap: 50px; } /* plus d’écart entre éléments réels */
-    .news-card::before { inset: -12px -12px -12px -12px; } /* fond moins “long” → laisse voir le gris */
-    .news-cta { margin-top: 18px; } /* un peu d’air avant le bouton */
+  @media (max-width: 768px){
+    /* plus d’écart entre cartes et leurs fonds */
+    .news-grid{ row-gap: 50px; }
+    .news-card::before{ inset: -12px -12px -12px -12px; }
+    .news-cta{ margin-top: 18px; }
 
-    .news-side-btn {
-      --news-side-gap: clamp(16px, 5vw, 40px);
-      --news-side-right: 16px;
+    /* 👉 Bouton latéral devient un bouton horizontal placé SOUS les cartes */
+    .news-row{
+      display: block; /* casse la logique “latérale” */
     }
+    .news-grid{
+      margin-bottom: 12px; /* espace avant le bouton horizontal */
+    }
+    .news-side-btn{
+      position: static !important;
+      right: auto; left: auto; top: auto; bottom: auto;
+      writing-mode: horizontal-tb;
+      text-orientation: initial;
+      transform: none !important;
+      display: block;
+      width: 75%;
+      max-width: none;
+      margin: 30px 0 0 auto;
+      text-align: center;
+      padding: 10px 12px;          /* confort tactile */
+      border-radius: 8px;
+      z-index: 1;                   /* sous les cartes si besoin */
+    }
+
+    /* on peut réduire le décalage prévu pour le ruban */
+    .news-side-btn{ --news-side-gap: clamp(16px, 5vw, 40px); --news-side-right: 16px; }
   }
 }
-
 
 
 /* ===================================================================== */
 /* ============================ MEDIA FIXES ============================= */
 /* ===================================================================== */
 
-.news-row .news-box { /* réservé si besoin */ }
-
-.news-col--image {
+.news-col--image{
   display: flex;
   justify-content: flex-end;
   align-items: flex-start;
 }
 
-.post-media {
+.post-media{
   width: clamp(320px, 34vw, 496px);
   aspect-ratio: 496 / 355;
   border-radius: 8px;
@@ -1643,7 +1661,7 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
   background: #e9eaef;
 }
 
-.post-media__img {
+.post-media__img{
   width: 100%;
   height: 100%;
   display: block;
@@ -1651,24 +1669,21 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
   object-position: center;
 }
 
-.prehide {
+.prehide{
   opacity: 0;
   visibility: hidden;
   transform: translateY(16px);
   will-change: transform, opacity;
 }
-.prehide-row { opacity: 0; visibility: hidden; }
-@media (prefers-reduced-motion: reduce) {
-  .prehide, .prehide-row {
+.prehide-row{ opacity: 0; visibility: hidden; }
+@media (prefers-reduced-motion: reduce){
+  .prehide, .prehide-row{
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
     will-change: auto !important;
   }
 }
-
-
-
 
 
 /* ====================== ÉCRANS ≤ 768px ====================== */
@@ -1718,64 +1733,128 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
     flex-shrink: 0;
   }
 
-  /* ---------------- KEY FIGURES ---------------- */
-  .key-figures {
+
+  /* ===================================================================== */
+/* ============================ KEY FIGURES ============================= */
+/* ===================================================================== */
+
+.key-figures {
+  padding-top: clamp(78px, 3vw, 92px);
+  padding-bottom: clamp(20px, 3vw, 48px);
+  --group-sep: clamp(26px, 3.6vw, 72px);
+
+  /* variables pour le fallback iOS */
+  --label-fs: 42px;     /* font-size du libellé */
+  --label-lh: 1.25;     /* line-height du libellé */
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(2px, .8vw, 4px);
+  }
+
+  /* ===== Desktop : grille 2 colonnes (auto | 1fr) ===== */
+  li {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 12px;
+    align-items: first baseline;
+  }
+
+  /* séparateurs de groupes (desktop) */
+  li:nth-child(6),
+  li:nth-child(9) { margin-top: var(--group-sep); }
+
+  .value {
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 65px;
+    font-weight: 600;
+    line-height: 1;
+    min-width: var(--value-w, 3ch);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+    justify-self: end;   /* Desktop : chiffres collés au libellé */
+    transform: none;
+  }
+
+  .label {
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: var(--label-fs);
+    font-weight: 300;
+    line-height: var(--label-lh);
+    white-space: normal;
+  }
+
+  .label.typing::after {
+    content: none;
+    display: inline-block;
+    width: .08em; height: .9em;
+    margin-left: .15em;
+    vertical-align: -.05em;
+    background: currentColor;
+    animation: kf-caret .9s steps(1, end) infinite;
+  }
+
+  /* -------- Fallback iOS/WebKit -------- */
+  @supports (-webkit-touch-callout: none) {
+    li { align-items: start; }
+    .value { transform: translateY(calc((var(--label-lh) - 1) * 0.5 * 1em)); }
+  }
+}
+
+/* ---------------- KEY FIGURES — ≤768px ---------------- */
+@media (max-width: 768px) {
+  .key-figures{
+    /* neutralise toute valeur forcée ailleurs (ex: --num-ch: 4) */
+    --num-ch: unset !important;
+
+    /* variables annexes */
+    --gap-x: clamp(8px, 1.8vw, 14px);
+    --group-sep: 64px;
     padding-top: 32px;
     padding-bottom: 16px;
-    --group-sep: 64px;
-
-    ul {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 6px;
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-
-    li {
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
-    }
-
-    .value {
-      color: #444697;
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 40px;
-      font-weight: 600;
-      line-height: 50px;
-    }
-
-    .label {
-      color: #444697;
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 28px;
-      font-weight: 300;
-      line-height: 50px;
-    }
   }
 
-  /* Colonnes via classes (inchangé) */
-  .key-figures li { grid-column: auto !important; }
-  .key-figures li.col1 { grid-column: 1 !important; }
-  .key-figures li.col2 { grid-column: 2 !important; }
-  .key-figures li.col3 { grid-column: 3 !important; }
+  .key-figures ul{ display:block; margin:0; padding:0; }
 
-  /* --- IMPORTANT : reset de TOUTES les anciennes marges --- */
-  .key-figures ul > li { margin-top: 0 !important; }
+  /* 1 ligne = [col chiffres auto] | [col texte] — comme desktop */
+  .key-figures li{
+    display:grid !important;
+    grid-template-columns: auto 1fr;
+    column-gap: var(--gap-x);
+    align-items: baseline;
+    margin: 0 0 8px 0 !important;
+    grid-column: 1 !important;           /* neutralise les colonnes desktop */
+  }
+  .key-figures li.grp-sep{ margin-top: var(--group-sep) !important; }
 
-  /* --- Nouveaux séparateurs : début bloc 2 (=6) et début bloc 3 (=10) --- */
-  .key-figures ul > li:nth-child(6),
-  .key-figures ul > li:nth-child(10) {
-    margin-top: var(--group-sep) !important;
+  /* Chiffre : aucun width imposé, aligné à gauche */
+  .key-figures .value{
+    justify-self: start;
+    text-align: left;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
   }
 
-  /* Responsive : 1 colonne */
-  @media (max-width: 768px) {
-    .key-figures ul { grid-template-columns: 1fr; }
-    .key-figures li { grid-column: auto !important; }
+  /* Libellé : démarre juste après la value + column-gap */
+  .key-figures .label{
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1.25;
   }
+
+  /* Fallback iOS (baseline décalée) */
+  @supports (-webkit-touch-callout: none) {
+    .key-figures li{ align-items: start; }
+    .key-figures .value{ transform: translateY(calc((1.25 - 1) * .5 * 1em)); }
+  }
+}
 
 
 

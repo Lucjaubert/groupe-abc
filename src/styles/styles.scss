@@ -207,16 +207,101 @@ ul, li, a {
     }
   }
 
+/* ======================= KEY FIGURES (scoped global fix) ======================= */
+/* Desktop : inchangé, on laisse le CSS du composant faire le job */
+
+/* Mobile ≤ 768px : 3 colonnes comme desktop + sous-colonne chiffres FIXE */
+@media (max-width: 768px) {
+  app-homepage .key-figures {
+    padding-top: 32px;
+    padding-bottom: 16px;
+    --group-sep: 64px;
+
+    /* largeur de la sous-colonne chiffres mesurée avec la police des chiffres
+       4ch couvre 1–4 digits (ex: 1800). Ajuste à 5ch si besoin plus tard. */
+    --num-ch: 4;
+  }
+
+  /* Grille principale (3 colonnes) */
+  app-homepage .key-figures ul{
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-auto-rows: min-content;
+    column-gap: 12px;
+    row-gap: 6px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Chaque item : mini-grille 2 colonnes (chiffre fixe + texte) */
+  app-homepage .key-figures li{
+    /* ⚠️ on NE met plus flex ici : c’est lui qui cassait l’alignement */
+    display: grid;
+    grid-template-columns: auto 1fr;   /* la 1ʳᵉ colonne est portée par .value */
+    align-items: first baseline;
+    column-gap: 8px;
+
+    /* neutralise toute marge héritée */
+    margin-top: 0 !important;
+    grid-column: auto !important;
+  }
+
+  /* Position dans la grille 3 colonnes (déjà fourni par l’HTML) */
+  app-homepage .key-figures li.col1 { grid-column: 1 !important; }
+  app-homepage .key-figures li.col2 { grid-column: 2 !important; }
+  app-homepage .key-figures li.col3 { grid-column: 3 !important; }
+
+  /* Séparateurs de groupes (tu as déjà la classe 'grp-sep' côté HTML) */
+  app-homepage .key-figures li.grp-sep {
+    margin-top: var(--group-sep) !important;
+  }
+
+  /* Chiffres : largeur fixe calculée AVEC leur propre font-size → alignement parfait */
+  app-homepage .key-figures .value{
+    /* fait office de première colonne : largeur fixe en ch du span lui-même */
+    width: calc(var(--num-ch) * 1ch);
+    justify-self: end;
+    text-align: right;
+
+    color: #444697;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 40px;
+    font-weight: 600;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* Libellés */
+  app-homepage .key-figures .label{
+    color: #444697;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 28px;
+    font-weight: 300;
+    line-height: 1.25;
+  }
+
+  /* Très étroit : 1 colonne */
+  @media (max-width: 420px){
+    app-homepage .key-figures ul{ grid-template-columns: 1fr; }
+  }
+
+  /* Fallback iOS : petit calage visuel de baseline */
+  @supports (-webkit-touch-callout: none){
+    app-homepage .key-figures li{ align-items: start; }
+    app-homepage .key-figures .value{
+      transform: translateY(calc((1.25 - 1) * .5 * 1em));
+    }
+  }
+}
+
+/* Rappels (tu les avais déjà, je les garde ici pour la cohérence globale) */
 app-homepage .key-figures ul > li { margin-top: 0 !important; }
-
 app-homepage .key-figures ul > li:nth-child(6),
-app-homepage .key-figures ul > li:nth-child(10) {
-  margin-top: var(--group-sep) !important;
-}
+app-homepage .key-figures ul > li:nth-child(10) { margin-top: var(--group-sep) !important; }
+app-homepage .key-figures ul > li:nth-child(9) { margin-top: 0 !important; }
 
-app-homepage .key-figures ul > li:nth-child(9) {
-  margin-top: 0 !important;
-}
 
 
 /* styles.scss global */
