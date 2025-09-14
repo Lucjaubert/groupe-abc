@@ -1,7 +1,7 @@
 @use "sass:map";
 @use "../../../../styles/_variables.scss" as vars;
 
-$logo-w: 140px;
+$logo-w: 95px;
 $rail-w: 40px;
 
 /* ================== DESKTOP (inchangé) ================== */
@@ -329,6 +329,30 @@ $rail-w: 40px;
     }
     .extranet-slash{ color: map.get(vars.$theme-colors, "light-red"); }
   }
+
+  /* >>> FR / ENG en ROUGE uniquement en mobile <<< */
+  .overlay-lang{
+    .lang-btn{
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 16px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 40px;  /* 250% */
+      color: #444697;     /* non actif */
+      opacity: 1;
+    }
+    .lang-btn.active{
+      color: #EA4D4D;     /* actif en rouge – mobile only */
+    }
+    .sep{
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 16px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 40px;
+      color: #444697;
+    }
+  }
 }
 
 
@@ -349,8 +373,7 @@ $rail-w: 40px;
 
   --rail-w: 40px;
   --logo-h: 90px;
-  --offset-under-logo: 21px;     /* Y de FR/ENG + haut du badge */
-  /* le badge et FR/ENG sont alignés en Y grâce à cette variable */
+  --offset-under-logo: 21px;
 
   padding: var(--pad);
   padding-right: calc(var(--pad) + env(safe-area-inset-right));
@@ -392,7 +415,7 @@ $rail-w: 40px;
   row-gap: var(--step);           /* rythme vertical entre FR/ENG et la liste */
 }
 
-/* FR / ENG AU-DESSUS de la liste (plus de overlap) */
+/* (Base desktop / valeurs par défaut — le rouge est ajouté dans le @media mobile) */
 .overlay-lang{
   margin: 0 !important;
   display: inline-flex; align-items: center; gap: 6px;
@@ -401,14 +424,14 @@ $rail-w: 40px;
     background: none; border: 0; padding: 0; cursor: pointer;
     font-family: "Plus Jakarta Sans", sans-serif;
     font-size: 14px; color: #444697; opacity: .6;
-    &.active{ opacity: 1; font-weight: 600; }
   }
+  .lang-btn.active{ opacity: 1; font-weight: 600; }
   .sep{ color: #444697; opacity: .6; }
 }
 
-/* Liste : on supprime l'ancien margin-top négatif */
+/* Liste */
 .overlay-nav{
-  margin: 0;                      /* IMPORTANT: écrase toute règle précédente */
+  margin: 0;
   display: grid;
   gap: var(--step);
   a{
@@ -422,8 +445,7 @@ $rail-w: 40px;
   }
 }
 
-/* === EXTRANET : TA BASE, placée en colonne 'rail', collé à droite et
-       aligné verticalement avec FR/ENG =============================== */
+/* === EXTRANET en colonne 'rail' === */
 .menu-overlay .extranet-badge{
   grid-area: rail;
   justify-self: center;
