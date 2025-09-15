@@ -14,26 +14,6 @@
     </div>
   </section>
 
-  <!-- ===== Carte / Où ? ===== -->
-  <section class="section map-section py-8 my-6" *ngIf="mapSection as ms">
-    <div class="map-bg" aria-hidden="true"><div class="map-layer"></div></div>
-    <div class="section-team">
-      <div class="map-grid">
-        <div #mapImageEl class="map-image prehide">
-          <img [src]="ms.image" alt="" (error)="onMapImgError($event)" />
-        </div>
-        <div class="map-list ps-3 ps-lg-0">
-          <h2 #mapTitleEl class="map-title prehide">{{ ms.title }}</h2>
-          <ul class="panel-list mt-3">
-            <li #mapItem *ngFor="let item of ms.items; trackBy: trackByIndex">
-              {{ item }}
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- ===== Firms / Les membres du Groupe ABC ===== -->
   <section class="section firms py-6 my-6" *ngIf="firms?.length">
     <div class="section-member">
@@ -180,6 +160,26 @@
 
         </li>
       </ul>
+    </div>
+  </section>
+
+  <!-- ===== Carte / Où ? ===== -->
+  <section class="section map-section py-8" *ngIf="mapSection as ms">
+    <div class="map-bg" aria-hidden="true"><div class="map-layer"></div></div>
+    <div class="section-team">
+      <div class="map-grid">
+        <div #mapImageEl class="map-image prehide">
+          <img [src]="ms.image" alt="" (error)="onMapImgError($event)" />
+        </div>
+        <div class="map-list ps-3 ps-lg-0">
+          <h2 #mapTitleEl class="map-title prehide">{{ ms.title }}</h2>
+          <ul class="panel-list mt-3">
+            <li #mapItem *ngFor="let item of ms.items; trackBy: trackByIndex">
+              {{ item }}
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   </section>
 

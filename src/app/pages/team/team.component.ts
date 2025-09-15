@@ -89,6 +89,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private bindScheduled = false;
   private heroPlayed = false;
 
+  /** ===== Options d’ouverture ===== */
+  private RANDOMIZE_FIRMS_ON_LOAD = true;   // false = garder l’ordre reçu
+  private OPEN_ONLY_IF_HAS_DETAILS = true;  // n’ouvrir que les lignes avec contenu
+
   /* ===== Init ===== */
   ngOnInit(): void {
     this.wp.getTeamData().subscribe((root: any) => {
@@ -141,7 +145,15 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         if (mapped) rows.push(mapped);
       }
       this.firms = rows;
-      this.openFirmIndex = null;
+
+      /* (1) Mélange optionnel de l’ordre */
+      if (this.RANDOMIZE_FIRMS_ON_LOAD && this.firms.length > 1) {
+        this.shuffleInPlace(this.firms);
+      }
+
+      /* (2) Ouvre automatiquement une ligne valable */
+      const idx = this.firstOpenableIndex();
+      this.openFirmIndex = (idx !== null) ? idx : null;
 
       /* TEACHING */
       const teaching = acf?.teaching ?? {};
@@ -205,10 +217,18 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleFirm(i: number){
     const f = this.firms[i];
-    if (!f || !this.firmHasDetails(f)) return;
-    this.openFirmIndex = (this.openFirmIndex === i) ? null : i;
+    if (!f) return;
+
+    const isOpenNow = (this.openFirmIndex === i);
+
+    // Si la ligne est fermée et n’a pas de détails, on bloque l’ouverture.
+    if (!this.firmHasDetails(f) && !isOpenNow) return;
+
+    // Toggle : ouvre/ferme la même ligne
+    this.openFirmIndex = isOpenNow ? null : i;
     this.scheduleBind();
   }
+
   isOpen(i: number){ return this.openFirmIndex === i; }
   chevronAriaExpanded(i: number){ return this.isOpen(i) ? 'true' : 'false'; }
 
@@ -270,6 +290,24 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         gsap.set(el, { clearProps: 'transform' });
       });
     });
+  }
+
+  /* ===== Helpers ouverture ===== */
+  private shuffleInPlace<T>(arr: T[]): T[] {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  private firstOpenableIndex(): number | null {
+    if (!this.firms?.length) return null;
+    if (!this.OPEN_ONLY_IF_HAS_DETAILS) return 0;
+    for (let i = 0; i < this.firms.length; i++) {
+      if (this.firmHasDetails(this.firms[i])) return i;
+    }
+    return null;
   }
 
   /* ===== Animations ===== */

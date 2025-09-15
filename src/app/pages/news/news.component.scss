@@ -442,7 +442,6 @@ $fw-bold:    map.get(vars.$font-weight, "bold");           /* 700 */
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   align-items: center;
-  border-top: $bd-1 solid rgba(0, 0, 0, 0.06);
 }
 
 .pager.prehide-row {

@@ -172,7 +172,7 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 
   .firm-row{
-    position: relative;
+    position: relative; /* contexte d’empilement */
     display: block;
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
   }
@@ -183,6 +183,8 @@ $white:      map.get(vars.$theme-colors, "white");
     align-items: center;
     column-gap: var(--gap);
     min-block-size: var(--row-h);
+    position: relative;
+    z-index: 2; /* l’en-tête doit rester cliquable au-dessus du panneau */
   }
 
   .fr-logo{
@@ -213,6 +215,8 @@ $white:      map.get(vars.$theme-colors, "white");
   .fr-toggle{
     background: none; border: 0; color: $blue-hero; cursor: pointer; justify-self: end;
     display: grid; place-items: center; width: 34px; height: 34px;
+    position: relative;
+    z-index: 3; /* bouton au premier plan */
   }
   .chevron{ width: 24px; height: 35px; transform: rotate(90deg); transition: transform .25s ease; }
   .firm-row.open .chevron{ transform: rotate(0deg); }
@@ -242,6 +246,8 @@ $white:      map.get(vars.$theme-colors, "white");
     gap: clamp(24px, 4vw, 40px);
     padding-bottom: 24px;
     align-items: stretch;
+    position: relative;
+    z-index: 1; /* le panneau passe sous l’en-tête */
   }
 
   .firm-row.open .fr-region{ display: none; }
@@ -251,7 +257,7 @@ $white:      map.get(vars.$theme-colors, "white");
   .ff-right{ display: flex; flex-direction: column; min-height: 100%; }
 
   .ff-left {
-    margin-top: 5rem;
+    margin-top: 10px;
 
     @media (max-width: 768px){
       margin-top: 0;
@@ -314,13 +320,27 @@ $white:      map.get(vars.$theme-colors, "white");
     padding: 0 10px 0 14px; border: 0; border-radius: 6px; background: $red; color: #FFF;
     text-decoration: none; font-size: 13px; font-weight: 400; line-height: normal;
   }
-  .btn-contact .ico-mail{ inline-size: 31px; block-size: 19px; display: grid; place-items: center; }
+  .btn-contact .ico-mail{
+    inline-size: 31px;
+    block-size: 19px;
+    display: grid;
+    place-items: center;
+    color: #A33536;
+  }
+  .btn-contact .ico-mail svg{ display:block; }
 
+  /* ——— LinkedIn (Firms) : affichage robuste ——— */
   .lk{
     display: inline-flex; align-items: center; justify-content: center;
-    width: 39px; height: 39px; flex-shrink: 0; padding: 0; border-radius: 6px; background: none; text-decoration: none;
+    width: 39px; height: 39px; flex-shrink: 0; padding: 0; border-radius: 6px;
+    background: none; text-decoration: none;
+    line-height: 0;           /* évite les espaces inline autour du SVG */
+    flex: 0 0 39px;           /* réserve l'espace, évite le rétrécissement */
   }
-  .lk-ico{ width: 40px; height: 40px; }
+  .lk-ico{
+    width: 40px; height: 40px;
+    display: block;           /* évite que le SVG soit rogné/inline */
+  }
 
   @media (max-width: 720px){
     .fr-details{ grid-template-columns: 1fr; }
@@ -353,16 +373,22 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 }
 
-/* Remonter le panneau détaillé sous le trait */
+/* Remonter le panneau détaillé sous le trait (sans couvrir l’en-tête) */
 .firms {
   --overlap-right: calc(var(--row-h) - 20px);
 
-  .firm-row.open .fr-details{
-    margin-top: calc(-1 * var(--overlap-right));
+  @media (min-width: 1025px){
+    .firm-row.open .fr-details{
+      margin-top: calc(-1 * var(--overlap-right)); /* chevauche visuel */
+      padding-top: var(--overlap-right);           /* contenu non masqué par l’entête */
+    }
   }
 
   @media (max-width: 1024px){
-    .firm-row.open .fr-details{ margin-top: 0; }
+    .firm-row.open .fr-details{
+      margin-top: 0;
+      padding-top: 0;
+    }
   }
 }
 
