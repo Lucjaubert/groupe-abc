@@ -5,7 +5,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { WordpressService } from '../../services/wordpress.service';
-  import { SeoService } from '../../services/seo.service';
+import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 
@@ -68,9 +68,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('pilotGrid')  pilotGridRef!: ElementRef<HTMLElement>;
 
   /* ===== Flags anti “double flash / double play” ===== */
-  /** Le bloc Hero (H1/H2/Intro) ne se bind qu’UNE fois */
   private heroBound = false;
-  /** Coalesce des rebinds */
   private bindScheduled = false;
 
   /* ===== Init ===== */
@@ -155,12 +153,107 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         ].filter(Boolean) as {src: string; caption?: string}[]
       };
 
-      /* ---------- SEO ---------- */
+      /* ============== SEO (bilingue FR/EN, complet) ============== */
+      const isEN       = this.currentPath().startsWith('/en/');
+      const siteUrl    = 'https://groupe-abc.fr';
+      const pathFR     = '/biens-et-methodes';
+      const pathEN     = '/en/assets-methods';
+      const canonical  = isEN ? pathEN : pathFR;
+
+      const alternates = [
+        { lang: 'fr',        href: `${siteUrl}${pathFR}` },
+        { lang: 'en',        href: `${siteUrl}${pathEN}` },
+        { lang: 'x-default', href: `${siteUrl}${pathFR}` }
+      ];
+
+      // Description de page (on limite à ~160 chars) + ajout d’un contexte sectoriel utile SEO
       const introForDesc = (acf?.hero?.intro_body || '').toString();
+      const baseDesc = this.strip(introForDesc, 160);
+      const extraFR  = ' Biens résidentiels, commerciaux, tertiaires, industriels, hôtellerie, santé, charges foncières et terrains.';
+      const extraEN  = ' Residential, commercial, office, industrial, hospitality, healthcare, land & development charges.';
+      const desc = (isEN ? baseDesc + extraEN : baseDesc + extraFR).trim();
+
+      // Titre localisé avec fallback sûr
+      const titleFR = `${this.hero.title || 'Biens & Méthodes'} – Groupe ABC`;
+      const titleEN = `${(this.hero.title || 'Assets & Methods').replace('Biens & Méthodes','Assets & Methods')} – Groupe ABC`;
+      const pageTitle = isEN ? titleEN : titleFR;
+
+      // OG image : roue → fallback social
+      const ogCandidate = (this.wheel?.image && this.wheel.image.trim()) || '/assets/og/og-default.jpg';
+      const ogAbs       = this.absUrl(ogCandidate, siteUrl);
+      const ogIsDefault = ogAbs.endsWith('/assets/og/og-default.jpg');
+
+      // Logo d’organisation (carré ≥112px) : on réutilise ton favicon 512x512
+      const logoUrl = `${siteUrl}/assets/favicons/android-chrome-512x512.png`;
+
       this.seo.update({
-        title: `${this.hero.title} – Groupe ABC`,
-        description: this.strip(introForDesc, 160),
-        image: ''
+        title: pageTitle,
+        description: desc,
+        keywords: isEN
+          ? 'valuation methods, DCF, market comparison, yield, real estate assets, France, Paris, DOM-TOM'
+          : 'méthodes d’évaluation, DCF, comparaison, rendement, biens immobiliers, France, Paris, DOM-TOM',
+        canonical,
+        robots: 'index,follow',
+        locale: isEN ? 'en_US' : 'fr_FR',
+
+        image: ogAbs,
+        imageAlt: isEN ? 'Valuation methods – Groupe ABC' : 'Méthodes d’évaluation – Groupe ABC',
+        ...(ogIsDefault ? { imageWidth: 1200, imageHeight: 630 } : {}),
+        type: 'website',
+
+        alternates,
+
+        jsonLd: {
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'WebSite',
+              '@id': `${siteUrl}/#website`,
+              url: siteUrl,
+              name: 'Groupe ABC',
+              inLanguage: isEN ? 'en-US' : 'fr-FR',
+              publisher: { '@id': `${siteUrl}/#organization` },
+              potentialAction: {
+                '@type': 'SearchAction',
+                target: `${siteUrl}/?s={search_term_string}`,
+                'query-input': 'required name=search_term_string'
+              }
+            },
+            {
+              '@type': 'Organization',
+              '@id': `${siteUrl}/#organization`,
+              name: 'Groupe ABC',
+              url: siteUrl,
+              logo: {
+                '@type': 'ImageObject',
+                url: logoUrl,
+                width: 512,
+                height: 512
+              },
+              sameAs: ['https://www.linkedin.com/company/groupe-abc']
+            },
+            {
+              '@type': 'WebPage',
+              '@id': `${siteUrl}${canonical}#webpage`,
+              url: `${siteUrl}${canonical}`,
+              name: pageTitle,
+              description: desc,
+              inLanguage: isEN ? 'en-US' : 'fr-FR',
+              isPartOf: { '@id': `${siteUrl}/#website` },
+              primaryImageOfPage: {
+                '@type': 'ImageObject',
+                url: ogAbs
+              }
+            },
+            {
+              '@type': 'BreadcrumbList',
+              'itemListElement': [
+                { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl },
+                { '@type': 'ListItem', position: 2, name: isEN ? 'Assets & Methods' : 'Biens & Méthodes', item: `${siteUrl}${canonical}` }
+              ]
+            }
+          ]
+        }
       });
 
       this.scheduleBind();
@@ -185,6 +278,20 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   private strip(html: string, max = 160): string {
     const t = (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
+  }
+
+  /* === Helpers SEO === */
+  private currentPath(): string {
+    try { return window?.location?.pathname || '/'; } catch { return '/'; }
+  }
+  private absUrl(url: string, origin: string): string {
+    if (!url) return '';
+    try {
+      if (/^https?:\/\//i.test(url)) return url;      // absolue
+      if (/^\/\//.test(url)) return 'https:' + url;   // protocole-relative
+      const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+      return url.startsWith('/') ? o + url : `${o}/${url}`;
+    } catch { return url; }
   }
 
   /* ================= Animations ================= */
@@ -237,11 +344,9 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     const h2 = this.heroSubRef?.nativeElement;
     const hi = this.heroIntroRef?.nativeElement;
 
-    // Toujours tuer d’éventuels tweens résiduels avant de faire quoi que ce soit
     gsap.killTweensOf([h1, h2, hi].filter(Boolean) as HTMLElement[]);
 
     if (!this.heroBound) {
-      // Première et unique animation du bloc Hero (timeline groupée)
       const tl = gsap.timeline({ defaults: { ease: EASE } });
 
       if (h1) tl.fromTo(h1, { autoAlpha: 0, y: 20 }, {
@@ -264,7 +369,6 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.heroBound = true;
     } else {
-      // Rebinds ultérieurs : on se contente de “fixer” l’état sans animation
       [h1, h2, hi].forEach(el => {
         if (!el) return;
         rmPrehide(el);

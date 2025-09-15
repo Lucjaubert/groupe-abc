@@ -197,13 +197,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.teachingCourses = courses;
 
-      /* SEO */
+      /* ===== SEO bilingue ===== */
       const introText = (acf?.hero?.intro_body || '').toString();
-      this.seo.update({
-        title: `${this.heroTitle} – Groupe ABC`,
-        description: this.strip(introText, 160),
-        image: ''
-      });
+      this.applySeo(introText);
 
       this.scheduleBind();
     });
@@ -296,7 +292,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private shuffleInPlace<T>(arr: T[]): T[] {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+      const tmp: T = arr[i];   // swap sûr, pas de 'undefined'
+      arr[i] = arr[j];
+      arr[j] = tmp;
     }
     return arr;
   }
@@ -309,6 +307,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     }
     return null;
   }
+
 
   /* ===== Animations ===== */
   ngAfterViewInit(): void {
@@ -480,5 +479,124 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (img && img.src !== this.defaultPortrait){
       img.src = this.defaultPortrait;
     }
+  }
+
+  /* ===================== SEO ===================== */
+  private applySeo(rawIntro: string): void {
+    // Langue par path
+    const path = this.currentPath();
+    const isEN = path.startsWith('/en/');
+
+    // Domaine + chemins (adapte si tes routes diffèrent)
+    const site   = 'https://groupe-abc.fr';
+    const pathFR = '/equipes';
+    const pathEN = '/en/team';
+    const canonPath = isEN ? pathEN : pathFR;
+    const canonical = this.normalizeUrl(site, canonPath);
+
+    // hreflang
+    const alternates = [
+      { lang: 'fr',        href: this.normalizeUrl(site, pathFR) },
+      { lang: 'en',        href: this.normalizeUrl(site, pathEN) },
+      { lang: 'x-default', href: this.normalizeUrl(site, pathFR) }
+    ];
+
+    const orgName = 'Groupe ABC';
+
+    // Texte institutionnel (fourni) — FR/EN
+    const orgBlurbFR = `Le Groupe ABC est un groupement d’Experts immobiliers indépendants présent à Paris, en Régions et DOM-TOM (6 cabinets, 20+ collaborateurs), intervenant en amiable et judiciaire pour tous types de biens : résidentiel, commercial, tertiaire, industriel, hôtellerie, loisirs, santé, charges foncières et terrains. Les experts sont membres RICS, IFEI et CNEJI.`;
+    const orgBlurbEN = `Groupe ABC is a network of independent real-estate valuation experts across Paris, Regions and Overseas (6 firms, 20+ professionals), acting in amicable and judicial contexts for residential, commercial, office, industrial, hospitality, leisure & healthcare assets, land and development rights. Members of RICS, IFEI and CNEJI.`;
+
+    const introShort = this.strip(rawIntro, 110);
+    const title = isEN ? `Our team – ${orgName}` : `Équipes – ${orgName}`;
+    const description = this.strip(
+      (introShort ? `${introShort} ` : '') + (isEN ? orgBlurbEN : orgBlurbFR),
+      160
+    );
+
+    // Open Graph
+    const ogImage = '/assets/og/og-default.jpg';
+    const ogAbs   = this.absUrl(ogImage, site);
+    const isDefaultOg = ogImage.endsWith('/og-default.jpg');
+
+    // JSON-LD IDs
+    const siteId = site.replace(/\/+$/, '') + '#website';
+    const orgId  = site.replace(/\/+$/, '') + '#organization';
+
+    const organization = {
+      '@type': 'Organization',
+      '@id': orgId,
+      name: orgName,
+      url: site,
+      logo: `${site}/assets/favicons/android-chrome-512x512.png`, // adapte si besoin
+      sameAs: ['https://www.linkedin.com/company/groupe-abc-experts/']
+    };
+
+    const website = {
+      '@type': 'WebSite',
+      '@id': siteId,
+      url: site,
+      name: orgName,
+      inLanguage: isEN ? 'en-US' : 'fr-FR',
+      publisher: { '@id': orgId },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${site}/?s={search_term_string}`,
+        'query-input': 'required name=search_term_string'
+      }
+    };
+
+    const collectionPage = {
+      '@type': 'CollectionPage',
+      name: title,
+      description,
+      url: canonical,
+      inLanguage: isEN ? 'en-US' : 'fr-FR',
+      isPartOf: { '@id': siteId },
+      about: { '@id': orgId },
+      primaryImageOfPage: ogAbs
+    };
+
+    const breadcrumb = {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: site },
+        { '@type': 'ListItem', position: 2, name: isEN ? 'Team' : 'Équipes', item: canonical }
+      ]
+    };
+
+    this.seo.update({
+      title,
+      description,
+      canonical: canonPath, // ton SeoService absolutise avec l’origin
+      image: ogAbs,
+      imageAlt: isEN ? `${orgName} – Team` : `${orgName} – Équipes`,
+      ...(isDefaultOg ? { imageWidth: 1200, imageHeight: 630 } : {}),
+      type: 'website',
+      locale: isEN ? 'en_US' : 'fr_FR',
+      alternates,
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@graph': [website, organization, collectionPage, breadcrumb]
+      }
+    });
+  }
+
+  private normalizeUrl(base: string, path: string): string {
+    const b = base.endsWith('/') ? base.slice(0, -1) : base;
+    const p = path.startsWith('/') ? path : `/${path}`;
+    return `${b}${p}`;
+  }
+  private absUrl(url: string, origin: string): string {
+    if (!url) return '';
+    try {
+      if (/^https?:\/\//i.test(url)) return url;
+      if (/^\/\//.test(url)) return 'https:' + url;
+      const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+      return url.startsWith('/') ? o + url : `${o}/${url}`;
+    } catch { return url; }
+  }
+  private currentPath(): string {
+    try { return window?.location?.pathname || '/'; } catch { return '/'; }
   }
 }

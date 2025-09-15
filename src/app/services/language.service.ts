@@ -1,69 +1,95 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
-import { BehaviorSubject, filter, take } from 'rxjs';
-import { isPlatformBrowser } from '@angular/common';
-import { WeglotService } from './weglot.service';
+import { BehaviorSubject } from 'rxjs';
+import { isPlatformBrowser, DOCUMENT } from '@angular/common';
+import { Router } from '@angular/router';
 
 export type Lang = 'fr' | 'en';
 
-const STORAGE_KEY = 'lang';
-const DEFAULT_LANG: Lang = 'fr';
-
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
-  private langSubj = new BehaviorSubject<Lang>(DEFAULT_LANG);
-  readonly lang$ = this.langSubj.asObservable();
+  /** Langue courante observable */
+  readonly lang$ = new BehaviorSubject<Lang>('fr');
 
-  get lang(): Lang { return this.langSubj.value; }
+  /** Getter pratique */
+  get lang(): Lang {
+    return this.lang$.value;
+  }
 
   constructor(
-    @Inject(PLATFORM_ID) private platformId: Object,
-    private weglot: WeglotService
+    private router: Router,
+    @Inject(DOCUMENT) private doc: Document,
+    @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    // FR d'abord, sauf si l'utilisateur a déjà choisi une langue
-    const initial = this.readPersisted() ?? DEFAULT_LANG;
-
-    this.langSubj.next(initial);
-    this.updateHtmlLang(initial);
-
-    // Applique la langue UNE FOIS Weglot initialisé
-    this.weglot.ready$.pipe(filter(Boolean), take(1))
-      .subscribe(() => this.weglot.switchTo(initial));
+    const detected = this.detectFromPath();
+    this.lang$.next(detected);
+    this.applyHtmlLang(detected);
   }
 
-  /** FR ↔ EN */
+  /** FR <-> EN */
   toggle(): void {
-    this.setLang(this.lang === 'fr' ? 'en' : 'fr');
+    const next: Lang = this.lang === 'fr' ? 'en' : 'fr';
+    this.set(next);
   }
 
-  /** Définit la langue et synchronise Weglot */
-  setLang(next: Lang): void {
-    if (next === this.lang) return;
-    this.langSubj.next(next);
-    this.persist(next);
-    this.updateHtmlLang(next);
-    this.weglot.switchTo(next); // ok même si déjà prêt; sinon no-op jusqu’au ready$
+  /** Fixer explicitement la langue */
+  set(l: Lang): void {
+    if (l === this.lang) {
+      this.applyHtmlLang(l);
+      return;
+    }
+    this.lang$.next(l);
+    this.applyHtmlLang(l);
+    this.navigateToLang(l);
   }
 
-  // --------- internes ---------
+  /* =============== PRIVÉ =============== */
 
-  /** Ne lit QUE le storage (pas la langue navigateur) */
-  private readPersisted(): Lang | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
+  /** Détecte la langue depuis le path (/en/... => en, sinon fr) */
+  private detectFromPath(): Lang {
     try {
-      const v = localStorage.getItem(STORAGE_KEY) as Lang | null;
-      return v === 'fr' || v === 'en' ? v : null;
+      const path = this.doc?.defaultView?.location?.pathname || '/';
+      return path.startsWith('/en/') || path === '/en' ? 'en' : 'fr';
     } catch {
-      return null;
+      return 'fr';
     }
   }
 
-  private persist(l: Lang): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-    try { localStorage.setItem(STORAGE_KEY, l); } catch {}
+  /** Met à jour <html lang="..."> pour SEO & a11y */
+  private applyHtmlLang(l: Lang): void {
+    try {
+      this.doc.documentElement.setAttribute('lang', l === 'en' ? 'en' : 'fr');
+    } catch {}
   }
 
-  private updateHtmlLang(l: Lang): void {
+  /** Construit l’URL équivalente dans la cible et y navigue */
+  private navigateToLang(target: Lang): void {
     if (!isPlatformBrowser(this.platformId)) return;
-    try { document.documentElement.setAttribute('lang', l); } catch {}
+
+    const w = this.doc.defaultView!;
+    const currPath = w.location.pathname || '/';
+    const qs = w.location.search || '';
+    const hash = w.location.hash || '';
+
+    let newPath: string;
+    if (target === 'en') {
+      newPath = currPath.startsWith('/en/')
+        ? currPath
+        : currPath === '/' || currPath === '/en'
+          ? '/en'
+          : `/en${currPath}`;
+    } else {
+      newPath = currPath.startsWith('/en/')
+        ? currPath.replace(/^\/en(\/?)/, '/')
+        : currPath === '/en'
+          ? '/'
+          : currPath;
+    }
+
+    newPath = newPath.replace(/\/{2,}/g, '/');
+    const finalUrl = newPath + qs + hash;
+
+    this.router.navigateByUrl(finalUrl, { replaceUrl: true }).catch(() => {
+      w.location.assign(finalUrl);
+    });
   }
 }

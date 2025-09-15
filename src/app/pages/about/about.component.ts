@@ -195,21 +195,142 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       }
       this.timeline = events;
 
-      /* ===== PARTENAIRES (carrousel auto) =====
-         - Mélange la liste
-         - Démarre sur un index aléatoire
-      */
+      /* ===== PARTENAIRES (carrousel auto) ===== */
       this.allPartners = Array.isArray(teamPartners) ? this.shuffle(teamPartners) : [];
       const startOn = Math.floor(Math.random() * Math.max(1, this.allPartners.length));
       this.setActivePartner(startOn);
       this.startAutoRotate();
 
-      /* SEO */
+      /* =======================
+      * SEO bilingue (FR/EN) — enrichi avec données métier
+      * =======================*/
+      const isEN      = this.currentPath().startsWith('/en/');
+      const locale    = isEN ? 'en_US'  : 'fr_FR';
+
+      // URLs par langue
+      const pathFR    = '/qui-sommes-nous';
+      const pathEN    = '/en/about-us';
+      const canonPath = isEN ? pathEN : pathFR;
+      const siteUrl   = 'https://groupe-abc.fr';
+      const canonical = `${siteUrl}${canonPath}`;
+
+      const alternates = [
+        { lang: 'fr',        href: `${siteUrl}${pathFR}` },
+        { lang: 'en',        href: `${siteUrl}${pathEN}` },
+        { lang: 'x-default', href: `${siteUrl}${pathFR}` }
+      ];
+
+      // Titre / description localisés
+      const defaultTitleFR = 'Qui sommes-nous ? – Groupe ABC';
+      const defaultTitleEN = 'About us – Groupe ABC';
+      const pageTitle      = (this.intro.title || (isEN ? defaultTitleEN : defaultTitleFR)).trim();
+
+      // Description FR/EN intégrant 6 cabinets, 20+ collab., actifs & amiable/judiciaire
+      const descFR = (
+        this.strip(this.intro.content, 160) ||
+        'Groupement d’Experts immobiliers indépendants (6 cabinets, 20+ collaborateurs) – Paris, Régions & DOM-TOM. ' +
+        'Expertise de tous types d’actifs (résidentiel, commercial, tertiaire, industriel, hôtellerie, loisirs, santé, foncier/terrains), ' +
+        'en contexte amiable ou judiciaire. Affiliations : RICS, IFEI, CNEJI.'
+      );
+      const descEN = (
+        'Independent group of valuation experts (6 firms, 20+ staff) – Paris, regions & French overseas (DOM-TOM). ' +
+        'All asset classes (residential, commercial, office, industrial, hospitality, leisure, healthcare, land), ' +
+        'amicable or judicial contexts. Affiliations: RICS, IFEI, CNEJI.'
+      );
+      const pageDesc = isEN ? descEN : descFR;
+
+      // Keywords orientés SEO
+      const kwFR = [
+        'Groupe ABC','experts immobiliers','évaluation immobilière','expertise immobilière',
+        'Paris','Régions','DOM-TOM','résidentiel','commercial','tertiaire','industriel',
+        'hôtellerie','loisirs','santé','foncier','terrains','amiable','judiciaire',
+        'RICS','IFEI','CNEJI','DCF','comparaison','rendement'
+      ].join(', ');
+      const kwEN = [
+        'Groupe ABC','real estate valuation','property appraisal','Paris','French overseas',
+        'residential','commercial','office','industrial','hospitality','leisure','healthcare',
+        'land','amicable','judicial','RICS','IFEI','CNEJI','DCF','market comparison','yield'
+      ].join(', ');
+
+      // Image OG : skyline → carte → fallback
+      const ogImage = (this.mesh?.image && this.mesh.image.trim())
+                  || (this.mapSection?.image && this.mapSection.image.trim())
+                  || '/assets/og/og-default.jpg';
+      const ogAlt   = this.mesh?.title || this.mapSection?.title || 'Groupe ABC';
+      const isDefaultOg = ogImage.endsWith('/assets/og/og-default.jpg');
+
+      // JSON-LD graph
+      const siteId = `${siteUrl}/#website`;
+      const orgId  = `${siteUrl}/#organization`;
+
       this.seo.update({
-        title: this.intro.title || 'Qui sommes-nous ? – Groupe ABC',
-        description: this.strip(this.intro.content, 160),
-        image: ''
+        // metas principales
+        title: pageTitle,
+        description: pageDesc,
+        keywords: isEN ? kwEN : kwFR,
+        canonical: canonPath,
+
+        // Open Graph / Twitter
+        image: ogImage,
+        imageAlt: ogAlt,
+        ...(isDefaultOg ? { imageWidth: 1200, imageHeight: 630 } : {}),
+        type: 'website',
+        locale,
+
+        // hreflang
+        alternates,
+
+        // JSON-LD (AboutPage + Organization enrichie + Breadcrumb + WebSite)
+        jsonLd: {
+          '@context': 'https://schema.org',
+          '@graph': [
+            {
+              '@type': 'AboutPage',
+              name: pageTitle,
+              description: pageDesc,
+              url: canonical,
+              inLanguage: isEN ? 'en-US' : 'fr-FR',
+              isPartOf: { '@id': siteId },
+              primaryImageOfPage: ogImage
+            },
+            {
+              '@type': 'Organization',
+              '@id': orgId,
+              name: 'Groupe ABC',
+              url: `${siteUrl}/`,
+              logo: `${siteUrl}/assets/favicons/android-chrome-512x512.png`,
+              sameAs: ['https://www.linkedin.com/company/groupe-abc'],
+              memberOf: [
+                { '@type': 'Organization', name: 'RICS',  url: 'https://www.rics.org' },
+                { '@type': 'Organization', name: 'IFEI',  url: 'https://www.ifei.org' },
+                { '@type': 'Organization', name: 'CNEJI', url: 'https://www.cneji.org' }
+              ],
+              knowsAbout: [
+                'évaluation immobilière','property appraisal','DCF','méthode par comparaison','méthode par rendement',
+                'résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé','foncier','terrains',
+                'expertise amiable','expertise judiciaire'
+              ],
+              areaServed: ['FR','GP','RE','MQ','GF','YT','PF','NC','PM','WF','BL','MF']
+            },
+            {
+              '@type': 'BreadcrumbList',
+              itemListElement: [
+                { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: `${siteUrl}/` },
+                { '@type': 'ListItem', position: 2, name: isEN ? 'About us' : 'Qui sommes-nous ?', item: canonical }
+              ]
+            },
+            {
+              '@type': 'WebSite',
+              '@id': siteId,
+              name: 'Groupe ABC',
+              url: `${siteUrl}/`,
+              inLanguage: isEN ? 'en-US' : 'fr-FR',
+              publisher: { '@id': orgId }
+            }
+          ]
+        }
       });
+
 
       /* Bind anims quand DOM prêt */
       this.scheduleBind();
@@ -658,4 +779,10 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     const t = (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
   }
+
+  /** Renvoie le path courant (côté navigateur) */
+  private currentPath(): string {
+    try { return window?.location?.pathname || '/'; } catch { return '/'; }
+  }
+
 }

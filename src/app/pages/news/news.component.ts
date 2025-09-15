@@ -101,9 +101,102 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.baseOrder = this.restoreOrBuildOrder(this.posts);
     this.rebuildView();
 
+    /* =======================
+     *      SEO bilingue
+     * =======================*/
+    const isEN    = this.currentPath().startsWith('/en/');
+    const siteUrl = 'https://groupe-abc.fr';
+    const pathFR  = '/actualites';
+    const pathEN  = '/en/news';
+    const canonical = isEN ? pathEN : pathFR;
+
+    const alternates = [
+      { lang: 'fr',        href: `${siteUrl}${pathFR}` },
+      { lang: 'en',        href: `${siteUrl}${pathEN}` },
+      { lang: 'x-default', href: `${siteUrl}${pathFR}` }
+    ];
+
+    const title = isEN ? 'News – Groupe ABC' : 'Actualités – Groupe ABC';
+
+    // Description courte + rappel sectoriel utile au SEO
+    const baseDesc = this.strip(this.intro.html, 150);
+    const extraFR  = ' Marché, juridique, expertise – Paris & Régions, DOM-TOM.';
+    const extraEN  = ' Market, legal, expertise – Paris & Regions, Overseas.';
+    const description = (baseDesc + (isEN ? extraEN : extraFR)).trim();
+
+    // OG image : 1ère actu avec visuel → fallback
+    const firstWithImg = this.posts.find(p => !!p.imageUrl)?.imageUrl || '/assets/og/og-default.jpg';
+    const ogAbs = this.absUrl(firstWithImg, siteUrl);
+    const isDefaultOG = ogAbs.endsWith('/assets/og/og-default.jpg');
+
+    // Logo organisation (ton favicon carré existant)
+    const logoUrl = `${siteUrl}/assets/favicons/android-chrome-512x512.png`;
+
     this.seo.update({
-      title: `${this.intro.title} – Groupe ABC`,
-      description: this.strip(this.intro.html, 160),
+      title,
+      description,
+      keywords: isEN
+        ? 'news, real estate, valuation, market, legal, France, Paris'
+        : 'actualités, immobilier, expertise, marché, juridique, France, Paris',
+      canonical,
+      robots: 'index,follow',
+      locale: isEN ? 'en_US' : 'fr_FR',
+
+      image: ogAbs,
+      imageAlt: isEN ? 'Groupe ABC – News' : 'Groupe ABC – Actualités',
+      ...(isDefaultOG ? { imageWidth: 1200, imageHeight: 630 } : {}),
+      type: 'website',
+
+      alternates,
+
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'WebSite',
+            '@id': `${siteUrl}/#website`,
+            url: siteUrl,
+            name: 'Groupe ABC',
+            inLanguage: isEN ? 'en-US' : 'fr-FR',
+            publisher: { '@id': `${siteUrl}/#organization` },
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: `${siteUrl}/?s={search_term_string}`,
+              'query-input': 'required name=search_term_string'
+            }
+          },
+          {
+            '@type': 'Organization',
+            '@id': `${siteUrl}/#organization`,
+            name: 'Groupe ABC',
+            url: siteUrl,
+            logo: {
+              '@type': 'ImageObject',
+              url: logoUrl,
+              width: 512,
+              height: 512
+            },
+            sameAs: ['https://www.linkedin.com/company/groupe-abc']
+          },
+          {
+            '@type': 'CollectionPage',               // Page liste d’articles
+            '@id': `${siteUrl}${canonical}#webpage`,
+            url: `${siteUrl}${canonical}`,
+            name: title,
+            description,
+            inLanguage: isEN ? 'en-US' : 'fr-FR',
+            isPartOf: { '@id': `${siteUrl}/#website` },
+            primaryImageOfPage: { '@type': 'ImageObject', url: ogAbs }
+          },
+          {
+            '@type': 'BreadcrumbList',
+            'itemListElement': [
+              { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl },
+              { '@type': 'ListItem', position: 2, name: isEN ? 'News' : 'Actualités', item: `${siteUrl}${canonical}` }
+            ]
+          }
+        ]
+      }
     });
   }
 
@@ -422,5 +515,19 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private killAllScrollTriggers(){
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
+  }
+
+  /** Helpers SEO */
+  private currentPath(): string {
+    try { return window?.location?.pathname || '/'; } catch { return '/'; }
+  }
+  private absUrl(url: string, origin: string): string {
+    if (!url) return '';
+    try {
+      if (/^https?:\/\//i.test(url)) return url;
+      if (/^\/\//.test(url)) return 'https:' + url;
+      const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+      return url.startsWith('/') ? o + url : `${o}/${url}`;
+    } catch { return url; }
   }
 }

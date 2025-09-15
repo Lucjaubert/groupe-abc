@@ -2,15 +2,45 @@ import { Injectable, Inject, Renderer2, RendererFactory2, PLATFORM_ID } from '@a
 import { Title, Meta } from '@angular/platform-browser';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 
+export type OgType = 'website' | 'article';
+
+export interface Hreflang {
+  lang: string;     // 'fr', 'en', 'x-default', ...
+  href: string;     // URL absolue recommandée
+}
+
 export interface SeoConfig {
   title:        string;
   description?: string;
   keywords?:    string;
-  image?:       string;                 // URL absolue recommandée
-  type?:        'website' | 'article';  // og:type
-  canonical?:   string;
-  jsonLd?:      object;                 // JSON-LD de page (@graph ou objet)
-  robots?:      string;                 // ex: 'index,follow' | 'noindex,nofollow'
+
+  // Langues
+  lang?:        'fr' | 'en';           // pilote <html lang> + meta content-language
+  locale?:      string;                // ex. 'fr_FR' | 'en_US'
+  localeAlt?:   string[];              // ex. ['en_US'] -> og:locale:alternate
+
+  image?:       string;                 // URL absolue ou relative
+  imageAlt?:    string;                 // texte alternatif de l'image
+  imageWidth?:  number;                 // ex. 1200
+  imageHeight?: number;                 // ex. 630
+
+  type?:        OgType;                 // 'website' | 'article'
+  canonical?:   string;                 // URL absolue ou relative
+  robots?:      string;                 // 'index,follow' | 'noindex,nofollow'
+
+  // Twitter (facultatif)
+  twitterSite?:    string;              // '@groupeabc'
+  twitterCreator?: string;              // '@auteur'
+
+  // Article (optionnel si type='article')
+  publishedTime?: string;               // ISO 8601
+  modifiedTime?:  string;               // ISO 8601
+
+  // Hreflang alternates
+  alternates?:   Hreflang[];
+
+  // JSON-LD de page (@graph ou objet)
+  jsonLd?:       object;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -29,42 +59,76 @@ export class SeoService {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
-  /** Mise à jour standard (Title + metas + OG/Twitter + Canonical + JSON-LD page) */
+  /** Mise à jour standard (Title + metas + OG/Twitter + Canonical + JSON-LD + hreflang + langue) */
   update(cfg: SeoConfig): void {
     // Title
     if (cfg.title) this.title.setTitle(cfg.title);
+
+    // Langue document (<html lang>) + meta content-language
+    if (cfg.lang) {
+      this.doc.documentElement.setAttribute('lang', cfg.lang);
+      this.setNamedMeta('content-language', cfg.lang);
+    }
 
     // Metas de base
     this.setNamedMeta('description', cfg.description);
     this.setNamedMeta('keywords', cfg.keywords);
 
-    // Robots (et googlebot en miroir, optionnel)
+    // Robots
     this.setNamedMeta('robots', cfg.robots);
     this.setNamedMeta('googlebot', cfg.robots);
 
-    // URL de page cohérente (canonical prioritaire)
-    const pageUrl = cfg.canonical || this.currentUrl() || '';
+    // Résolution des URLs (absolutise si besoin)
+    const origin  = this.siteOrigin() || '';
+    const pageUrl = this.absUrl(cfg.canonical || this.currentUrl() || '', origin);
+    const imgUrl  = this.absUrl(cfg.image || '', origin);
 
     // Open Graph
+    const ogType: OgType = cfg.type ?? 'website';
+    const ogLocale = cfg.locale || (cfg.lang === 'en' ? 'en_US' : 'fr_FR');
     this.setOpenGraph({
-      'og:type':        cfg.type ?? 'website',
+      'og:type':        ogType,
+      'og:locale':      ogLocale,
       'og:title':       cfg.title,
       'og:description': cfg.description ?? '',
-      'og:image':       cfg.image || '',
+      'og:image':       imgUrl || '',
       'og:url':         pageUrl
     });
 
-    // Twitter (si pas d'image → carte texte "summary")
-    const twitterCard = cfg.image ? 'summary_large_image' : 'summary';
+    // og:locale:alternate (autres langues dispo)
+    this.clearOgLocaleAlternate();
+    (cfg.localeAlt || (ogLocale.startsWith('fr') ? ['en_US'] : ['fr_FR']))
+      .forEach(l => this.setPropMeta('og:locale:alternate', l));
+
+    // OG image details
+    if (imgUrl) {
+      this.setPropMeta('og:image:alt',   cfg.imageAlt || cfg.title);
+      if (cfg.imageWidth)  this.setPropMeta('og:image:width',  String(cfg.imageWidth));
+      if (cfg.imageHeight) this.setPropMeta('og:image:height', String(cfg.imageHeight));
+    }
+
+    // Article times
+    if (ogType === 'article') {
+      if (cfg.publishedTime) this.setPropMeta('article:published_time', cfg.publishedTime);
+      if (cfg.modifiedTime)  this.setPropMeta('article:modified_time',  cfg.modifiedTime);
+    }
+
+    // Twitter (si pas d'image → 'summary')
+    const twitterCard = imgUrl ? 'summary_large_image' : 'summary';
     this.setTwitter({
       'twitter:card':        twitterCard,
       'twitter:title':       cfg.title,
       'twitter:description': cfg.description ?? '',
-      'twitter:image':       cfg.image || ''
+      'twitter:image':       imgUrl || '',
+      ...(cfg.twitterSite    ? { 'twitter:site':    cfg.twitterSite }    : {}),
+      ...(cfg.twitterCreator ? { 'twitter:creator': cfg.twitterCreator } : {})
     });
 
-    // Canonical
+    // Canonical (actif aussi en SSR)
     this.setCanonical(pageUrl || undefined);
+
+    // hreflang alternates
+    this.setAlternates(cfg.alternates || []);
 
     // JSON-LD de page (remplace les précédents de page)
     this.clearJsonLd();
@@ -73,7 +137,7 @@ export class SeoService {
 
   /** JSON-LD “sitewide” (WebSite/Organization…), injecté une fois et persistant */
   setSitewideJsonLd(obj: object): void {
-    if (!this.isBrowser || !obj) return;
+    if (!obj) return;
     let script = this.doc.getElementById('ld-sitewide') as HTMLScriptElement | null;
     if (!script) {
       script = this.rnd.createElement('script') as HTMLScriptElement;
@@ -100,31 +164,42 @@ export class SeoService {
     }
   }
 
-  /** Définit (ou retire) le canonical */
+  /** Définit (ou retire) le canonical — fonctionne aussi en SSR */
   setCanonical(url?: string): void {
-    if (!this.isBrowser) return; // côté serveur: ignore
-    let link = this.doc.querySelector<HTMLLinkElement>('link[rel="canonical"]');
-    if (!url) {
-      if (link) link.remove();
-      return;
-    }
-    if (!link) {
-      link = this.rnd.createElement('link') as HTMLLinkElement;
-      link.setAttribute('rel', 'canonical');
+    const link = this.upsertLink('canonical', url);
+    if (!url && link) link.remove();
+  }
+
+  /** hreflang alternates (supprime puis recrée) */
+  setAlternates(alts: Hreflang[]): void {
+    // purge existants
+    Array.from(this.doc.head.querySelectorAll('link[rel="alternate"][hreflang]'))
+      .forEach(el => el.remove());
+
+    if (!alts?.length) return;
+    for (const a of alts) {
+      if (!a.lang || !a.href) continue;
+      const link = this.rnd.createElement('link') as HTMLLinkElement;
+      link.setAttribute('rel', 'alternate');
+      link.setAttribute('hreflang', a.lang);
+      link.setAttribute('href', a.href);
       this.rnd.appendChild(this.doc.head, link);
     }
-    link.setAttribute('href', url);
+  }
+
+  /** Supprime les metas og:locale:alternate existantes */
+  private clearOgLocaleAlternate(): void {
+    this.doc.querySelectorAll('meta[property="og:locale:alternate"]').forEach(m => m.remove());
   }
 
   /** Supprime tous les scripts JSON-LD “page” injectés par ce service */
   clearJsonLd(): void {
-    if (!this.isBrowser) return;
     this.doc.querySelectorAll<HTMLScriptElement>('script[data-jsonld="1"]').forEach(s => s.remove());
   }
 
   /** Ajoute un script JSON-LD “page” */
   addJsonLd(obj: object): void {
-    if (!this.isBrowser || !obj) return;
+    if (!obj) return;
     const script = this.rnd.createElement('script') as HTMLScriptElement;
     script.type = 'application/ld+json';
     script.text = JSON.stringify(obj);
@@ -147,12 +222,24 @@ export class SeoService {
     } catch { return ''; }
   }
 
+  /** Absolutise une URL relative si besoin (sinon renvoie telle quelle) */
+  private absUrl(url: string, origin: string): string {
+    if (!url) return '';
+    try {
+      // déjà absolue
+      if (/^https?:\/\//i.test(url)) return url;
+      // protocole-relative //domain/...
+      if (/^\/\//.test(url)) return (this.isBrowser ? (this.doc.defaultView?.location?.protocol ?? 'https:') : 'https:') + url;
+      // relative → préfixe origin si dispo
+      return origin ? origin.replace(/\/$/, '') + (url.startsWith('/') ? url : `/${url}`) : url;
+    } catch { return url; }
+  }
+
   /* ======================
    * Helpers internes
    * ====================== */
 
   private setNamedMeta(name: string, content?: string): void {
-    // si pas de contenu → on supprime la meta pour éviter le bruit
     if (!content) { this.removeMeta('name', name); return; }
     this.meta.updateTag({ name, content }, `name='${cssEscape(name)}'`);
   }
@@ -167,10 +254,25 @@ export class SeoService {
     const el = this.doc.head.querySelector(`meta[${selector}]`);
     if (el) el.remove();
   }
+
+  /** Crée ou met à jour un <link rel="...">; renvoie l'élément */
+  private upsertLink(rel: string, href?: string): HTMLLinkElement | null {
+    let link = this.doc.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+    if (!href) {
+      if (link) link.remove();
+      return link || null;
+    }
+    if (!link) {
+      link = this.rnd.createElement('link') as HTMLLinkElement;
+      link.setAttribute('rel', rel);
+      this.rnd.appendChild(this.doc.head, link);
+    }
+    link.setAttribute('href', href);
+    return link;
+  }
 }
 
 /** Échappe une valeur pour un sélecteur CSS attribute */
 function cssEscape(v: string): string {
-  // minimal, suffisant pour nos noms de metas
   return v.replace(/"/g, '\\"');
 }

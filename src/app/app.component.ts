@@ -48,8 +48,7 @@ export class AppComponent {
   ngOnInit(): void {
     // 1) JSON-LD “sitewide” injecté une seule fois au démarrage
     const origin = 'https://groupe-abc.fr'; // ← mets ton domaine prod
-    const logoUrl = `${origin}/assets/brand/abc-logo-512.png`; // carré ≥112px (idéal 512x512)
-
+    const logoUrl = `${origin}/assets/favicons/android-chrome-512x512.png`;
     this.seo.setSitewideJsonLd({
       '@context': 'https://schema.org',
       '@graph': [
