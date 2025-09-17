@@ -1,16 +1,16 @@
+// src/app/services/wordpress.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
-/* ===== Types exportés (utilisés par About & Team) ===== */
 export interface PartnerCard {
   photo: string;
-  area: string;        // = region_name
-  nameFirst: string;   // = partner_lastname (prénom)
-  nameLast: string;    // = partner_familyname (nom)
-  jobHtml: string;     // = titles_partner_ | titles_partner
+  area: string;
+  nameFirst: string;
+  nameLast: string;
+  jobHtml: string;
   linkedin?: string;
   email?: string;
 }
@@ -20,7 +20,6 @@ export class WordpressService {
   private http = inject(HttpClient);
   private api = environment.apiWpV2;
 
-  /* ========== Utils ========== */
   private shuffle<T>(arr: T[]): T[] {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -30,7 +29,7 @@ export class WordpressService {
     return a;
   }
 
-  /* ========== HOMEPAGE ========== */
+  /* HOMEPAGE */
   getHomepageData() {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/homepage`, { params })
@@ -74,7 +73,7 @@ export class WordpressService {
     );
   }
 
-  /* ========== ABOUT ========== */
+  /* ABOUT */
   getAboutData() {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/about`, { params })
@@ -95,7 +94,7 @@ export class WordpressService {
     );
   }
 
-  /* ========== NEWS ========== */
+  /* NEWS */
   getAllNews(): Observable<any[]> {
     const perPage = 100;
     const fetchPage = (page: number): Observable<any[]> => {
@@ -135,7 +134,7 @@ export class WordpressService {
     );
   }
 
-  /* ========== SERVICES (OK) ========== */
+  /* SERVICES */
   getServicesRaw(): Observable<any[]> {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/services`, { params });
@@ -149,7 +148,7 @@ export class WordpressService {
     );
   }
 
-  /* ========== BIENS & MÉTHODES ========== */
+  /* METHODS */
   getMethodsRaw(): Observable<any[]> {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/methods`, { params });
@@ -163,7 +162,7 @@ export class WordpressService {
     );
   }
 
-  /* ========== TEAM (inchangé + helpers “partners”) ========== */
+  /* TEAM */
   getTeamData() {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/team`, { params }).pipe(
@@ -172,7 +171,6 @@ export class WordpressService {
     );
   }
 
-  /** Normalise acf.firms -> PartnerCard[] (robuste si c’est au niveau acf directement). */
   private normalizeTeamPartnersFrom(acfRoot: any): PartnerCard[] {
     const firms = (acfRoot?.firms ?? acfRoot) || {};
     const out: PartnerCard[] = [];
@@ -197,7 +195,6 @@ export class WordpressService {
     return out;
   }
 
-  /** Tous les partenaires (pour About). */
   getTeamPartners(): Observable<PartnerCard[]> {
     const params = new HttpParams().set('per_page', '1');
     return this.http.get<any[]>(`${this.api}/team`, { params }).pipe(
@@ -209,7 +206,6 @@ export class WordpressService {
     );
   }
 
-  /** Cherche un partenaire par nom “Prénom Nom” (insensible à la casse). */
   getTeamPartnerByName(namePart: string): Observable<PartnerCard | null> {
     const q = (namePart || '').trim().toLowerCase();
     if (!q) return of(null);

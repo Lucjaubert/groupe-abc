@@ -1,0 +1,107 @@
+@use "sass:map";
+@use "../../../styles/_variables.scss" as vars;
+
+/* Aliases design system */
+$blue-hero:  #444798;
+$blue:       map.get(vars.$theme-colors, "light-blue");
+$dark:       map.get(vars.$theme-colors, "dark-grey");
+$white:      map.get(vars.$theme-colors, "white");
+
+.full-screen-container { display: flex; flex-direction: column; }
+.legal-mentions-wrapper { width: 100%; }
+
+/* ===== Section wrapper ===== */
+.section {
+  position: relative;
+  isolation: isolate;
+}
+
+/* ===== HERO ===== */
+.section.hero {
+  width: 100%;
+  display: grid;
+  place-items: flex-start;
+  text-align: left;
+
+  /* >>> Fallback : on AFFICHE par défaut (sinon ils restent cachés) */
+  .prehide {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    will-change: auto;
+  }
+
+  .section-inner {
+    /* H1 (bleu, toutes tailles) */
+    h1.page-title,
+    #legal-title.page-title {
+      color: $blue-hero !important;
+      font-size: clamp(32px, 3.2vw, 60px);
+      font-weight: map.get(vars.$font-weight, "regular");
+      line-height: 1.1;
+      margin: 0;
+    }
+
+    /* Sous-titre (bleu, toutes tailles) */
+    .page-sub,
+    .hero-intro {
+      color: $blue-hero !important;
+      font-size: clamp(16px, 2.2vw, 24px);
+      font-weight: 400;
+      line-height: 1.32;
+      margin-top: 12px;
+    }
+  }
+}
+
+/* Sécurisation mobile si un style global réécrit la couleur */
+@media (max-width: 767.98px) {
+  .section.hero .section-inner {
+    h1.page-title,
+    #legal-title.page-title,
+    .page-sub,
+    .hero-intro {
+      color: $blue-hero !important;
+    }
+  }
+}
+
+/* ===== CONTENU ===== */
+.second-section {
+  background: $white;
+
+  .legal-content {
+    margin-inline: auto;
+    color: $dark;
+    font-size: 1rem;
+    line-height: 1.7;
+    text-align: left;
+
+    p { margin: 0 0 1.25rem; }
+
+    strong {
+      font-weight: 600;
+      color: $blue;     /* libellés en bleu */
+    }
+
+    a {
+      color: $blue-hero;
+      text-decoration: none;
+      font-size: 1rem;  /* même taille que le texte */
+      font-weight: 400;
+
+      &:hover { text-decoration: underline; }
+    }
+  }
+}
+
+/* A11y */
+@media (prefers-reduced-motion: reduce) {
+  .section .prehide,
+  .section .prehide-row {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+}

@@ -58,10 +58,6 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
 }
 
 @media (max-width: 768px) {
-  .page-title {
-    margin-top: 70px;
-    margin-bottom: 70px;
-  }
   .ctx-sub {
     margin-bottom: 40px;
   }

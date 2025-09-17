@@ -44,7 +44,19 @@ export const routes: Routes = [
       import('./pages/contact/contact.component').then(m => m.ContactComponent),
     title: 'Contact – Groupe ABC'
   },
-  { path: '**', redirectTo: '' }
+  {
+    path: 'mentions-legales',
+    loadComponent: () =>
+      import('./pages/legal-mentions/mentions-legales.component').then(m => m.MentionsLegalesComponent),
+    title: 'Mentions légales'
+  },
+  {
+    path: '404',
+    loadComponent: () =>
+      import('./pages/not-found/not-found.component').then((m) => m.NotFoundComponent),
+    title: 'Page non trouvée'
+  },
+  { path: '**', redirectTo: '404' }
 ];
 
 export default routes;
