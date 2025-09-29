@@ -4,23 +4,26 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
+import { firstValueFrom } from 'rxjs';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ImgFromPipe } from '../../pipes/img-from.pipe';
+import { ImgFastDirective } from '../../directives/img-fast.directive';
 
-/* ===== Types ===== */
+/* ===== Types (résolution d’IDs → URLs en TS) ===== */
 type Hero = { title: string; subtitle?: string; html?: SafeHtml | string };
 type DomainItem = { kind: 'text' | 'group'; text?: string; title?: string; sub?: string[] };
-type Domain = { title: string; icon?: string; items: DomainItem[] };
-type Wheel = { title: string; image?: string; centerAlt?: string };
-type EvalMethod = { icon?: string; title: string; html?: SafeHtml | string };
-type Piloting = { html?: SafeHtml | string; flows: { src: string; caption?: string }[] };
+type Domain = { title: string; icon?: string | number; iconUrl?: string; items: DomainItem[] };
+type Wheel = { title: string; image?: string | number; imageUrl?: string; centerAlt?: string };
+type EvalMethod = { icon?: string | number; iconUrl?: string; title: string; html?: SafeHtml | string };
+type Piloting = { html?: SafeHtml | string; flows: { src: string | number; url?: string; caption?: string }[] };
 
 @Component({
   selector: 'app-methods',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImgFastDirective],
   templateUrl: './methods.component.html',
   styleUrls: ['./methods.component.scss']
 })
@@ -28,12 +31,15 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   private wp  = inject(WordpressService);
   private seo = inject(SeoService);
   private sanitizer = inject(DomSanitizer);
+  private assetsBound = false;
+
+  s(v: unknown): string { return v == null ? '' : '' + v; }
 
   /* ===== Données ===== */
   hero: Hero = { title: 'Biens & Méthodes', subtitle: '', html: '' };
 
   domains: Domain[] = [];
-  wheel: Wheel = { title: '', image: '', centerAlt: '' };
+  wheel: Wheel = { title: '', image: '', imageUrl: '', centerAlt: '' };
 
   evalTitleText = 'Nos méthodes d’évaluation';
   methods: EvalMethod[] = [];
@@ -42,11 +48,12 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   pilotingTitle = 'Pilotage des missions';
   piloting: Piloting = { html: '', flows: [] };
 
+
   /* ===== Fallbacks ===== */
-  defaultDomainIcon = 'assets/fallbacks/icon-placeholder.svg';
-  defaultEvalIcon   = 'assets/fallbacks/icon-placeholder.svg';
-  defaultPilotImg   = 'assets/fallbacks/image-placeholder.svg';
-  defaultWheelImg   = 'assets/fallbacks/image-placeholder.svg';
+  defaultDomainIcon = '/assets/fallbacks/icon-placeholder.svg';
+  defaultEvalIcon   = '/assets/fallbacks/icon-placeholder.svg';
+  defaultPilotImg   = '/assets/fallbacks/image-placeholder.svg';
+  defaultWheelImg   = '/assets/fallbacks/image-placeholder.svg';
 
   /* ===== Refs Animations ===== */
   @ViewChild('heroTitle')     heroTitleRef!: ElementRef<HTMLElement>;
@@ -67,13 +74,13 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('pilotIntro') pilotIntroRef!: ElementRef<HTMLElement>;
   @ViewChild('pilotGrid')  pilotGridRef!: ElementRef<HTMLElement>;
 
-  /* ===== Flags anti “double flash / double play” ===== */
+  /* ===== Flags ===== */
   private heroBound = false;
   private bindScheduled = false;
 
   /* ===== Init ===== */
   ngOnInit(): void {
-    this.wp.getMethodsData().subscribe((payload: any) => {
+    this.wp.getMethodsData().subscribe(async (payload: any) => {
       const root = Array.isArray(payload) ? payload[0] : payload;
       const acf  = root?.acf ?? {};
 
@@ -84,76 +91,96 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         html    : this.safe(acf?.hero?.intro_body || '')
       };
 
-      /* ---------- DOMAINES ---------- */
+      /* ---------- DOMAINES (résolution icons) ---------- */
       const ad = acf?.asset_domains ?? {};
       const list: any[] = [ad?.domain_1, ad?.domain_2, ad?.domain_3].filter(Boolean);
 
-      this.domains = list.map((d: any) => {
-        const items: DomainItem[] = [];
-        for (let i = 1; i <= 4; i++) {
-          const v = d?.[`item_${i}`];
-          if (typeof v === 'string' && v.trim()) items.push({ kind: 'text', text: v.trim() });
-        }
-        const it5 = d?.item_5;
-        if (it5 && (it5.item_5_title || it5.item_5_subtitle_1 || it5.item_5_subtitle_2 || it5.item_5_subtitle_3)) {
-          const sub = [it5.item_5_subtitle_1, it5.item_5_subtitle_2, it5.item_5_subtitle_3]
-            .filter((s: any) => (s || '').toString().trim())
-            .map((s: string) => s.trim());
-          items.push({ kind: 'group', title: (it5.item_5_title || '').trim(), sub });
-        }
-        if (typeof d?.item_6 === 'string' && d.item_6.trim()) {
-          items.push({ kind: 'text', text: d.item_6.trim() });
-        }
+      this.domains = await Promise.all(
+        list.map(async (d: any) => {
+          const items: DomainItem[] = [];
+          for (let i = 1; i <= 4; i++) {
+            const v = d?.[`item_${i}`];
+            if (typeof v === 'string' && v.trim()) items.push({ kind: 'text', text: v.trim() });
+          }
+          const it5 = d?.item_5;
+          if (it5 && (it5.item_5_title || it5.item_5_subtitle_1 || it5.item_5_subtitle_2 || it5.item_5_subtitle_3)) {
+            const sub = [it5.item_5_subtitle_1, it5.item_5_subtitle_2, it5.item_5_subtitle_3]
+              .filter((s: any) => (s || '').toString().trim())
+              .map((s: string) => s.trim());
+            items.push({ kind: 'group', title: (it5.item_5_title || '').trim(), sub });
+          }
+          if (typeof d?.item_6 === 'string' && d.item_6.trim()) {
+            items.push({ kind: 'text', text: d.item_6.trim() });
+          }
 
-        return {
-          title: d?.title || '',
-          icon : d?.icon || d?.icon_1 || d?.icon_2 || '',
-          items
-        } as Domain;
-      });
+          const iconToken = d?.icon ?? d?.icon_1 ?? d?.icon_2 ?? '';
+          const iconUrl   = (await this.resolveMedia(iconToken)) || this.defaultDomainIcon;
 
-      /* ---------- VALEURS (image uniquement) ---------- */
+          return {
+            title  : d?.title || '',
+            icon   : iconToken,
+            iconUrl,
+            items
+          } as Domain;
+        })
+      );
+
+      /* ---------- VALEURS (wheel) ---------- */
       const vw = acf?.values_wheel ?? {};
+      const wimg = vw?.wheel_image;
+      const wheelToken =
+        (typeof wimg === 'number' || typeof wimg === 'string')
+          ? wimg
+          : (wimg?.id ?? wimg?.url ?? wimg?.source_url ?? '');
+      const wheelUrl = (await this.resolveMedia(wheelToken)) || this.defaultWheelImg;
+
       this.wheel = {
         title    : vw?.section_title || 'Un immeuble, des valeurs',
-        image    : '',
+        image    : wheelToken,
+        imageUrl : wheelUrl,
         centerAlt: (vw?.center_label || '').toString()
       };
 
-      const wimg = vw?.wheel_image;
-      const setWheelUrl = (url: string) => { if (url) this.wheel.image = url; };
-      if (typeof wimg === 'number') this.wp.getMediaUrl(wimg).subscribe(setWheelUrl);
-      else if (typeof wimg === 'string') setWheelUrl(wimg);
-      else if (wimg && typeof wimg === 'object') setWheelUrl(wimg.url || wimg.source_url || '');
-
-      /* ---------- MÉTHODES ---------- */
+      /* ---------- MÉTHODES (résolution icons) ---------- */
       const mroot = acf?.methods ?? {};
       this.evalTitleText = mroot?.section_title || 'Nos méthodes d’évaluation';
 
       const keys = Object.keys(mroot).filter(k => /^method_\d+$/i.test(k));
       const coll = keys.map(k => mroot[k]).filter(Boolean);
 
-      this.methods = coll
-        .filter((m: any) => m?.title || m?.description || m?.icon)
-        .map((m: any) => ({
-          icon : m?.icon || '',
-          title: m?.title || '',
-          html : this.safe(m?.description || '')
-        }));
+      this.methods = await Promise.all(
+        coll
+          .filter((m: any) => m?.title || m?.description || m?.icon)
+          .map(async (m: any) => {
+            const iconUrl = (await this.resolveMedia(m?.icon ?? '')) || this.defaultEvalIcon;
+            return {
+              icon   : m?.icon ?? '',
+              iconUrl,
+              title  : m?.title || '',
+              html   : this.safe(m?.description || '')
+            } as EvalMethod;
+          })
+      );
       this.evalOpen = new Array(this.methods.length).fill(false);
 
-      /* ---------- PILOTAGE ---------- */
+      /* ---------- PILOTAGE (résolution flows) ---------- */
       const pil = acf?.mission_piloting ?? {};
       this.pilotingTitle = pil?.section_title || 'Pilotage des missions';
+
+      const flowsSrcs: Array<{ src: string | number; caption?: string }> = [];
+      if (pil?.flow_1) flowsSrcs.push({ src: pil.flow_1 });
+      if (pil?.flow_2) flowsSrcs.push({ src: pil.flow_2 });
+
+      const flowsWithUrl = await Promise.all(
+        flowsSrcs.map(async f => ({ ...f, url: (await this.resolveMedia(f.src)) || this.defaultPilotImg }))
+      );
+
       this.piloting = {
-        html: this.safe(pil?.intro_body || ''),
-        flows: [
-          pil?.flow_1 ? { src: pil.flow_1, caption: '' } : null,
-          pil?.flow_2 ? { src: pil.flow_2, caption: '' } : null
-        ].filter(Boolean) as {src: string; caption?: string}[]
+        html : this.safe(pil?.intro_body || ''),
+        flows: flowsWithUrl
       };
 
-      /* ============== SEO (bilingue FR/EN, complet) ============== */
+      /* ---------- SEO (inchangé dans l’esprit) ---------- */
       const isEN       = this.currentPath().startsWith('/en/');
       const siteUrl    = 'https://groupe-abc.fr';
       const pathFR     = '/biens-et-methodes';
@@ -166,24 +193,22 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         { lang: 'x-default', href: `${siteUrl}${pathFR}` }
       ];
 
-      // Description de page (on limite à ~160 chars) + ajout d’un contexte sectoriel utile SEO
       const introForDesc = (acf?.hero?.intro_body || '').toString();
       const baseDesc = this.strip(introForDesc, 160);
       const extraFR  = ' Biens résidentiels, commerciaux, tertiaires, industriels, hôtellerie, santé, charges foncières et terrains.';
       const extraEN  = ' Residential, commercial, office, industrial, hospitality, healthcare, land & development charges.';
       const desc = (isEN ? baseDesc + extraEN : baseDesc + extraFR).trim();
 
-      // Titre localisé avec fallback sûr
       const titleFR = `${this.hero.title || 'Biens & Méthodes'} – Groupe ABC`;
       const titleEN = `${(this.hero.title || 'Assets & Methods').replace('Biens & Méthodes','Assets & Methods')} – Groupe ABC`;
       const pageTitle = isEN ? titleEN : titleFR;
 
-      // OG image : roue → fallback social
-      const ogCandidate = (this.wheel?.image && this.wheel.image.trim()) || '/assets/og/og-default.jpg';
+      const ogCandidate = (typeof this.wheel.imageUrl === 'string' && this.wheel.imageUrl.trim())
+        ? this.wheel.imageUrl as string
+        : '/assets/og/og-default.jpg';
       const ogAbs       = this.absUrl(ogCandidate, siteUrl);
       const ogIsDefault = ogAbs.endsWith('/assets/og/og-default.jpg');
 
-      // Logo d’organisation (carré ≥112px) : on réutilise ton favicon 512x512
       const logoUrl = `${siteUrl}/assets/favicons/android-chrome-512x512.png`;
 
       this.seo.update({
@@ -195,14 +220,11 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         canonical,
         robots: 'index,follow',
         locale: isEN ? 'en_US' : 'fr_FR',
-
         image: ogAbs,
         imageAlt: isEN ? 'Valuation methods – Groupe ABC' : 'Méthodes d’évaluation – Groupe ABC',
         ...(ogIsDefault ? { imageWidth: 1200, imageHeight: 630 } : {}),
         type: 'website',
-
         alternates,
-
         jsonLd: {
           '@context': 'https://schema.org',
           '@graph': [
@@ -224,12 +246,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
               '@id': `${siteUrl}/#organization`,
               name: 'Groupe ABC',
               url: siteUrl,
-              logo: {
-                '@type': 'ImageObject',
-                url: logoUrl,
-                width: 512,
-                height: 512
-              },
+              logo: { '@type': 'ImageObject', url: logoUrl, width: 512, height: 512 },
               sameAs: ['https://www.linkedin.com/company/groupe-abc']
             },
             {
@@ -240,14 +257,11 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
               description: desc,
               inLanguage: isEN ? 'en-US' : 'fr-FR',
               isPartOf: { '@id': `${siteUrl}/#website` },
-              primaryImageOfPage: {
-                '@type': 'ImageObject',
-                url: ogAbs
-              }
+              primaryImageOfPage: { '@type': 'ImageObject', url: ogAbs }
             },
             {
               '@type': 'BreadcrumbList',
-              'itemListElement': [
+              itemListElement: [
                 { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl },
                 { '@type': 'ListItem', position: 2, name: isEN ? 'Assets & Methods' : 'Biens & Méthodes', item: `${siteUrl}${canonical}` }
               ]
@@ -260,13 +274,13 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /* ===== Accordéon des méthodes ===== */
+  /* ===== Accordéon ===== */
   toggleEval(i: number){ this.setSingleOpen(this.evalOpen, i); }
   private setSingleOpen(arr: boolean[], i: number){
     const willOpen = !arr[i]; arr.fill(false); if (willOpen) arr[i] = true;
   }
 
-  /* ===== Img fallbacks ===== */
+  /* ===== Img fallbacks (utiles si ImgFast est absent sur un img) ===== */
   onDomainImgError(e: Event){ const img = e.target as HTMLImageElement; if (img) img.src = this.defaultDomainIcon; }
   onMethodImgError(e: Event){ const img = e.target as HTMLImageElement; if (img) img.src = this.defaultEvalIcon; }
   onPilotImgError(e: Event){ const img = e.target as HTMLImageElement; if (img) img.src = this.defaultPilotImg; }
@@ -287,26 +301,45 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   private absUrl(url: string, origin: string): string {
     if (!url) return '';
     try {
-      if (/^https?:\/\//i.test(url)) return url;      // absolue
-      if (/^\/\//.test(url)) return 'https:' + url;   // protocole-relative
+      if (/^https?:\/\//i.test(url)) return url;
+      if (/^\/\//.test(url)) return 'https:' + url;
       const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
       return url.startsWith('/') ? o + url : `${o}/${url}`;
     } catch { return url; }
   }
 
+  /** Résout ID WP / objet / string → URL utilisable */
+  private async resolveMedia(token: any): Promise<string> {
+    if (!token) return '';
+    if (typeof token === 'object') {
+      const u = token?.source_url || token?.url || '';
+      if (u) return u;
+      if (token?.id != null) token = token.id;
+    }
+    if (typeof token === 'number') {
+      try { return (await firstValueFrom(this.wp.getMediaUrl(token))) || ''; }
+      catch { return ''; }
+    }
+    if (typeof token === 'string') {
+      const s = token.trim();
+      if (/^\d+$/.test(s)) {
+        try { return (await firstValueFrom(this.wp.getMediaUrl(+s))) || ''; }
+        catch { return ''; }
+      }
+      return s;
+    }
+    return '';
+  }
+
   /* ================= Animations ================= */
   ngAfterViewInit(): void {
     gsap.registerPlugin(ScrollTrigger);
-
-    // Re-binder si des listes changent (sans double-play grâce aux gardes)
     this.assetCols?.changes?.subscribe(() => this.scheduleBind());
     this.evalRows?.changes?.subscribe(() => this.scheduleBind());
-
     this.scheduleBind();
   }
 
   ngOnDestroy(): void {
-    try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
     try { gsap.globalTimeline.clear(); } catch {}
   }
 
@@ -319,7 +352,6 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     }));
   }
 
-  /** Force l’état initial (évite tout flash si la CSS tarde) */
   private forceInitialHidden(host: HTMLElement){
     const pre  = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));
     const rows = Array.from(host.querySelectorAll<HTMLElement>('.prehide-row'));
@@ -331,7 +363,6 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     const host = document.querySelector('.methods-wrapper') as HTMLElement | null;
     if (host) this.forceInitialHidden(host);
 
-    // Kill propre avant rebind (anti doublons)
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
 
     const EASE = 'power3.out';
@@ -339,7 +370,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
       (Array.isArray(els) ? els : [els]).forEach(el => el.classList.remove('prehide','prehide-row'));
     };
 
-    /* ---------- HERO (protégé contre tout rebind) ---------- */
+    /* HERO */
     const h1 = this.heroTitleRef?.nativeElement;
     const h2 = this.heroSubRef?.nativeElement;
     const hi = this.heroIntroRef?.nativeElement;
@@ -376,34 +407,78 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    /* ---------- DOMAINES ---------- */
+    /* DOMAINES */
     const assetsList = this.assetsListRef?.nativeElement;
     const cols = (this.assetCols?.toArray() || []).map(r => r.nativeElement);
 
-    if (assetsList && cols.length){
-      const heads  = cols.map(c => c.querySelector<HTMLElement>('.asset-head'));
-      const lists  = cols.map(c => Array.from(c.querySelectorAll<HTMLElement>('.panel-list > li')));
-      gsap.set((heads.filter(Boolean) as HTMLElement[]), { autoAlpha: 0, y: 14 });
-      lists.forEach(arr => arr.length && gsap.set(arr, { autoAlpha: 0, y: 10 }));
+    if (assetsList && cols.length) {
+      // Ne préparer (set à 0) qu’une seule fois pour éviter le flash
+      let heads: (HTMLElement | null)[] = [];
+      let lists: HTMLElement[][] = [];
 
-      const tl = gsap.timeline({
-        defaults: { ease: EASE },
-        scrollTrigger:{ trigger: assetsList, start: 'top 85%', once: true },
-        onStart: () => { rmPrehide([assetsList, ...cols]); }
-      });
+      if (!this.assetsBound) {
+        heads = cols.map(c => c.querySelector<HTMLElement>('.asset-head'));
+        lists = cols.map(c => Array.from(c.querySelectorAll<HTMLElement>('.panel-list > li')));
 
-      tl.fromTo(assetsList, { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.38 }, 0);
+        const headsOk = heads.filter(Boolean) as HTMLElement[];
+        if (headsOk.length) gsap.set(headsOk, { autoAlpha: 0, y: 14 });
+        lists.forEach(arr => arr.length && gsap.set(arr, { autoAlpha: 0, y: 10 }));
+      }
 
-      cols.forEach((_, i) => {
-        const at  = 0.10 + i * 0.12;
-        const hd  = heads[i];
-        const its = lists[i] || [];
-        if (hd)  tl.to(hd,  { autoAlpha: 1, y: 0, duration: 0.40 }, at);
-        if (its.length) tl.to(its, { autoAlpha: 1, y: 0, duration: 0.40, stagger: 0.04 }, at + 0.06);
-      });
+      // Si l’anim est déjà liée et jouée, on ne rebâtit rien (évite tout flicker)
+      if (!this.assetsBound) {
+        const tl = gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: {
+            id: 'assets-grid',
+            trigger: assetsList,
+            start: 'top 85%',
+            once: true
+          },
+          onStart: () => {
+            // On enlève prehide au moment où ça va jouer (pas avant)
+            rmPrehide([assetsList, ...cols]);
+          },
+          onComplete: () => {
+            this.assetsBound = true;
+            // Libère les styles inline une fois visible, pour ne plus rien toucher ensuite
+            try {
+              const all = [
+                assetsList,
+                ...cols,
+                ...(heads.filter(Boolean) as HTMLElement[]),
+                ...lists.flat()
+              ];
+              gsap.set(all, { clearProps: 'all' });
+            } catch {}
+          }
+        });
+
+        // IMPORTANT: immediateRender:false pour empêcher l’application immédiate du "from" (le hide)
+        tl.fromTo(
+          assetsList,
+          { autoAlpha: 0, y: 12 },
+          { autoAlpha: 1, y: 0, duration: 0.38, immediateRender: false },
+          0
+        );
+
+        cols.forEach((_, i) => {
+          const at  = 0.10 + i * 0.12;
+          const hd  = heads[i] as HTMLElement | undefined;
+          const its = (lists[i] || []) as HTMLElement[];
+
+          if (hd) {
+            tl.to(hd, { autoAlpha: 1, y: 0, duration: 0.40 }, at);
+          }
+          if (its.length) {
+            tl.to(its, { autoAlpha: 1, y: 0, duration: 0.40, stagger: 0.04 }, at + 0.06);
+          }
+        });
+      }
     }
 
-    /* ---------- WHEEL ---------- */
+
+    /* WHEEL */
     const wTitle = this.wheelTitleRef?.nativeElement;
     const wWrap  = this.wheelWrapRef?.nativeElement;
 
@@ -432,7 +507,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
       );
     }
 
-    /* ---------- MÉTHODES ---------- */
+    /* MÉTHODES */
     const eTitle = this.evalTitleRef?.nativeElement;
     const eList  = this.evalListRef?.nativeElement;
     const eRows  = (this.evalRows?.toArray() || []).map(r => r.nativeElement);
@@ -460,7 +535,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
       .to(eRows, { autoAlpha: 1, y: 0, duration: 0.40, stagger: 0.08 }, 0.08);
     }
 
-    /* ---------- PILOTAGE ---------- */
+    /* PILOTAGE */
     const pTitle = this.pilotTitleRef?.nativeElement;
     const pIntro = this.pilotIntroRef?.nativeElement;
     const pGrid  = this.pilotGridRef?.nativeElement;

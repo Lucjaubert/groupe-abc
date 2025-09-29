@@ -308,3 +308,5 @@ app-homepage .key-figures ul > li:nth-child(9) { margin-top: 0 !important; }
 body.no-scroll { overflow: hidden; }
 
 
+.fast-img { opacity: 0; transition: opacity .15s ease; }
+.fast-img.is-ready { opacity: 1; }

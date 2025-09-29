@@ -75,9 +75,25 @@ $white:      map.get(vars.$theme-colors, "white");
 .core-left  { grid-area: left;  display: flex; flex-direction: column; }
 .core-right { grid-area: right; display: flex; flex-direction: column; gap: clamp(10px, 2vw, 14px); align-items: flex-start; }
 
+.core-right.prehide {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
+  will-change: transform, opacity;
+}
+
+/* … (le reste inchangé) … */
+
+/* Visuel quand pas encore de partenaire (optionnel) */
+.core-right.partners.is-empty .member-name .first,
+.core-right.partners.is-empty .member-name .last { opacity: .5; }
+.core-right.partners.is-empty .member-area { opacity: .5; }
+.core-right.partners.is-empty .member-job { opacity: .35; }
+
+
 .block-html {
   color: $blue;
-  font-size: map.get(vars.$font-size, "30"); /* 16px */
+  font-size: map.get(vars.$font-size, "30");
   line-height: 1.6;
   p { margin: 0 0 12px; }
   p:last-child { margin-bottom: 0; }
@@ -91,7 +107,6 @@ $white:      map.get(vars.$theme-colors, "white");
   display: flex; align-items: center; gap: 10px;
   color: $blue-hero; font-size: 20px;
 
-  /* 🔎 Hover doux UNIQUEMENT sur les items de lieux */
   transform-origin: left center;
   transition: transform .28s cubic-bezier(.22,.61,.36,1);
   will-change: transform;
@@ -100,28 +115,22 @@ $white:      map.get(vars.$theme-colors, "white");
   content: "—"; color: $red; font-size: 18px; margin-right: 6px;
 }
 .panel-list.about-where-list li:hover,
-.panel-list.about-where-list li:focus-visible {
-  transform: scale(1.04);
-}
-
-
+.panel-list.about-where-list li:focus-visible { transform: scale(1.04); }
 
 /* =====  Partenaires dans About ===== */
 .core-block.core-right.partners {
-  /* on veut que l’image touche le bas du core-block */
-  padding: 0;                 /* <- on neutralise le padding du core-block */
-  display: flex;              /* pour pouvoir étirer la carte sur toute la hauteur */
+  padding: 0;
+  display: flex;
   flex-direction: column;
   gap: clamp(16px, 2.6vw, 24px);
 
-  /* largeur colonne photo */
-  --team-tile-w: 220px;       /* ajuste si besoin */
+  --team-tile-w: 290px;
 
-  /* petites flèches si tu les utilises */
   .partners-controls {
     position: absolute;
     top: 8px; right: 8px;
     display: flex; gap: 8px; z-index: 2;
+
     .ctrl {
       appearance: none; border: 0; border-radius: 999px;
       width: 32px; height: 32px; line-height: 32px;
@@ -133,38 +142,62 @@ $white:      map.get(vars.$theme-colors, "white");
     }
   }
 
-  /* La carte occupe 100% de la hauteur du core-block */
   .member-card {
     display: grid;
-    grid-template-columns: var(--team-tile-w) 1fr;
-    align-items: stretch;     /* la photo s’étire comme la colonne texte */
+    align-items: stretch;
     column-gap: clamp(16px, 2vw, 20px);
     min-width: 0;
-    flex: 1 1 auto;           /* <- occupe toute la hauteur disponible */
-    /* on remet un padding interne à la carte (puisqu’on a enlevé celui du core-block) */
+    flex: 1 1 auto;
     padding: clamp(16px, 2vw, 24px);
     box-sizing: border-box;
   }
 
+  /* ========= skeleton neutre pendant le chargement photo ========= */
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
   .photo-tile {
-    align-self: stretch;      /* s’aligne sur la hauteur de .member-card */
+    align-self: stretch;
     width: var(--team-tile-w);
-    height: 100%;             /* prend toute la hauteur disponible */
+    aspect-ratio: 3 / 4;
+    height: auto;
+    position: relative;
+    overflow: hidden;
+    background: #f3f4f6;               /* neutre, plus de rose */
     display: grid;
     place-items: end center;
-    overflow: hidden;
-    background: #F1D2DB;
+
+    &::after {
+      content: "";
+      position: absolute; inset: 0;
+      background: linear-gradient(90deg, rgba(0,0,0,.06), rgba(0,0,0,.12), rgba(0,0,0,.06));
+      background-size: 200% 100%;
+      animation: shimmer 1.1s linear infinite;
+      pointer-events: none;
+    }
+  }
+
+  /* Cache le shimmer dès qu’une image réelle est présente (support :has) */
+  @supports selector(:has(img)) {
+    .photo-tile:has(img[src]:not([src=""]))::after { display: none; }
   }
 
   .photo-tile img {
     display: block;
-    width: 100%;
+    width: 180%;
     height: 100%;
-    object-fit: cover;        /* couvre toute la tuile */
+    object-fit: cover;
+
+    opacity: 0;
+    transition: opacity .12s ease;
+    will-change: opacity;
   }
+  .photo-tile img[src]:not([src=""]) { opacity: 1; }
+  /* ================================================== */
 
   .member-text {
-    /* la hauteur de référence = celle de la carte, donc la photo suit */
     height: auto;
     overflow: hidden;
     display: flex;
@@ -180,6 +213,7 @@ $white:      map.get(vars.$theme-colors, "white");
     line-height: 1.2;
     margin-bottom: 6px;
   }
+
   .member-name .first,
   .member-name .last {
     color: $blue;
@@ -190,11 +224,11 @@ $white:      map.get(vars.$theme-colors, "white");
     margin: 0;
     white-space: nowrap;
   }
+
   .member-job {
-    margin-top: auto;
     color: $blue;
     font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: map.get(vars.$font-size, "30"); /* ~16px */
+    font-size: map.get(vars.$font-size, "30");
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: 1.2;
     p { margin: 0 0 2px 0; }
@@ -202,7 +236,6 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 }
 
-/* Effet hover léger */
 .core-right.partners .member-card {
   transform-origin: left center;
   transition: transform .22s cubic-bezier(.22,.61,.36,1);
@@ -211,11 +244,9 @@ $white:      map.get(vars.$theme-colors, "white");
   &:focus-within { transform: scale(1.03); }
 }
 
-/* Mobile : photo un peu moins large */
-@media (max-width: 720px) {
+@media (max-width: 768px) {
   .core-right.partners { --team-tile-w: 140px; }
 }
-
 
 /* ========================= */
 /* MESH (maillage)          */
@@ -235,9 +266,8 @@ $white:      map.get(vars.$theme-colors, "white");
     img { display: block; width: 100%; height: auto; margin-top: clamp(24px, 4vw, 40px); }
   }
 
-  /* Trait animé + labels */
   .mesh-levels {
-    --lineW: 0%; /* animé par GSAP -> 100% */
+    --lineW: 0%;
     position: relative;
     list-style: none;
     margin: clamp(18px, 3vw, 28px) 0 0;
@@ -264,14 +294,8 @@ $white:      map.get(vars.$theme-colors, "white");
   .mesh-levels li:last-child { right: 0; }
 
   @media (max-width: 768px) {
-
-    .mesh-title {
-      font-size: map.get(vars.$font-size, "50");
-    }
-
-    .mesh-levels li {
-      font-size: 14px;
-    }
+    .mesh-title { font-size: map.get(vars.$font-size, "50"); }
+    .mesh-levels li { font-size: 14px; }
   }
 }
 
@@ -287,21 +311,18 @@ $white:      map.get(vars.$theme-colors, "white");
     @media (min-width: 768px) {
       grid-template-columns: 2fr 400px;
       column-gap: clamp(80px, 10vw, 140px);
-      align-items: center; /* centre verticalement la colonne "Où ?" par rapport à la carte */
+      align-items: center;
     }
   }
 
-  /* Sécurité : si le parent change, on garde chaque colonne centrée */
   .map-image,
-  .map-list {
-    align-self: center;
-  }
+  .map-list { align-self: center; }
 
   .map-image img { display:block; width:100%; height:auto; }
 
   .map-title {
     color: $blue-hero;
-    font-size: map.get(vars.$font-size, "100"); /* 48 */
+    font-size: map.get(vars.$font-size, "100");
     font-weight: map.get(vars.$font-weight, "regular");
     margin: 0 0 8px;
   }
@@ -314,16 +335,13 @@ $white:      map.get(vars.$theme-colors, "white");
     display: flex; align-items: center; gap: 10px;
     color: $blue-hero; font-size: 20px;
 
-    /* 🔎 Hover doux UNIQUEMENT sur les items de lieux */
     transform-origin: left center;
     transition: transform .28s cubic-bezier(.22,.61,.36,1);
     will-change: transform;
   }
   .map-list li::before { content: "—"; color: $red; }
   .map-list li:hover,
-  .map-list li:focus-visible {
-    transform: scale(1.04);
-  }
+  .map-list li:focus-visible { transform: scale(1.04); }
 
   @media (prefers-reduced-motion: reduce) {
     .map-list li {
@@ -333,17 +351,8 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 
   @media (max-width: 768px) {
-
-    .map-title {
-      font-size: 24px;
-      font-style: normal;
-      font-weight: 300;
-      line-height: normal;
-    }
-
-    .map-list li {
-      font-size: 18px;
-    }
+    .map-title { font-size: 24px; font-weight: 300; line-height: normal; }
+    .map-list li { font-size: 18px; }
   }
 }
 
@@ -352,26 +361,17 @@ $white:      map.get(vars.$theme-colors, "white");
   min-block-size: 506px;
   --pad-y: clamp(56px, 6vw, 80px);
 
-  .section-inner {
-    padding-block: var(--pad-y);
-  }
+  .section-inner { padding-block: var(--pad-y); }
 
   .values-bg {
     position: absolute;
-    top: 0;
-    bottom: 0;
+    top: 0; bottom: 0;
     left: calc(-1 * var(--content-gutter));
     right: calc(-1 * var(--content-gutter));
     pointer-events: none;
     z-index: 0;
   }
-
-  .values-bg .values-layer {
-    position: absolute;
-    inset: 0;
-    background: $grey-100;
-    opacity: 1;
-  }
+  .values-bg .values-layer { position: absolute; inset: 0; background: $grey-100; opacity: 1; }
 
   .values-title {
     color: $blue-hero;
@@ -383,7 +383,6 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 
   .values-grid {
-    /* grille par défaut */
     display: grid;
     grid-template-columns: repeat(1, minmax(240px, 1fr));
     gap: clamp(28px, 4vw, 48px);
@@ -391,7 +390,6 @@ $white:      map.get(vars.$theme-colors, "white");
     align-items: start;
 
     @media (min-width: 992px) {
-      /* on expose le column-gap comme variable pour centrer le trait */
       --gap-x: clamp(80px, 10vw, 140px);
       grid-template-columns: repeat(3, 1fr);
       column-gap: var(--gap-x);
@@ -400,25 +398,17 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .value-item {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
+    display: flex; flex-direction: column;
+    align-items: center; text-align: center;
     max-width: 360px;
   }
 
-  .value-item .icon-wrap {
-    display: grid;
-    place-items: center;
-    margin-bottom: clamp(16px, 2vw, 20px);
-  }
-
+  .value-item .icon-wrap { display: grid; place-items: center; margin-bottom: clamp(16px, 2vw, 20px); }
   .value-item .icon-wrap img {
     display: block;
     max-width: clamp(84px, 7vw, 96px);
     max-height: clamp(84px, 7vw, 96px);
-    height: auto;
-    width: auto;
+    height: auto; width: auto;
   }
 
   .value-item .value-name {
@@ -440,47 +430,30 @@ $white:      map.get(vars.$theme-colors, "white");
   .value-item .value-desc p { margin: 0; }
   .value-item .value-desc p + p { margin-top: 6px; }
 
-  /* Traits entre les cartes — conservés, mais désormais centrés dans le gap */
   .value-item .divider { display: none; }
-
   @media (min-width: 992px) {
     .value-item .divider {
-      /* base identique */
       display: block;
       position: absolute;
       top: calc(clamp(84px, 7vw, 96px) / 2 + 10px);
       height: 2px;
       background: $blue-hero;
       opacity: .45;
-      transform: translate(-50%, -50%); /* centré verticalement + on recentre l’élément */
-
-      /* centrage HORIZONTAL dans la “zone violette” (le column-gap) :
-         on place l’origine juste au milieu du gap, à mi-distance de l’item courant */
+      transform: translate(-50%, -50%);
       left: calc(100% + (var(--gap-x, 0px) / 2));
-
-      /* largeur du trait : ta largeur d’origine,
-         mais tu peux la “clamp” pour ne pas dépasser le gap */
       --divider-w: clamp(64px, 7vw, 96px);
       width: min(var(--divider-w), max(48px, calc(var(--gap-x, 9999px) - 24px)));
-
-      /* Accessoire */
       pointer-events: none;
     }
   }
 
-  /* ===== Hooks d’animation (même logique que News) ===== */
-  .values-title.prehide {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(20px);
-    will-change: transform, opacity;
-  }
+  .values-title.prehide,
   .value-item.prehide {
-    opacity: 0;
-    visibility: hidden;
+    opacity: 0; visibility: hidden;
     transform: translateY(20px);
     will-change: transform, opacity;
   }
+
   .value-item.is-animating .icon-wrap img { transform-origin: center; }
 
   @media (prefers-reduced-motion: reduce) {
@@ -510,13 +483,11 @@ $white:      map.get(vars.$theme-colors, "white");
     border-top: map.get(vars.$border-size, "2") solid $blue-hero;
   }
 
-  /* ===== Appartenance ===== */
   .aff-row {
     --row-h: 98px;
-    --gap-x: 14px; /* petit espace entre logo et texte */
+    --gap-x: 14px;
     display: grid;
 
-    /* COLONNES : [logo] [texte] [chevron] */
     grid-template-columns: auto 1fr auto;
     align-items: center;
     column-gap: var(--gap-x);
@@ -526,23 +497,19 @@ $white:      map.get(vars.$theme-colors, "white");
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
   }
 
-  /* Les enfants de .aff-row (logo, nom, bouton) prennent les colonnes de la grille */
   .aff-line { display: contents; }
 
-  /* LOGO collé à la marge gauche */
   .aff-logo {
-    grid-column: 1;                /* colonne 1 = la plus à gauche */
+    grid-column: 1;
     justify-self: start;
     width: 75px;
     height: 75px;
-    min-width: 75px;               /* évite les compressions */
+    min-width: 75px;
     object-fit: contain;
-    object-position: center left;  /* visuel ancré à gauche */
-    /* aucun padding/margin gauche pour être au bord de la section */
+    object-position: center left;
     margin-left: 0;
   }
 
-  /* TEXTE dans la colonne 2 (pas centré) */
   .aff-name {
     grid-column: 2;
     color: $blue-hero;
@@ -555,7 +522,6 @@ $white:      map.get(vars.$theme-colors, "white");
     .aff-label { font-weight: map.get(vars.$font-weight, "600"); }
   }
 
-  /* CHEVRON complètement à droite */
   .aff-toggle {
     grid-column: 3;
     justify-self: end;
@@ -564,13 +530,16 @@ $white:      map.get(vars.$theme-colors, "white");
     color: $blue-hero;
     cursor: pointer;
 
-    .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
+    .chevron {
+      width: 20px;
+      height: 30px;
+      transform: rotate(90deg);
+      transition: transform .25s ease; }
     &[aria-expanded='true'] .chevron { transform: rotate(0deg); }
   }
 
-  /* DESCRIPTION sous le texte uniquement (colonne 2) */
   .aff-desc {
-    grid-column: 2 / 3;           /* alignée sous le nom, pas sous le logo */
+    grid-column: 2 / 3;
     padding: 8px 0 16px;
   }
   .aff-desc-inner {
@@ -582,11 +551,10 @@ $white:      map.get(vars.$theme-colors, "white");
     p:last-child { margin-bottom: 0; }
   }
 
-  /* ===== Déontologie (inchangé côté structure) ===== */
   .deon-row {
     --row-h: 98px;
     display: grid;
-    grid-template-columns: 1fr auto; /* texte | chevron */
+    grid-template-columns: 1fr auto;
     align-items: center;
     column-gap: clamp(24px, 4vw, 48px);
     min-block-size: var(--row-h);
@@ -611,7 +579,10 @@ $white:      map.get(vars.$theme-colors, "white");
     color: $blue-hero;
     cursor: pointer;
 
-    .chevron { width: 24px; height: 34px; transform: rotate(90deg); transition: transform .25s ease; }
+    .chevron {
+      width: 20px;
+      height: 30px;
+      transform: rotate(90deg); transition: transform .25s ease; }
     &[aria-expanded='true'] .chevron { transform: rotate(0deg); }
   }
 
@@ -625,31 +596,13 @@ $white:      map.get(vars.$theme-colors, "white");
     p:last-child { margin-bottom: 0; }
   }
 
-  /* Responsive : logo un peu plus petit */
   @media (max-width: 768px) {
     .aff-logo { width: 58px; height: 58px; min-width: 58px; }
     .aff-row  { --gap-x: 10px; }
 
-    .aff-abbr {
-      font-size: 18px;
-      font-style: normal;
-      font-weight: 500;
-      line-height: 30px
-    }
-
-    .aff-title, .deon-title {
-      font-size: 24px;
-      font-style: normal;
-      font-weight: 400;
-      line-height: 30px
-    }
-
-    .aff-label, .deon-name {
-      font-size: 14px;
-      font-style: normal;
-      font-weight: 500;
-      line-height: 10px
-    }
+    .aff-abbr { font-size: 18px; font-weight: 500; line-height: 30px; }
+    .aff-title, .deon-title { font-size: 24px; font-weight: 400; line-height: 30px; }
+    .aff-label, .deon-name { font-size: 14px; font-weight: 500; line-height: 20px; }
   }
 }
 
@@ -696,7 +649,7 @@ $white:      map.get(vars.$theme-colors, "white");
   .tl-rail {
     position: absolute;
     top: 0;
-    bottom: 0; /* ← couvre toute la hauteur du grid */
+    bottom: 0;
     left: calc(var(--years-col) + var(--rail-gap));
     width: var(--rail-w);
     background: $blue-hero;
@@ -727,13 +680,13 @@ $white:      map.get(vars.$theme-colors, "white");
     text-align: right;
     white-space: nowrap;
     padding-right: calc(var(--rail-gap) + var(--rail-w));
-    --dashNow: 0px; /* animé par GSAP 0 → var(--dash-w) */
+    --dashNow: 0px;
   }
 
   .tl-year::after {
     content: "";
     position: absolute;
-    top: .6em; /* repère pour la petite barre rouge */
+    top: .6em;
     right: calc(var(--rail-gap) - var(--dash-w) - 6px);
     width: var(--dashNow);
     height: 2px;
@@ -781,9 +734,7 @@ $white:      map.get(vars.$theme-colors, "white");
       margin-bottom: 32px;
     }
 
-    .tl-rail {
-      top: 75px;
-    }
+    .tl-rail { top: 75px; }
   }
 }
 
@@ -798,9 +749,9 @@ $white:      map.get(vars.$theme-colors, "white");
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .about-wrapper * {
-    animation: none !important;
-    transition: none !important;
-    scroll-behavior: auto !important;
+  .about-wrapper .prehide,
+  .about-wrapper .prehide-row {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

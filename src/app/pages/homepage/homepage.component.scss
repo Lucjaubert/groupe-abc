@@ -217,12 +217,12 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     font-family: "Plus Jakarta Sans", sans-serif;
     font-size: 65px;
     font-weight: 600;
-    line-height: 1;                    /* évite le recentrage vertical */
-    min-width: var(--value-w, 3ch);
+    line-height: 1;
+    // min-width: var(--value-w, 1ch);
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
     justify-self: end;
-    transform: none;                   /* reset par défaut */
+    transform: none;
   }
 
   .label {
@@ -1075,15 +1075,19 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   }
 }
 
+$pink:  #F1D2DB;
+
 /* ===================================================================== */
 /* ================================ TEAM =============================== */
 /* ===================================================================== */
 
 .team {
+  /* desktop-first */
   --team-tile-w: 232px;
   --team-tile-h: 273px;
   --team-gap-x: clamp(40px, 8vw, 120px);
   --team-dots-top-gap: 76.7px;
+
   padding-block: clamp(48px, 7vw, 96px);
   box-sizing: border-box;
 
@@ -1093,22 +1097,24 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     box-sizing: border-box;
   }
 
+  /* Helpers “reveal” (identiques à About) */
+  .team-title.prehide,
+  .member-card.prehide {
+    opacity: 0;
+    transform: translateY(20px);
+    visibility: visible; /* important: pas hidden pour laisser l'image se poser */
+    will-change: transform, opacity;
+  }
+
   .team-title {
     color: $blue;
     font-size: map.get(vars.$font-size, "80"); /* 36px */
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: 1.1;
     margin: 0 0 clamp(28px, 4vw, 40px);
-  }
 
-  .team-title .line1,
-  .team-title .line2 {
-    display: block;
-    margin: 0;
-  }
-
-  .team-title .line2 {
-    margin-top: clamp(6px, 0.9vw, 12px);
+    .line1, .line2 { display: block; margin: 0; }
+    .line2 { margin-top: clamp(6px, 0.9vw, 12px); }
   }
 
   .team-grid {
@@ -1117,38 +1123,51 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     gap: clamp(20px, 4vw, 56px);
   }
 
-  @media (min-width: 992px) {
-    .team-grid {
-      grid-template-columns: 1fr 1fr;
-      column-gap: var(--team-gap-x);
-    }
-  }
-
   .member-card {
     display: grid;
     grid-template-columns: var(--team-tile-w) 1fr;
     align-items: stretch;
     column-gap: clamp(18px, 2.6vw, 28px);
     min-width: 0;
+    transform-origin: left center;
+    transition: transform .22s cubic-bezier(.22,.61,.36,1);
+    will-change: transform;
+
+    &:hover,
+    &:focus-within { transform: scale(1.03); }
   }
 
+  /* ===== Photo tile : compatible Safari/Chrome, anti “flash” ===== */
   .photo-tile {
     width: var(--team-tile-w);
     height: var(--team-tile-h);
+    /* Assure la hauteur même si l'image n'est pas encore décodée */
+    aspect-ratio: 3 / 4;
     background: $pink;
     display: grid;
     place-items: end center;
     overflow: hidden;
+    contain: paint; /* améliore le rendu du fade-in */
   }
 
   .photo-tile img {
     display: block;
-    width: 100%;
+    width: 100%;          /* ← au lieu de 180% qui pouvait sortir du flow */
     height: 100%;
     object-fit: cover;
+    backface-visibility: hidden;
+
+    opacity: 0;
+    transition: opacity .16s ease;
+    will-change: opacity;
   }
 
-  /* Texte : tient dans la hauteur de la photo et plus compact */
+  /* Ne passe à 1 que si la source est vraiment exploitable */
+  .photo-tile img[src]:not([src=""]):not([src="null"]):not([src="undefined"]) {
+    opacity: 1;
+  }
+
+  /* Texte compact et contraint à la hauteur de la photo */
   .member-text {
     height: var(--team-tile-h);
     overflow: hidden;
@@ -1183,24 +1202,12 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     color: $blue;
     font-family: "Plus Jakarta Sans";
     font-size: map.get(vars.$font-size, "30"); /* 16px */
-    font-style: normal;
     font-weight: map.get(vars.$font-weight, "regular");
-    line-height: 1.2; /* compacité */
-  }
+    line-height: 1.2;
 
-  .member-job p {
-    margin: 0 0 3px 0; /* rapprochement des lignes */
-  }
-
-  .member-job p:last-child {
-    margin-bottom: 0;
-  }
-
-  .member-text .mb-1,
-  .member-text .mb-2,
-  .member-text .mb-3,
-  .member-text .mb-4 {
-    margin-bottom: 0 !important;
+    p { margin: 0 0 3px 0; }
+    p:last-child { margin-bottom: 0; }
+    .mb-1, .mb-2, .mb-3, .mb-4 { margin-bottom: 0 !important; }
   }
 
   .team-bottom {
@@ -1228,204 +1235,125 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     background: #E3E3EA;
     cursor: pointer;
     transition: transform .12s ease, background .12s ease;
-  }
 
-  .team-dot:hover {
-    transform: scale(1.08);
-  }
-
-  .team-dot:focus-visible {
-    box-shadow: 0 0 0 2px $red;
-  }
-
-  .team-dot.active {
-    background: $blue;
+    &:hover { transform: scale(1.08); }
+    &:focus-visible { box-shadow: 0 0 0 2px $red; }
+    &.active { background: $blue; }
   }
 
   .team-cta {
     grid-column: 2;
     justify-self: end;
     margin-top: 0;
-  }
 
-  /* Bouton : le “+” reste à l’intérieur */
-  .team-cta .cta-btn {
-    width: auto;
-    min-width: 0;
-    max-width: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border: 0;
-    border-radius: 5px;
-    background: $blue;
-    color: #FFF;
-    line-height: 1;
-    overflow: hidden;
-  }
+    .cta-btn {
+      width: auto; min-width: 0; max-width: none;
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      border: 0; border-radius: 5px;
+      background: $blue; color: #fff; line-height: 1; overflow: hidden;
 
-  .team-cta .cta-btn .cta-plus {
-    margin-left: 8px !important; /* neutralise margin-left:auto éventuel */
-    display: inline-grid;
-    place-items: center;
-    width: 18px;
-    height: 18px;
-  }
+      .cta-plus {
+        margin-left: 8px !important;
+        display: inline-grid; place-items: center;
+        width: 18px; height: 18px;
 
-  .team-cta .cta-btn .icon-plus {
-    width: 18px;
-    height: 18px;
-    stroke: $red;
-    stroke-width: 3.2;
-    fill: none;
+        .icon-plus {
+          width: 18px; height: 18px;
+          stroke: $red; stroke-width: 3.2; fill: none;
+        }
+      }
+    }
   }
 }
 
-/* ======================= TEAM — ≤ 768px ======================= */
-@media (max-width: 768px) {
-  /* Une seule carte visible comme la maquette */
-  .team .member-card:not(:first-child) {
-    display: none;
+/* ====================== > 760px ====================== */
+@media (min-width: 769px) {
+  .team .team-grid {
+    grid-template-columns: 1fr 1fr;
+    column-gap: var(--team-gap-x);
   }
+}
+
+/* ======================= ≤ 760px ======================= */
+@media (max-width: 768px) {
+  /* Une seule carte visible sur mobile */
+  .team .member-card:not(:first-child) { display: none; }
 
   .team {
     --team-tile-w: 162px;
     --team-tile-h: 192px;
+
     padding-top: 32px;
     padding-bottom: 32px;
-  }
 
-  .team .team-inner {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
+    .team-inner { padding-left: 16px; padding-right: 16px; }
 
-  .team .team-title {
-    color: #444697;
-    font-family: "Plus Jakarta Sans";
-    font-size: 24px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 1.25;
-    margin: 0 0 20px 0;
-  }
+    .team-title {
+      color: #444697;
+      font-family: "Plus Jakarta Sans";
+      font-size: 24px;
+      font-weight: 400;
+      line-height: 1.25;
+      margin: 0 0 20px 0;
+    }
 
-  .team .team-grid {
-    grid-template-columns: 1fr;
-    gap: 20px;
-  }
+    .team-grid { grid-template-columns: 1fr; gap: 20px; }
 
-  .team .member-card {
-    grid-template-columns: var(--team-tile-w) 1fr;
-    column-gap: 16px;
-  }
+    .member-card { grid-template-columns: var(--team-tile-w) 1fr; column-gap: 16px; }
 
-  .team .photo-tile {
-    width: var(--team-tile-w);
-    height: var(--team-tile-h);
-    background: #F1D2DB; /* $pink */
-    display: grid;
-    place-items: end center;
-    overflow: hidden;
-  }
+    .photo-tile {
+      width: var(--team-tile-w);
+      height: var(--team-tile-h);
+      aspect-ratio: 3/4;
+      background: $pink;
+    }
 
-  .team .member-text {
-    height: var(--team-tile-h);
-    gap: 6px;
-  }
+    .member-text { height: var(--team-tile-h); gap: 6px; }
 
-  .team .member-area {
-    color: #E0505C; /* $red */
-    font-family: "Plus Jakarta Sans";
-    font-size: 18px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 1.2;
-    margin-bottom: 6px;
-  }
+    .member-area {
+      color: #E0505C;
+      font-size: 18px; font-weight: 500; line-height: 1.2; margin-bottom: 6px;
+    }
 
-  .team .member-name .first,
-  .team .member-name .last {
-    color: #444697; /* $blue */
-    font-family: "Plus Jakarta Sans";
-    font-size: 18px;
-    font-style: normal;
-    font-weight: 500;
-    line-height: 1.3;
-    margin: 0;
-    white-space: nowrap;
-  }
+    .member-name .first,
+    .member-name .last {
+      color: #444697;
+      font-size: 18px; font-weight: 500; line-height: 1.3; margin: 0; white-space: nowrap;
+    }
 
-  .team .member-job {
-    color: #444697;
-    font-family: "Plus Jakarta Sans";
-    font-size: 14px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 1.2;
-    margin-top: auto;
-  }
+    .member-job {
+      color: #444697;
+      font-size: 14px; font-weight: 400; line-height: 1.2; margin-top: auto;
+      p { margin: 0 0 2px 0; }
+    }
 
-  .team .member-job p {
-    margin: 0 0 2px 0;
-  }
+    .team-bottom {
+      grid-template-columns: var(--team-tile-w) 1fr;
+      align-items: center;
+      margin-top: 18px;
+    }
 
-  .team .team-bottom {
-    display: grid;
-    grid-template-columns: var(--team-tile-w) 1fr;
-    align-items: center;
-    margin-top: 18px;
-  }
+    .team-dots { width: var(--team-tile-w); gap: 10px; }
 
-  .team .team-dots {
-    grid-column: 1;
-    justify-self: start;
-    width: var(--team-tile-w);
-    display: flex;
-    gap: 10px;
-    padding: 0;
-    margin: 0;
-  }
+    .team-dot { width: 15px; height: 15px; border-radius: 50%; border: 0; background: #E3E3EA;
+      &.active { background: #444697; }
+    }
 
-  .team .team-dot {
-    width: 15px;
-    height: 15px;
-    border-radius: 50%;
-    border: 0;
-    background: #E3E3EA;
-  }
+    .team-cta {
+      grid-column: 2; justify-self: end; margin-top: 0;
 
-  .team .team-dot.active {
-    background: #444697;
-  }
+      .cta-btn {
+        height: 27px; padding: 8px 12px; gap: 8px;
+        background: #444697; color: #fff;
+        font-family: "Plus Jakarta Sans"; font-size: 12px; font-weight: 400; line-height: 1;
 
-  .team .team-cta {
-    grid-column: 2;
-    justify-self: end;
-    margin-top: 0;
-  }
-
-  .team .team-cta .cta-btn {
-    height: 27px;
-    padding: 8px 12px;
-    gap: 8px;
-    background: #444697;
-    color: #FFF;
-    font-family: "Plus Jakarta Sans";
-    font-size: 12px;
-    font-weight: 400;
-    line-height: 1;
-  }
-
-  .team .team-cta .icon-plus {
-    width: 18px;
-    height: 18px;
-    stroke: #F96570; /* $red */
-    stroke-width: 3.2;
-    fill: none;
+        .icon-plus { width: 18px; height: 18px; stroke: #F96570; stroke-width: 3.2; fill: none; }
+      }
+    }
   }
 }
+
 
 /* Aliases utiles */
 $blue:  map.get(vars.$theme-colors, "light-blue");
@@ -1605,6 +1533,7 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
     background: $blue; color: $white;
     font-size: 12px; font-weight: 500;
     padding: 0 8px; border-radius: 6px; z-index: 2;
+    text-decoration: none;
   }
 
   /* =================== MOBILE ≤ 768px =================== */
@@ -1628,7 +1557,7 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
       text-orientation: initial;
       transform: none !important;
       display: block;
-      width: 75%;
+      width: 100%;
       max-width: none;
       margin: 30px 0 0 auto;
       text-align: center;
@@ -1707,7 +1636,7 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
   .hero-section .hero-content .hero-title {
     color: #FFF;
     font-family: "Plus Jakarta Sans";
-    font-size: 30px;
+    font-size: 40px;
     font-style: normal;
     font-weight: 500;
     line-height: normal;
@@ -1774,10 +1703,10 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
     font-size: 65px;
     font-weight: 600;
     line-height: 1;
-    min-width: var(--value-w, 3ch);
+    // min-width: var(--value-w, 3ch);
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
-    justify-self: end;   /* Desktop : chiffres collés au libellé */
+    justify-self: end;
     transform: none;
   }
 
@@ -1840,6 +1769,7 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
     line-height: 1;
     font-variant-numeric: tabular-nums;
     font-feature-settings: 'tnum' 1;
+    font-size: 55px;
   }
 
   /* Libellé : démarre juste après la value + column-gap */

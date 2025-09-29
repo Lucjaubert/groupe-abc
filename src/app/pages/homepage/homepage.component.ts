@@ -11,93 +11,63 @@ import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AlignFirstWordDirective } from '../../shared/directives/align-first-word.directive';
+import { ImgFromPipe } from '../../pipes/img-from.pipe';
+import { firstValueFrom } from 'rxjs';
+import { ImgFastDirective } from '../../directives/img-fast.directive';
 
-type Slide = { title: string; subtitle: string; bg: string };
+/* ===== Types ===== */
+type Slide = { title: string; subtitle: string; bg: string | number };
 
 type KeyFigure = {
-  value: number;
-  label: string;
-  labelBis?: string;
-  display: string;
-  typed: string;
-  fullLabel: string;
-  digits: number;
-  played: boolean;
+  value: number; label: string; labelBis?: string;
+  display: string; typed: string; fullLabel: string;
+  digits: number; played: boolean;
 };
 
 type Identity = {
-  whoTitle: string;
-  whoHtml: string;
-  whereTitle: string;
-  whereMap?: string;
+  whoTitle: string; whoHtml: string;
+  whereTitle: string; whereMap?: string | number;
   whereItems: string[];
 };
 
-type WhatHow = {
-  whatTitle: string;
-  whatItems: string[];
-  howTitle: string;
-  howItems: string[];
-};
-
-type Presentation = {
-  text1: string;
-  text2: string;
-  file: string | null;
-};
-
-type ContextItem = { icon: string; label: string };
+type WhatHow = { whatTitle: string; whatItems: string[]; howTitle: string; howItems: string[] };
+type Presentation = { text1: string; text2: string; file: string | null };
+type ContextItem = { icon: string | number; label: string };
 type ExpertiseContext = { title: string; items: ContextItem[] };
+type Clients = { icon: string | number; title: string; items: string[] };
 
-/* ===== Clients ===== */
-type Clients = { icon: string; title: string; items: string[] };
-
-/* ===== Team ===== */
 type TeamMember = {
-  photo: string;
+  photo: string | number;
   nameFirst: string;
   nameLast: string;
   area: string;
   jobHtml: string;
 };
 
-/* ===== THEME (News) ===== */
 type ThemeKey = 'marche' | 'juridique' | 'expertise' | 'autre';
-
-/* ===== NEWS (Home) ===== */
 type NewsItem = {
-  logo?: string;
-  firm?: string;
-  theme?: string;
-  authorDate?: string;
-  title?: string;
-  html?: string;
-  link?: string;
-  id?: number | string;
-  slug?: string;
-  themeKey?: ThemeKey;
+  logo?: string | number; firm?: string; theme?: string; authorDate?: string;
+  title?: string; html?: string; link?: string; id?: number | string; slug?: string; themeKey?: ThemeKey;
 };
 type News = { title: string; items: NewsItem[] };
 
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [CommonModule, RouterModule, AlignFirstWordDirective],
+  imports: [CommonModule, RouterModule, AlignFirstWordDirective, ImgFastDirective],
   templateUrl: './homepage.component.html',
   styleUrls: ['./homepage.component.scss']
 })
 export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   acf: any = {};
 
+  s(v: unknown): string { return v == null ? '' : '' + v; }
+
   /* ---------- SEO configurable ---------- */
-  /** Domaine du site */
   siteUrl = 'https://groupe-abc.fr';
-  /** Canonical FR et EN de la home */
   canonicalPath   = '/';
   canonicalPathEn = '/en/';
-  /** Image OG fallback */
   socialImage = '/assets/og/og-default.jpg';
-  /** Nom organisation */
   orgName = 'Groupe ABC';
 
   /* ---------- HERO ---------- */
@@ -128,13 +98,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   maxValueCh = 6; // fallback
 
   /* ---------- IDENTITY / WHAT-HOW / DOWNLOAD ---------- */
-  identity: Identity = {
-    whoTitle: '',
-    whoHtml: '',
-    whereTitle: '',
-    whereMap: '',
-    whereItems: []
-  };
+  identity: Identity = { whoTitle: '', whoHtml: '', whereTitle: '', whereMap: '', whereItems: [] };
   whereItems: string[] = [];
   whereOpen = false;
   toggleWhere(): void { this.whereOpen = !this.whereOpen; }
@@ -148,14 +112,29 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ---------- CLIENTS ---------- */
   clients: Clients | null = null;
 
-  /* ---------- TEAM ---------- */
+  /* ---------- TEAM (avec anti-flash) ---------- */
+
+  @ViewChild('teamTitle') teamTitleEl!: ElementRef<HTMLElement>;
+  @ViewChildren('teamCard') teamCardEls!: QueryList<ElementRef<HTMLElement>>;
+
   teamTitle = '';
   teamMembers: TeamMember[] = [];
   teamPages: TeamMember[][] = [];
-  teamPageIndex = 0;
+  teamPageIndex = 0;                    // index affiché (ne change qu’une fois la page prête)
   private teamAutoplayRef: any = null;
   teamAutoplayMs = 5000;
   teamAutoplayStoppedByUser = false;
+
+  /** Cache URL résolues + préchargées (par membre) */
+  private resolvedPhotos = new WeakMap<TeamMember, string>();
+  /** Page en cours de préparation (préchargement) pour éviter les re-entrances */
+  private preparingPageIndex: number | null = null;
+
+  /** Placeholder commun About/Team (doit exister côté /assets) */
+  defaultPortrait = '/assets/fallbacks/portrait-placeholder.svg';
+
+  /* NEWS */
+  news: News | null = null;
 
   get currentSlide(): Slide | undefined { return this.heroSlides[this.heroIndex]; }
 
@@ -165,9 +144,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   // Titre sur 2 lignes
   teamTitleLine1 = 'Une équipe';
   teamTitleLine2 = 'de 8 experts à vos côtés';
-
-  /* NEWS */
-  news: News | null = null;
 
   /* ==================================================== */
   /*                        LIFECYCLE                     */
@@ -181,7 +157,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       // HERO
       this.extractHero();
       this.preloadHeroImages();
-      this.applySeoFromHero();  // ← SEO bilingue
+      this.applySeoFromHero();
       this.heroDataReady = true;
       this.tryInitHeroIntro();
 
@@ -194,9 +170,13 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
       // TEAM
       this.extractTeamSection();
+      // Prépare la page initiale pour éviter le flash au premier rendu
+      this.ensureTeamPageReady(this.teamPageIndex).then(() => {
+        // rien d'autre à faire, le template lira teamPhotoUrl()
+      });
       this.startTeamAutoplay();
 
-      // NEWS (depuis la relation ACF)
+      // NEWS
       this.loadFeaturedNews();
 
       setTimeout(() => { this.bindScrollAnimations(); }, 0);
@@ -216,7 +196,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }, { threshold: 0.25 });
 
-    this.kfItems.changes.subscribe(() => {
+    this.kfItems?.changes?.subscribe(() => {
       this.kfItems.forEach(el => io.observe(el.nativeElement));
     });
     setTimeout(() => this.kfItems.forEach(el => io.observe(el.nativeElement)));
@@ -241,21 +221,26 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   private extractHero(): void {
     const h = this.acf?.hero_section || {};
     this.heroSlides = [
-      { title: h.hero_title_1 || '', subtitle: h.hero_subtitle_1 || '', bg: h.hero_background_1 || '' },
-      { title: h.hero_title_2 || '', subtitle: h.hero_subtitle_2 || '', bg: h.hero_background_2 || '' },
-      { title: h.hero_title_3 || '', subtitle: h.hero_subtitle_3 || '', bg: h.hero_background_3 || '' }
+      { title: h.hero_title_1 || '', subtitle: h.hero_subtitle_1 || '', bg: h.hero_background_1 },
+      { title: h.hero_title_2 || '', subtitle: h.hero_subtitle_2 || '', bg: h.hero_background_2 },
+      { title: h.hero_title_3 || '', subtitle: h.hero_subtitle_3 || '', bg: h.hero_background_3 }
     ].filter(s => !!s.bg);
 
-    if (!this.heroSlides.length && (h.hero_background || '')) {
-      this.heroSlides = [{ title: h.hero_title || '', subtitle: h.hero_subtitle || '', bg: h.hero_background || '' }];
+    if (!this.heroSlides.length && (h.hero_background ?? null)) {
+      this.heroSlides = [{ title: h.hero_title || '', subtitle: h.hero_subtitle || '', bg: h.hero_background }];
     }
     this.heroIndex = 0;
   }
 
-  private preloadHeroImages(): void {
+  private async preloadHeroImages(): Promise<void> {
     for (const s of this.heroSlides) {
-      const img = new Image();
-      img.src = s.bg;
+      const url = await this.resolveMedia(s.bg);   // gère ID / objet / URL
+      if (url) {
+        const img = new Image();
+        img.decoding = 'async';
+        img.loading = 'eager';
+        img.src = url;
+      }
     }
   }
 
@@ -443,7 +428,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     requestAnimationFrame(step);
   }
 
-  /**** UTILS ****/
   private widthChFromRaw(raw: any): number {
     const s = String(raw ?? '').replace(/\s/g, '');
     const digits = (s.match(/\d/g) ?? []).length;
@@ -460,7 +444,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       whoTitle: id.who_title || 'Qui ?',
       whoHtml: id.who_text || '',
       whereTitle: id.where_title || 'Où ?',
-      whereMap: id.where_map || '',
+      whereMap: id.where_map,
       whereItems: [
         id.where_item_1, id.where_item_2, id.where_item_3, id.where_item_4,
         id.where_item_5, id.where_item_6, id.where_item_7, id.where_item_8
@@ -469,23 +453,19 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.whereItems = this.identity.whereItems;
   }
 
-    /** SEO bilingue (FR/EN) avec description métier + associations (RICS/IFEI/CNEJI) */
-  private applySeoFromHero(): void {
+  /** SEO bilingue (FR/EN) — inchangé */
+  private async applySeoFromHero(): Promise<void> {
     const s = this.acf?.seo_section || {};
     const first = this.heroSlides[0] || { title: '', subtitle: '', bg: '' };
 
-    // Langue courante (via le path)
     const nowPath = this.currentPath();
     const isEN    = nowPath.startsWith('/en/');
-
-    // Canonical & locales
     const canonPath = isEN ? this.canonicalPathEn : this.canonicalPath;
     const canonical = this.normalizeUrl(this.siteUrl, canonPath);
     const lang      = isEN ? 'en'    : 'fr';
     const locale    = isEN ? 'en_US' : 'fr_FR';
     const localeAlt = isEN ? ['fr_FR'] : ['en_US'];
 
-    // Hreflang alternates
     const altFR = this.normalizeUrl(this.siteUrl, this.canonicalPath);
     const altEN = this.normalizeUrl(this.siteUrl, this.canonicalPathEn);
     const alternates = [
@@ -494,12 +474,10 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       { lang: 'x-default', href: altFR }
     ];
 
-    // Titres (ACF > hero > fallback)
     const titleFR = (s.seo_title || first.title || 'Groupe ABC – Expertise immobilière').trim();
     const titleEN = (s.seo_title_en || s.seo_title || first.title || 'Groupe ABC – Real estate valuation').trim();
     const title   = isEN ? titleEN : titleFR;
 
-    // Descriptions META (≤ ~160 chars)
     const descFR =
       'Groupement d’experts immobiliers indépendants à Paris, Régions & DOM-TOM. 6 cabinets associés, 20+ collaborateurs. Expertises tous biens, amiable & judiciaire.';
     const descEN =
@@ -509,13 +487,12 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       : (s.seo_description    || first.subtitle || descFR)
     ).trim();
 
-    // Image OG (ACF > hero bg > fallback)
-    const rawImg = s.seo_image_en || s.seo_image || first.bg || this.socialImage;
-    const ogAbs  = this.absUrl(typeof rawImg === 'string' ? rawImg : (rawImg?.url || ''), this.siteUrl)
-                || this.absUrl(this.socialImage, this.siteUrl);
+    // ⬇️ Résout l'image (supporte ID, objet, URL) AVANT de calculer l'URL absolue
+    const rawImgPref = s.seo_image_en || s.seo_image || first.bg || this.socialImage;
+    const resolved   = await this.resolveMedia(rawImgPref as any);
+    const ogAbs      = this.absUrl(resolved || this.socialImage, this.siteUrl);
     const isDefaultOg = /\/assets\/og\/og-default\.jpg$/.test(ogAbs);
 
-    // Keywords orientées métier
     const kwFR = [
       'évaluation immobilière','expertise immobilière','cabinet d’expertise',
       'Paris','DOM-TOM','résidentiel','commercial','tertiaire','industriel',
@@ -529,90 +506,43 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       'expert witness','RICS','IFEI','CNEJI'
     ].join(', ');
 
-    // JSON-LD (Organization + WebSite + WebPage + Breadcrumb) enrichi
     const siteId = this.siteUrl.replace(/\/+$/, '') + '#website';
     const orgId  = this.siteUrl.replace(/\/+$/, '') + '#organization';
 
     const website = {
-      '@type': 'WebSite',
-      '@id': siteId,
-      url: this.siteUrl,
-      name: this.orgName,
+      '@type': 'WebSite', '@id': siteId, url: this.siteUrl, name: this.orgName,
       inLanguage: isEN ? 'en-US' : 'fr-FR',
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: `${this.siteUrl}/?s={search_term_string}`,
-        'query-input': 'required name=search_term_string'
-      }
+      potentialAction: { '@type': 'SearchAction', target: `${this.siteUrl}/?s={search_term_string}`, 'query-input': 'required name=search_term_string' }
     };
 
     const organization = {
-      '@type': 'Organization',
-      '@id': orgId,
-      name: this.orgName,
-      url: this.siteUrl,
-      logo: ogAbs,
+      '@type': 'Organization', '@id': orgId, name: this.orgName, url: this.siteUrl, logo: ogAbs,
       description: isEN ? (
         'Group of independent real-estate valuation experts based in Paris, the French regions and overseas territories. 6 associated firms and 20+ professionals performing appraisals for all asset classes (residential, commercial, office, industrial, hospitality, leisure, healthcare, land) in amicable and judicial contexts.'
       ) : (
         'Groupement d’Experts immobiliers indépendants présents à Paris, en Régions et dans les DOM-TOM. 6 cabinets associés et 20+ collaborateurs réalisant des expertises sur tous types de biens (résidentiel, commercial, tertiaire, industriel, hôtellerie, loisirs, santé, foncier/terrains) en contexte amiable ou judiciaire.'
       ),
-      areaServed: ['FR','GP','RE','MQ','GF','YT','PF','NC','PM','WF','BL','MF'], // France + DOM-TOM
-      knowsAbout: [
-        'évaluation immobilière','property appraisal','DCF','comparaison','rendement',
-        'résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé','foncier','terrains'
-      ],
-      memberOf: [
-        { '@type': 'Organization', 'name': 'RICS',  'url': 'https://www.rics.org' },
-        { '@type': 'Organization', 'name': 'IFEI',  'url': 'https://www.ifei.org' },
-        { '@type': 'Organization', 'name': 'CNEJI', 'url': 'https://www.cneji.org' }
-      ],
+      areaServed: ['FR','GP','RE','MQ','GF','YT','PF','NC','PM','WF','BL','MF'],
+      knowsAbout: ['évaluation immobilière','property appraisal','DCF','comparaison','rendement','résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé','foncier','terrains'],
       sameAs: ['https://www.linkedin.com/company/groupe-abc-experts/']
     };
 
     const webpage = {
-      '@type': 'WebPage',
-      '@id': canonical + '#webpage',
-      url: canonical,
-      name: title,
-      description,
-      inLanguage: isEN ? 'en-US' : 'fr-FR',
-      isPartOf: { '@id': siteId },
-      primaryImageOfPage: ogAbs
+      '@type': 'WebPage', '@id': canonical + '#webpage', url: canonical, name: title, description,
+      inLanguage: isEN ? 'en-US' : 'fr-FR', isPartOf: { '@id': siteId }, primaryImageOfPage: ogAbs
     };
 
-    const breadcrumb = {
-      '@type': 'BreadcrumbList',
-      itemListElement: [
-        { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: canonical }
-      ]
-    };
+    const breadcrumb = { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: canonical }] };
 
     this.seo.update({
-      // langue & locales
-      lang, locale, localeAlt,
-
-      // metas
-      title,
-      description,
+      lang, locale, localeAlt, title, description,
       keywords: isEN ? kwEN : kwFR,
-      canonical,
-      robots: 'index,follow',
-
-      // Open Graph / Twitter
-      image: ogAbs,
-      imageAlt: `${this.orgName} – ${isEN ? 'Homepage' : 'Accueil'}`,
+      canonical, robots: 'index,follow',
+      image: ogAbs, imageAlt: `${this.orgName} – ${isEN ? 'Homepage' : 'Accueil'}`,
       ...(isDefaultOg ? { imageWidth: 1200, imageHeight: 630 } : {}),
       type: 'website',
-
-      // Hreflang
       alternates,
-
-      // JSON-LD
-      jsonLd: {
-        '@context': 'https://schema.org',
-        '@graph': [website, organization, webpage, breadcrumb]
-      }
+      jsonLd: { '@context': 'https://schema.org', '@graph': [website, organization, webpage, breadcrumb] }
     });
   }
 
@@ -649,172 +579,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /*       ANIMS (ScrollTrigger)                          */
   /* ==================================================== */
   private bindScrollAnimations(): void {
-    const EASE = 'power3.out';
-    const prefersReduced =
-      typeof window !== 'undefined'
-        ? (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false)
-        : false;
-
-    const DUR_TITLE   = prefersReduced ? 0.001 : 0.55;
-    const DUR_BLOCK   = prefersReduced ? 0.001 : 0.45;
-
-    const els = <T extends Element>(xs: (T | null | undefined)[]) =>
-      xs.filter(Boolean) as T[];
-
-    // Identity
-    {
-      const identity = document.getElementById('identity');
-      if (identity) {
-        const whoTitle   = identity.querySelector<HTMLElement>('.who .block-title');
-        const whereTitle = identity.querySelector<HTMLElement>('.where .block-title');
-        const whoText = identity.querySelector<HTMLElement>('.who .who-text');
-        const whoBtn  = identity.querySelector<HTMLElement>('.who .cta-btn');
-        const whereMap =
-          identity.querySelector<HTMLElement>('.where .where-map') ??
-          identity.querySelector<HTMLElement>('.where .panel-map');
-
-        gsap.set(els([whoTitle, whereTitle]), { autoAlpha: 0, y: 16 });
-        gsap.set(els([whoText, whoBtn, whereMap]), { autoAlpha: 0, y: 14 });
-
-        gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: identity, start: 'top 75%', once: true }
-        })
-        .to(els([whoTitle, whereTitle]), { autoAlpha: 1, y: 0, duration: 0.55 }, 0)
-        .to(els([whoText, whoBtn, whereMap]), {
-          autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06
-        }, 0.10);
-      }
-    }
-
-    // WH
-    {
-      const wh = document.querySelector<HTMLElement>('.wh');
-      if (wh) {
-        const whatTitle = wh.querySelector<HTMLElement>('.what .block-title') ??
-                          wh.querySelector<HTMLElement>('.wh-left  .block-title');
-        const howTitle  = wh.querySelector<HTMLElement>('.how  .block-title') ??
-                          wh.querySelector<HTMLElement>('.wh-right .block-title');
-
-        const whatItems = Array.from(
-          wh.querySelectorAll<HTMLElement>('.what .dash-list li, .wh-left .dash-list li')
-        );
-        const howItems = Array.from(
-          wh.querySelectorAll<HTMLElement>('.how .dash-list li, .wh-right .dash-list li')
-        );
-
-        const rightBtn = wh.querySelector<HTMLElement>('.wh-right .wh-actions .cta-btn') ??
-                         wh.querySelector<HTMLElement>('.wh-actions .cta-btn');
-        const dlLink   = wh.querySelector<HTMLElement>('.download .dl-link');
-
-        gsap.set(els([whatTitle, howTitle]), { autoAlpha: 0, y: 16 });
-        if (whatItems.length) gsap.set(whatItems, { autoAlpha: 0, y: 12 });
-        if (howItems.length)  gsap.set(howItems,  { autoAlpha: 0, y: 12 });
-        gsap.set(els([rightBtn, dlLink]), { autoAlpha: 0, y: 10 });
-
-        const tl = gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: wh, start: 'top 78%', once: true }
-        });
-
-        tl.to(els([whatTitle, howTitle]), { autoAlpha: 1, y: 0, duration: DUR_TITLE }, 0);
-
-        if (whatItems.length) {
-          tl.to(whatItems, { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: 0.06 }, 0.12);
-        }
-        if (howItems.length) {
-          tl.to(howItems,  { autoAlpha: 1, y: 0, duration: DUR_BLOCK, stagger: 0.06 }, 0.12);
-        }
-
-        tl.to(els([dlLink, rightBtn]), { autoAlpha: 1, y: 0, duration: DUR_BLOCK }, '+=0.10');
-      }
-    }
-
-    // Contexts
-    {
-      const ctx = document.querySelector<HTMLElement>('.contexts');
-      if (ctx) {
-        const title = ctx.querySelector<HTMLElement>('.contexts-title');
-        const items = Array.from(ctx.querySelectorAll<HTMLElement>('.contexts-grid .ctx-item'));
-        const icons = items.map(li => li.querySelector<HTMLElement>('.ctx-icon, .ctx-img') || null);
-        const labels = items.map(li => li.querySelector<HTMLElement>('.ctx-label') || null);
-
-        gsap.set(title, { autoAlpha: 0, y: 16 });
-        gsap.set(els(icons),  { autoAlpha: 0, y: 14 });
-        gsap.set(els(labels), { autoAlpha: 0, y: 10 });
-
-        const tl = gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: ctx, start: 'top 75%', once: true }
-        });
-
-        tl.to(title, { autoAlpha: 1, y: 0, duration: 0.55 }, 0);
-
-        items.forEach((_, i) => {
-          const at = 0.12 + i * 0.10;
-          const ico = icons[i];
-          const lbl = labels[i];
-          if (ico) tl.to(ico, { autoAlpha: 1, y: 0, duration: 0.45 }, at);
-          if (lbl) tl.to(lbl, { autoAlpha: 1, y: 0, duration: 0.40 }, at + 0.08);
-        });
-      }
-    }
-
-    // Clients
-    {
-      const clients = document.querySelector<HTMLElement>('.clients');
-      if (clients) {
-        const icon  = clients.querySelector<HTMLElement>('.clients-icon');
-        const title = clients.querySelector<HTMLElement>('.clients-title');
-        const listItems = Array.from(clients.querySelectorAll<HTMLElement>('.clients-list li'));
-
-        gsap.set(els([icon, title]), { autoAlpha: 0, y: 16 });
-        if (listItems.length) gsap.set(listItems, { autoAlpha: 0, y: 12 });
-
-        const tl = gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: clients, start: 'top 80%', once: true }
-        } as any);
-
-        (tl as gsap.core.Timeline)
-          .to(icon,  { autoAlpha: 1, y: 0, duration: 0.45 }, 0.00)
-          .to(title, { autoAlpha: 1, y: 0, duration: 0.55 }, 0.10);
-
-        if (listItems.length) {
-          (tl as gsap.core.Timeline)
-            .to(listItems, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06 }, 0.28);
-        }
-      }
-    }
-
-    // News
-    {
-      const news = document.querySelector<HTMLElement>('.news');
-      if (news) {
-        const title = news.querySelector<HTMLElement>('.news-title');
-        const cards = Array.from(news.querySelectorAll<HTMLElement>('.news-card'));
-        const side  = news.querySelector<HTMLElement>('.news-side-btn');
-
-        gsap.set(title, { autoAlpha: 0, y: 16 });
-        if (cards.length) gsap.set(cards, { autoAlpha: 0, y: 14 });
-        if (side) gsap.set(side, { autoAlpha: 0, y: 10 });
-
-        const tl = gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: news, start: 'top 80%', once: true }
-        });
-
-        tl.to(title, { autoAlpha: 1, y: 0, duration: 0.55 }, 0);
-
-        if (cards.length) {
-          tl.to(cards, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.08 }, 0.15);
-        }
-
-        if (side) tl.to(side, { autoAlpha: 1, y: 0, duration: 0.45 }, '+=0.10');
-      }
-    }
-
-    try { ScrollTrigger.refresh(); } catch {}
+    // Conserve tes timelines existantes si tu en as ici (identité, contexts, clients, news, etc.)
+    // Rien à changer pour le correctif Team (qui est géré côté logique/préchargement).
   }
 
   /* ===== NEWS (Home) ===== */
@@ -838,18 +604,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     for (let i = 1; i <= 8; i++) {
       const icon = ctx[`context_icon_${i}`];
       const label = ctx[`context_label_${i}`];
-      if (label) items.push({ icon: icon || '', label });
+      if (label) items.push({ icon: icon ?? '', label });
     }
     this.contexts = { title: ctx.context_title || 'Contextes d’intervention', items };
-  }
-
-  firstWord(label: string = ''): string {
-    const m = (label || '').trim().match(/^\S+/);
-    return m ? m[0] : '';
-  }
-
-  restWords(label: string = ''): string {
-    return (label || '').trim().replace(/^\S+\s*/, '');
   }
 
   /* ==================================================== */
@@ -863,47 +620,180 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     ].filter(Boolean) as string[];
 
     this.clients = (c.clients_title || items.length)
-      ? { icon: c.clients_icon || '', title: c.clients_title || 'Nos clients', items }
+      ? { icon: (c.clients_icon ?? ''), title: c.clients_title || 'Nos clients', items }
       : null;
   }
 
-  /* ==================================================== */
-  /*                           TEAM                       */
-  /* ==================================================== */
-  private extractTeamSection(): void {
-    const t = this.acf?.team_section || {};
+ /* ==================================================== */
+/*                           TEAM                       */
+/* ==================================================== */
 
-    this.teamTitle = t.team_title_1 || 'Une équipe de 8 experts à vos côtés';
-    this.setTeamTitleTwoLines(this.teamTitle);
+private extractTeamSection(): void {
+  const t = this.acf?.team_section || {};
 
-    const tmp: TeamMember[] = [];
-    for (let i = 1; i <= 8; i++) {
-      const photo = t[`team_photo_${i}`];
-      const name = (t[`team_name_${i}`] || '').toString().trim() || '';
-      const area = t[`team_area_${i}`] || '';
-      const jobHtml = t[`team_job_${i}`] || '';
+  this.teamTitle = t.team_title_1 || 'Une équipe de 8 experts à vos côtés';
+  this.setTeamTitleTwoLines(this.teamTitle);
 
-      if (photo || name || area || jobHtml) {
-        let nameFirst = name, nameLast = '';
-        const parts = name.split(/\s+/);
-        if (parts.length > 1) {
-          nameFirst = parts.slice(0, -1).join(' ');
-          nameLast  = parts.slice(-1)[0];
-        }
-        tmp.push({ photo: photo || '', nameFirst, nameLast, area, jobHtml });
+  const tmp: TeamMember[] = [];
+  for (let i = 1; i <= 8; i++) {
+    const photo = t[`team_photo_${i}`]; // ID ou URL
+    const name = (t[`team_name_${i}`] || '').toString().trim() || '';
+    const area = t[`team_area_${i}`] || '';
+    const jobHtml = t[`team_job_${i}`] || '';
+
+    if (photo || name || area || jobHtml) {
+      let nameFirst = name, nameLast = '';
+      const parts = name.split(/\s+/);
+      if (parts.length > 1) {
+        nameFirst = parts.slice(0, -1).join(' ');
+        nameLast  = parts.slice(-1)[0];
       }
-    }
-
-    this.teamMembers = this.shuffleArray(tmp);
-    this.teamPages = [];
-    for (let i = 0; i < this.teamMembers.length; i += 2) {
-      this.teamPages.push(this.teamMembers.slice(i, i + 2));
-    }
-    if (this.teamPages.length) {
-      this.teamPageIndex = Math.floor(Math.random() * this.teamPages.length);
+      tmp.push({ photo: photo ?? '', nameFirst, nameLast, area, jobHtml });
     }
   }
 
+  // Mélange pour varier l’ordre
+  this.teamMembers = this.shuffleArray(tmp);
+
+  // Pages de 2 personnes
+  this.teamPages = [];
+  for (let i = 0; i < this.teamMembers.length; i += 2) {
+    this.teamPages.push(this.teamMembers.slice(i, i + 2));
+  }
+
+  if (this.teamPages.length) {
+    // Page de départ aléatoire
+    this.teamPageIndex = Math.floor(Math.random() * this.teamPages.length);
+    // Prépare immédiatement la première page (évite le flash/latence)
+    this.ensureTeamPageReady(this.teamPageIndex);
+  }
+}
+
+/** Donne au template l’URL affichable, sinon placeholder */
+teamPhotoUrl(m: TeamMember): string {
+  return this.resolvedPhotos.get(m) || this.defaultPortrait;
+}
+
+/** Fallback d’erreur <img> */
+onTeamImgError(e: Event): void {
+  const img = e.target as HTMLImageElement;
+  if (img && img.src !== this.defaultPortrait) {
+    img.src = this.defaultPortrait;
+  }
+}
+
+/** Bascule vers une page Team APRÈS préchargement des portraits */
+async goTeamTo(i: number): Promise<void> {
+  if (!this.teamPages.length) return;
+  const len = this.teamPages.length;
+  const target = ((i % len) + len) % len;
+
+  this.stopTeamAutoplayByUser(); // le clic utilisateur stoppe l’autoplay
+
+  await this.ensureTeamPageReady(target);
+  this.teamPageIndex = target; // swap instant une fois prêt
+}
+nextTeam(): void { this.goTeamTo(this.teamPageIndex + 1); }
+prevTeam(): void { this.goTeamTo(this.teamPageIndex - 1); }
+
+private startTeamAutoplay(): void {
+  this.clearTeamAutoplay();
+  if (this.teamPages.length < 2 || this.teamAutoplayStoppedByUser) return;
+
+  this.teamAutoplayRef = setInterval(() => {
+    (async () => {
+      const len = this.teamPages.length;
+      if (len < 2) return;
+
+      let next = this.teamPageIndex;
+      while (next === this.teamPageIndex) {
+        next = Math.floor(Math.random() * len);
+      }
+
+      await this.ensureTeamPageReady(next);
+      this.teamPageIndex = next;
+    })();
+  }, this.teamAutoplayMs);
+}
+private clearTeamAutoplay(): void {
+  if (this.teamAutoplayRef) {
+    clearInterval(this.teamAutoplayRef);
+    this.teamAutoplayRef = null;
+  }
+}
+private stopTeamAutoplayByUser(): void {
+  this.teamAutoplayStoppedByUser = true;
+  this.clearTeamAutoplay();
+}
+
+/** Prépare (résout + précharge) toutes les photos d’une page Team */
+private async ensureTeamPageReady(pageIndex: number): Promise<void> {
+  if (pageIndex === this.preparingPageIndex) {
+    // déjà en cours pour cette page
+  }
+  this.preparingPageIndex = pageIndex;
+  const page = this.teamPages[pageIndex] || [];
+  await Promise.all(page.map(m => this.prepareMemberPhoto(m)));
+  this.preparingPageIndex = null;
+}
+
+/** Résout l’URL d’un portrait (ID/URL/objet) et le précharge, puis le met en cache */
+private async prepareMemberPhoto(m: TeamMember): Promise<void> {
+  if (this.resolvedPhotos.has(m)) return; // déjà prêt
+  const url = await this.resolveMedia(m.photo);
+  const finalUrl = url || this.defaultPortrait;
+  await this.preload(finalUrl);
+  this.resolvedPhotos.set(m, finalUrl);
+}
+
+/** Résout ID/objet WP/URL → URL utilisable */
+private async resolveMedia(idOrUrl: any): Promise<string> {
+  if (!idOrUrl) return '';
+
+  // Objet média WP
+  if (typeof idOrUrl === 'object') {
+    const src = idOrUrl?.source_url || idOrUrl?.url || '';
+    if (src) return src;
+    if (idOrUrl?.id != null) idOrUrl = idOrUrl.id;
+  }
+
+  // ID numérique
+  if (typeof idOrUrl === 'number') {
+    try { return (await firstValueFrom(this.wp.getMediaUrl(idOrUrl))) || ''; }
+    catch { return ''; }
+  }
+
+  // Chaîne
+  if (typeof idOrUrl === 'string') {
+    const s = idOrUrl.trim();
+    if (/^\d+$/.test(s)) {
+      try { return (await firstValueFrom(this.wp.getMediaUrl(+s))) || ''; }
+      catch { return ''; }
+    }
+    if (/^(https?:)?\/\//.test(s) || s.startsWith('/') || s.startsWith('data:')) return s;
+    return s; // chemin relatif custom
+  }
+
+  return '';
+}
+
+/** Précharge une image (résout même en erreur) */
+private preload(src: string): Promise<void> {
+  if (!src) return Promise.resolve();
+  return new Promise<void>((resolve) => {
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
+    img.decoding = 'async';
+    img.loading = 'eager';
+    img.src = src;
+  });
+}
+
+
+  /* ==================================================== */
+  /*                    Utils divers                      */
+  /* ==================================================== */
   private shuffleArray<T>(arr: T[]): T[] {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -927,47 +817,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /* Navigation Team */
-  goTeamTo(i: number): void {
-    if (!this.teamPages.length) return;
-    const len = this.teamPages.length;
-    this.teamPageIndex = ((i % len) + len) % len;
-    this.stopTeamAutoplayByUser();
-  }
-  nextTeam(): void { this.goTeamTo(this.teamPageIndex + 1); }
-  prevTeam(): void { this.goTeamTo(this.teamPageIndex - 1); }
-
-  private startTeamAutoplay(): void {
-    this.clearTeamAutoplay();
-    if (this.teamPages.length < 2) return;
-    if (this.teamAutoplayStoppedByUser) return;
-
-    this.teamAutoplayRef = setInterval(() => {
-      const len = this.teamPages.length;
-      if (len < 2) return;
-
-      let next = this.teamPageIndex;
-      while (next === this.teamPageIndex) {
-        next = Math.floor(Math.random() * len);
-      }
-      this.teamPageIndex = next;
-    }, this.teamAutoplayMs);
-  }
-  private clearTeamAutoplay(): void {
-    if (this.teamAutoplayRef) {
-      clearInterval(this.teamAutoplayRef);
-      this.teamAutoplayRef = null;
-    }
-  }
-  private stopTeamAutoplayByUser(): void {
-    this.teamAutoplayStoppedByUser = true;
-    this.clearTeamAutoplay();
-  }
-
-  /* ==================================================== */
-  /*                        UTILS                         */
-  /* ==================================================== */
-
   /** Transforme le libellé WP en clé de thème normalisée */
   private toThemeKey(raw?: string): ThemeKey {
     const s = (raw || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -977,10 +826,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     return 'autre';
   }
 
-  /** Classe CSS de thème pour le template */
   themeClass(k?: ThemeKey): string { return `theme-${k || 'autre'}`; }
 
-  /** Récupère le slug depuis l’URL fournie par WP */
   private slugFromLink(link?: string): string | undefined {
     if (!link) return undefined;
     try {

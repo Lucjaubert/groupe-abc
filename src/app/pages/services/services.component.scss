@@ -14,8 +14,7 @@ $fs24: map.get(vars.$font-size, "50");  // 24
 $fs36: map.get(vars.$font-size, "80");  // 36
 $fs60: map.get(vars.$font-size, "110"); // 60 approx
 
-/* ==== prehide helpers — SCOPÉS AU COMPOSANT (même logique NEWS) ==== */
-/* (Laissez ces règles ici, PAS dans styles.scss, pour éviter le flash) */
+/* ==== pré-cachage propre ==== */
 .hero .prehide,
 .contexts .prehide,
 .clients .prehide,
@@ -24,6 +23,7 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   visibility: hidden;
   transform: translateY(20px);
   will-change: transform, opacity;
+  contain: paint;
 }
 .contexts .prehide-row,
 .clients  .prehide-row,
@@ -34,13 +34,18 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
 
 .services-wrapper { width: 100%; }
 
+/* Active les bordures de listes uniquement quand tout est prêt */
+.services-wrapper.is-ready .contexts .ctx-list,
+.services-wrapper.is-ready .clients  .cli-list {
+  border-top-color: $blue !important;
+}
+
 /* ===== TITRES ===== */
 .page-title {
   color: $blue;
   font-size: clamp(32px, 3.2vw, 60px);
   font-weight: 400;
   line-height: normal;
-
 }
 
 .ctx-title {
@@ -58,9 +63,7 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
 }
 
 @media (max-width: 768px) {
-  .ctx-sub {
-    margin-bottom: 40px;
-  }
+  .ctx-sub { margin-bottom: 40px; }
 }
 
 /* ===================== */
@@ -71,34 +74,35 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     list-style: none;
     margin: 0;
     padding: 0;
-    border-top: $bd-2 solid $blue; /* même largeur que affiliations/deon */
+    /* Par défaut: transparent pour éviter le flash */
+    border-top: $bd-2 solid transparent;
   }
 
-  /* Rangée : grille 3 colonnes [icon] [title] [chevron] */
+  /* Tant que la liste est cachée/tenue, rester transparent */
+  .ctx-list.prehide,
+  .ctx-list._hold-bar {
+    border-top: $bd-2 solid transparent !important;
+  }
+
   .ctx-row {
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
     column-gap: clamp(16px, 3vw, 24px);
     border-bottom: $bd-2 solid $blue;
-
-    /* Hauteur homogène de la ligne (solution robuste) */
     min-height: 98px;
     min-block-size: 98px;
   }
 
-  /* Bloc cliquable : délègue la mise en page à la grille par "contents" */
   .row-line { display: contents; }
 
-  /* Aligner verticalement SANS fixer la hauteur sur les enfants */
   .row-line > .ctx-icon,
   .row-line > .row-name,
-  .row-line > .row-toggle {
+  .row-line > .deon-toggle {
     display: flex;
     align-items: center;
   }
 
-  /* Col 1 : icône (image seule, pas de fond) */
   .ctx-icon {
     width: 56px;
     height: 56px;
@@ -107,7 +111,6 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     justify-self: start;
   }
 
-  /* Col 2 : titre */
   .row-name {
     color: $blue;
     font-size: clamp(16px, 3vw, 24px);
@@ -115,8 +118,7 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     line-height: 1;
   }
 
-  /* Col 3 : chevron */
-  .row-toggle {
+  .deon-toggle {
     background: none;
     border: 0;
     padding: 0;
@@ -125,20 +127,25 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     justify-self: end;
     display: inline-grid;
     place-items: center;
+
+    &:focus-visible {
+      outline: 2px solid $red;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
   }
 
   .chevron {
-    width: 24px;
-    height: 34.66px;
+    width: 20px;
+    height: 30px;
     transform: rotate(90deg);
     transition: transform .25s ease;
   }
+
+  .deon-toggle[aria-expanded="true"] .chevron { transform: rotate(0deg); }
   .ctx-row.open .chevron { transform: rotate(0deg); }
 
-  .row-desc {
-    grid-column: 2 / 3;
-    padding: 8px 0 18px;
-  }
+  .row-desc { grid-column: 2 / 3; padding: 8px 0 18px; }
 
   .row-desc-inner {
     color: $blue;
@@ -150,15 +157,12 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   }
 
   @media (max-width: 768px) {
-
-    .chevron {
-      width: 18px;
-      height: 18px;
-      transform: rotate(90deg);
-      transition: transform .25s ease;
-    }
+    .chevron { width: 18px; height: 18px; }
   }
 }
+
+/* Masque totalement les <img> sans src pour éviter un flash */
+img:not([src]), img[src=""] { opacity: 0; }
 
 /* ===================== */
 /* CLIENTS = Accordéon   */
@@ -176,26 +180,29 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     list-style: none;
     margin: 0;
     padding: 0;
-    border-top: $bd-2 solid $blue; /* identique aux autres tableaux */
+    /* Par défaut: transparent pour éviter le flash */
+    border-top: $bd-2 solid transparent;
   }
 
-  /* grille 2 colonnes : [nom] [chevron] */
+  /* Tant que la liste est cachée/tenue, rester transparent */
+  .cli-list.prehide,
+  .cli-list._hold-bar {
+    border-top: $bd-2 solid transparent !important;
+  }
+
   .cli-row{
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
     border-bottom: $bd-2 solid $blue;
-
-    /* Hauteur homogène de la ligne (solution robuste) */
     min-height: 98px;
     min-block-size: 98px;
   }
 
   .row-line{ display: contents; }
 
-  /* Aligner verticalement SANS fixer la hauteur sur les enfants */
   .row-line > .cli-name,
-  .row-line > .row-toggle{
+  .row-line > .deon-toggle{
     display: flex;
     align-items: center;
   }
@@ -207,10 +214,16 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     line-height: 1;
   }
 
-  .row-toggle{
+  .deon-toggle{
     background: none; border: 0; padding: 0;
     color: $blue; cursor: pointer; justify-self: end;
     display: inline-grid; place-items: center;
+
+    &:focus-visible {
+      outline: 2px solid $red;
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
   }
 
   .chevron{
@@ -218,10 +231,12 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     transform: rotate(90deg);
     transition: transform .25s ease;
   }
-  .cli-row.open .chevron { transform: rotate(0deg); }
+
+  .deon-toggle[aria-expanded="true"] .chevron { transform: rotate(0deg); }
+  .cli-row.open .chevron { transform: rotate(0deg); } /* secours */
 
   .row-desc{
-    grid-column: 1 / -1; /* ici pas de colonne logo, donc pleine largeur */
+    grid-column: 1 / -1;
     padding: 8px 0 18px;
   }
   .row-desc-inner{
@@ -230,19 +245,10 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   }
 
   @media (max-width: 768px) {
-    /* Hauteur mobile uniforme */
-    .cli-row{
-      min-height: 78px;
-      min-block-size: 78px;
-    }
-
-    .chevron {
-      width: 18px;
-      height: 18px;
-    }
+    .cli-row{ min-height: 78px; min-block-size: 78px; }
+    .chevron { width: 18px; height: 18px; }
   }
 }
-
 
 /* ===================== */
 /* RÉFÉRENCES            */
@@ -255,7 +261,7 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     line-height: 1.2;
     text-align: center;
     margin-top: 144px;
-    margin-bottom: 63px;
+    margin-bottom: 75px;
   }
 
   .refs-grid{
@@ -298,15 +304,9 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
       column-gap: 0;
       row-gap: clamp(18px, 6vw, 28px);
     }
-    .refs-grid img{
-      width: 82px;
-      height: 82px;
-    }
+    .refs-grid img{ width: 82px; height: 82px; }
 
-    .chevron {
-      width: 5.55px;
-      height: 7.906px;
-    }
+    .chevron { width: 5.55px; height: 7.906px; }
   }
 }
 

@@ -5,7 +5,12 @@ import { appConfig } from './app/app.config';
 import { WeglotService } from './app/services/weglot.service';
 
 export function initWeglotFactory(weglot: WeglotService) {
-  return () => weglot.init();
+  return () => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') {
+      return;
+    }
+    return weglot.init();
+  };
 }
 
 bootstrapApplication(AppComponent, {

@@ -1,59 +1,65 @@
-$font-path: "/assets/fonts/plus-jakarta-sans";
+$font-path: "/assets/fonts/plus-jakarta-sans" !default;
 
-/* ========== OFFICIEL : "Plus Jakarta Sans" ========== */
-
-/* src/assets/fonts/fonts.scss */
-
+/* ========== OFFICIEL : "Plus Jakarta Sans" (normal) ========== */
+/* Light 300 */
 @font-face {
   font-family: "Plus Jakarta Sans";
-  src: url("/assets/fonts/PlusJakartaSans-Light.woff2") format("woff2");
+  src: url("#{$font-path}/PlusJakartaSans-Light.woff2") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 
+/* Regular 400 */
 @font-face {
   font-family: "Plus Jakarta Sans";
-  src: url("/assets/fonts/PlusJakartaSans-Regular.woff2") format("woff2");
+  src: url("#{$font-path}/PlusJakartaSans-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
+/* Medium 500 */
 @font-face {
   font-family: "Plus Jakarta Sans";
-  src: url("/assets/fonts/PlusJakartaSans-Medium.woff2") format("woff2");
+  src: url("#{$font-path}/PlusJakartaSans-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 
+/* SemiBold 600 */
 @font-face {
   font-family: "Plus Jakarta Sans";
-  src: url("/assets/fonts/PlusJakartaSans-SemiBold.woff2") format("woff2");
+  src: url("#{$font-path}/PlusJakartaSans-SemiBold.woff2") format("woff2");
   font-weight: 600;
   font-style: normal;
   font-display: swap;
 }
 
+/* Bold 700 */
 @font-face {
   font-family: "Plus Jakarta Sans";
-  src: url("/assets/fonts/PlusJakartaSans-Bold.woff2") format("woff2");
+  src: url("#{$font-path}/PlusJakartaSans-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
+/* ExtraBold 800 */
 @font-face {
   font-family: "Plus Jakarta Sans";
-  src: url("/assets/fonts/PlusJakartaSans-ExtraBold.woff2") format("woff2");
+  src: url("#{$font-path}/PlusJakartaSans-ExtraBold.woff2") format("woff2");
   font-weight: 800;
   font-style: normal;
   font-display: swap;
 }
 
-
-$font-stack-default: "Plus Jakarta Sans", "PlusJakartaSans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+/* =======================================================================
+   Pile par défaut
+   ======================================================================= */
+$font-stack-default: "Plus Jakarta Sans", "PlusJakartaSans",
+  system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 
 body {
   font-family: $font-stack-default;

@@ -1,12 +1,15 @@
+// src/app/services/seo.service.ts
 import { Injectable, Inject, Renderer2, RendererFactory2, PLATFORM_ID } from '@angular/core';
 import { Title, Meta } from '@angular/platform-browser';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { Router } from '@angular/router';
+import { environment } from '../../environments/environment';
 
 export type OgType = 'website' | 'article';
 
 export interface Hreflang {
-  lang: string;     // 'fr', 'en', 'x-default', ...
-  href: string;     // URL absolue recommandée
+  lang: string;  // 'fr', 'en', 'x-default', ...
+  href: string;  // URL absolue recommandée
 }
 
 export interface SeoConfig {
@@ -15,31 +18,31 @@ export interface SeoConfig {
   keywords?:    string;
 
   // Langues
-  lang?:        'fr' | 'en';           // pilote <html lang> + meta content-language
-  locale?:      string;                // ex. 'fr_FR' | 'en_US'
-  localeAlt?:   string[];              // ex. ['en_US'] -> og:locale:alternate
+  lang?:        'fr' | 'en';
+  locale?:      string;               // 'fr_FR' | 'en_US'
+  localeAlt?:   string[];             // ['en_US']…
 
-  image?:       string;                 // URL absolue ou relative
-  imageAlt?:    string;                 // texte alternatif de l'image
-  imageWidth?:  number;                 // ex. 1200
-  imageHeight?: number;                 // ex. 630
+  image?:       string;               // absolue ou relative
+  imageAlt?:    string;
+  imageWidth?:  number;
+  imageHeight?: number;
 
-  type?:        OgType;                 // 'website' | 'article'
-  canonical?:   string;                 // URL absolue ou relative
-  robots?:      string;                 // 'index,follow' | 'noindex,nofollow'
+  type?:        OgType;               // 'website' | 'article'
+  canonical?:   string;               // absolue ou relative
+  robots?:      string;               // 'index,follow'…
 
-  // Twitter (facultatif)
-  twitterSite?:    string;              // '@groupeabc'
-  twitterCreator?: string;              // '@auteur'
+  // Twitter
+  twitterSite?:    string;
+  twitterCreator?: string;
 
-  // Article (optionnel si type='article')
-  publishedTime?: string;               // ISO 8601
-  modifiedTime?:  string;               // ISO 8601
+  // Article
+  publishedTime?: string;
+  modifiedTime?:  string;
 
-  // Hreflang alternates
+  // Hreflang
   alternates?:   Hreflang[];
 
-  // JSON-LD de page (@graph ou objet)
+  // JSON-LD (@graph ou objet)
   jsonLd?:       object;
 }
 
@@ -51,6 +54,7 @@ export class SeoService {
   constructor(
     private title: Title,
     private meta : Meta,
+    private router: Router,
     @Inject(DOCUMENT) private doc: Document,
     @Inject(PLATFORM_ID) platformId: Object,
     renderer: RendererFactory2
@@ -59,33 +63,33 @@ export class SeoService {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
-  /** Mise à jour standard (Title + metas + OG/Twitter + Canonical + JSON-LD + hreflang + langue) */
+  /** Mise à jour complète (title, metas, OG/Twitter, canonical, hreflang, JSON-LD, langue) */
   update(cfg: SeoConfig): void {
-    // Title
     if (cfg.title) this.title.setTitle(cfg.title);
 
-    // Langue document (<html lang>) + meta content-language
+    // <html lang> + meta content-language
     if (cfg.lang) {
       this.doc.documentElement.setAttribute('lang', cfg.lang);
       this.setNamedMeta('content-language', cfg.lang);
     }
 
-    // Metas de base
+    // Metas classiques
     this.setNamedMeta('description', cfg.description);
-    this.setNamedMeta('keywords', cfg.keywords);
+    this.setNamedMeta('keywords',    cfg.keywords);
 
-    // Robots
-    this.setNamedMeta('robots', cfg.robots);
+    // Robots (Googlebot suit 'robots')
+    this.setNamedMeta('robots',    cfg.robots);
     this.setNamedMeta('googlebot', cfg.robots);
 
-    // Résolution des URLs (absolutise si besoin)
-    const origin  = this.siteOrigin() || '';
-    const pageUrl = this.absUrl(cfg.canonical || this.currentUrl() || '', origin);
+    // Origin (navigateur → window.origin ; SSR → environment.siteUrl)
+    const origin  = this.siteOrigin() || environment.siteUrl || '';
+    const pageUrl = this.absUrl(cfg.canonical || this.currentUrl() || this.routerUrlAsAbs(origin), origin);
     const imgUrl  = this.absUrl(cfg.image || '', origin);
 
     // Open Graph
-    const ogType: OgType = cfg.type ?? 'website';
+    const ogType   = (cfg.type ?? 'website') as OgType;
     const ogLocale = cfg.locale || (cfg.lang === 'en' ? 'en_US' : 'fr_FR');
+
     this.setOpenGraph({
       'og:type':        ogType,
       'og:locale':      ogLocale,
@@ -95,25 +99,25 @@ export class SeoService {
       'og:url':         pageUrl
     });
 
-    // og:locale:alternate (autres langues dispo)
+    // og:locale:alternate
     this.clearOgLocaleAlternate();
     (cfg.localeAlt || (ogLocale.startsWith('fr') ? ['en_US'] : ['fr_FR']))
       .forEach(l => this.setPropMeta('og:locale:alternate', l));
 
-    // OG image details
+    // OG image détails
     if (imgUrl) {
       this.setPropMeta('og:image:alt',   cfg.imageAlt || cfg.title);
       if (cfg.imageWidth)  this.setPropMeta('og:image:width',  String(cfg.imageWidth));
       if (cfg.imageHeight) this.setPropMeta('og:image:height', String(cfg.imageHeight));
     }
 
-    // Article times
+    // Article
     if (ogType === 'article') {
       if (cfg.publishedTime) this.setPropMeta('article:published_time', cfg.publishedTime);
       if (cfg.modifiedTime)  this.setPropMeta('article:modified_time',  cfg.modifiedTime);
     }
 
-    // Twitter (si pas d'image → 'summary')
+    // Twitter
     const twitterCard = imgUrl ? 'summary_large_image' : 'summary';
     this.setTwitter({
       'twitter:card':        twitterCard,
@@ -124,18 +128,18 @@ export class SeoService {
       ...(cfg.twitterCreator ? { 'twitter:creator': cfg.twitterCreator } : {})
     });
 
-    // Canonical (actif aussi en SSR)
+    // Canonical
     this.setCanonical(pageUrl || undefined);
 
     // hreflang alternates
     this.setAlternates(cfg.alternates || []);
 
-    // JSON-LD de page (remplace les précédents de page)
+    // JSON-LD (page)
     this.clearJsonLd();
     if (cfg.jsonLd) this.addJsonLd(cfg.jsonLd);
   }
 
-  /** JSON-LD “sitewide” (WebSite/Organization…), injecté une fois et persistant */
+  /** JSON-LD “sitewide” persistant (WebSite / Organization…) */
   setSitewideJsonLd(obj: object): void {
     if (!obj) return;
     let script = this.doc.getElementById('ld-sitewide') as HTMLScriptElement | null;
@@ -148,7 +152,10 @@ export class SeoService {
     script.text = JSON.stringify(obj);
   }
 
-  /** Ajoute/merge des propriétés Open Graph (property="og:*") */
+  /* ======================
+   * Outils OG / Twitter
+   * ====================== */
+
   setOpenGraph(og: Record<string, string | undefined>): void {
     for (const [prop, val] of Object.entries(og)) {
       if (!prop.startsWith('og:')) continue;
@@ -156,7 +163,6 @@ export class SeoService {
     }
   }
 
-  /** Ajoute/merge des propriétés Twitter (name="twitter:*") */
   setTwitter(tw: Record<string, string | undefined>): void {
     for (const [name, val] of Object.entries(tw)) {
       if (!name.startsWith('twitter:')) continue;
@@ -164,13 +170,15 @@ export class SeoService {
     }
   }
 
-  /** Définit (ou retire) le canonical — fonctionne aussi en SSR */
+  /* ======================
+   * Canonical / hreflang
+   * ====================== */
+
   setCanonical(url?: string): void {
     const link = this.upsertLink('canonical', url);
     if (!url && link) link.remove();
   }
 
-  /** hreflang alternates (supprime puis recrée) */
   setAlternates(alts: Hreflang[]): void {
     // purge existants
     Array.from(this.doc.head.querySelectorAll('link[rel="alternate"][hreflang]'))
@@ -187,17 +195,26 @@ export class SeoService {
     }
   }
 
-  /** Supprime les metas og:locale:alternate existantes */
+  /** Supprime les metas og:locale:alternate existantes (évite les doublons) */
   private clearOgLocaleAlternate(): void {
-    this.doc.querySelectorAll('meta[property="og:locale:alternate"]').forEach(m => m.remove());
+    try {
+      this.doc
+        .querySelectorAll('meta[property="og:locale:alternate"]')
+        .forEach(m => m.remove());
+    } catch {
+      // no-op (SSR ou environnement sans DOM)
+    }
   }
 
-  /** Supprime tous les scripts JSON-LD “page” injectés par ce service */
+
+  /* ======================
+   * JSON-LD page
+   * ====================== */
+
   clearJsonLd(): void {
     this.doc.querySelectorAll<HTMLScriptElement>('script[data-jsonld="1"]').forEach(s => s.remove());
   }
 
-  /** Ajoute un script JSON-LD “page” */
   addJsonLd(obj: object): void {
     if (!obj) return;
     const script = this.rnd.createElement('script') as HTMLScriptElement;
@@ -207,13 +224,19 @@ export class SeoService {
     this.rnd.appendChild(this.doc.head, script);
   }
 
-  /** URL absolue courante côté navigateur ; string vide côté serveur */
+  /* ======================
+   * Helpers URL / meta
+   * ====================== */
+
+  /** URL absolue courante (browser). En SSR, on renvoie siteUrl + router.url */
   currentUrl(): string {
-    if (!this.isBrowser) return '';
-    try { return this.doc.defaultView?.location?.href ?? ''; } catch { return ''; }
+    if (this.isBrowser) {
+      try { return this.doc.defaultView?.location?.href ?? ''; } catch { return ''; }
+    }
+    return this.routerUrlAsAbs(environment.siteUrl || '');
   }
 
-  /** Origin du site (https://domaine.tld) ; string vide côté serveur */
+  /** Origin du site (browser) */
   siteOrigin(): string {
     if (!this.isBrowser) return '';
     try {
@@ -222,22 +245,23 @@ export class SeoService {
     } catch { return ''; }
   }
 
-  /** Absolutise une URL relative si besoin (sinon renvoie telle quelle) */
+  /** Construit une absolue depuis router.url (SSR) */
+  private routerUrlAsAbs(origin: string): string {
+    const base = (origin || '').replace(/\/$/, '');
+    const path = (this.router.url || '/').replace(/\/{2,}/g, '/');
+    return base + (path.startsWith('/') ? path : `/${path}`);
+  }
+
+  /** Absolutise si besoin, en utilisant origin ou environment.siteUrl */
   private absUrl(url: string, origin: string): string {
     if (!url) return '';
     try {
-      // déjà absolue
-      if (/^https?:\/\//i.test(url)) return url;
-      // protocole-relative //domain/...
+      if (/^https?:\/\//i.test(url)) return url;           // déjà absolue
       if (/^\/\//.test(url)) return (this.isBrowser ? (this.doc.defaultView?.location?.protocol ?? 'https:') : 'https:') + url;
-      // relative → préfixe origin si dispo
-      return origin ? origin.replace(/\/$/, '') + (url.startsWith('/') ? url : `/${url}`) : url;
+      const base = (origin || environment.siteUrl || '').replace(/\/$/, '');
+      return base ? `${base}${url.startsWith('/') ? url : `/${url}`}` : url;
     } catch { return url; }
   }
-
-  /* ======================
-   * Helpers internes
-   * ====================== */
 
   private setNamedMeta(name: string, content?: string): void {
     if (!content) { this.removeMeta('name', name); return; }
@@ -255,7 +279,6 @@ export class SeoService {
     if (el) el.remove();
   }
 
-  /** Crée ou met à jour un <link rel="...">; renvoie l'élément */
   private upsertLink(rel: string, href?: string): HTMLLinkElement | null {
     let link = this.doc.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
     if (!href) {

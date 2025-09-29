@@ -18,10 +18,8 @@
   <section class="section firms py-6 my-6" *ngIf="firms?.length">
     <div class="section-member">
 
-      <!-- Titre -->
       <h2 #firmsTitleEl class="firms-title prehide">{{ firmsTitle }}</h2>
 
-      <!-- Liste des firms -->
       <ul class="firm-list" role="list">
         <li
           #firmRowEl
@@ -32,7 +30,14 @@
           <!-- Entête de ligne (logo | nom | région | chevron) -->
           <div class="fr-head">
             <div class="fr-logo" *ngIf="f.logoUrl">
-              <img [src]="f.logoUrl" alt="" aria-hidden="true" />
+              <img
+                [appImgFast]="f.logoUrl ? ('' + f.logoUrl) : '/assets/fallbacks/image-placeholder.svg'"
+                [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+                loading="lazy"
+                decoding="async"
+                alt=""
+                aria-hidden="true"
+              />
             </div>
 
             <div class="fr-name">{{ f.name }}</div>
@@ -58,14 +63,25 @@
             </div>
 
             <div class="ff-right prehide">
-              <img class="ff-portrait" *ngIf="f.partnerImageUrl" [src]="f.partnerImageUrl" alt="" aria-hidden="true" />
+              <!-- Portrait résolu + préchargé avec fallback -->
+              <img
+                class="ff-portrait"
+                [attr.src]="f._partnerImgUrl || defaultPortrait"
+                (error)="onFirmImgError($event)"
+                alt=""
+                aria-hidden="true" />
 
-              <div class="ff-person mt-4" *ngIf="f.partnerLastname">
-                <div class="ff-person-name">{{ f.partnerLastname }}</div>
-                <div class="ff-person-name">{{ f.partnerFamilyname }}</div>
+              <div class="ff-person mt-4" *ngIf="f.partnerLastname || f.partnerFamilyname">
+                <div class="ff-person-name" *ngIf="f.partnerLastname">{{ f.partnerLastname }}</div>
+                <div class="ff-person-name" *ngIf="f.partnerFamilyname">{{ f.partnerFamilyname }}</div>
 
                 <div class="ff-person-meta">
-                  <img class="ff-org my-3" *ngIf="f.organismLogoUrl" [src]="f.organismLogoUrl" alt="" aria-hidden="true" />
+                  <img
+                    class="ff-org my-3"
+                    *ngIf="f.organismLogoUrl"
+                    [attr.src]="f.organismLogoUrl ? ('' + f.organismLogoUrl) : '/assets/fallbacks/image-placeholder.svg'"
+                    alt=""
+                    aria-hidden="true" />
                 </div>
 
                 <div class="ff-titles my-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>
@@ -109,7 +125,7 @@
 
   <!-- ===== TEACHING ===== -->
   <section class="section teaching py-6 my-6" *ngIf="teachingCourses?.length">
-    <div class="section-teaching mt-lg-10">
+    <div class="section-teaching mt-lg-5">
       <h2 #teachingTitleEl class="teach-title prehide">{{ teachingTitle }}</h2>
 
       <div #teachingIntroEl class="teach-intro prehide mt-5"
@@ -122,8 +138,15 @@
           <!-- Colonne gauche -->
           <div class="teach-left">
             <div class="teach-logo" *ngIf="c.schoolLogoUrl">
-              <img [src]="c.schoolLogoUrl" alt="">
+              <img
+                [appImgFast]="c.schoolLogoUrl ? ('' + c.schoolLogoUrl) : '/assets/fallbacks/image-placeholder.svg'"
+                [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+                loading="lazy"
+                decoding="async"
+                alt=""
+              />
             </div>
+
             <div class="teach-school">
               <div class="ts-school-name">{{ c.schoolName }}</div>
               <div class="ts-level" *ngIf="c.programLevel">{{ c.programLevel }}</div>
@@ -134,10 +157,11 @@
 
           <!-- Colonne centre -->
           <div class="teach-speaker" *ngIf="c.speakerName || c.speakerLinkedin || true">
-            <img class="ts-photo"
-                 [src]="c.speakerPhotoUrl || defaultPortrait"
-                 (error)="onTeachImgError($event)"
-                 [alt]="c.speakerName || ''">
+            <img
+              class="ts-photo"
+              [attr.src]="c._speakerImgUrl || defaultPortrait"
+              (error)="onTeachImgError($event)"
+              [alt]="c.speakerName || ''">
 
             <div class="ts-person py-2">
               <div class="ts-name" *ngIf="c.speakerName">{{ c.speakerName }}</div>
@@ -169,8 +193,16 @@
     <div class="section-team">
       <div class="map-grid">
         <div #mapImageEl class="map-image prehide">
-          <img [src]="ms.image" alt="" (error)="onMapImgError($event)" />
+          <img
+            [appImgFast]="ms?.image ? ('' + ms.image) : ''"
+            [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+            loading="lazy"
+            decoding="async"
+            alt=""
+            aria-hidden="true"
+          />
         </div>
+
         <div class="map-list ps-3 ps-lg-0">
           <h2 #mapTitleEl class="map-title prehide">{{ ms.title }}</h2>
           <ul class="panel-list mt-3">

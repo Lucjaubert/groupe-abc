@@ -34,9 +34,15 @@
   </div>
 
   <div class="right-rail d-flex flex-column align-items-end">
-    <!-- Même balise .lang-switch :
-         - en MOBILE : c’est le BURGER -> ouvre/ferme le menu
-         - en DESKTOP : reste le switch de langue -->
+    <a class="extranet-badge d-flex align-items-center justify-content-center mt-8 mt-lg-0"
+       href="#"
+       rel="nofollow"
+       aria-label="Espace Extranet Groupe ABC">
+      <span class="extranet-text">
+        GROUPE ABC <span class="extranet-slash">/</span> EXTRANET
+      </span>
+    </a>
+
     <span class="lang-switch d-flex align-items-center justify-content-center"
           role="button"
           tabindex="0"
@@ -46,14 +52,6 @@
       {{ (currentLang | uppercase) }}
     </span>
 
-    <a class="extranet-badge d-flex align-items-center justify-content-center mt-8 mt-lg-0"
-       href="#"
-       rel="nofollow"
-       aria-label="Espace Extranet Groupe ABC">
-      <span class="extranet-text">
-        GROUPE ABC <span class="extranet-slash">/</span> EXTRANET
-      </span>
-    </a>
   </div>
 </header>
 
@@ -106,7 +104,7 @@
         <a routerLink="/qui-sommes-nous" (click)="closeAfterNav()">QUI SOMMES-NOUS ?</a>
         <a routerLink="/nos-services" (click)="closeAfterNav()">NOS SERVICES</a>
         <a routerLink="/biens-et-methodes" (click)="closeAfterNav()">BIENS ET MÉTHODES</a>
-        <a routerLink="/notre-equipe" (click)="closeAfterNav()">ÉQUIPE</a>
+        <a routerLink="/notre-equipe" (click)="closeAfterNav()">ÉQUIPES</a>
         <a routerLink="/actualites" (click)="closeAfterNav()">ACTUALITÉS</a>
         <a routerLink="/contact" (click)="closeAfterNav()">CONTACT</a>
     </nav>

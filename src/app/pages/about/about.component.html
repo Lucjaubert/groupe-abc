@@ -1,105 +1,85 @@
 <div class="about-wrapper">
-
-  <!-- ===== Core (Qui sommes-nous ? / Groupe ABC à droite) ===== -->
-  <section class="section core" *ngIf="core.length && mapSection as ms">
-  <div class="section-inner px-0">
-    <!-- Titre : on garde celui du bloc gauche -->
-    <h3 #coreTitle class="block-title prehide" *ngIf="core[0]?.title">{{ core[0].title }}</h3>
-
-    <div class="core-grid px-0">
-      <!-- Colonne gauche : intro -->
-      <article #coreLeft class="core-block core-left">
-        <div class="block-html prehide" [innerHTML]="core[0].html"></div>
-      </article>
-
-      <!-- Colonne droite : Partenaires (carrousel) -->
-      <aside
-        class="core-block core-right partners"
-        *ngIf="partners?.length"
-        (mouseenter)="stopAutoRotate()"
-        (mouseleave)="startAutoRotate()"
-      >
-
-        <!-- Une seule carte visible (le TS remplace le contenu de `partners`) -->
-        <article class="member-card p-0" *ngFor="let m of partners; trackBy: trackByIndex">
-          <div class="photo-tile">
-            <img
-              [src]="m.photo"
-              [alt]="'Portrait de ' + m.nameFirst + ' ' + m.nameLast"
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
-
-          <!-- Colonne texte ; la photo prend exactement la même hauteur -->
-          <div class="member-text pt-3">
-            <div class="member-area">{{ m.area }}</div>
-            <div class="member-name">
-              <div class="first">{{ m.nameFirst }}</div>
-              <div class="last">{{ m.nameLast }}</div>
-            </div>
-            <div class="member-job" [innerHTML]="m.jobHtml"></div>
-          </div>
+  <section class="section core" *ngIf="core.length">
+    <div class="section-inner px-0">
+      <h3 #coreTitle class="block-title prehide" *ngIf="core[0]?.title">{{ core[0].title }}</h3>
+      <div #coreGrid class="core-grid px-0" [class.prehide]="!coreReady">
+        <article #coreLeft class="core-block core-left">
+          <div class="block-html" [innerHTML]="core[0].html"></div>
         </article>
-      </aside>
+         <aside
+          #coreRight
+          class="core-block core-right partners"
+          [class.is-empty]="!activePartner"
+          (mouseenter)="stopAutoRotate()"
+          (mouseleave)="startAutoRotate()">
+          <article class="member-card p-0">
+            <div class="photo-tile">
+              <img
+                [attr.src]="currentPhotoUrl || defaultPortrait"
+                [attr.alt]="'Portrait de ' + (activePartner?.nameFirst || '') + ' ' + (activePartner?.nameLast || '')"
+                loading="eager" fetchpriority="high" decoding="async"
+                (error)="onImgError($event)">
+            </div>
+            <div class="member-text pt-3">
+              <div class="member-area">{{ activePartner?.area || ' ' }}</div>
+              <div class="member-name">
+                <div class="first">{{ activePartner?.nameFirst || ' ' }}</div>
+                <div class="last">{{ activePartner?.nameLast || ' ' }}</div>
+              </div>
+              <div class="member-job" [innerHTML]="activePartner?.jobHtml || ''"></div>
+            </div>
+          </article>
+  </aside>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-
-  <!-- ===== Mesh / Maillage ===== -->
   <section class="section mesh" *ngIf="mesh?.title || mesh?.image || mesh?.levels?.length">
     <div class="section-inner px-0">
-
       <h3 #meshTitleEl class="mesh-title mb-5 prehide" *ngIf="mesh?.title">{{ mesh?.title }}</h3>
-
       <div #meshSkylineEl class="mesh-skyline mt-5 prehide" *ngIf="mesh?.image">
-        <img [src]="mesh?.image" alt="" aria-hidden="true" />
+        <img [appImgFast]="mesh?.image || ''"
+          [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+          loading="lazy" decoding="async" alt="" aria-hidden="true" />
       </div>
-
-      <!-- Le trait 2px est animé via CSS var sur ::before ; les labels se révèlent à mesure -->
       <ul #meshLevelsEl class="mesh-levels" *ngIf="mesh?.levels?.length">
         <li #meshLevelEl class="prehide" *ngFor="let l of mesh?.levels; trackBy: trackByIndex">{{ l }}</li>
       </ul>
     </div>
   </section>
 
-  <!-- ===== Carte / Où ? ===== -->
   <section class="section map-section" *ngIf="mapSection as ms">
     <div class="section-inner px-0">
       <div class="map-grid">
-
-        <!-- Colonne gauche : image carte -->
-        <div #mapImageEl class="map-image prehide" *ngIf="ms.image">
-          <img [src]="ms.image" alt="Carte du Groupe ABC" />
+        <div #mapImageEl class="map-image prehide">
+          <img [appImgFast]="ms.image || ''"
+            [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+            loading="lazy" decoding="async" alt="Carte du Groupe ABC" />
         </div>
-
-        <!-- Colonne droite : titre + liste -->
         <div class="map-list ps-lg-0 ps-5">
           <h3 #mapTitleEl class="map-title prehide" *ngIf="ms.title">{{ ms.title }}</h3>
-
           <ul *ngIf="ms.items?.length">
-            <li #mapItem class="prehide-row" *ngFor="let item of ms.items; trackBy: trackByIndex">{{ item }}</li>
+            <li #mapItem class="prehide-row" *ngFor="let item of ms.items; trackBy: trackByIndex">
+              {{ item }}
+            </li>
           </ul>
         </div>
-
       </div>
     </div>
   </section>
 
-  <!-- ===== Nos valeurs  ===== -->
   <section class="section values" *ngIf="coreValues?.length">
     <div class="values-bg">
       <div class="values-layer active"></div>
     </div>
-
     <div class="section-inner">
       <h3 #valuesTitleEl class="values-title prehide" *ngIf="coreValuesTitle">{{ coreValuesTitle }}</h3>
-
       <ul class="values-grid" role="list">
         <li #valueItemEl class="value-item prehide" *ngFor="let v of coreValues; index as i; trackBy: trackByIndex">
-          <div class="icon-wrap" *ngIf="v.iconUrl">
-            <img [src]="v.iconUrl" alt="" aria-hidden="true" />
+          <div class="icon-wrap">
+            <img [appImgFast]="v.iconUrl || ''"
+              [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+              loading="lazy" decoding="async" alt="" aria-hidden="true" />
           </div>
           <h3 class="value-name" *ngIf="v.title">{{ v.title }}</h3>
           <div class="value-desc" *ngIf="v.html" [innerHTML]="v.html"></div>
@@ -109,112 +89,75 @@
     </div>
   </section>
 
-  <!-- ===== Appartenance ===== -->
   <section class="section affiliations" *ngIf="affiliations?.length">
     <div class="section-inner px-0">
-
       <h3 #affTitleEl class="aff-title prehide" *ngIf="affTitle">{{ affTitle }}</h3>
-
       <ul class="aff-list" role="list">
         <li
           #affRowEl
           class="aff-row prehide-row py-2"
           *ngFor="let a of affiliations; let i = index; trackBy: trackByIndex"
-          [class.open]="affOpen[i]"
-        >
+          [class.open]="affOpen[i]">
           <div class="aff-line">
-            <!-- LOGO AVANT LE NOM -->
-            <img
-              class="aff-logo"
-              *ngIf="a.logo"
-              [src]="a.logo"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-
+            <img class="aff-logo" *ngIf="a.logo" [src]="a.logo || ''" alt="" loading="lazy" decoding="async" />
             <div class="aff-name" *ngIf="a.excerpt as n">
               <span class="aff-abbr">{{ splitAffName(n).abbr }} :</span>
               <span class="aff-label">{{ splitAffName(n).label }}</span>
             </div>
-
-            <button
-              class="aff-toggle"
-              type="button"
-              [attr.aria-expanded]="affOpen[i] ? 'true':'false'"
-              (click)="toggleAff(i)"
-            >
+            <button class="aff-toggle" type="button" [attr.aria-expanded]="affOpen[i] ? 'true':'false'" (click)="toggleAff(i)">
               <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
               <span class="sr-only">{{ affOpen[i] ? 'Réduire' : 'Déployer' }}</span>
             </button>
           </div>
-
           <div class="aff-desc" *ngIf="a.content && affOpen[i]">
             <div class="aff-desc-inner" [innerHTML]="a.content"></div>
           </div>
         </li>
       </ul>
-
     </div>
   </section>
 
-
-  <!-- ===== Déontologie ===== -->
   <section class="section deon" *ngIf="deontology?.length">
     <div class="section-inner px-0">
-
       <h3 #deonTitleEl class="deon-title prehide" *ngIf="deonTitle">{{ deonTitle }}</h3>
-
       <ul class="deon-list" role="list">
-        <li #deonRowEl class="deon-row prehide-row"
-            *ngFor="let d of deontology; let i = index; trackBy: trackByIndex"
-            [class.open]="deonOpen[i]">
-
+        <li
+          #deonRowEl
+          class="deon-row prehide-row"
+          *ngFor="let d of deontology; let i = index; trackBy: trackByIndex"
+          [class.open]="deonOpen[i]">
           <div class="deon-line">
             <div class="deon-name">{{ d.title }}</div>
-
-            <button class="deon-toggle"
-                    type="button"
-                    [attr.aria-expanded]="deonOpen[i] ? 'true':'false'"
-                    (click)="toggleDeon(i)">
+            <button class="deon-toggle" type="button" [attr.aria-expanded]="deonOpen[i] ? 'true':'false'" (click)="toggleDeon(i)">
               <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </button>
           </div>
-
           <div class="deon-desc" *ngIf="d.html && deonOpen[i]">
             <div class="deon-desc-inner pe-5" [innerHTML]="d.html"></div>
           </div>
         </li>
       </ul>
-
     </div>
   </section>
 
-  <!-- ===== Timeline ===== -->
   <section class="section timeline" *ngIf="timeline.length">
-  <div class="timeline-bg"><div class="timeline-layer"></div></div>
-
-  <div class="section-inner px-0">
-    <div class="tl-grid">
-      <span #tlRail class="tl-rail" aria-hidden="true"></span>
-
-      <h3 #tlTitleEl class="timeline-title prehide">{{ timelineTitle }}</h3>
-
-      <ng-container *ngFor="let s of timeline; trackBy: trackByIndex">
-        <div #tlYearEl class="tl-year prehide">{{ s.year }}</div>
-
-        <div #tlBodyEl class="tl-body prehide">
-          <h3 class="tl-item-title" *ngIf="s.title">{{ s.title }}</h3>
-          <div class="tl-desc" *ngIf="s.html" [innerHTML]="s.html"></div>
-        </div>
-      </ng-container>
+    <div class="timeline-bg"><div class="timeline-layer"></div></div>
+    <div class="section-inner px-0">
+      <div class="tl-grid">
+        <span #tlRail class="tl-rail" aria-hidden="true"></span>
+        <h3 #tlTitleEl class="timeline-title prehide">{{ timelineTitle }}</h3>
+        <ng-container *ngFor="let s of timeline; trackBy: trackByIndex">
+          <div #tlYearEl class="tl-year prehide">{{ s.year }}</div>
+          <div #tlBodyEl class="tl-body prehide">
+            <h3 class="tl-item-title" *ngIf="s.title">{{ s.title }}</h3>
+            <div class="tl-desc" *ngIf="s.html" [innerHTML]="s.html"></div>
+          </div>
+        </ng-container>
+      </div>
     </div>
-  </div>
-</section>
-
-
+  </section>
 </div>

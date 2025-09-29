@@ -6,11 +6,12 @@ import {
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SeoService } from '../../services/seo.service';
+import { ImgFromPipe } from '../../pipes/img-from.pipe';
 
 @Component({
   selector: 'app-contact',
   standalone: true,
-  imports: [ CommonModule ],
+  imports: [ CommonModule, ImgFromPipe ],
   templateUrl: './contact.component.html',
   styleUrls: ['./contact.component.scss']
 })

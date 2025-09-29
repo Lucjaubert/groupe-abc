@@ -21,6 +21,9 @@ export class HeaderComponent implements OnDestroy {
   menuOpen = false;
   currentLang: Lang = 'fr';
 
+  brandSrc = 'assets/img/header/logo-groupe-abc.webp';
+  private brandTriedPng = false;
+
   private sub?: Subscription;
   private navSub?: Subscription;
 
@@ -53,6 +56,15 @@ export class HeaderComponent implements OnDestroy {
         this.mq.addListener?.(this.onMqChange as any);
       }
     }
+  }
+
+  /** Handler d'erreur image : si le .webp échoue, on force le PNG */
+  onBrandError(ev: Event): void {
+    if (this.brandTriedPng) return; // évite boucle infinie
+    this.brandTriedPng = true;
+    this.brandSrc = 'assets/img/header/logo-groupe-abc.png';
+    const img = ev.target as HTMLImageElement | null;
+    if (img) img.src = this.brandSrc;
   }
 
   onPrimaryAction(): void {

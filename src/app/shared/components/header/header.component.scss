@@ -118,8 +118,8 @@ $rail-w: 40px;
 .lang-switch {
   width: $rail-w;
   height: $rail-w;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  writing-mode: horizontal-tb !important;
+  transform: none !important;
   background: rgba(68, 70, 151, 0.68);
   color: map.get(vars.$theme-colors, "white");
   font-family: "Plus Jakarta Sans", sans-serif;
@@ -409,22 +409,40 @@ $rail-w: 40px;
 
 /* ===== Wrapper des items : FR/ENG + liste ===== */
 .overlay{
-  grid-area: nav;                 /* occupe la ligne "nav" */
+  grid-area: nav;
   display: grid;
   align-content: start;
-  row-gap: var(--step);           /* rythme vertical entre FR/ENG et la liste */
+  row-gap: var(--step);
 }
 
-/* (Base desktop / valeurs par défaut — le rouge est ajouté dans le @media mobile) */
+/* ---------- FR horizontal ici ---------- */
 .overlay-lang{
   margin: 0 !important;
-  display: inline-flex; align-items: center; gap: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  /* force l’écriture horizontale, au cas où un parent serait vertical/rotaté */
+  writing-mode: horizontal-tb !important;
 
   .lang-btn{
-    background: none; border: 0; padding: 0; cursor: pointer;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
     font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 14px; color: #444697; opacity: .6;
+    font-size: 14px;
+    color: #444697;
+    opacity: .6;
+
+    /* neutralise toute rotation/écriture héritée */
+    transform: none !important;
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    display: inline-block;
+    white-space: nowrap;
   }
+
   .lang-btn.active{ opacity: 1; font-weight: 600; }
   .sep{ color: #444697; opacity: .6; }
 }
@@ -475,7 +493,7 @@ $rail-w: 40px;
     font-weight: 400;
     line-height: normal;
     color: #FFF;
-    transform: rotate(-90deg);    /* remet le texte à l’endroit */
+    transform: rotate(-90deg);
   }
   .extranet-slash{ color: map.get(vars.$theme-colors, "light-red"); }
 }

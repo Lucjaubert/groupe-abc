@@ -4,30 +4,42 @@ import {
   inject, ElementRef, QueryList, ViewChild, ViewChildren
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ImgFromPipe } from '../../pipes/img-from.pipe';
+import { firstValueFrom } from 'rxjs';
+import { ImgFastDirective } from '../../directives/img-fast.directive';
 
 type NewsIntro = { title: string; html: string; linkedinUrl?: string; };
 type ThemeKey = 'expertise' | 'juridique' | 'marche' | 'autre';
 type NewsPost = {
-  uid?: string; theme?: string; themeKey?: ThemeKey;
-  firmLogo?: string; firmName?: string; author?: string; date?: string;
-  title?: string; html?: string; imageUrl?: string; linkedinUrl?: string;
+  uid?: string;
+  theme?: string;
+  themeKey?: ThemeKey;
+  firmLogo?: string | number;   // ← URL ou ID
+  firmName?: string;
+  author?: string;
+  date?: string;
+  title?: string;
+  html?: string;
+  imageUrl?: string | number;   // ← URL ou ID
+  linkedinUrl?: string;
 };
 
 @Component({
   selector: 'app-news',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImgFromPipe, ImgFastDirective],
   templateUrl: './news.component.html',
   styleUrls: ['./news.component.scss'],
 })
 export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
   private wp  = inject(WordpressService);
   private seo = inject(SeoService);
+
+  s(v: unknown): string { return v == null ? '' : '' + v; }
 
   intro: NewsIntro = {
     title: 'Actualités',
@@ -73,13 +85,12 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
       const p = it?.acf?.post || {};
       if (!p) continue;
 
-      let firmLogo = '';
-      if (typeof p.logo_firm === 'string') firmLogo = p.logo_firm;
-      else if (typeof p.logo_firm === 'number') firmLogo = await firstValueFrom(this.wp.getMediaUrl(p.logo_firm)) || '';
+      // On garde tel quel (ID ou URL) : le pipe résoudra
+      const firmLogo: string | number | undefined =
+        typeof p.logo_firm === 'number' || typeof p.logo_firm === 'string' ? p.logo_firm : undefined;
 
-      let imageUrl = '';
-      if (typeof p.post_image === 'string') imageUrl = p.post_image;
-      else if (typeof p.post_image === 'number') imageUrl = await firstValueFrom(this.wp.getMediaUrl(p.post_image)) || '';
+      const imageUrl: string | number | undefined =
+        typeof p.post_image === 'number' || typeof p.post_image === 'string' ? p.post_image : undefined;
 
       mapped.push({
         uid: (it?.id ? String(it.id) : '') + '|' + (p.post_title || '') + '|' + (p.date || ''),
@@ -102,7 +113,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.rebuildView();
 
     /* =======================
-     *      SEO bilingue
+     *          SEO
      * =======================*/
     const isEN    = this.currentPath().startsWith('/en/');
     const siteUrl = 'https://groupe-abc.fr';
@@ -118,18 +129,18 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const title = isEN ? 'News – Groupe ABC' : 'Actualités – Groupe ABC';
 
-    // Description courte + rappel sectoriel utile au SEO
     const baseDesc = this.strip(this.intro.html, 150);
     const extraFR  = ' Marché, juridique, expertise – Paris & Régions, DOM-TOM.';
     const extraEN  = ' Market, legal, expertise – Paris & Regions, Overseas.';
     const description = (baseDesc + (isEN ? extraEN : extraFR)).trim();
 
-    // OG image : 1ère actu avec visuel → fallback
-    const firstWithImg = this.posts.find(p => !!p.imageUrl)?.imageUrl || '/assets/og/og-default.jpg';
-    const ogAbs = this.absUrl(firstWithImg, siteUrl);
+    // Pour l’OG, on ne résout pas les IDs ici (le pipe est pour le template).
+    // On ne garde qu’une URL absolue si déjà string, sinon fallback.
+    const firstWithImgStr =
+      (this.posts.find(p => typeof p.imageUrl === 'string')?.imageUrl as string) || '/assets/og/og-default.jpg';
+    const ogAbs = this.absUrl(firstWithImgStr, siteUrl);
     const isDefaultOG = ogAbs.endsWith('/assets/og/og-default.jpg');
 
-    // Logo organisation (ton favicon carré existant)
     const logoUrl = `${siteUrl}/assets/favicons/android-chrome-512x512.png`;
 
     this.seo.update({
@@ -170,16 +181,11 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
             '@id': `${siteUrl}/#organization`,
             name: 'Groupe ABC',
             url: siteUrl,
-            logo: {
-              '@type': 'ImageObject',
-              url: logoUrl,
-              width: 512,
-              height: 512
-            },
+            logo: { '@type': 'ImageObject', url: logoUrl, width: 512, height: 512 },
             sameAs: ['https://www.linkedin.com/company/groupe-abc']
           },
           {
-            '@type': 'CollectionPage',               // Page liste d’articles
+            '@type': 'CollectionPage',
             '@id': `${siteUrl}${canonical}#webpage`,
             url: `${siteUrl}${canonical}`,
             name: title,
@@ -190,7 +196,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
           },
           {
             '@type': 'BreadcrumbList',
-            'itemListElement': [
+            itemListElement: [
               { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl },
               { '@type': 'ListItem', position: 2, name: isEN ? 'News' : 'Actualités', item: `${siteUrl}${canonical}` }
             ]
@@ -230,6 +236,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     try { gsap.globalTimeline.clear(); } catch {}
   }
 
+  /* ============ Animations ============ */
   private initIntroSequence(onComplete?: () => void): void {
     if (this.introPlayed) { onComplete?.(); return; }
     this.introPlayed = true;
@@ -324,6 +331,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /* ============ Paging / Order / Filters ============ */
   private shuffle<T>(arr: T[]): T[] {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -441,10 +449,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private nextFrame(): Promise<void> {
-    return new Promise(res => requestAnimationFrame(() => res()));
-  }
-
+  /* ============ Expandable excerpt ============ */
   async toggleExpand(i: number): Promise<void> {
     const clip = this.clips.get(i)?.nativeElement;
     const body = this.bodies.get(i)?.nativeElement;
@@ -490,6 +495,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /* ============ Helpers ============ */
   private toThemeKey(raw?: string): ThemeKey {
     const s = (raw || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     if (s.includes('expert')) return 'expertise';
@@ -504,7 +510,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
   private strip(html: string, max = 160) {
     const t = (html || '').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
-  }
+    }
 
   private forceInitialHidden(host: HTMLElement){
     const pre  = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));

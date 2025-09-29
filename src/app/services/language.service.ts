@@ -1,7 +1,9 @@
+// src/app/services/language.service.ts
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
+import { filter } from 'rxjs/operators';
 import { isPlatformBrowser, DOCUMENT } from '@angular/common';
-import { Router } from '@angular/router';
+import { Router, NavigationEnd, UrlTree } from '@angular/router';
 
 export type Lang = 'fr' | 'en';
 
@@ -11,24 +13,36 @@ export class LanguageService {
   readonly lang$ = new BehaviorSubject<Lang>('fr');
 
   /** Getter pratique */
-  get lang(): Lang {
-    return this.lang$.value;
-  }
+  get lang(): Lang { return this.lang$.value; }
 
   constructor(
     private router: Router,
     @Inject(DOCUMENT) private doc: Document,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    const detected = this.detectFromPath();
-    this.lang$.next(detected);
-    this.applyHtmlLang(detected);
+    // 1) Détection initiale (SSR-friendly) + préférence utilisateur
+    const detected = this.detectFromUrl() ?? 'fr';
+    const remembered = this.getRememberedLang();
+    const initial = (remembered ?? detected) as Lang;
+
+    this.lang$.next(initial);
+    this.applyHtmlLang(initial);
+
+    // 2) Se resynchroniser à chaque navigation (utile SSR/hydratation)
+    this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe(() => {
+        const l = this.detectFromUrl() ?? 'fr';
+        if (l !== this.lang) {
+          this.lang$.next(l as Lang);
+          this.applyHtmlLang(l as Lang);
+        }
+      });
   }
 
   /** FR <-> EN */
   toggle(): void {
-    const next: Lang = this.lang === 'fr' ? 'en' : 'fr';
-    this.set(next);
+    this.set(this.lang === 'fr' ? 'en' : 'fr');
   }
 
   /** Fixer explicitement la langue */
@@ -39,57 +53,96 @@ export class LanguageService {
     }
     this.lang$.next(l);
     this.applyHtmlLang(l);
+    this.rememberLang(l);
     this.navigateToLang(l);
   }
 
   /* =============== PRIVÉ =============== */
 
-  /** Détecte la langue depuis le path (/en/... => en, sinon fr) */
-  private detectFromPath(): Lang {
+  /** Détecte la langue depuis l’URL courante (browser ou SSR) */
+  private detectFromUrl(): Lang | null {
+    // Navigateur : window.location.pathname
+    if (isPlatformBrowser(this.platformId)) {
+      try {
+        const path = this.doc?.defaultView?.location?.pathname || '/';
+        return this.langFromPath(path);
+      } catch {
+        // Fall back sur Router si besoin
+        return this.langFromPath(this.router.url || '/');
+      }
+    }
+    // SSR : utiliser l’URL routeur (toujours dispo)
     try {
-      const path = this.doc?.defaultView?.location?.pathname || '/';
-      return path.startsWith('/en/') || path === '/en' ? 'en' : 'fr';
+      return this.langFromPath(this.router.url || '/');
     } catch {
-      return 'fr';
+      return null;
     }
   }
 
-  /** Met à jour <html lang="..."> pour SEO & a11y */
+  /** Calcule 'fr' | 'en' à partir d’un chemin */
+  private langFromPath(pathname: string): Lang {
+    const p = (pathname || '/').replace(/\/{2,}/g, '/');
+    return (p === '/en' || p.startsWith('/en/')) ? 'en' : 'fr';
+  }
+
+  /** Met à jour <html lang="..."> pour SEO & a11y (SSR + browser) */
   private applyHtmlLang(l: Lang): void {
     try {
       this.doc.documentElement.setAttribute('lang', l === 'en' ? 'en' : 'fr');
-    } catch {}
+    } catch { /* no-op */ }
   }
 
-  /** Construit l’URL équivalente dans la cible et y navigue */
+  /** Navigue vers l’URL équivalente dans la langue cible en préservant QS + hash */
   private navigateToLang(target: Lang): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+    const isBrowser = isPlatformBrowser(this.platformId);
+    const win = isBrowser ? this.doc.defaultView : null;
 
-    const w = this.doc.defaultView!;
-    const currPath = w.location.pathname || '/';
-    const qs = w.location.search || '';
-    const hash = w.location.hash || '';
+    // Base actuelle
+    const currPath = (isBrowser ? win?.location?.pathname : this.router.url) || '/';
+    const qs   = isBrowser ? (win?.location?.search || '')   : '';
+    const hash = isBrowser ? (win?.location?.hash   || '')   : '';
 
     let newPath: string;
     if (target === 'en') {
-      newPath = currPath.startsWith('/en/')
-        ? currPath
-        : currPath === '/' || currPath === '/en'
-          ? '/en'
-          : `/en${currPath}`;
+      newPath =
+        currPath === '/en' || currPath.startsWith('/en/')
+          ? currPath
+          : currPath === '/'
+            ? '/en'
+            : `/en${currPath}`;
     } else {
-      newPath = currPath.startsWith('/en/')
-        ? currPath.replace(/^\/en(\/?)/, '/')
-        : currPath === '/en'
+      // vers FR : retirer le préfixe /en
+      newPath =
+        currPath === '/en'
           ? '/'
-          : currPath;
+          : currPath.replace(/^\/en(\/?)/, '/');
     }
-
     newPath = newPath.replace(/\/{2,}/g, '/');
-    const finalUrl = newPath + qs + hash;
 
-    this.router.navigateByUrl(finalUrl, { replaceUrl: true }).catch(() => {
-      w.location.assign(finalUrl);
+    // Construire un UrlTree pour préserver proprement paramètres & fragment
+    const tree: UrlTree = this.router.createUrlTree([newPath], {
+      queryParams: this.router.parseUrl(qs || '').queryParams,
+      fragment: (hash || '').replace(/^#/, '') || undefined
     });
+
+    const finalUrl = this.router.serializeUrl(tree);
+
+    // Navigue via Router, fallback hard si échec (rare)
+    this.router.navigateByUrl(finalUrl, { replaceUrl: true }).catch(() => {
+      if (isBrowser) win?.location?.assign(finalUrl);
+    });
+  }
+
+  /** Mémoriser la langue (navigateur uniquement) */
+  private rememberLang(l: Lang): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    try { localStorage.setItem('lang', l); } catch { /* no-op */ }
+  }
+  private getRememberedLang(): Lang | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
+    try {
+      const v = localStorage.getItem('lang');
+      return (v === 'fr' || v === 'en') ? v : null;
+    } catch { return null; }
   }
 }
