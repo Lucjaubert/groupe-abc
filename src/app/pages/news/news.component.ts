@@ -4,30 +4,42 @@ import {
   inject, ElementRef, QueryList, ViewChild, ViewChildren
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { firstValueFrom } from 'rxjs';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { ImgFromPipe } from '../../pipes/img-from.pipe';
+import { firstValueFrom } from 'rxjs';
+import { ImgFastDirective } from '../../directives/img-fast.directive';
 
 type NewsIntro = { title: string; html: string; linkedinUrl?: string; };
 type ThemeKey = 'expertise' | 'juridique' | 'marche' | 'autre';
 type NewsPost = {
-  uid?: string; theme?: string; themeKey?: ThemeKey;
-  firmLogo?: string; firmName?: string; author?: string; date?: string;
-  title?: string; html?: string; imageUrl?: string; linkedinUrl?: string;
+  uid?: string;
+  theme?: string;
+  themeKey?: ThemeKey;
+  firmLogo?: string | number;   // ← URL ou ID
+  firmName?: string;
+  author?: string;
+  date?: string;
+  title?: string;
+  html?: string;
+  imageUrl?: string | number;   // ← URL ou ID
+  linkedinUrl?: string;
 };
 
 @Component({
   selector: 'app-news',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, ImgFromPipe, ImgFastDirective],
   templateUrl: './news.component.html',
   styleUrls: ['./news.component.scss'],
 })
 export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
   private wp  = inject(WordpressService);
   private seo = inject(SeoService);
+
+  s(v: unknown): string { return v == null ? '' : '' + v; }
 
   intro: NewsIntro = {
     title: 'Actualités',
@@ -73,13 +85,12 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
       const p = it?.acf?.post || {};
       if (!p) continue;
 
-      let firmLogo = '';
-      if (typeof p.logo_firm === 'string') firmLogo = p.logo_firm;
-      else if (typeof p.logo_firm === 'number') firmLogo = await firstValueFrom(this.wp.getMediaUrl(p.logo_firm)) || '';
+      // On garde tel quel (ID ou URL) : le pipe résoudra
+      const firmLogo: string | number | undefined =
+        typeof p.logo_firm === 'number' || typeof p.logo_firm === 'string' ? p.logo_firm : undefined;
 
-      let imageUrl = '';
-      if (typeof p.post_image === 'string') imageUrl = p.post_image;
-      else if (typeof p.post_image === 'number') imageUrl = await firstValueFrom(this.wp.getMediaUrl(p.post_image)) || '';
+      const imageUrl: string | number | undefined =
+        typeof p.post_image === 'number' || typeof p.post_image === 'string' ? p.post_image : undefined;
 
       mapped.push({
         uid: (it?.id ? String(it.id) : '') + '|' + (p.post_title || '') + '|' + (p.date || ''),
@@ -101,9 +112,97 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     this.baseOrder = this.restoreOrBuildOrder(this.posts);
     this.rebuildView();
 
+    /* =======================
+     *          SEO
+     * =======================*/
+    const isEN    = this.currentPath().startsWith('/en/');
+    const siteUrl = 'https://groupe-abc.fr';
+    const pathFR  = '/actualites';
+    const pathEN  = '/en/news';
+    const canonical = isEN ? pathEN : pathFR;
+
+    const alternates = [
+      { lang: 'fr',        href: `${siteUrl}${pathFR}` },
+      { lang: 'en',        href: `${siteUrl}${pathEN}` },
+      { lang: 'x-default', href: `${siteUrl}${pathFR}` }
+    ];
+
+    const title = isEN ? 'News – Groupe ABC' : 'Actualités – Groupe ABC';
+
+    const baseDesc = this.strip(this.intro.html, 150);
+    const extraFR  = ' Marché, juridique, expertise – Paris & Régions, DOM-TOM.';
+    const extraEN  = ' Market, legal, expertise – Paris & Regions, Overseas.';
+    const description = (baseDesc + (isEN ? extraEN : extraFR)).trim();
+
+    // Pour l’OG, on ne résout pas les IDs ici (le pipe est pour le template).
+    // On ne garde qu’une URL absolue si déjà string, sinon fallback.
+    const firstWithImgStr =
+      (this.posts.find(p => typeof p.imageUrl === 'string')?.imageUrl as string) || '/assets/og/og-default.jpg';
+    const ogAbs = this.absUrl(firstWithImgStr, siteUrl);
+    const isDefaultOG = ogAbs.endsWith('/assets/og/og-default.jpg');
+
+    const logoUrl = `${siteUrl}/assets/favicons/android-chrome-512x512.png`;
+
     this.seo.update({
-      title: `${this.intro.title} – Groupe ABC`,
-      description: this.strip(this.intro.html, 160),
+      title,
+      description,
+      keywords: isEN
+        ? 'news, real estate, valuation, market, legal, France, Paris'
+        : 'actualités, immobilier, expertise, marché, juridique, France, Paris',
+      canonical,
+      robots: 'index,follow',
+      locale: isEN ? 'en_US' : 'fr_FR',
+
+      image: ogAbs,
+      imageAlt: isEN ? 'Groupe ABC – News' : 'Groupe ABC – Actualités',
+      ...(isDefaultOG ? { imageWidth: 1200, imageHeight: 630 } : {}),
+      type: 'website',
+
+      alternates,
+
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'WebSite',
+            '@id': `${siteUrl}/#website`,
+            url: siteUrl,
+            name: 'Groupe ABC',
+            inLanguage: isEN ? 'en-US' : 'fr-FR',
+            publisher: { '@id': `${siteUrl}/#organization` },
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: `${siteUrl}/?s={search_term_string}`,
+              'query-input': 'required name=search_term_string'
+            }
+          },
+          {
+            '@type': 'Organization',
+            '@id': `${siteUrl}/#organization`,
+            name: 'Groupe ABC',
+            url: siteUrl,
+            logo: { '@type': 'ImageObject', url: logoUrl, width: 512, height: 512 },
+            sameAs: ['https://www.linkedin.com/company/groupe-abc']
+          },
+          {
+            '@type': 'CollectionPage',
+            '@id': `${siteUrl}${canonical}#webpage`,
+            url: `${siteUrl}${canonical}`,
+            name: title,
+            description,
+            inLanguage: isEN ? 'en-US' : 'fr-FR',
+            isPartOf: { '@id': `${siteUrl}/#website` },
+            primaryImageOfPage: { '@type': 'ImageObject', url: ogAbs }
+          },
+          {
+            '@type': 'BreadcrumbList',
+            itemListElement: [
+              { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl },
+              { '@type': 'ListItem', position: 2, name: isEN ? 'News' : 'Actualités', item: `${siteUrl}${canonical}` }
+            ]
+          }
+        ]
+      }
     });
   }
 
@@ -137,6 +236,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     try { gsap.globalTimeline.clear(); } catch {}
   }
 
+  /* ============ Animations ============ */
   private initIntroSequence(onComplete?: () => void): void {
     if (this.introPlayed) { onComplete?.(); return; }
     this.introPlayed = true;
@@ -231,6 +331,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
+  /* ============ Paging / Order / Filters ============ */
   private shuffle<T>(arr: T[]): T[] {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -348,10 +449,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  private nextFrame(): Promise<void> {
-    return new Promise(res => requestAnimationFrame(() => res()));
-  }
-
+  /* ============ Expandable excerpt ============ */
   async toggleExpand(i: number): Promise<void> {
     const clip = this.clips.get(i)?.nativeElement;
     const body = this.bodies.get(i)?.nativeElement;
@@ -397,6 +495,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  /* ============ Helpers ============ */
   private toThemeKey(raw?: string): ThemeKey {
     const s = (raw || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     if (s.includes('expert')) return 'expertise';
@@ -411,7 +510,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
   private strip(html: string, max = 160) {
     const t = (html || '').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
-  }
+    }
 
   private forceInitialHidden(host: HTMLElement){
     const pre  = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));
@@ -422,5 +521,19 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private killAllScrollTriggers(){
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
+  }
+
+  /** Helpers SEO */
+  private currentPath(): string {
+    try { return window?.location?.pathname || '/'; } catch { return '/'; }
+  }
+  private absUrl(url: string, origin: string): string {
+    if (!url) return '';
+    try {
+      if (/^https?:\/\//i.test(url)) return url;
+      if (/^\/\//.test(url)) return 'https:' + url;
+      const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+      return url.startsWith('/') ? o + url : `${o}/${url}`;
+    } catch { return url; }
   }
 }

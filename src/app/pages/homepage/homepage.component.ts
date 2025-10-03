@@ -1,9 +1,9 @@
 import {
   Component, OnDestroy, OnInit, AfterViewInit, inject,
-  ViewChildren, QueryList, ElementRef, ViewChild
+  ViewChildren, QueryList, ElementRef, ViewChild, ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
 
@@ -11,83 +11,110 @@ import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { AlignFirstWordDirective } from '../../shared/directives/align-first-word.directive';
+import { firstValueFrom, filter, Subscription } from 'rxjs';
+import { ImgFastDirective } from '../../directives/img-fast.directive';
 
-type Slide = { title: string; subtitle: string; bg: string };
-
-type KeyFigure = {
-  value: number;
-  label: string;
-  labelBis?: string;
-  display: string;
-  typed: string;
-  fullLabel: string;
-  digits: number;
-  played: boolean;
-};
+/* ===== Types ===== */
+type Slide = { title: string; subtitle: string; bg: string | number };
 
 type Identity = {
-  whoTitle: string;
-  whoHtml: string;
-  whereTitle: string;
-  whereMap?: string;
+  whoTitle: string; whoHtml: string;
+  whereTitle: string; whereMap?: string | number;
   whereItems: string[];
 };
 
-type WhatHow = {
-  whatTitle: string;
-  whatItems: string[];
-  howTitle: string;
-  howItems: string[];
-};
-
-type Presentation = {
-  text1: string;
-  text2: string;
-  file: string | null;
-};
-
-type ContextItem = { icon: string; label: string };
+type WhatHow = { whatTitle: string; whatItems: string[]; howTitle: string; howItems: string[] };
+type Presentation = { text1: string; text2: string; file: string | null };
+type ContextItem = { icon: string | number; label: string };
 type ExpertiseContext = { title: string; items: ContextItem[] };
+type Clients = { icon: string | number; title: string; items: string[] };
 
-/* ===== Clients ===== */
-type Clients = { icon: string; title: string; items: string[] };
-
-/* ===== Team ===== */
 type TeamMember = {
-  photo: string;
+  photo: string | number;
   nameFirst: string;
   nameLast: string;
   area: string;
   jobHtml: string;
 };
 
-/* ===== THEME (News) ===== */
 type ThemeKey = 'marche' | 'juridique' | 'expertise' | 'autre';
-
-/* ===== NEWS (Home) ===== */
 type NewsItem = {
-  logo?: string;
-  firm?: string;
-  theme?: string;            // libellé WP (Marché, Juridique, Expertise…)
-  authorDate?: string;
-  title?: string;
-  html?: string;
-  link?: string;             // URL « lire la suite »
-  id?: number | string;
-  slug?: string;
-  themeKey?: ThemeKey;       // ajouté côté front pour la classe de thème
+  logo?: string | number; firm?: string; theme?: string; authorDate?: string;
+  title?: string; html?: string; link?: string; id?: number | string; slug?: string; themeKey?: ThemeKey;
 };
 type News = { title: string; items: NewsItem[] };
+
+/* ===== KeyFigures (interface utilisée par le template) ===== */
+interface KeyFigure {
+  value: number;
+  label: string;      // libellé (FR/EN) affiché
+  labelBis: string;   // inutilisé ici, mais on garde pour compat avec ton template
+  fullLabel: string;  // même chose que label (compat)
+  display: string;    // chiffres animés (string pour padding éventuel)
+  typed: string;      // libellé final, non animé
+  digits: number;     // largeur du bloc chiffres (en ch)
+  played: boolean;    // flag anim
+}
+
+/* ==========================================================
+   TEXTES FIXES POUR LE HERO (FR/EN)
+   ========================================================== */
+const HERO_TEXT = {
+  fr: {
+    titles:   ['Groupe ABC.', 'Groupe ABC.', 'Groupe ABC.'],
+    subtitles: [
+      'Au plus près de la valeur de votre bien',
+      'L’Expertise immobilière sur mesure',
+      'La maîtrise des marchés immobiliers locaux'
+    ]
+  },
+  en: {
+    titles:   ['ABC Group.', 'ABC Group.', 'ABC Group.'],
+    subtitles: [
+      'As close as possible to your asset’s true value',
+      'Tailor-made real-estate valuation',
+      'Mastery of local real-estate markets'
+    ]
+  }
+} as const;
+
+/* ====== KEY FIGURES – données en dur FR/EN ====== */
+type KF = { value: number; fr: string; en: string; };
+
+const KEY_FIGURES_STATIC: KF[] = [
+  { value: 7,    fr: 'cabinets associés',                           en: 'associated firms' },
+  { value: 70,   fr: 'collaborateurs',                              en: 'employees' },
+  { value: 35,   fr: 'experts immobiliers',                         en: 'real estate experts' },
+  { value: 14,   fr: 'bureaux, dont 4 dans les Dom-Tom',            en: 'offices, incl. 4 in DOM-TOM' },
+  { value: 172,  fr: 'années d’expérience',                         en: 'years of experience' },
+
+  { value: 8,    fr: 'experts judiciaires près la Cour d’appel',    en: 'court-appointed experts' },
+  { value: 7,    fr: 'experts accrédités RICS',                     en: 'RICS-accredited experts' },
+  { value: 7,    fr: 'experts membres de l’IFEI',                   en: 'experts, IFEI members' },
+  { value: 1,    fr: 'expert membre de la CEF',                     en: 'expert member of the CEF' },
+
+  { value: 4,    fr: 'M€ HT',                                       en: 'M€ EXCL. TAX' },
+  { value: 1800, fr: 'expertises/an',                               en: 'appraisals/year' },
+];
 
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [CommonModule, RouterModule, AlignFirstWordDirective],
+  imports: [CommonModule, RouterModule, AlignFirstWordDirective, ImgFastDirective],
   templateUrl: './homepage.component.html',
   styleUrls: ['./homepage.component.scss']
 })
 export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   acf: any = {};
+
+  s(v: unknown): string { return v == null ? '' : '' + v; }
+
+  /* ---------- SEO configurable ---------- */
+  siteUrl = 'https://groupe-abc.fr';
+  canonicalPath   = '/';
+  canonicalPathEn = '/en/';
+  socialImage = '/assets/og/og-default.jpg';
+  orgName = 'Groupe ABC';
 
   /* ---------- HERO ---------- */
   heroSlides: Slide[] = [];
@@ -114,15 +141,10 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ---------- KEY FIGURES ---------- */
   keyFigures: KeyFigure[] = [];
   @ViewChildren('kfItem') kfItems!: QueryList<ElementRef<HTMLLIElement>>;
+  maxValueCh = 6; // fallback
 
   /* ---------- IDENTITY / WHAT-HOW / DOWNLOAD ---------- */
-  identity: Identity = {
-    whoTitle: '',
-    whoHtml: '',
-    whereTitle: '',
-    whereMap: '',
-    whereItems: []
-  };
+  identity: Identity = { whoTitle: '', whoHtml: '', whereTitle: '', whereMap: '', whereItems: [] };
   whereItems: string[] = [];
   whereOpen = false;
   toggleWhere(): void { this.whereOpen = !this.whereOpen; }
@@ -137,6 +159,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   clients: Clients | null = null;
 
   /* ---------- TEAM ---------- */
+  @ViewChild('teamTitle') teamTitleEl!: ElementRef<HTMLElement>;
+  @ViewChildren('teamCard') teamCardEls!: QueryList<ElementRef<HTMLElement>>;
+
   teamTitle = '';
   teamMembers: TeamMember[] = [];
   teamPages: TeamMember[][] = [];
@@ -145,17 +170,25 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   teamAutoplayMs = 5000;
   teamAutoplayStoppedByUser = false;
 
+  private resolvedPhotos = new WeakMap<TeamMember, string>();
+  private preparingPageIndex: number | null = null;
+
+  defaultPortrait = '/assets/fallbacks/portrait-placeholder.svg';
+
+  /* NEWS */
+  news: News | null = null;
+
   get currentSlide(): Slide | undefined { return this.heroSlides[this.heroIndex]; }
 
   private wp = inject(WordpressService);
   private seo = inject(SeoService);
+  private cdr = inject(ChangeDetectorRef);
+  private router = inject(Router);
+  private navSub?: Subscription;
 
   // Titre sur 2 lignes
   teamTitleLine1 = 'Une équipe';
   teamTitleLine2 = 'de 8 experts à vos côtés';
-
-  /* NEWS */
-  news: News | null = null;
 
   /* ==================================================== */
   /*                        LIFECYCLE                     */
@@ -166,34 +199,47 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.wp.getHomepageData().subscribe(acf => {
       this.acf = acf;
 
-      // HERO
+      // HERO piloté par textes fixes FR/EN
       this.extractHero();
       this.preloadHeroImages();
       this.applySeoFromHero();
       this.heroDataReady = true;
       this.tryInitHeroIntro();
 
-      // CONTENT
-      this.extractKeyFigures();
+      // Sections
+      this.extractKeyFigures(); // <-- figées FR/EN + langue
       this.extractIdentity();
       this.extractWhatHowAndPresentation();
       this.extractExpertiseContext();
       this.extractClientsSection();
 
-      // TEAM
+      // Team + News
       this.extractTeamSection();
+      this.ensureTeamPageReady(this.teamPageIndex).then(() => {});
       this.startTeamAutoplay();
-
-      // NEWS (depuis le champ Relation `news_featured`)
       this.loadFeaturedNews();
+
+      this.cdr.detectChanges();
+      this.wgRefreshTick();
 
       setTimeout(() => { this.bindScrollAnimations(); }, 0);
     });
+
+    // Reconstruire les textes dépendants de la langue quand l’URL change
+    this.navSub = this.router.events
+      .pipe(filter(e => e instanceof NavigationEnd))
+      .subscribe(() => {
+        this.extractHero();
+        this.applySeoFromHero();
+        this.extractKeyFigures(); // <-- reconstruit KeyFigures en FR/EN instantanément
+        this.cdr.detectChanges();
+      });
 
     document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
 
   ngAfterViewInit(): void {
+    // Observer chiffres (déclenche l’animation dans le viewport)
     const io = new IntersectionObserver(entries => {
       for (const e of entries) {
         if (e.isIntersecting) {
@@ -204,7 +250,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }, { threshold: 0.25 });
 
-    this.kfItems.changes.subscribe(() => {
+    this.kfItems?.changes?.subscribe(() => {
       this.kfItems.forEach(el => io.observe(el.nativeElement));
     });
     setTimeout(() => this.kfItems.forEach(el => io.observe(el.nativeElement)));
@@ -212,12 +258,17 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.viewReady = true;
     this.tryInitHeroIntro();
 
+    // Re-scan Weglot (utile pour Hero/Team – KeyFigures est protégée via data-wg-notranslate)
+    this.wgAddNodeDouble(document.getElementById('hero'));
+    this.wgAddNodeDouble(document.getElementById('key-figures'));
+
     setTimeout(() => { this.bindScrollAnimations(); }, 0);
   }
 
   ngOnDestroy(): void {
     this.clearAutoplay();
     this.clearTeamAutoplay();
+    this.navSub?.unsubscribe();
     document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
     try { gsap.globalTimeline.clear(); } catch {}
@@ -226,24 +277,49 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ==================================================== */
   /*                         HERO                         */
   /* ==================================================== */
+
+  private isEnglish(): boolean {
+    try { return (window?.location?.pathname || '/').startsWith('/en'); }
+    catch { return false; }
+  }
+
   private extractHero(): void {
     const h = this.acf?.hero_section || {};
-    this.heroSlides = [
-      { title: h.hero_title_1 || '', subtitle: h.hero_subtitle_1 || '', bg: h.hero_background_1 || '' },
-      { title: h.hero_title_2 || '', subtitle: h.hero_subtitle_2 || '', bg: h.hero_background_2 || '' },
-      { title: h.hero_title_3 || '', subtitle: h.hero_subtitle_3 || '', bg: h.hero_background_3 || '' }
-    ].filter(s => !!s.bg);
+    const bgs = [h.hero_background_1, h.hero_background_2, h.hero_background_3].filter(Boolean);
+    if (!bgs.length && (h.hero_background ?? null)) bgs.push(h.hero_background);
 
-    if (!this.heroSlides.length && (h.hero_background || '')) {
-      this.heroSlides = [{ title: h.hero_title || '', subtitle: h.hero_subtitle || '', bg: h.hero_background || '' }];
+    const langKey = this.isEnglish() ? 'en' : 'fr';
+    const T = HERO_TEXT[langKey];
+    const n = Math.max(1, Math.min(bgs.length || 1, T.titles.length, T.subtitles.length));
+
+    const slides: Slide[] = [];
+    for (let i = 0; i < n; i++) {
+      slides.push({
+        title: T.titles[i],
+        subtitle: T.subtitles[i],
+        bg: bgs[i] ?? bgs[0] ?? h.hero_background ?? '/assets/fallbacks/hero-placeholder.jpg'
+      });
     }
+    if (!slides.length) {
+      slides.push({
+        title: T.titles[0],
+        subtitle: T.subtitles[0],
+        bg: '/assets/fallbacks/hero-placeholder.jpg'
+      });
+    }
+    this.heroSlides = slides;
     this.heroIndex = 0;
   }
 
-  private preloadHeroImages(): void {
+  private async preloadHeroImages(): Promise<void> {
     for (const s of this.heroSlides) {
-      const img = new Image();
-      img.src = s.bg;
+      const url = await this.resolveMedia(s.bg);
+      if (url) {
+        const img = new Image();
+        img.decoding = 'async';
+        img.loading = 'eager';
+        img.src = url;
+      }
     }
   }
 
@@ -302,16 +378,15 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /* Navigation Hero */
   goTo(i: number): void {
     if (!this.heroSlides.length) return;
     const len = this.heroSlides.length;
     this.heroIndex = ((i % len) + len) % len;
+    this.wgAddNodeDouble(document.getElementById('hero'));
   }
   next(): void { this.goTo(this.heroIndex + 1); }
   prev(): void { this.goTo(this.heroIndex - 1); }
 
-  /* Autoplay */
   startAutoplay(): void {
     this.clearAutoplay();
     if (this.heroSlides.length > 1) {
@@ -357,33 +432,38 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ==================================================== */
-  /*                     KEY FIGURES                      */
+  /*                     KEY FIGURES (fixes)              */
   /* ==================================================== */
+
+  /** Construit les KeyFigures à partir des données en dur + langue URL */
   private extractKeyFigures(): void {
-    const fig = this.acf?.key_figures_section || {};
-    const out: KeyFigure[] = [];
-    for (let i = 1; i <= 10; i++) {
-      const vRaw = fig[`figure_value_${i}`];
-      const l = fig[`figure_label_${i}`];
-      const lBis = fig[`figure_label_${i}_bis`];
-      if (vRaw && (l || lBis)) {
-        const value = Number(String(vRaw).replace(/[^\d]/g, '')) || 0;
-        const fullLabel = (l || '') + (lBis ? ` ${lBis}` : '');
-        out.push({
-          value,
-          label: l || '',
-          labelBis: lBis || '',
-          display: '',
-          typed: '',
-          fullLabel,
-          digits: String(value).length || 1,
-          played: false
-        });
-      }
-    }
-    this.keyFigures = out;
+    const isEN = this.isEnglish();
+
+    this.keyFigures = KEY_FIGURES_STATIC.map(k => {
+      const value = k.value;
+      const label = isEN ? k.en : k.fr;
+      return {
+        value,
+        label,
+        labelBis: '',
+        fullLabel: label,
+        display: '',                 // évolue pendant l’animation
+        typed: label,                // libellé final directement (PAS d’anim de lettres)
+        digits: String(value).length,
+        played: false
+      } as KeyFigure;
+    });
+
+    // largeur max (en ch) de la colonne chiffres
+    const widths = KEY_FIGURES_STATIC.map(k => {
+      const s = String(k.value);
+      const hasDecimal = /[,.]/.test(s);
+      return Math.max(s.length + (hasDecimal ? 2 : 0), 1);
+    });
+    this.maxValueCh = Math.max(6, ...(widths.length ? widths : [6]));
   }
 
+  /** Animation uniquement des CHIFFRES (libellé affiché tel quel) */
   private playFigure(index: number): void {
     const f = this.keyFigures[index];
     if (!f || f.played) return;
@@ -392,7 +472,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     const target = f.value;
     const dur = 4000;
     const start = performance.now();
-    const totalChars = f.fullLabel.length;
 
     const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
@@ -400,16 +479,12 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       const t = Math.min(1, (now - start) / dur);
       const p = easeOutCubic(t);
 
-      const val = Math.round(target * p);
-      f.display = val ? String(val) : '';
+      f.display = String(Math.round(target * p)) || '';
 
-      const chars = Math.floor(totalChars * p);
-      f.typed = f.fullLabel.slice(0, chars);
-
-      if (t < 1) requestAnimationFrame(step);
-      else {
+      if (t < 1) {
+        requestAnimationFrame(step);
+      } else {
         f.display = String(target);
-        f.typed = f.fullLabel;
       }
     };
 
@@ -417,15 +492,23 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ==================================================== */
-  /*                     IDENTITY / WH                    */
+  /*                 (ex) lecture ACF & co                */
   /* ==================================================== */
+
+  private widthChFromRaw(raw: any): number {
+    const s = String(raw ?? '').replace(/\s/g, '');
+    const digits = (s.match(/\d/g) ?? []).length;
+    const hasDecimal = /[,.]/.test(s);
+    return Math.max(digits + (hasDecimal ? 2 : 0), 1);
+  }
+
   private extractIdentity(): void {
     const id = this.acf?.identity_section || {};
     this.identity = {
       whoTitle: id.who_title || 'Qui ?',
       whoHtml: id.who_text || '',
       whereTitle: id.where_title || 'Où ?',
-      whereMap: id.where_map || '',
+      whereMap: id.where_map,
       whereItems: [
         id.where_item_1, id.where_item_2, id.where_item_3, id.where_item_4,
         id.where_item_5, id.where_item_6, id.where_item_7, id.where_item_8
@@ -434,48 +517,115 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.whereItems = this.identity.whereItems;
   }
 
-  private applySeoFromHero(): void {
+  /* ---------- SEO ---------- */
+  private async applySeoFromHero(): Promise<void> {
     const s = this.acf?.seo_section || {};
     const first = this.heroSlides[0] || { title: '', subtitle: '', bg: '' };
-    const seoImage = (s.seo_image && (s.seo_image.url || s.seo_image)) || first.bg;
+
+    const nowPath = this.currentPath();
+    const isEN    = nowPath.startsWith('/en/');
+    const canonPath = isEN ? this.canonicalPathEn : this.canonicalPath;
+    const canonical = this.normalizeUrl(this.siteUrl, canonPath);
+    const lang      = isEN ? 'en'    : 'fr';
+    const locale    = isEN ? 'en_US' : 'fr_FR';
+    const localeAlt = isEN ? ['fr_FR'] : ['en_US'];
+
+    const altFR = this.normalizeUrl(this.siteUrl, this.canonicalPath);
+    const altEN = this.normalizeUrl(this.siteUrl, this.canonicalPathEn);
+    const alternates = [
+      { lang: 'fr',        href: altFR },
+      { lang: 'en',        href: altEN },
+      { lang: 'x-default', href: altFR }
+    ];
+
+    const titleFR = (s.seo_title || first.title || 'Groupe ABC – Expertise immobilière').trim();
+    const titleEN = (s.seo_title_en || s.seo_title || first.title || 'Groupe ABC – Real estate valuation').trim();
+    const title   = isEN ? titleEN : titleFR;
+
+    const descFR =
+      'Groupement d’experts immobiliers indépendants à Paris, Régions & DOM-TOM. 6 cabinets associés, 20+ collaborateurs. Expertises tous biens, amiable & judiciaire.';
+    const descEN =
+      'Independent real-estate valuation group in Paris, regions & French overseas. 6 associated firms, 20+ staff. All asset types, amicable & judicial appraisals.';
+    const description = (isEN
+      ? (s.seo_description_en || s.seo_description || first.subtitle || descEN)
+      : (s.seo_description    || first.subtitle || descFR)
+    ).trim();
+
+    const rawImgPref = s.seo_image_en || s.seo_image || first.bg || this.socialImage;
+    const resolved   = await this.resolveMedia(rawImgPref as any);
+    const ogAbs      = this.absUrl(resolved || this.socialImage, this.siteUrl);
+    const isDefaultOg = /\/assets\/og\/og-default\.jpg$/.test(ogAbs);
+
+    const kwFR = [
+      'évaluation immobilière','expertise immobilière','cabinet d’expertise',
+      'Paris','DOM-TOM','résidentiel','commercial','tertiaire','industriel',
+      'hôtellerie','loisirs','santé','foncier','terrain','DCF','comparaison','rendement',
+      'expert judiciaire','RICS','IFEI','CNEJI'
+    ].join(', ');
+    const kwEN = [
+      'real estate valuation','property appraisal','valuation firm',
+      'Paris','French overseas','residential','commercial','office','industrial',
+      'hospitality','leisure','healthcare','land','site','DCF','market comparison','yield',
+      'expert witness','RICS','IFEI','CNEJI'
+    ].join(', ');
+
+    const siteId = this.siteUrl.replace(/\/+$/, '') + '#website';
+    const orgId  = this.siteUrl.replace(/\/+$/, '') + '#organization';
+
+    const website = {
+      '@type': 'WebSite', '@id': siteId, url: this.siteUrl, name: this.orgName,
+      inLanguage: isEN ? 'en-US' : 'fr-FR',
+      potentialAction: { '@type': 'SearchAction', target: `${this.siteUrl}/?s={search_term_string}`, 'query-input': 'required name=search_term_string' }
+    };
+
+    const organization = {
+      '@type': 'Organization', '@id': orgId, name: this.orgName, url: this.siteUrl, logo: ogAbs,
+      description: isEN ? (
+        'Group of independent real-estate valuation experts based in Paris, the French regions and overseas territories. 6 associated firms and 20+ professionals performing appraisals for all asset classes (residential, commercial, office, industrial, hospitality, leisure, healthcare, land) in amicable and judicial contexts.'
+      ) : (
+        'Groupement d’Experts immobiliers indépendants présents à Paris, en Régions et dans les DOM-TOM. 6 cabinets associés et 20+ collaborateurs réalisant des expertises sur tous types de biens (résidentiel, commercial, tertiaire, industriel, hôtellerie, loisirs, santé, foncier/terrains) en contexte amiable ou judiciaire.'
+      ),
+      areaServed: ['FR','GP','RE','MQ','GF','YT','PF','NC','PM','WF','BL','MF'],
+      knowsAbout: ['évaluation immobilière','property appraisal','DCF','comparaison','rendement','résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé','foncier','terrains'],
+      sameAs: ['https://www.linkedin.com/company/groupe-abc-experts/']
+    };
+
+    const webpage = {
+      '@type': 'WebPage', '@id': canonical + '#webpage', url: canonical, name: title, description,
+      inLanguage: isEN ? 'en-US' : 'fr-FR', isPartOf: { '@id': siteId }, primaryImageOfPage: ogAbs
+    };
+
+    const breadcrumb = { '@type': 'BreadcrumbList', itemListElement: [{ '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: canonical }] };
 
     this.seo.update({
-      title: s.seo_title || first.title || 'Groupe ABC – Expertise immobilière',
-      description: s.seo_description || first.subtitle,
-      keywords: s.seo_keywords,
-      image: seoImage,
-      jsonLd: {
-        '@context': 'https://schema.org',
-        '@type': 'Organization',
-        name: 'Groupe ABC',
-        url: window.location.href,
-        logo: seoImage,
-        description: s.seo_description || first.subtitle
-      }
+      lang, locale, localeAlt, title, description,
+      keywords: isEN ? kwEN : kwFR,
+      canonical, robots: 'index,follow',
+      image: ogAbs, imageAlt: `${this.orgName} – ${isEN ? 'Homepage' : 'Accueil'}`,
+      ...(isDefaultOg ? { imageWidth: 1200, imageHeight: 630 } : {}),
+      type: 'website',
+      alternates,
+      jsonLd: { '@context': 'https://schema.org', '@graph': [website, organization, webpage, breadcrumb] }
     });
   }
 
   private extractWhatHowAndPresentation(): void {
     const id = this.acf?.identity_section || {};
-
     const whatItems = [ id.what_item_1, id.what_item_2, id.what_item_3 ].filter(Boolean) as string[];
     const howItems = [
       id.how_item_1, id.how_item_2, id.how_item_3, id.how_item_4,
       id.how_item_5, id.how_item_6, id.how_item_7, id.how_item_8
     ].filter(Boolean) as string[];
-
     this.whatHow = {
       whatTitle: id.what_title || 'Quoi ?',
       whatItems,
       howTitle: id.how_title || 'Comment ?',
       howItems
     };
-
     const dl = this.acf?.presentation_download_section || {};
     const fileUrl =
       (typeof dl.presentation_file === 'string' && dl.presentation_file) ||
       (dl.presentation_file?.url ?? null) || null;
-
     this.presentation = {
       text1: dl.presentation_button_text_1 || 'Télécharger la présentation du',
       text2: dl.presentation_button_text_2 || 'Groupe ABC',
@@ -483,54 +633,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     };
   }
 
-  /* ==================================================== */
-  /*       ANIMS (ScrollTrigger)                          */
-  /* ==================================================== */
-  private bindScrollAnimations(): void {
-    const EASE = 'power3.out';
-    const prefersReduced =
-      typeof window !== 'undefined'
-        ? (window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false)
-        : false;
+  private bindScrollAnimations(): void { /* inchangé */ }
 
-    const DUR_TITLE   = prefersReduced ? 0.001 : 0.55;
-    const DUR_BLOCK   = prefersReduced ? 0.001 : 0.45;
-    const STAG_SMALL  = prefersReduced ? 0     : 0.06;
-    const STAG_ITEM   = prefersReduced ? 0     : 0.10;
-
-    const els = <T extends Element>(xs: (T | null | undefined)[]) =>
-      xs.filter(Boolean) as T[];
-
-    // Identity
-    {
-      const identity = document.getElementById('identity');
-      if (identity) {
-        const whoTitle   = identity.querySelector<HTMLElement>('.who .block-title');
-        const whereTitle = identity.querySelector<HTMLElement>('.where .block-title');
-        const whoText = identity.querySelector<HTMLElement>('.who .who-text');
-        const whoBtn  = identity.querySelector<HTMLElement>('.who .cta-btn');
-        const whereMap =
-          identity.querySelector<HTMLElement>('.where .where-map') ??
-          identity.querySelector<HTMLElement>('.where .panel-map');
-
-        gsap.set(els([whoTitle, whereTitle]), { autoAlpha: 0, y: 16 });
-        gsap.set(els([whoText, whoBtn, whereMap]), { autoAlpha: 0, y: 14 });
-
-        gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: identity, start: 'top 75%', once: true }
-        })
-        .to(els([whoTitle, whereTitle]), { autoAlpha: 1, y: 0, duration: 0.55 }, 0)
-        .to(els([whoText, whoBtn, whereMap]), {
-          autoAlpha: 1, y: 0, duration: 0.45, stagger: STAG_SMALL
-        }, 0.10);
-      }
-    }
-
-    // Clients & autres blocs… (inchangé)
-  }
-
-  /* ===== NEWS (Home) ===== */
   private loadFeaturedNews(): void {
     this.wp.getHomepageFeaturedNews(2).subscribe((items: any[]) => {
       const mapped: NewsItem[] = (items || []).map((it: any) => {
@@ -539,45 +643,36 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         return { ...it, themeKey, slug };
       });
       this.news = mapped.length ? { title: 'Actualités', items: mapped } : null;
+      this.cdr.detectChanges();
+      this.wgRefreshTick();
     });
   }
 
-  /* ==================================================== */
-  /*                       CONTEXTES                      */
-  /* ==================================================== */
   private extractExpertiseContext(): void {
     const ctx = this.acf?.expertise_contact_section || {};
     const items: ContextItem[] = [];
     for (let i = 1; i <= 8; i++) {
       const icon = ctx[`context_icon_${i}`];
       const label = ctx[`context_label_${i}`];
-      if (label) items.push({ icon: icon || '', label });
+      if (label) items.push({ icon: icon ?? '', label });
     }
     this.contexts = { title: ctx.context_title || 'Contextes d’intervention', items };
   }
 
-  firstWord(label: string = ''): string {
-    const m = (label || '').trim().match(/^\S+/);
-    return m ? m[0] : '';
-  }
-  restWords(label: string = ''): string {
-    return (label || '').trim().replace(/^\S+\s*/, '');
-  }
-
-  /* ==================================================== */
-  /*                           TEAM, CLIENTS …            */
-  /* ==================================================== */
   private extractClientsSection(): void {
     const c = this.acf?.clients_section || {};
     const items = [
       c.client_item_1, c.client_item_2, c.client_item_3,
       c.client_item_4, c.client_item_5, c.client_item_6
     ].filter(Boolean) as string[];
-
     this.clients = (c.clients_title || items.length)
-      ? { icon: c.clients_icon || '', title: c.clients_title || 'Nos clients', items }
+      ? { icon: (c.clients_icon ?? ''), title: c.clients_title || 'Nos clients', items }
       : null;
   }
+
+  /* ==================================================== */
+  /*                           TEAM                       */
+  /* ==================================================== */
 
   private extractTeamSection(): void {
     const t = this.acf?.team_section || {};
@@ -587,7 +682,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const tmp: TeamMember[] = [];
     for (let i = 1; i <= 8; i++) {
-      const photo = t[`team_photo_${i}`];
+      const photo = t[`team_photo_${i}`]; // ID ou URL
       const name = (t[`team_name_${i}`] || '').toString().trim() || '';
       const area = t[`team_area_${i}`] || '';
       const jobHtml = t[`team_job_${i}`] || '';
@@ -599,20 +694,144 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
           nameFirst = parts.slice(0, -1).join(' ');
           nameLast  = parts.slice(-1)[0];
         }
-        tmp.push({ photo: photo || '', nameFirst, nameLast, area, jobHtml });
+        tmp.push({ photo: photo ?? '', nameFirst, nameLast, area, jobHtml });
       }
     }
 
     this.teamMembers = this.shuffleArray(tmp);
+
+    // Pages de 2 personnes
     this.teamPages = [];
     for (let i = 0; i < this.teamMembers.length; i += 2) {
       this.teamPages.push(this.teamMembers.slice(i, i + 2));
     }
+
     if (this.teamPages.length) {
       this.teamPageIndex = Math.floor(Math.random() * this.teamPages.length);
+      this.ensureTeamPageReady(this.teamPageIndex);
     }
   }
 
+  teamPhotoUrl(m: TeamMember): string {
+    return this.resolvedPhotos.get(m) || this.defaultPortrait;
+  }
+
+  onTeamImgError(e: Event): void {
+    const img = e.target as HTMLImageElement;
+    if (img && img.src !== this.defaultPortrait) {
+      img.src = this.defaultPortrait;
+    }
+  }
+
+  async goTeamTo(i: number): Promise<void> {
+    if (!this.teamPages.length) return;
+    const len = this.teamPages.length;
+    const target = ((i % len) + len) % len;
+
+    this.stopTeamAutoplayByUser();
+
+    await this.ensureTeamPageReady(target);
+    this.teamPageIndex = target;
+
+    this.cdr.detectChanges();
+    this.wgRefreshTick();
+  }
+  nextTeam(): void { this.goTeamTo(this.teamPageIndex + 1); }
+  prevTeam(): void { this.goTeamTo(this.teamPageIndex - 1); }
+
+  private startTeamAutoplay(): void {
+    this.clearTeamAutoplay();
+    if (this.teamPages.length < 2 || this.teamAutoplayStoppedByUser) return;
+
+    this.teamAutoplayRef = setInterval(() => {
+      (async () => {
+        const len = this.teamPages.length;
+        if (len < 2) return;
+
+        let next = this.teamPageIndex;
+        while (next === this.teamPageIndex) {
+          next = Math.floor(Math.random() * len);
+        }
+
+        await this.ensureTeamPageReady(next);
+        this.teamPageIndex = next;
+
+        this.cdr.detectChanges();
+        this.wgRefreshTick();
+      })();
+    }, this.teamAutoplayMs);
+  }
+  private clearTeamAutoplay(): void {
+    if (this.teamAutoplayRef) {
+      clearInterval(this.teamAutoplayRef);
+      this.teamAutoplayRef = null;
+    }
+  }
+  private stopTeamAutoplayByUser(): void {
+    this.teamAutoplayStoppedByUser = true;
+    this.clearTeamAutoplay();
+  }
+
+  private async ensureTeamPageReady(pageIndex: number): Promise<void> {
+    if (pageIndex === this.preparingPageIndex) {
+      // déjà en cours
+    }
+    this.preparingPageIndex = pageIndex;
+    const page = this.teamPages[pageIndex] || [];
+    await Promise.all(page.map(m => this.prepareMemberPhoto(m)));
+    this.preparingPageIndex = null;
+  }
+
+  private async prepareMemberPhoto(m: TeamMember): Promise<void> {
+    if (this.resolvedPhotos.has(m)) return;
+    const url = await this.resolveMedia(m.photo);
+    const finalUrl = url || this.defaultPortrait;
+    await this.preload(finalUrl);
+    this.resolvedPhotos.set(m, finalUrl);
+  }
+
+  private async resolveMedia(idOrUrl: any): Promise<string> {
+    if (!idOrUrl) return '';
+
+    if (typeof idOrUrl === 'object') {
+      const src = idOrUrl?.source_url || idOrUrl?.url || '';
+      if (src) return src;
+      if (idOrUrl?.id != null) idOrUrl = idOrUrl.id;
+    }
+
+    if (typeof idOrUrl === 'number') {
+      try { return (await firstValueFrom(this.wp.getMediaUrl(idOrUrl))) || ''; }
+      catch { return ''; }
+    }
+
+    if (typeof idOrUrl === 'string') {
+      const s = idOrUrl.trim();
+      if (/^\d+$/.test(s)) {
+        try { return (await firstValueFrom(this.wp.getMediaUrl(+s))) || ''; }
+        catch { return ''; }
+      }
+      if (/^(https?:)?\/\//.test(s) || s.startsWith('/') || s.startsWith('data:')) return s;
+      return s;
+    }
+
+    return '';
+  }
+
+  private preload(src: string): Promise<void> {
+    if (!src) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      img.decoding = 'async';
+      img.loading = 'eager';
+      img.src = src;
+    });
+  }
+
+  /* ==================================================== */
+  /*                    Utils divers                      */
+  /* ==================================================== */
   private shuffleArray<T>(arr: T[]): T[] {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -636,45 +855,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  goTeamTo(i: number): void {
-    if (!this.teamPages.length) return;
-    const len = this.teamPages.length;
-    this.teamPageIndex = ((i % len) + len) % len;
-    this.stopTeamAutoplayByUser();
-  }
-  nextTeam(): void { this.goTeamTo(this.teamPageIndex + 1); }
-  prevTeam(): void { this.goTeamTo(this.teamPageIndex - 1); }
-
-  private startTeamAutoplay(): void {
-    this.clearTeamAutoplay();
-    if (this.teamPages.length < 2) return;
-    if (this.teamAutoplayStoppedByUser) return;
-
-    this.teamAutoplayRef = setInterval(() => {
-      const len = this.teamPages.length;
-      if (len < 2) return;
-
-      let next = this.teamPageIndex;
-      while (next === this.teamPageIndex) {
-        next = Math.floor(Math.random() * len);
-      }
-      this.teamPageIndex = next;
-    }, this.teamAutoplayMs);
-  }
-  private clearTeamAutoplay(): void {
-    if (this.teamAutoplayRef) {
-      clearInterval(this.teamAutoplayRef);
-      this.teamAutoplayRef = null;
-    }
-  }
-  private stopTeamAutoplayByUser(): void {
-    this.teamAutoplayStoppedByUser = true;
-    this.clearTeamAutoplay();
-  }
-
-  /* ==================================================== */
-  /*                        UTILS                         */
-  /* ==================================================== */
   private toThemeKey(raw?: string): ThemeKey {
     const s = (raw || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     if (s.includes('march'))   return 'marche';
@@ -694,5 +874,51 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch { return undefined; }
   }
 
+  private normalizeUrl(base: string, path: string): string {
+    const b = base.endsWith('/') ? base.slice(0, -1) : base;
+    const p = path.startsWith('/') ? path : `/${path}`;
+    return `${b}${p}`;
+  }
+
+  private absUrl(url: string, origin: string): string {
+    if (!url) return '';
+    try {
+      if (/^https?:\/\//i.test(url)) return url;
+      if (/^\/\//.test(url)) return 'https:' + url;
+      const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+      return url.startsWith('/') ? o + url : `${o}/${url}`;
+    } catch { return url; }
+  }
+
+  private currentPath(): string {
+    try { return window?.location?.pathname || '/'; } catch { return '/'; }
+  }
+
   trackByIndex(i: number): number { return i; }
+
+  /* ==================================================== */
+  /*                 Weglot helpers (général)             */
+  /* ==================================================== */
+  private wgRefreshTick(): void {
+    setTimeout(() => {
+      const wg: any = (window as any).Weglot;
+      const host = document.querySelector('app-root')
+             || document.querySelector('main')
+             || document.body;
+      wg?.addNodes?.([host]);
+    }, 0);
+  }
+
+  private wgAddNode(target?: Element | null): void {
+    setTimeout(() => {
+      const wg: any = (window as any).Weglot;
+      const el = target || document.body;
+      wg?.addNodes?.([el]);
+    }, 0);
+  }
+
+  private wgAddNodeDouble(target?: Element | null): void {
+    this.wgAddNode(target);
+    setTimeout(() => this.wgAddNode(target), 120);
+  }
 }

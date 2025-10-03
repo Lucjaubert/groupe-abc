@@ -7,41 +7,44 @@
 
       <div
         #heroIntroEl
-        class="hero-intro prehide"
+        class="hero-intro mt-lg-7 mt-2 prehide"
         *ngIf="heroIntroHtml"
         [innerHTML]="heroIntroHtml">
       </div>
     </div>
   </section>
 
-  <!-- ===== Carte / Où ? ===== -->
-  <section class="section map-section" *ngIf="mapSection as ms">
-    <div class="map-bg" aria-hidden="true"><div class="map-layer"></div></div>
-    <div class="section-inner">
-      <div class="map-grid">
-        <div #mapImageEl class="map-image prehide">
-          <img [src]="ms.image" alt="" (error)="onMapImgError($event)" />
-        </div>
-        <div class="map-list">
-          <h2 #mapTitleEl class="map-title prehide">{{ ms.title }}</h2>
-          <ul class="panel-list">
-            <li #mapItem *ngFor="let item of ms.items; trackBy: trackByIndex">
-              {{ item }}
-            </li>
-          </ul>
+  <!-- ===== Firms / Les membres du Groupe ABC ===== -->
+  <section class="section firms py-6 my-6" *ngIf="firms?.length">
+    <div class="section-member"><!-- <- singulier -->
+
+      <!-- BARRE DE TITRE + BOUTON -->
+      <div #firmsBarEl class="firms-titlebar">
+        <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap pb-5">
+          <h2 #firmsTitleEl class="firms-title prehide">{{ firmsTitle }}</h2>
+
+          <article class="download" aria-label="Fiche des contacts du Groupe ABC">
+            <a class="dl-link d-flex flex-nowrap align-items-end justify-content-lg-between gap-3 text-decoration-none prehide"
+              [class.disabled]="!contactsSheet.file"
+              [attr.href]="contactsSheet.file || null"
+              [attr.tabindex]="contactsSheet.file ? null : '-1'"
+              [attr.aria-disabled]="!contactsSheet.file ? 'true' : null"
+              download rel="noopener">
+              <div class="dl-text">
+                <div class="dl-line dl-line--hard">
+                  Télécharger<br>
+                  la <span class="dl-accent">fiche des contacts</span><br>
+                  du <span class="dl-accent">Groupe ABC</span>
+                </div>
+              </div>
+              <img class="dl-icon-img ms-3 flex-shrink-0"
+                  src="assets/icons/download.webp"
+                  alt="Télécharger" width="48" height="56" loading="lazy">
+            </a>
+          </article>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ===== Firms / Les membres du Groupe ABC ===== -->
-  <section class="section firms" *ngIf="firms?.length">
-    <div class="section-inner">
-
-      <!-- Titre -->
-      <h2 #firmsTitleEl class="firms-title prehide">{{ firmsTitle }}</h2>
-
-      <!-- Liste des firms -->
       <ul class="firm-list" role="list">
         <li
           #firmRowEl
@@ -52,11 +55,17 @@
           <!-- Entête de ligne (logo | nom | région | chevron) -->
           <div class="fr-head">
             <div class="fr-logo" *ngIf="f.logoUrl">
-              <img [src]="f.logoUrl" alt="" aria-hidden="true" />
+              <img
+                [appImgFast]="f.logoUrl ? ('' + f.logoUrl) : '/assets/fallbacks/image-placeholder.svg'"
+                [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+                loading="lazy"
+                decoding="async"
+                alt=""
+                aria-hidden="true"
+              />
             </div>
 
             <div class="fr-name">{{ f.name }}</div>
-
             <div class="fr-region" *ngIf="f.region">{{ f.region }}</div>
 
             <button
@@ -78,46 +87,48 @@
             </div>
 
             <div class="ff-right prehide">
-              <img class="ff-portrait" *ngIf="f.partnerImageUrl" [src]="f.partnerImageUrl" alt="" aria-hidden="true" />
+              <img
+                class="ff-portrait"
+                [attr.src]="f._partnerImgUrl || defaultPortrait"
+                (error)="onFirmImgError($event)"
+                alt=""
+                aria-hidden="true" />
 
-              <div class="ff-person mt-lg-4" *ngIf="f.partnerLastname">
-                <div class="ff-person-name">{{ f.partnerLastname }}</div>
-                <div class="ff-person-name">{{ f.partnerFamilyname }}</div>
+              <div class="ff-person mt-4" *ngIf="f.partnerLastname || f.partnerFamilyname">
+                <div class="ff-person-name" *ngIf="f.partnerLastname">{{ f.partnerLastname }}</div>
+                <div class="ff-person-name" *ngIf="f.partnerFamilyname">{{ f.partnerFamilyname }}</div>
 
                 <div class="ff-person-meta">
-                  <img class="ff-org my-lg-3" *ngIf="f.organismLogoUrl" [src]="f.organismLogoUrl" alt="" aria-hidden="true" />
+                  <img
+                    class="ff-org my-3"
+                    *ngIf="f.organismLogoUrl"
+                    [attr.src]="f.organismLogoUrl ? ('' + f.organismLogoUrl) : '/assets/fallbacks/image-placeholder.svg'"
+                    alt=""
+                    aria-hidden="true" />
                 </div>
 
-                <div class="ff-titles my-lg-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>
+                <div class="ff-titles my-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>
 
                 <div class="ff-cta">
                   <a class="btn-contact" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
                     <span>Contact</span>
                     <span class="ico-mail" aria-hidden="true">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="31" height="19" viewBox="0 0 31 19" fill="none">
-                        <path d="M24.7339 12.681L21.2219 9.38599" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M16.524 9.38501L13.011 12.685" stroke="#A33536" stroke-linecap="round"/>
-                        <mask id="mask0_mail" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="31" height="19">
-                          <path d="M30.642 0.285889H0V18.3539H30.642V0.285889Z" fill="white"/>
-                        </mask>
-                        <g mask="url(#mask0_mail)">
-                          <path d="M26.0319 2.896H11.7129C10.6083 2.896 9.71289 3.79143 9.71289 4.896V13.744C9.71289 14.8486 10.6083 15.744 11.7129 15.744H26.0319C27.1365 15.744 28.0319 14.8486 28.0319 13.744V4.896C28.0319 3.79143 27.1365 2.896 26.0319 2.896Z" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M10.5088 3.7771L18.8678 11.0211L27.2308 3.7771" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M2.60986 6.01196H9.71286" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M4.44092 9.32007H9.71292" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                          <path d="M6.27295 12.6289H9.71395" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                        </g>
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <!-- contour -->
+                        <rect x="3" y="5" width="18" height="14" rx="2"
+                              fill="none" stroke="currentColor" stroke-width="1.5"/>
+                        <!-- rabat -->
+                        <path d="M3 7l9 6 9-6" fill="none" stroke="currentColor" stroke-width="1.5"
+                              stroke-linecap="round" stroke-linejoin="round"/>
                       </svg>
                     </span>
                   </a>
 
                   <a class="lk" *ngIf="f.partnerLinkedin" [href]="f.partnerLinkedin" target="_blank" rel="noopener" aria-label="LinkedIn">
-                    <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40" fill="none">
-                      <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5H34.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
-                      <path d="M7 14.5833H12.4167V33H7V14.5833ZM9.69208 12.4167H9.66175C8.04542 12.4167 7 11.212 7 9.70725C7 8.17 8.07792 7 9.7235 7C11.3712 7 12.3863 8.17 12.4167 9.70725C12.4167 11.2109 11.3712 12.4167 9.69208 12.4167ZM33 33H27.5833V23.1427C27.5833 20.7616 26.2562 19.1366 24.1253 19.1366C22.4992 19.1366 21.6196 20.2329 21.1927 21.2924C21.0367 21.6716 21.0833 22.7202 21.0833 23.25V33H15.6667V14.5833H21.0833V17.4173C21.8644 16.2083 23.0875 14.5833 26.2162 14.5833C30.0923 14.5833 32.9989 17.0208 32.9989 22.4635L33 33Z" fill="white"/>
-                    </svg>
+                    <!-- svg -->
                   </a>
                 </div>
+
               </div>
             </div>
           </div>
@@ -128,11 +139,11 @@
   </section>
 
   <!-- ===== TEACHING ===== -->
-  <section class="section teaching" *ngIf="teachingCourses?.length">
-    <div class="section-inner">
+  <section class="section teaching py-6 my-6" *ngIf="teachingCourses?.length">
+    <div class="section-teaching mt-lg-5">
       <h2 #teachingTitleEl class="teach-title prehide">{{ teachingTitle }}</h2>
 
-      <div #teachingIntroEl class="teach-intro prehide mt-lg-5"
+      <div #teachingIntroEl class="teach-intro prehide mt-5"
            *ngIf="teachingIntroHtml" [innerHTML]="teachingIntroHtml"></div>
 
       <ul class="teach-list" role="list">
@@ -142,8 +153,15 @@
           <!-- Colonne gauche -->
           <div class="teach-left">
             <div class="teach-logo" *ngIf="c.schoolLogoUrl">
-              <img [src]="c.schoolLogoUrl" alt="">
+              <img
+                [appImgFast]="c.schoolLogoUrl ? ('' + c.schoolLogoUrl) : '/assets/fallbacks/image-placeholder.svg'"
+                [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+                loading="lazy"
+                decoding="async"
+                alt=""
+              />
             </div>
+
             <div class="teach-school">
               <div class="ts-school-name">{{ c.schoolName }}</div>
               <div class="ts-level" *ngIf="c.programLevel">{{ c.programLevel }}</div>
@@ -154,10 +172,11 @@
 
           <!-- Colonne centre -->
           <div class="teach-speaker" *ngIf="c.speakerName || c.speakerLinkedin || true">
-            <img class="ts-photo"
-                 [src]="c.speakerPhotoUrl || defaultPortrait"
-                 (error)="onTeachImgError($event)"
-                 [alt]="c.speakerName || ''">
+            <img
+              class="ts-photo"
+              [attr.src]="c._speakerImgUrl || defaultPortrait"
+              (error)="onTeachImgError($event)"
+              [alt]="c.speakerName || ''">
 
             <div class="ts-person py-2">
               <div class="ts-name" *ngIf="c.speakerName">{{ c.speakerName }}</div>
@@ -165,7 +184,7 @@
               <a class="lk" *ngIf="c.speakerLinkedin" [href]="c.speakerLinkedin"
                  target="_blank" rel="noopener" aria-label="LinkedIn">
                 <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
-                  <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5H34.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
+                  <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5h24.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
                   <path d="M7 14.5833H12.4167V33H7V14.5833ZM9.692 12.417H9.662C8.045 12.417 7 11.212 7 9.707 7 8.17 8.078 7 9.724 7 11.371 7 12.386 8.17 12.417 9.707c0 1.504-1.046 2.71-2.725 2.71ZM33 33h-5.417V23.143c0-2.381-1.327-4.006-3.458-4.006-1.626 0-2.506 1.096-2.933 2.155-.156.38-.109 1.428-.109 1.959V33H15.667V14.583h5.416v2.834c.781-1.209 2.004-2.834 5.133-2.834 3.876 0 6.783 2.438 6.783 7.88V33Z" fill="#fff"/>
                 </svg>
               </a>
@@ -180,6 +199,34 @@
 
         </li>
       </ul>
+    </div>
+  </section>
+
+  <!-- ===== Carte / Où ? ===== -->
+  <section class="section map-section py-8" *ngIf="mapSection as ms">
+    <div class="map-bg" aria-hidden="true"><div class="map-layer"></div></div>
+    <div class="section-team">
+      <div class="map-grid">
+        <div #mapImageEl class="map-image prehide">
+          <img
+            [appImgFast]="ms?.image ? ('' + ms.image) : ''"
+            [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+            loading="lazy"
+            decoding="async"
+            alt=""
+            aria-hidden="true"
+          />
+        </div>
+
+        <div class="map-list ps-3 ps-lg-0">
+          <h2 #mapTitleEl class="map-title prehide">{{ ms.title }}</h2>
+          <ul class="panel-list mt-3">
+            <li #mapItem *ngFor="let item of ms.items; trackBy: trackByIndex">
+              {{ item }}
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
   </section>
 

@@ -15,17 +15,18 @@ $white:      map.get(vars.$theme-colors, "white");
   position: relative;
   isolation: isolate;
 
-  .section-inner{
+  .section-team{
     position: relative;
     z-index: 1;
     width: 100%;
     margin-inline: auto;
     padding-block: var(--pad-y);
-    padding-top: 112px; /* header fixe */
   }
 
-  .prehide     { opacity:0; visibility:hidden; transform: translateY(20px); will-change: transform, opacity; }
-  .prehide-row { opacity:0; visibility:hidden; }
+  /* IMPORTANT : on garde visible pour que les images puissent s'afficher,
+     l'animation ne joue que sur l'opacité/transform */
+  .prehide     { opacity:0; visibility:visible; transform: translateY(20px); will-change: transform, opacity; }
+  .prehide-row { opacity:0; visibility:visible; }
 }
 
 /* ===== HERO ===== */
@@ -34,38 +35,24 @@ $white:      map.get(vars.$theme-colors, "white");
   font-size: clamp(32px, 3.2vw, 60px);
   font-weight: map.get(vars.$font-weight, "regular");
   line-height: 1.1;
-  margin: 0 0 clamp(12px, 2vw, 18px);
 }
 
 .hero-intro{
-  /* typo */
-  color: #444697;          /* = $blue-hero */
-  font-size: 16px;         /* tu peux garder map.get(...,"30") si tu préfères */
+  color: #444697;
+  font-size: 16px;
   font-weight: 400;
-  line-height: 1.35;       /* ↓ interligne plus serré (1.30–1.40 est idéal) */
-  letter-spacing: 0;       /* optionnel : garantit aucun écart supplémentaire */
+  line-height: 1.35;
 
-  /* Paragraphes injectés via [innerHTML] */
   p{ margin: 0 !important; }
-  p + p{ margin-top: 6px !important; }   /* petit écart entre les 2 lignes */
-
-  /* au cas où un style global ajouterait encore un offset */
-  p:first-child{ margin-top: 0 !important; }
-  p:last-child { margin-bottom: 0 !important; }
+  p + p{ margin-top: 6px !important; }
 }
-
 @media (max-width: 480px){
   .hero-intro{ font-size: 15px; line-height: 1.32; }
   .hero-intro p + p{ margin-top: 5px; }
 }
 
-
-
 /* ===== MAP (Où ?) ===== */
 .map-section{
-  margin-top: 48.5px;
-  margin-bottom: 148.9px;
-
   --map-gap-x: clamp(40px, 8vw, 133px);
   --map-right-col: clamp(360px, 31vw, 498px);
   --map-title-offset: clamp(24px, 7vw, 116px);
@@ -79,9 +66,7 @@ $white:      map.get(vars.$theme-colors, "white");
     z-index: 0;
   }
   .map-bg .map-layer{
-    position: absolute;
-    inset: 0;
-    background: $grey-100;
+    position: absolute; inset: 0; background: $grey-100;
   }
 
   .section-inner{ padding-inline: 0; }
@@ -98,13 +83,13 @@ $white:      map.get(vars.$theme-colors, "white");
     }
   }
 
-  .map-image img{ display:block; width:100%; height:auto; }
+  .map-image img{ display:block; width:70%; height:auto; }
 
   .map-list{ padding-top: var(--map-title-offset); }
 
   .map-title{
     color: $blue-hero;
-    font-size: map.get(vars.$font-size, "100"); /* 48 */
+    font-size: clamp(28px, 3.2vw, 48px);
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: 1.1;
     margin: 0 0 8px;
@@ -119,7 +104,8 @@ $white:      map.get(vars.$theme-colors, "white");
     display: flex; align-items: baseline;
     color: $blue-hero;
     font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 20px; font-weight: map.get(vars.$font-weight, "regular");
+    font-size: clamp(18px, 2.5vw, 22px);
+    font-weight: map.get(vars.$font-weight, "regular");
     line-height: normal; margin: 0;
     transform: translateZ(0) scale(1);
     transform-origin: left center;
@@ -129,8 +115,11 @@ $white:      map.get(vars.$theme-colors, "white");
   .panel-list li::before{
     content: "—"; color: $red;
     font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 20px; font-weight: map.get(vars.$font-weight, "regular");
-    line-height: normal; margin-right: 6px; flex: 0 0 auto;
+    font-size: clamp(18px, 2.5vw, 22px);
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: normal;
+    margin-right: 6px;
+    flex: 0 0 auto;
   }
   @media (hover: hover) and (pointer: fine){
     .panel-list li:hover, .panel-list li:focus-visible{ transform: scale(1.045); }
@@ -146,9 +135,22 @@ $white:      map.get(vars.$theme-colors, "white");
 /* FIRMS (Les membres)       */
 /* ========================= */
 
-/* évite l’anchor jump quand on ouvre/ferme */
 .team-wrapper,
 .section.firms { overflow-anchor: none; }
+
+/* --- fail-safe pour que rien ne reste invisible si GSAP ne tourne pas --- */
+.section.firms .prehide,
+.section.firms .prehide-row {
+  /* on garde visible ! GSAP pilotera l'opacité/transform */
+  visibility: visible !important;
+  /* L'opacité à 0 sert uniquement de point de départ d'animation */
+  opacity: 0;
+  transform: translateY(20px);
+  will-change: transform, opacity;
+}
+
+/* corrige la classe wrapper (singulier dans le HTML) */
+.firms .section-member { padding-top: 0 !important; }
 
 .firms {
   --row-h: 98px;
@@ -156,11 +158,9 @@ $white:      map.get(vars.$theme-colors, "white");
   --gap: clamp(16px, 3vw, 24px);
   --region-left: 582px;
 
-  .section-inner { padding-top: 0 !important; }
-
   .firms-title{
     color: $blue;
-    font-size: map.get(vars.$font-size, "80"); /* 36 */
+    font-size: clamp(24px, 3.2vw, 36px);
     line-height: normal;
     margin: 0 0 56px;
   }
@@ -174,6 +174,7 @@ $white:      map.get(vars.$theme-colors, "white");
     position: relative;
     display: block;
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
+    scroll-margin-top: 100px;
   }
 
   .fr-head{
@@ -182,6 +183,8 @@ $white:      map.get(vars.$theme-colors, "white");
     align-items: center;
     column-gap: var(--gap);
     min-block-size: var(--row-h);
+    position: relative;
+    z-index: 2;
   }
 
   .fr-logo{
@@ -198,20 +201,23 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .fr-name{
     color: $blue-hero;
-    font-size: clamp(18px, 2.1vw, 22px);
+    font-size: clamp(17px, 2.1vw, 26px);
     line-height: 1.25;
+    font-weight: 500;
     min-width: 0;
   }
 
   .fr-region{
     color: $red;
-    font-size: 18px;
+    font-size: clamp(12px, 1.8vw, 18px);
     white-space: nowrap;
   }
 
   .fr-toggle{
     background: none; border: 0; color: $blue-hero; cursor: pointer; justify-self: end;
     display: grid; place-items: center; width: 34px; height: 34px;
+    position: relative;
+    z-index: 3;
   }
   .chevron{ width: 24px; height: 35px; transform: rotate(90deg); transition: transform .25s ease; }
   .firm-row.open .chevron{ transform: rotate(0deg); }
@@ -241,6 +247,8 @@ $white:      map.get(vars.$theme-colors, "white");
     gap: clamp(24px, 4vw, 40px);
     padding-bottom: 24px;
     align-items: stretch;
+    position: relative;
+    z-index: 1;
   }
 
   .firm-row.open .fr-region{ display: none; }
@@ -249,7 +257,10 @@ $white:      map.get(vars.$theme-colors, "white");
   .ff-left,
   .ff-right{ display: flex; flex-direction: column; min-height: 100%; }
 
-  .ff-left { margin-top: 5rem; }
+  .ff-left { margin-top: 10px; }
+  @media (max-width: 768px){
+    .ff-left{ margin-top: 0; }
+  }
 
   .ff-desc{
     color: $blue;
@@ -269,16 +280,21 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .ff-right{ align-items: flex-start; gap: 6px; }
 
+  /* Portrait : fade-in si src valide */
   .ff-portrait{
     width: clamp(200px, 22vw, 238px);
     height: clamp(200px, 22vw, 240px);
     object-fit: cover; display: block; background: #f5e1dd;
+    opacity: 0; transition: opacity .16s ease;
+  }
+  .ff-portrait[src]:not([src=""]):not([src="null"]):not([src="undefined"]){
+    opacity: 1;
   }
 
   .ff-person-name{
     color: #444697;
-    font-size: 36px;
-    font-weight: 400;
+    font-size: clamp(16px, 2.1vw, 36px);
+    font-weight: 500;
     line-height: 1;
     margin: 0 0 4px;
   }
@@ -301,42 +317,185 @@ $white:      map.get(vars.$theme-colors, "white");
     display: flex; align-items: center; gap: 12px; margin-top: auto;
   }
 
+  /* ============================ */
+  /* CTA "Contact" (responsive)   */
+  /* ============================ */
+
   .btn-contact{
-    width: 185px; height: 39px; flex-shrink: 0;
-    display: inline-grid; grid-template-columns: 1fr auto; align-items: center; justify-content: space-between;
-    padding: 0 10px 0 14px; border: 0; border-radius: 6px; background: $red; color: #FFF;
-    text-decoration: none; font-size: 13px; font-weight: 400; line-height: normal;
+    /* Desktop (valeurs hautes) */
+    inline-size: 185px;
+    block-size: 39px;
+    flex-shrink: 0;
+
+    display: inline-grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 10px 0 14px;
+    border: 0;
+    border-radius: 6px;
+    background: $red;
+    color: #fff;
+    text-decoration: none;
+
+    /* Font fluide (16→18px) */
+    font-size: clamp(16px, 4vw, 18px);
+    font-weight: 400;
+    line-height: 1;
   }
-  .btn-contact .ico-mail{ inline-size: 31px; block-size: 19px; display: grid; place-items: center; }
+
+  /* Icône mail → prend la couleur via currentColor */
+  .btn-contact .ico-mail{
+    inline-size: clamp(22px, 5.5vw, 31px);  /* 22px sur mobile, 31px desktop */
+    block-size: clamp(16px, 4vw, 19px);     /* garde les proportions */
+    display: grid;
+    place-items: center;
+    color: map.get(vars.$theme-colors, "dark-red");
+  }
+  .btn-contact .ico-mail svg{
+    width: 100%;
+    height: 100%;
+    display: block;
+    /* si ton SVG n’utilise pas currentColor, dé-commente ci-dessous :
+    *,
+    path { stroke: currentColor; fill: currentColor; }
+    */
+  }
+
+  /* Hover desktop : l’icône suit la couleur du texte */
+  @media (hover: hover) and (pointer: fine){
+    .btn-contact:hover { color:#fff; }
+    .btn-contact:hover .ico-mail { color:#fff; }
+  }
+
+  /* ============================ */
+  /* Download block (texte + icône)
+  /* ============================ */
+
+  .download .dl-link{
+    /* largeur fluide : 280→364px */
+    inline-size: clamp(280px, 72vw, 364px);
+    display: grid;
+    grid-template-columns: 1fr auto;     /* texte à gauche | icône à droite */
+    align-items: end;
+    gap: clamp(12px, 3.2vw, 24px);
+    text-decoration: none;
+  }
+
+  /* Texte du bloc téléchargement : 16→18px */
+  .download .dl-text .dl-line{
+    font-size: clamp(16px, 4vw, 18px);
+    line-height: 1.15;
+  }
+
+  /* Icône download : 32→48px, garde la proportion */
+  .download .dl-icon-img{
+    inline-size: clamp(32px, 8vw, 48px);
+    block-size: auto;
+    display: block;
+    align-self: end;
+    transform: translateY(2px);
+    flex-shrink: 0;
+  }
+
+  /* ============================ */
+  /* Filets “mobile-first < 738px” (si tu préfères un break net) */
+  /* ============================ */
+  @media (max-width: 737.98px){
+    .btn-contact{
+      inline-size: clamp(160px, 48vw, 185px);  /* rétrécit un peu sous 738px */
+      block-size: clamp(40px, 6vw, 39px);      /* garde ~40px de cible tactile */
+      padding: 0 10px 0 12px;
+    }
+
+    .download .dl-link{
+      inline-size: clamp(260px, 86vw, 364px);
+      gap: clamp(10px, 3vw, 16px);
+    }
+  }
+
+
 
   .lk{
     display: inline-flex; align-items: center; justify-content: center;
-    width: 39px; height: 39px; flex-shrink: 0; padding: 0; border-radius: 6px; background: none; text-decoration: none;
+    width: 39px; height: 39px; flex-shrink: 0; padding: 0; border-radius: 6px;
+    background: none; text-decoration: none; line-height: 0;
+    flex: 0 0 39px;
   }
-  .lk-ico{ width: 40px; height: 40px; }
+  .lk-ico{ width: 40px; height: 40px; display: block; }
 
   @media (max-width: 720px){
     .fr-details{ grid-template-columns: 1fr; }
   }
+
+  @media (max-width: 768px){
+    .fr-head{
+      grid-template-columns: var(--logo) 1fr auto;
+      grid-template-rows: auto auto;
+      row-gap: 2px;
+      min-block-size: auto;
+      padding-block: 12px;
+    }
+    .fr-logo{ grid-row: 1 / span 2; align-self: center; }
+    .fr-name{ grid-column: 2 / 3; grid-row: 1 / 2; }
+    .fr-region{
+      grid-column: 2 / 3; grid-row: 2 / 3;
+      justify-self: start;
+      text-align: left;
+      margin: 2px 0 0 0;
+      margin-right: 0;
+      white-space: normal;
+      font-size: clamp(11px, 3.6vw, 13px);
+      line-height: 1.2;
+    }
+    .fr-toggle{ grid-row: 1 / span 2; }
+  }
 }
 
-/* Remonter le panneau détaillé sous le trait */
+/* Remonter le panneau détaillé sous le trait (sans couvrir l’en-tête) */
 .firms {
   --overlap-right: calc(var(--row-h) - 20px);
 
-  .firm-row.open .fr-details{
-    margin-top: calc(-1 * var(--overlap-right));
+  @media (min-width: 1025px){
+    .firm-row.open .fr-details{
+      margin-top: calc(-1 * var(--overlap-right));
+      padding-top: var(--overlap-right);
+    }
   }
 
   @media (max-width: 1024px){
-    .firm-row.open .fr-details{ margin-top: 0; }
+    .firm-row.open .fr-details{
+      margin-top: 0;
+      padding-top: 0;
+    }
   }
 }
 
+/* Accessibilité : si l’utilisateur réduit les animations → tout visible */
+@media (prefers-reduced-motion: reduce){
+  .section.firms .prehide,
+  .section.firms .prehide-row{
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+}
+
+
 /* ===== Teaching ===== */
 .section.teaching{
-  --row-h: 98px;
+  --row-h: 110px;
   --gap: clamp(16px, 3vw, 24px);
+
+  .teach-title{
+    color: #444697;
+    font-size: clamp(24px, 3.2vw, 36px);
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+  }
 
   .teach-list{
     list-style: none; margin: 0; padding: 0;
@@ -367,8 +526,7 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .teach-school{ display:flex; flex-direction:column; gap:6px; }
   .ts-school-name{ color:$blue-hero; font-size: clamp(18px, 2.1vw, 22px); line-height: 1.25; }
-  .ts-level, .ts-link{ color:$blue; font-size:14px; text-decoration:none; font-weight: 400;
-    line-height: normal;}
+  .ts-level, .ts-link{ color:$blue; font-size:14px; text-decoration:none; font-weight: 400; line-height: normal;}
 
   .teach-speaker{
     display: grid;
@@ -377,7 +535,13 @@ $white:      map.get(vars.$theme-colors, "white");
     align-items: center;
     justify-self: start;
   }
-  .ts-photo{ width: 80px; height: 80px; object-fit: cover; display:block; background:#f5e1dd; }
+  .ts-photo{
+    width: 80px; height: 80px; object-fit: cover; display:block; background:#f5e1dd;
+    opacity: 0; transition: opacity .16s ease;
+  }
+  .ts-photo[src]:not([src=""]):not([src="null"]):not([src="undefined"]){
+    opacity: 1;
+  }
   .ts-person{ display:flex; flex-direction:column; justify-content: space-between; gap:6px; min-height: 100%; }
   .ts-name{ color:$blue-hero; font-size: clamp(16px, 1.9vw, 20px); line-height: 1.1; }
   .lk{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; }
@@ -404,6 +568,66 @@ $white:      map.get(vars.$theme-colors, "white");
     .teach-row{ grid-template-columns: 1fr; row-gap: 14px; block-size: auto; }
     .teach-left{ grid-template-columns: 80px 1fr; }
     .tc-title{ white-space: normal; overflow: visible; text-overflow: clip; }
+  }
+}
+
+/* ===== Teaching — mobile ≤768px ===== */
+@media (max-width: 768px) {
+  .section.teaching {
+    --row-h: auto;
+
+    .teach-row{
+      grid-template-columns: 80px 1fr;
+      grid-auto-rows: auto;
+      row-gap: 10px;
+      align-items: start;
+      block-size: auto;
+      padding-block: 12px;
+    }
+
+    .teach-left{
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      column-gap: 12px;
+      align-items: center;
+    }
+    .teach-logo{ width: 64px; height: 64px; }
+    .teach-logo img{ width: 100%; height: 100%; object-fit: contain; }
+
+    .teach-school{ gap: 4px; }
+    .ts-school-name{ font-size: clamp(14px, 4.2vw, 18px); line-height: 1.25; }
+    .ts-level, .ts-link{ font-size: 12px; }
+
+    .teach-speaker{
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 64px 1fr;
+      column-gap: 12px;
+      align-items: center;
+    }
+    .ts-photo{ width: 56px; height: 56px; object-fit: cover; }
+    .ts-person{ gap: 4px; }
+    .ts-name{ font-size: clamp(14px, 4vw, 16px); line-height: 1.1; }
+    .lk{ width: 24px; height: 24px; }
+    .lk-ico{ width: 24px; height: 24px; }
+
+    .teach-course{
+      grid-column: 1 / -1;
+      display: grid;
+      row-gap: 6px;
+      align-items: start;
+      text-align: left;
+      gap: 6px;
+    }
+    .tc-title{
+      font-size: 14px;
+      line-height: 1.25;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .tc-city{ font-size: 14px; }
   }
 }
 

@@ -5,17 +5,24 @@
   "type": "module",
   "scripts": {
     "ng": "ng",
+
     "start": "ng serve --proxy-config proxy.conf.json",
 
     "build": "ng build",
 
     "build:ssr": "ng build --configuration=production && ng run groupe-abc:server:production",
+    "postbuild:ssr": "node -e \"const fs=require('fs'),p='dist/groupe-abc/server/'; if(fs.existsSync(p+'main.js')) fs.copyFileSync(p+'main.js', p+'main.cjs');\"",
+
     "serve:ssr": "ng run groupe-abc:serve-ssr:production",
     "start:ssr": "npm run build:ssr && npm run serve:ssr",
 
     "build:ssr:staging": "ng build --configuration=staging && ng run groupe-abc:server:staging",
+    "postbuild:ssr:staging": "node -e \"const fs=require('fs'),p='dist/groupe-abc/server/'; if(fs.existsSync(p+'main.js')) fs.copyFileSync(p+'main.js', p+'main.cjs');\"",
     "serve:ssr:staging": "ng run groupe-abc:serve-ssr:staging",
     "start:ssr:staging": "npm run build:ssr:staging && npm run serve:ssr:staging",
+
+    "serve:ssr:node": "node ssr.mjs",
+    "start:ssr:node": "npm run build:ssr && node ssr.mjs",
 
     "prerender": "ng run groupe-abc:prerender",
     "prerender:staging": "ng run groupe-abc:prerender:staging",
@@ -42,6 +49,7 @@
     "bootstrap": "5.3.3",
     "compression": "1.7.4",
     "cors": "^2.8.5",
+    "domino": "^2.1.6",
     "express": "^4.21.2",
     "express-static-gzip": "2.1.8",
     "glob": "11.0.0",

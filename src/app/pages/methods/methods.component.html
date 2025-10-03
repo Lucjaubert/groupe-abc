@@ -6,9 +6,9 @@
       <h1 #heroTitle id="methods-title" class="page-title prehide">
         {{ hero.title }}
       </h1>
-      <h3 *ngIf="hero.subtitle" #heroSubtitle class="page-sub mt-6 prehide">
+      <h2 *ngIf="hero.subtitle" #heroSubtitle class="page-sub mt-lg-6 mt-2 prehide">
         {{ hero.subtitle }}
-      </h3>
+      </h2>
       <div *ngIf="hero.html" #heroIntro class="page-intro prehide" [innerHTML]="hero.html"></div>
     </div>
   </section>
@@ -24,18 +24,16 @@
         <li #assetCol class="asset-col mt-4 mt-lg-0" *ngFor="let d of domains; trackBy: trackByIndex">
           <div class="asset-head">
             <img
-              *ngIf="d.icon"
               class="asset-icon"
-              [src]="d.icon"
+              [appImgFast]="d?.icon != null && d?.icon !== '' ? ('' + d.icon) : (d?.iconUrl || defaultDomainIcon)"
+              [placeholder]="defaultDomainIcon"
               alt=""
               loading="lazy"
               decoding="async"
-              (error)="onDomainImgError($event)"
             />
             <h2 class="asset-title">{{ d.title }}</h2>
           </div>
 
-          <!-- Liste tiret rouge -->
           <ul class="panel-list" role="list">
             <li *ngFor="let it of d.items; trackBy: trackByIndex">
               <ng-container [ngSwitch]="it.kind">
@@ -56,18 +54,18 @@
   </section>
 
   <!-- ===== VALEURS : image seule ===== -->
-  <section class="section values" *ngIf="wheel?.image">
+  <section class="section values pt-7 pt-lg-0" *ngIf="wheel.image || wheel.imageUrl">
     <div class="section-inner">
       <h2 #wheelTitle class="values-title prehide">{{ wheel.title }}</h2>
 
       <div #wheelWrap class="wheel prehide-row">
         <img
           class="wheel-img"
-          [src]="wheel.image"
-          [alt]="wheel.centerAlt || ''"
+          [appImgFast]="(wheel.image !== null && wheel.image !== undefined && wheel.image !== '' ? ('' + wheel.image) : (wheel.imageUrl || defaultWheelImg))"
+          [placeholder]="defaultWheelImg"
+          [attr.alt]="wheel.centerAlt || ''"
           loading="lazy"
           decoding="async"
-          (error)="onWheelImgError($event)"
         />
       </div>
     </div>
@@ -75,7 +73,7 @@
 
   <!-- ===== MÉTHODES D’ÉVALUATION (Accordéon) ===== -->
   <section class="section evals" *ngIf="methods?.length">
-    <div class="section-inner px-0">
+    <div class="section-evals px-0 pt-lg-12">
       <h2 #evalTitle class="eval-title prehide">{{ evalTitleText }}</h2>
 
       <ul #evalList class="eval-list prehide-row" role="list">
@@ -87,14 +85,14 @@
         >
           <div class="row-line">
             <img
-              *ngIf="m.icon"
               class="eval-icon"
-              [src]="m.icon"
+              [appImgFast]="m?.icon != null && m?.icon !== '' ? ('' + m.icon) : (m?.iconUrl || defaultEvalIcon)"
+              [placeholder]="defaultEvalIcon"
               alt=""
               loading="lazy"
               decoding="async"
-              (error)="onMethodImgError($event)"
             />
+
             <span class="row-name">{{ m.title }}</span>
             <button
               class="row-toggle"
@@ -119,18 +117,18 @@
 
   <!-- ===== PILOTAGE DES MISSIONS ===== -->
   <section class="section piloting" *ngIf="piloting?.html || piloting?.flows?.length">
-    <div class="section-inner">
+    <div class="section-piloting">
       <h2 #pilotTitle class="pilot-title prehide">{{ pilotingTitle }}</h2>
       <div #pilotIntro class="pilot-intro prehide" [innerHTML]="piloting.html"></div>
 
       <div #pilotGrid class="pilot-grid prehide-row" *ngIf="piloting.flows?.length">
         <figure *ngFor="let f of piloting.flows; trackBy: trackByIndex" class="pilot-figure">
           <img
-            [src]="f.src"
+            [appImgFast]="f?.src != null && f?.src !== '' ? ('' + f.src) : (f?.url || defaultPilotImg)"
+            [placeholder]="defaultPilotImg"
             alt=""
             loading="lazy"
             decoding="async"
-            (error)="onPilotImgError($event)"
           />
           <figcaption *ngIf="f.caption">{{ f.caption }}</figcaption>
         </figure>

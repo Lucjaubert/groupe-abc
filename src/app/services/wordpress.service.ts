@@ -1,26 +1,127 @@
+// src/app/services/wordpress.service.ts
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, of } from 'rxjs';
+import { Observable, of, throwError } from 'rxjs';
 import { map, catchError, switchMap } from 'rxjs/operators';
 import { environment } from '../../environments/environment';
 
-/* ===== Types exportés (utilisés par About & Team) ===== */
 export interface PartnerCard {
   photo: string;
-  area: string;        // = region_name
-  nameFirst: string;   // = partner_lastname (prénom)
-  nameLast: string;    // = partner_familyname (nom)
-  jobHtml: string;     // = titles_partner_ | titles_partner
+  area: string;
+  nameFirst: string;
+  nameLast: string;
+  jobHtml: string;
   linkedin?: string;
   email?: string;
+}
+
+/* ===========================
+ * Helpers URL images/HTML WP
+ * =========================== */
+const SITE_ORIGIN = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
+const HOST = (() => { try { return new URL(SITE_ORIGIN).host; } catch { return 'groupe-abc.fr'; } })();
+
+/** Normalise une URL d’upload WP vers le bon chemin /wordpress/wp-content/uploads/... */
+function fixWpMediaUrl(url?: string): string {
+  if (!url) return '';
+  let u = url.trim();
+  if (!u) return '';
+
+  // protocole-relative → https:
+  if (/^\/\//.test(u)) u = 'https:' + u;
+
+  // Si déjà en /wordpress/wp-content/uploads → OK
+  if (new RegExp(`^https?:\/\/${HOST}\/wordpress\/wp-content\/uploads\/`, 'i').test(u) ||
+      /^\/wordpress\/wp-content\/uploads\//i.test(u)) {
+    return u;
+  }
+
+  // Absolue SANS /wordpress → insère /wordpress
+  u = u.replace(
+    new RegExp(`^https?:\/\/${HOST}\/wp-content\/uploads\/`, 'i'),
+    `${SITE_ORIGIN}/wordpress/wp-content/uploads/`
+  );
+
+  // Relative SANS /wordpress → insère /wordpress
+  u = u.replace(/^\/wp-content\/uploads\//i, '/wordpress/wp-content/uploads/');
+
+  return u;
+}
+
+/** Réécrit les src= et url(...) dans un bloc HTML pour forcer /wordpress/wp-content/uploads */
+function rewriteUploadsInHtml(html?: string): string {
+  if (!html) return '';
+  const hostRe = HOST.replace(/\./g, '\\.');
+  return html
+    .replace(
+      /(\ssrc=['"])\s*\/wp-content\/uploads\//gi,
+      '$1/wordpress/wp-content/uploads/'
+    )
+    .replace(
+      new RegExp(`(\\ssrc=['"])https?:\\/\\/${hostRe}\\/wp-content\\/uploads\\/`, 'gi'),
+      `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`
+    )
+    .replace(
+      /(url\(\s*['"]?)\/wp-content\/uploads\//gi,
+      '$1/wordpress/wp-content/uploads/'
+    )
+    .replace(
+      new RegExp(`(url\\(\\s*['"]?)https?:\\/\\/${hostRe}\\/wp-content\\/uploads\\/`, 'gi'),
+      `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`
+    );
 }
 
 @Injectable({ providedIn: 'root' })
 export class WordpressService {
   private http = inject(HttpClient);
-  private api = environment.apiWpV2;
 
-  /* ========== Utils ========== */
+  /**
+   * Bases d’API :
+   * - primaire : environment.apiWpV2 (dans ton prod = .../wordpress/wp-json/wp/v2)
+   * - fallback : version sans /wordpress (ou l’inverse si primaire sans /wordpress)
+   */
+  private bases: string[] = (() => {
+    const primary = (environment.apiWpV2 || '').replace(/\/+$/, '');
+    let alt = primary;
+
+    if (/\/wordpress\/wp-json\/wp\/v2$/i.test(primary)) {
+      // primaire = .../wordpress/wp-json/wp/v2  → fallback = .../wp-json/wp/v2
+      alt = primary.replace(/\/wordpress\/wp-json\/wp\/v2$/i, '/wp-json/wp/v2');
+    } else if (/\/wp-json\/wp\/v2$/i.test(primary)) {
+      // primaire = .../wp-json/wp/v2 → fallback = .../wordpress/wp-json/wp/v2
+      alt = primary.replace(/\/wp-json\/wp\/v2$/i, '/wordpress/wp-json/wp/v2');
+    }
+
+    // Déduplique proprement
+    return Array.from(new Set([primary, alt])).filter(Boolean);
+  })();
+
+  /* --------------- Utils HTTP --------------- */
+  private urlJoin(base: string, path: string): string {
+    const b = base.replace(/\/+$/, '');
+    const p = path.replace(/^\/+/, '');
+    return `${b}/${p}`;
+  }
+
+  private getJson<T>(endpoint: string, params?: HttpParams): Observable<T> {
+    const tryBase = (idx: number): Observable<T> => {
+      if (idx >= this.bases.length) {
+        return throwError(() => new Error(`All API bases failed for ${endpoint}`));
+      }
+      return this.http.get<T>(this.urlJoin(this.bases[idx], endpoint), { params }).pipe(
+        catchError(err => {
+          const status = err?.status ?? 0;
+          // Fallback si réseau/404/5xx
+          if ([0, 404, 500, 502, 503, 504].includes(status)) {
+            return tryBase(idx + 1);
+          }
+          return throwError(() => err);
+        })
+      );
+    };
+    return tryBase(0);
+  }
+
   private shuffle<T>(arr: T[]): T[] {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
@@ -30,17 +131,25 @@ export class WordpressService {
     return a;
   }
 
-  /* ========== HOMEPAGE ========== */
-  getHomepageData() {
+  /* --------------- HOMEPAGE --------------- */
+  getHomepageData(): Observable<any> {
     const params = new HttpParams().set('per_page', '1');
-    return this.http.get<any[]>(`${this.api}/homepage`, { params })
-      .pipe(map(list => list?.[0]?.acf ?? {}));
+    return this.getJson<any[]>('homepage', params).pipe(
+      map(list => {
+        const acf = list?.[0]?.acf ?? {};
+        // Si des champs HTML contiennent des <img>, on peut les nettoyer ici si besoin :
+        if (acf?.identity_section?.who_text) {
+          acf.identity_section.who_text = rewriteUploadsInHtml(acf.identity_section.who_text);
+        }
+        return acf;
+      })
+    );
   }
 
   getHomepageFeaturedNews(limit = 2): Observable<any[]> {
     const params = new HttpParams().set('per_page', '1');
 
-    return this.http.get<any[]>(`${this.api}/homepage`, { params }).pipe(
+    return this.getJson<any[]>('homepage', params).pipe(
       map(list => list?.[0]?.acf ?? {}),
       switchMap(acf => {
         const rel = acf?.news_featured || [];
@@ -56,15 +165,15 @@ export class WordpressService {
           .set('include', picked.join(','))
           .set('orderby', 'include');
 
-        return this.http.get<any[]>(`${this.api}/news`, { params: p });
+        return this.getJson<any[]>('news', p);
       }),
       map(posts => posts.map(p => {
         const post = p?.acf?.post ?? {};
         return {
           link: p?.link || '',
           title: post.post_title || p?.title?.rendered || '',
-          html: post.post_content || p?.excerpt?.rendered || '',
-          logo: post.logo_firm || '',
+          html: rewriteUploadsInHtml(post.post_content || p?.excerpt?.rendered || ''),
+          logo: fixWpMediaUrl(post.logo_firm || ''),
           firm: post.nam_firm || '',
           theme: post.theme || '',
           authorDate: [post.author, post.date].filter(Boolean).join(' – ')
@@ -74,16 +183,9 @@ export class WordpressService {
     );
   }
 
-  /* ========== ABOUT ========== */
-  getAboutData() {
+  getHomepageIdentityWhereItems(): Observable<string[]> {
     const params = new HttpParams().set('per_page', '1');
-    return this.http.get<any[]>(`${this.api}/about`, { params })
-      .pipe(map(list => list?.[0]?.acf ?? {}));
-  }
-
-  getHomepageIdentityWhereItems() {
-    const params = new HttpParams().set('per_page', '1');
-    return this.http.get<any[]>(`${this.api}/homepage`, { params }).pipe(
+    return this.getJson<any[]>('homepage', params).pipe(
       map(list => {
         const acf = list?.[0]?.acf ?? {};
         const id = acf?.identity_section ?? {};
@@ -95,21 +197,34 @@ export class WordpressService {
     );
   }
 
-  /* ========== NEWS ========== */
+  /* --------------- ABOUT --------------- */
+  getAboutData(): Observable<any> {
+    const params = new HttpParams().set('per_page', '1');
+    return this.getJson<any[]>('about', params).pipe(
+      map(list => {
+        const acf = list?.[0]?.acf ?? {};
+        // Nettoyage éventuel d’HTML :
+        if (acf?.who_text) acf.who_text = rewriteUploadsInHtml(acf.who_text);
+        return acf;
+      })
+    );
+  }
+
+  /* --------------- NEWS --------------- */
+  private fetchNewsPage(page: number, perPage = 100): Observable<any[]> {
+    const params = new HttpParams()
+      .set('per_page', String(perPage))
+      .set('page', String(page))
+      .set('orderby', 'date')
+      .set('order', 'desc')
+      .set('_embed', '1');
+    return this.getJson<any[]>('news', params);
+  }
+
   getAllNews(): Observable<any[]> {
     const perPage = 100;
-    const fetchPage = (page: number): Observable<any[]> => {
-      const params = new HttpParams()
-        .set('per_page', String(perPage))
-        .set('page', String(page))
-        .set('orderby', 'date')
-        .set('order', 'desc')
-        .set('_embed', '1');
-      return this.http.get<any[]>(`${this.api}/news`, { params });
-    };
-
     const loop = (page: number, acc: any[]): Observable<any[]> =>
-      fetchPage(page).pipe(
+      this.fetchNewsPage(page, perPage).pipe(
         switchMap(batch => {
           const next = acc.concat(batch || []);
           if (!batch || batch.length < perPage) return of(next);
@@ -129,50 +244,61 @@ export class WordpressService {
   }
 
   getMediaUrl(id: number): Observable<string> {
-    return this.http.get<any>(`${this.api}/media/${id}`).pipe(
-      map(res => res?.source_url || ''),
+    return this.getJson<any>(`media/${id}`).pipe(
+      map(res => fixWpMediaUrl(res?.source_url || '')),
       catchError(() => of(''))
     );
   }
 
-  /* ========== SERVICES (OK) ========== */
+  /* --------------- SERVICES --------------- */
   getServicesRaw(): Observable<any[]> {
     const params = new HttpParams().set('per_page', '1');
-    return this.http.get<any[]>(`${this.api}/services`, { params });
+    return this.getJson<any[]>('services', params);
   }
 
   getServicesData(): Observable<any> {
     const params = new HttpParams().set('per_page', '1');
-    return this.http.get<any[]>(`${this.api}/services`, { params }).pipe(
-      map(list => list?.[0] ?? {}),
+    return this.getJson<any[]>('services', params).pipe(
+      map(list => {
+        const item = list?.[0] ?? {};
+        if (item?.acf) {
+          // Exemple : réécrire des HTML/URL si besoin
+          Object.keys(item.acf).forEach(k => {
+            const v = (item.acf as any)[k];
+            if (typeof v === 'string' && /<img|url\(/i.test(v)) {
+              (item.acf as any)[k] = rewriteUploadsInHtml(v);
+            }
+          });
+        }
+        return item;
+      }),
       catchError(err => { console.error('[WP] getServicesData error:', err); return of({}); })
     );
   }
 
-  /* ========== BIENS & MÉTHODES ========== */
+  /* --------------- METHODS --------------- */
   getMethodsRaw(): Observable<any[]> {
     const params = new HttpParams().set('per_page', '1');
-    return this.http.get<any[]>(`${this.api}/methods`, { params });
+    return this.getJson<any[]>('methods', params);
   }
 
   getMethodsData(): Observable<any> {
     const params = new HttpParams().set('per_page', '1');
-    return this.http.get<any[]>(`${this.api}/methods`, { params }).pipe(
+    return this.getJson<any[]>('methods', params).pipe(
       map(list => list?.[0] ?? {}),
       catchError(err => { console.error('[WP] getMethodsData error:', err); return of({}); })
     );
   }
 
-  /* ========== TEAM (inchangé + helpers “partners”) ========== */
-  getTeamData() {
+  /* --------------- TEAM --------------- */
+  getTeamData(): Observable<any> {
     const params = new HttpParams().set('per_page', '1');
-    return this.http.get<any[]>(`${this.api}/team`, { params }).pipe(
+    return this.getJson<any[]>('team', params).pipe(
       map(list => list?.[0] ?? {}),
       catchError(err => { console.error('[WP] getTeamData error:', err); return of({}); })
     );
   }
 
-  /** Normalise acf.firms -> PartnerCard[] (robuste si c’est au niveau acf directement). */
   private normalizeTeamPartnersFrom(acfRoot: any): PartnerCard[] {
     const firms = (acfRoot?.firms ?? acfRoot) || {};
     const out: PartnerCard[] = [];
@@ -185,7 +311,7 @@ export class WordpressService {
       const first    = (f.partner_lastname ?? '').toString().trim();
       const last     = (f.partner_familyname ?? '').toString().trim();
       const jobHtml  = (f.titles_partner_ ?? f.titles_partner ?? '').toString();
-      const photo    = (f.partner_image ?? '').toString().trim();
+      const photo    = fixWpMediaUrl((f.partner_image ?? '').toString().trim());
       const linkedin = (f.partner_lk ?? '').toString().trim();
       const email    = (f.contact_email ?? '').toString().trim();
 
@@ -197,10 +323,9 @@ export class WordpressService {
     return out;
   }
 
-  /** Tous les partenaires (pour About). */
   getTeamPartners(): Observable<PartnerCard[]> {
     const params = new HttpParams().set('per_page', '1');
-    return this.http.get<any[]>(`${this.api}/team`, { params }).pipe(
+    return this.getJson<any[]>('team', params).pipe(
       map(list => this.normalizeTeamPartnersFrom(list?.[0]?.acf ?? {})),
       catchError(err => {
         console.error('[WP] getTeamPartners error:', err);
@@ -209,7 +334,6 @@ export class WordpressService {
     );
   }
 
-  /** Cherche un partenaire par nom “Prénom Nom” (insensible à la casse). */
   getTeamPartnerByName(namePart: string): Observable<PartnerCard | null> {
     const q = (namePart || '').trim().toLowerCase();
     if (!q) return of(null);

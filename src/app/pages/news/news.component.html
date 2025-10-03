@@ -33,11 +33,11 @@
         <li #newsRow class="news-row"
             *ngFor="let p of pagedPosts; let i = index; trackBy: trackByIndex"
             [ngClass]="themeClass(p.themeKey)">
+
           <div class="news-bg prehide-row" aria-hidden="true"></div>
 
           <div class="news-box prehide-row">
             <div class="news-col news-col--text">
-              <!-- CHIP : libellé = PRIORISER ; icône = FILTRER -->
               <button class="theme-chip"
                       type="button"
                       [attr.aria-pressed]="promoteTheme === p.themeKey"
@@ -64,7 +64,15 @@
               </button>
 
               <div class="meta-line">
-                <img *ngIf="p.firmLogo" [src]="p.firmLogo" alt="" class="firm-logo" aria-hidden="true" />
+                <img
+                  class="firm-logo"
+                  [appImgFast]="p?.firmLogo != null && p?.firmLogo !== '' ? ('' + p.firmLogo) : '/assets/fallbacks/logo-placeholder.svg'"
+                  [placeholder]="'/assets/fallbacks/logo-placeholder.svg'"
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  decoding="async"
+                />
                 <div class="meta-text d-flex flex-column">
                   <div class="firm-info">
                     <span class="firm-name" *ngIf="p.firmName">{{ p.firmName }}</span>
@@ -108,19 +116,21 @@
                    target="_blank" rel="noopener"
                    class="card-linkedin"
                    aria-label="Lire sur LinkedIn">
-                  <img src="assets/icons/linkedin.svg" alt="" />
+                  <img src="assets/icons/linkedin.webp" alt="" />
                 </a>
               </div>
             </div>
 
             <div class="news-col news-col--image">
               <div class="post-media">
-                <img *ngIf="p.imageUrl"
-                    [src]="p.imageUrl"
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                    class="post-media__img" />
+                <img
+                  class="post-media__img"
+                  [appImgFast]="p?.imageUrl != null && p?.imageUrl !== '' ? ('' + p.imageUrl) : '/assets/fallbacks/image-placeholder.svg'"
+                  [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
             </div>
 
@@ -129,8 +139,8 @@
       </ul>
     </div>
   </section>
+
   <div #pagerWrapper class="pager-wrapper prehide-page">
-    <!-- Pagination -->
     <nav #pager class="pager prehide-row" aria-label="Pagination des actualités">
       <div class="pager-slot pager-left">
         <button class="pager-btn"
@@ -148,12 +158,11 @@
       <div class="pager-slot pager-right">
         <button class="pager-btn"
                 type="button"
-                (click)="goNext()"S
+                (click)="goNext()"
                 [disabled]="currentPage === totalPages">
           Suivant
         </button>
       </div>
     </nav>
   </div>
-
 </div>

@@ -1,16 +1,18 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./out-tsc/app",
-    "types": ["node"]
+    "outDir": "./out-tsc/app"
   },
-  "files": ["src/main.ts", "src/polyfills.ts"],
-  "include": ["src/app/**/*.ts"],
+  "files": [
+    "src/main.ts",
+    "src/polyfills.ts",
+    "src/types/weglot.d.ts"
+  ],
   "exclude": [
     "src/test.ts",
     "src/**/*.spec.ts",
     "src/main.server.ts",
-    "src/environments/environment.prod.ts",
-    "src/environments/environment.ts"
+    "src/app/app.config.server.ts",
+    "server.ts"
   ]
 }

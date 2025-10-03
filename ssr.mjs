@@ -1,102 +1,74 @@
-import 'zone.js/node';
-import '@angular/platform-server/init';  // bonnes pratiques SSR
-import '@angular/compiler';             // JIT fallback si nécessaire (ex: PlatformNavigation)
-
+import '@angular/compiler';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import express from 'express';
+import compression from 'compression';
+import domino from 'domino';
+import morgan from 'morgan';
+
+// Important pour calmer Angular côté SSR (JIT/linker)
+import '@angular/platform-server/init';
+// Charge @angular/compiler en side-effect si une lib tente du JIT
+import('@angular/compiler').catch(() => { /* ignore si déjà AOT */ });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = dirname(__filename);
+
+const browserDir = resolve(__dirname, './browser');
+const indexHtml  = readFileSync(resolve(browserDir, 'index.html'), 'utf8');
+
+// Minimal window pour les libs qui touchent au DOM
+const win = domino.createWindow(indexHtml);
+global.window      = win;
+global.document    = win.document;
+global.navigator   = global.navigator || { userAgent: 'SSR' };
+global.HTMLElement = global.HTMLElement || function(){};
+global.Node        = global.Node || function(){};
+global.history     = global.history || { pushState(){}, replaceState(){}, state:null };
+
 import { CommonEngine } from '@angular/ssr';
-import { dirname, join, resolve } from 'path';
-import { fileURLToPath, pathToFileURL } from 'url';
-import { createRequire } from 'module';
 
-const __dirname   = dirname(fileURLToPath(import.meta.url));
-const rootDir     = __dirname;                         // racine du build déployé
-const browserDist = resolve(rootDir, 'browser');       // ex: ./browser
-const indexHtml   = join(browserDist, 'index.html');
+// Charge le bundle Angular généré par `ng build --ssr`
+const server = await import('./server/main.cjs');
 
-const requireCJS  = createRequire(import.meta.url);
-
-/** Charge le bundle SSR en essayant plusieurs chemins/cas (ESM & CJS). */
-async function loadServerBundle() {
-  const candidates = [
-    './server/main.mjs',
-    './server/main.js',
-    './server/main.cjs',
-    './main.mjs',
-    './main.js',
-    './main.cjs',
-  ];
-
-  for (const rel of candidates) {
-    const abs = resolve(rootDir, rel);
-    try {
-      // Essaye import ESM direct
-      const mod = await import(pathToFileURL(abs).href);
-      return { mod, path: rel };
-    } catch (e1) {
-      // Si .cjs, tente require CJS
-      if (abs.endsWith('.cjs')) {
-        try {
-          const mod = requireCJS(abs);
-          return { mod, path: rel };
-        } catch { /* ignore */ }
-      }
-      // continue vers le prochain candidat
-    }
-  }
-  throw new Error(`Aucun bundle SSR trouvé. Cherché parmi: ${candidates.join(', ')}`);
-}
-
-const { mod, path: usedBundle } = await loadServerBundle();
-
-let renderTarget;
-/** Détermine si c'est standalone bootstrap(), renderApplication(), ou NgModule */
-if (typeof mod?.default === 'function') {
-  console.log('➡️  Utilisation bootstrap standalone (export default).');
-  renderTarget = { bootstrap: mod.default };
-} else if (mod?.default?.renderApplication) {
-  console.log('➡️  Utilisation renderApplication via default.');
-  renderTarget = { bootstrap: (opts) => mod.default.renderApplication(opts) };
-} else if (typeof mod?.renderApplication === 'function') {
-  console.log('➡️  Utilisation renderApplication (nommé).');
-  renderTarget = { bootstrap: (opts) => mod.renderApplication(opts) };
-} else if (mod?.AppServerModule) {
-  console.log('➡️  Utilisation AppServerModule (NgModule).');
-  renderTarget = { module: mod.AppServerModule };
-} else {
-  throw new Error(`❌ Aucun point d’entrée SSR valide trouvé dans ${usedBundle}. Exports: ${Object.keys(mod || {})}`);
+// Choisit un token de bootstrap valide (standalone default, AppComponent, ou AppServerModule)
+let bootstrapToken = (typeof server.default === 'function') ? server.default : null;
+if (!bootstrapToken && server.AppComponent)     bootstrapToken = server.AppComponent;
+if (!bootstrapToken && server.AppServerModule)  bootstrapToken = server.AppServerModule;
+if (!bootstrapToken) {
+  console.error('❌ Aucun token de bootstrap valide. Exports =', Object.keys(server));
+  process.exit(1);
 }
 
 const app = express();
+app.disable('x-powered-by');
+app.use(compression());
+app.use(morgan('tiny'));
 
-// ---- Statique (browser build) ----
-app.use('/assets', express.static(join(browserDist, 'assets'), { maxAge: '30d', immutable: true }));
-app.get('*.*',     express.static(browserDist,                 { maxAge: '1h'  }));
+// fichiers statiques du build browser
+app.use(express.static(browserDir, { maxAge: '1y', index: false }));
 
-// ---- Healthcheck (simple, sans SSR) ----
-app.get('/health', (_req, res) => {
-  res.setHeader('content-type', 'text/plain; charset=utf-8');
-  res.status(200).send('ok');
-});
+// healthcheck
+app.get('/healthz-node', (_req, res) => res.status(200).type('text/plain').send('ok'));
 
-// ---- SSR ----
 const engine = new CommonEngine();
 
-app.get('*', async (req, res, next) => {
+app.get('*', async (req, res) => {
   try {
     const html = await engine.render({
-      ...renderTarget,
-      documentFilePath: indexHtml,
-      url: req.originalUrl,
+      bootstrap: bootstrapToken,
+      document : indexHtml,
+      url      : req.originalUrl
     });
-    res.status(200).send(html);
-  } catch (err) {
-    console.error('❌ SSR error', err);
-    res.status(500).send('SSR error');
+    res.status(200).set('X-SSR', '1').send(html);
+  } catch (e) {
+    console.error('❌ SSR error -> fallback CSR', e?.message || e);
+    res.status(200).set('X-SSR', '0').send(indexHtml);
   }
 });
 
-// ---- Lancement ----
-const PORT = process.env.PORT ?? 4100;
-app.listen(PORT, () => {
-  console.log(`✅ SSR Groupe ABC prêt sur http://localhost:${PORT} (bundle: ${usedBundle})`);
+const port = process.env.PORT || 4000;
+app.listen(port, () => {
+  console.log(`✅ SSR Groupe ABC prêt sur http://localhost:${port} (bundle: ./server/main.cjs)`);
 });

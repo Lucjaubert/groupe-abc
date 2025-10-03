@@ -1,9 +1,10 @@
 @use "sass:map";
 @use "../../../../styles/_variables.scss" as vars;
 
-$logo-w: 140px;
+$logo-w: 95px;
 $rail-w: 40px;
 
+/* ================== DESKTOP ================== */
 .header {
   position: relative;
   padding-top: 60px;
@@ -44,9 +45,7 @@ $rail-w: 40px;
   overflow-y: hidden;
 }
 
-.tagline {
-  grid-column: 2 / span 1;
-}
+.tagline { grid-column: 2 / span 1; }
 .tagline-text {
   display: inline-block;
   font-family: "Plus Jakarta Sans", sans-serif;
@@ -72,31 +71,23 @@ $rail-w: 40px;
 /* ===== MENU ===== */
 .menu {
   display: grid;
-  grid-template-columns: repeat(6, 1fr); /* 6 cases égales */
+  grid-template-columns: repeat(6, 1fr);
   align-items: stretch;
   list-style: none;
   margin: 0;
   padding: 0;
   width: 100%;
-  border-top: 1px solid transparent; /* optionnel pour debug */
+  border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
 }
-
-/* Chaque case */
 .menu li {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center; /* centrage horizontal */
+  justify-content: center;
   min-width: 0;
 }
-
-/* Séparateurs verticaux */
-.menu li + li {
-  border-left: 1px solid rgba(68, 71, 152, .5);
-}
-
-/* Liens */
+.menu li + li { border-left: 1px solid rgba(68, 71, 152, .5); }
 .menu a {
   display: block;
   width: 100%;
@@ -107,14 +98,12 @@ $rail-w: 40px;
   font-weight: 500;
   line-height: 1;
   color: #444697;
-  text-align: center;     /* texte centré */
+  text-align: center;
   padding: 8px 0;
 }
-.menu a:hover {
-  color: map.get(vars.$theme-colors, "dark-orange");
-}
+.menu a:hover { color: map.get(vars.$theme-colors, "dark-orange"); }
 
-/* ----- RAIL DROIT ----- */
+/* ----- RAIL DROIT (cliquabilité prioritaire) ----- */
 .right-rail {
   position: fixed;
   top: 0;
@@ -124,14 +113,18 @@ $rail-w: 40px;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  z-index: 20;
+
+  /* >>> CLÉ : priorité clique + nouveau contexte empilement */
+  z-index: 2000;
+  isolation: isolate;
+  pointer-events: auto;
 }
 
 .lang-switch {
   width: $rail-w;
   height: $rail-w;
-  writing-mode: vertical-rl;
-  transform: rotate(180deg);
+  writing-mode: horizontal-tb !important;
+  transform: none !important;
   background: rgba(68, 70, 151, 0.68);
   color: map.get(vars.$theme-colors, "white");
   font-family: "Plus Jakarta Sans", sans-serif;
@@ -142,6 +135,19 @@ $rail-w: 40px;
   align-items: center;
   justify-content: center;
   border-radius: 2px;
+
+  /* >>> CLÉ : le bouton capte les clics au-dessus de tout */
+  position: relative;
+  z-index: 2100;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 0;
+
+  &:focus-visible{
+    outline: 2px solid #444697;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
 
 .extranet-badge {
@@ -155,6 +161,8 @@ $rail-w: 40px;
   align-items: center;
   justify-content: center;
   border-radius: 2px;
+  position: relative;
+  z-index: 2001;
 
   .extranet-text {
     font-family: "Plus Jakarta Sans", sans-serif;
@@ -170,28 +178,278 @@ $rail-w: 40px;
   }
 }
 
-/* ----- RESPONSIVE ----- */
-@media (max-width: map.get(vars.$breakpoints, "lg")) {
-  .tagline {
-    display: none !important;
-  }
-  .header-inner {
-    grid-template-columns: minmax($logo-w, 1fr);
-  }
-  .menu-bar {
-    grid-column: 1 / -1;
+/* ===== Overlay plein écran ===== */
+.menu-overlay{
+  position: fixed; inset: 0; background: #fff; z-index: 1500; /* < right-rail */
+  opacity: 0; visibility: hidden;
+  transition: opacity .25s ease, visibility .25s step-end;
+  display: grid; place-items: start stretch;
+
+  &.open{ opacity: 1; visibility: visible; transition: opacity .25s ease, visibility 0s; }
+}
+/* Fermé -> n’intercepte pas les clics */
+.menu-overlay:not(.open){ pointer-events: none !important; }
+
+.menu-overlay-inner{
+  --step: clamp(35px, 4.8vh, 70px);
+  --pad: 13px;
+
+  --rail-w: 40px;
+  --logo-h: 90px;
+  --offset-under-logo: 21px;
+
+  padding: var(--pad);
+  padding-right: calc(var(--pad) + env(safe-area-inset-right));
+  padding-left:  calc(var(--pad) + env(safe-area-inset-left));
+  padding-top:   calc(var(--pad) + env(safe-area-inset-top));
+  padding-bottom:calc(var(--pad) + env(safe-area-inset-bottom));
+
+  display: grid;
+  grid-template-columns: 1fr calc(var(--rail-w) + env(safe-area-inset-right));
+  grid-template-areas:
+    "top rail"
+    "nav rail"
+    "bottom rail";
+  column-gap: clamp(8px, 2vw, 16px);
+  row-gap: var(--step);
+  min-height: 100dvh;
+}
+
+.overlay-top{ grid-area: top; display: grid; }
+.overlay-brand{
+  text-decoration: none; color: inherit;
+  img{ inline-size: 89.654px; block-size: 90px; aspect-ratio: 89.654 / 90; flex-shrink: 0; }
+  .brand-text{
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 20px; font-weight: 400; line-height: normal; color: #EA4D4D;
   }
 }
 
-@media (max-width: map.get(vars.$breakpoints, "md")) {
-  .menu {
-    display: flex;
-    gap: 1rem;
-    justify-content: flex-start;
-    overflow-x: auto;
+/* Wrapper items */
+.overlay{
+  grid-area: nav;
+  display: grid;
+  align-content: start;
+  row-gap: var(--step);
+}
+
+/* Lang FR/ENG horizontal */
+.overlay-lang{
+  margin: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  writing-mode: horizontal-tb !important;
+
+  .lang-btn{
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 14px;
+    color: #444697;
+    opacity: .6;
+    transform: none !important;
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    display: inline-block;
+    white-space: nowrap;
   }
-  .menu li {
-    flex: 0 0 auto;
-    justify-content: center;
+
+  .lang-btn.active{ opacity: 1; font-weight: 600; }
+  .sep{ color: #444697; opacity: .6; }
+}
+
+.overlay-nav{
+  margin: 0;
+  display: grid;
+  gap: var(--step);
+  a{
+    text-decoration: none;
+    color: #444697;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-weight: 500;
+    font-size: 20px;
+    line-height: 1.1;
+    &:hover{ color: map.get(vars.$theme-colors, "dark-orange"); }
   }
 }
+
+/* Extranet dans l’overlay */
+.menu-overlay .extranet-badge{
+  grid-area: rail;
+  justify-self: center;
+  align-self: center;
+  margin: 0 !important;
+  margin-top: var(--offset-under-logo);
+  inline-size: 40px;
+  block-size: 180px;
+  flex-shrink: 0;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  transform: rotate(-90deg);
+  background: rgba(68, 70, 151, 0.68);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  right: 0;
+  text-decoration: none;
+  bottom: 130px;
+
+  .extranet-text{
+    white-space: nowrap;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    line-height: normal;
+    color: #FFF;
+    transform: rotate(-90deg);
+  }
+  .extranet-slash{ color: map.get(vars.$theme-colors, "light-red"); }
+}
+
+.overlay-bottom{ grid-area: bottom; }
+.overlay-social.linkedin{
+  inline-size: 32px; block-size: 32px;
+  display: inline-grid; place-items: center;
+  img{ inline-size: 100%; block-size: 100%; }
+}
+.overlay-legal{
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 12px; color: #444697; opacity: .8;
+}
+.mm-legal { text-decoration: none; }
+
+/* ================== MOBILE (≤ md ≈ 768px) ================== */
+@media (max-width: map.get(vars.$breakpoints, "md")) {
+  .header{
+    padding-top: clamp(16px, 4vw, 28px);
+    padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
+    background: map.get(vars.$theme-colors, "white");
+  }
+
+  .header-inner{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    row-gap: clamp(8px, 3vw, 16px);
+  }
+
+  .brand{
+    grid-column: 1 / 2;
+    display: grid;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+  }
+  .logo{
+    inline-size: 89.654px;
+    block-size: 90px;
+    aspect-ratio: 89.654 / 90;
+    flex-shrink: 0;
+  }
+  .slogan{
+    max-width: clamp(260px, 64vw, 420px);
+    text-align: left;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: normal;
+    color: #EA4D4D;
+    overflow: visible;
+  }
+
+  .tagline{
+    grid-column: 1 / -1;
+    display: block !important;
+    align-items: flex-start !important;
+    margin-top: clamp(6px, 2vw, 12px);
+  }
+  .tagline-text{
+    display: inline-block;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: normal;
+    color: #444697;
+    text-align: left !important;
+  }
+  .tagline-text br:nth-of-type(2){ display: none; }
+  .rics{
+    margin-top: 10px;
+    inline-size: 57px;
+    block-size: 21px;
+    aspect-ratio: 19 / 7;
+    flex-shrink: 0;
+    margin-left: 0;
+  }
+
+  .menu-bar{ grid-column: 1 / -1; padding: 0; width: 100%; }
+  .menu{ display: none !important; }
+  .header.menu-open .menu,
+  .menu-bar.open .menu{
+    display: grid !important;
+    grid-template-columns: 1fr;
+    border-top: 1px solid rgba(68,71,152,.5);
+    margin-top: 12px;
+  }
+  .header.menu-open .menu li + li,
+  .menu-bar.open .menu li + li{
+    border-left: 0;
+    border-top: 1px solid rgba(68,71,152,.5);
+  }
+  .header.menu-open .menu a,
+  .menu-bar.open .menu a{
+    text-align: left; padding: 14px 0; font-size: 18px;
+  }
+
+  .right-rail{
+    top: calc(env(safe-area-inset-top) + 0px);
+    width: $rail-w;
+    gap: 10px;
+  }
+
+  /* En mobile, on garde le look « burger » si souhaité :
+     (ici on laisse la pastille transparente possible, à adapter si besoin) */
+  .lang-switch{
+    background: rgba(68, 70, 151, 0.68);
+    font-size: 0; /* le label 'FR/EN' reste visuel via contenu, on peut ajuster si souhaité */
+  }
+
+  /* Un seul badge extranet visible selon l’état overlay (exemple) */
+  .menu-overlay:not(.open) .extranet-badge { display: none !important; }
+  .header.menu-open .right-rail .extranet-badge { display: none !important; }
+
+  /* FR/ENG rouge dans l’overlay (mobile) */
+  .overlay-lang{
+    .lang-btn{
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 16px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 40px;
+      color: #444697;
+      opacity: 1;
+    }
+    .lang-btn.active{ color: #EA4D4D; }
+    .sep{
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 16px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 40px;
+      color: #444697;
+    }
+  }
+}
+
+/* Hauteurs faibles */
+@media (max-height: 680px){
+  .menu-overlay-inner{ --step: clamp(14px, 4.2vh, 28px); }
+}
+
+/* Divers */
+.no-scroll{ overflow: hidden !important; }

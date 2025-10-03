@@ -5,6 +5,9 @@ import { HeaderComponent } from './shared/components/header/header.component';
 import { FooterComponent, FooterSection } from './shared/components/footer/footer.component';
 import { SeoService } from './services/seo.service';
 
+// ✅ import du service WeglotRefresh
+import { WeglotRefreshService } from './services/weglot-refresh.service';
+
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -42,14 +45,13 @@ export class AppComponent {
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: any,
     private renderer: Renderer2,
-    private seo: SeoService // ← injecte le service SEO
+    private seo: SeoService,
+    private _wgRefresh: WeglotRefreshService
   ) {}
 
   ngOnInit(): void {
-    // 1) JSON-LD “sitewide” injecté une seule fois au démarrage
-    const origin = 'https://groupe-abc.fr'; // ← mets ton domaine prod
-    const logoUrl = `${origin}/assets/brand/abc-logo-512.png`; // carré ≥112px (idéal 512x512)
-
+    const origin = 'https://groupe-abc.fr';
+    const logoUrl = `${origin}/assets/favicons/android-chrome-512x512.png`;
     this.seo.setSitewideJsonLd({
       '@context': 'https://schema.org',
       '@graph': [
@@ -83,7 +85,7 @@ export class AppComponent {
       ]
     });
 
-    // 2) Ta logique de routing (inchangée)
+    // Routing
     this.router.events.subscribe(event => {
       if (event instanceof NavigationStart) {
         this.showFooter = false;

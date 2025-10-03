@@ -1,79 +1,71 @@
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { BehaviorSubject } from 'rxjs';
-import { environment } from '../../environments/environment';
 
+/** Typage souple de l’API publique Weglot côté browser */
 declare global {
-  interface Window { Weglot?: any; }
+  interface Window {
+    Weglot?: {
+      initialized?: boolean;
+      /** bascule de langue */
+      switchTo?: (code: string) => void;
+
+      /** lecture de la langue courante – nouvelle API */
+      getCurrentLang?: () => string;
+      /** lecture de la langue courante – ancienne API (fallback) */
+      getCurrentLanguage?: () => string;
+
+      /** écouteurs */
+      on?: (event: string, cb: (...args: any[]) => void) => void;
+      off?: (event: string, cb: (...args: any[]) => void) => void;
+
+      /** re-scan du DOM pour traduire du contenu injecté dynamiquement */
+      addNodes?: (nodes: Element | Element[] | NodeList) => void;
+    };
+  }
 }
 
 @Injectable({ providedIn: 'root' })
 export class WeglotService {
-  private loaded = false;
-
-  // → émet true quand Weglot est prêt (init OK côté navigateur)
-  private readySubj = new BehaviorSubject<boolean>(false);
+  private readonly readySubj = new BehaviorSubject<boolean>(false);
   readonly ready$ = this.readySubj.asObservable();
 
-  constructor(@Inject(PLATFORM_ID) private platformId: Object) {}
-
-  /** Chargé par APP_INITIALIZER */
-  async init(): Promise<void> {
-    if (!isPlatformBrowser(this.platformId)) return; // SSR guard
-    if (this.loaded) return;
-
-    // 🚫 Désactive Weglot si aucune clé n’est configurée (staging/local)
-    if (!environment.weglotApiKey) {
-      console.warn('[Weglot] Aucune clé API détectée — Weglot désactivé.');
-      return;
-    }
-
-    if (!window.Weglot) {
-      await this.loadScript('https://cdn.weglot.com/weglot.min.js');
-    }
-
-    // 🔎 Debug: affiche la clé réellement utilisée
-    console.log('[Weglot] Using API key:', environment.weglotApiKey);
-
-    try {
-      window.Weglot!.initialize({
-        api_key: environment.weglotApiKey,
-        originalLanguage: 'fr',
-        destinationLanguages: ['en'],
-      });
-
-      this.loaded = true;
-      this.readySubj.next(true);
-      console.log('[Weglot] Initialized OK');
-    } catch (e: any) {
-      // ⚠️ En cas de 403, Weglot loguera aussi "project deleted" côté CDN
-      console.error('[Weglot] init failed:', e);
-      this.readySubj.next(false);
+  constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    if (isPlatformBrowser(platformId)) {
+      const check = () => {
+        if (window.Weglot?.initialized === true) {
+          this.readySubj.next(true);
+        } else {
+          setTimeout(check, 100);
+        }
+      };
+      check();
     }
   }
 
-  /** FR ↔ EN */
-  switchTo(code: 'fr' | 'en') {
-    if (!isPlatformBrowser(this.platformId)) return;
+  switchTo(code: 'fr' | 'en'): void {
+    try { window.Weglot?.switchTo?.(code); } catch {}
+  }
+
+  /** Lecture robuste de la langue courante (nouvelle + ancienne API) */
+  getCurrentLang(): 'fr' | 'en' | null {
     try {
-      if (!this.loaded) {
-        console.warn('[Weglot] switchTo appelé avant init; tentative forcée:', code);
-      }
-      window.Weglot?.switchTo?.(code);
-    } catch (e) {
-      console.error('[Weglot] switchTo failed:', e);
+      const w = window.Weglot;
+      const v = w?.getCurrentLang?.() ?? w?.getCurrentLanguage?.();
+      return v === 'en' ? 'en' : v === 'fr' ? 'fr' : null;
+    } catch {
+      return null;
     }
   }
 
-  /** Charge le script Weglot dynamiquement */
-  private loadScript(src: string): Promise<void> {
-    return new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = src;
-      s.async = true;
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error('Weglot CDN failed to load'));
-      document.head.appendChild(s);
-    });
+  /**
+   * Demande un re-scan de Weglot (équivalent au “refresh” historique).
+   * Par défaut on re-scanne tout le document (body).
+   */
+  rescan(root?: Element): void {
+    try {
+      const el = root || document.body || document.documentElement;
+      window.Weglot?.addNodes?.(el);
+    } catch {}
   }
 }

@@ -9,19 +9,41 @@
     <form class="contact-grid" novalidate (submit)="onSubmit($event)">
       <!-- Message -->
       <label class="sr-only" for="footer-msg">Message</label>
-      <textarea id="footer-msg" name="message" placeholder="Message" required></textarea>
+      <textarea
+        id="footer-msg"
+        name="message"
+        placeholder="Message"
+        required
+        (input)="onFormChange()"></textarea>
 
       <!-- Nom -->
       <label class="sr-only" for="footer-name">Nom</label>
-      <input id="footer-name" name="name" type="text" placeholder="Nom" required />
+      <input
+        id="footer-name"
+        name="name"
+        type="text"
+        placeholder="Nom"
+        required
+        (input)="onFormChange()" />
 
       <!-- Téléphone -->
       <label class="sr-only" for="footer-tel">Téléphone</label>
-      <input id="footer-tel" name="phone" type="tel" placeholder="Téléphone" />
+      <input
+        id="footer-tel"
+        name="phone"
+        type="tel"
+        placeholder="Téléphone"
+        (input)="onFormChange()" />
 
       <!-- Email -->
       <label class="sr-only" for="footer-mail">Adresse e-mail*</label>
-      <input id="footer-mail" name="email" type="email" placeholder="Adresse e-mail*" required />
+      <input
+        id="footer-mail"
+        name="email"
+        type="email"
+        placeholder="Adresse e-mail*"
+        required
+        (input)="onFormChange()" />
 
       <!-- Honeypot anti-bot -->
       <label class="sr-only" for="website">Ne pas remplir</label>
@@ -33,7 +55,7 @@
         class="btn-send"
         [class.is-loading]="sendState==='loading'"
         [class.is-success]="sendState==='success'"
-        [disabled]="sendState==='loading'"
+        [disabled]="sendState==='loading' || sendState==='success'"
         aria-live="polite"
         [attr.aria-pressed]="sendState==='success' ? 'true' : 'false'"
         [attr.aria-label]="sendState==='success' ? 'Message envoyé' : 'Envoyer le message'">
@@ -48,16 +70,23 @@
     <!-- Ligne d’info -->
     <div class="meta-row">
       <p class="footer-contact">
-        18 rue Pasquier — 75008 Paris / T. 01 78 41 44 41 / contact&#64;groupe-abc.fr
+        <span class="addr">18 rue Pasquier — 75008 Paris</span>
+        <span class="sep" aria-hidden="true">/</span>
+        <span class="tel"><a href="tel:+33178414441">T. 01 78 41 44 41</a></span>
+        <span class="sep" aria-hidden="true">/</span>
+        <span class="mail"><a href="mailto:contact@groupe-abc.fr">contact&#64;groupe-abc.fr</a></span>
       </p>
 
-      <div class="socials">
-        <a class="linkedin" href="https://www.linkedin.com/company/groupe-abc" target="_blank" rel="noopener">
+      <div class="socials mt-5 mt-lg-0">
+        <a class="linkedin" href="https://www.linkedin.com/company/groupe-abc-experts/" target="_blank" rel="noopener">
           <img src="assets/icons/linkedin.webp" alt="LinkedIn" />
         </a>
       </div>
 
-      <p class="footer-legal mt-3">©2025 - Mentions légales - Crédits</p>
+      <a [routerLink]="'/mentions-legales' | langLink" class="footer-legal mt-9 mt-lg-5 mb-4 mb-lg-0">
+        ©2025 - Mentions légales - Crédits
+      </a>
     </div>
+
   </div>
 </footer>

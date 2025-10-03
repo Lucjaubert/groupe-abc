@@ -38,7 +38,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   font-size: clamp(32px, 3.2vw, 60px);
   font-weight: 400;
   line-height: normal;
-  margin-top: 110px;
   margin-bottom: 8px;
 }
 .page-sub{
@@ -298,7 +297,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 }
 
 
-
 /* ===================== */
 /* MÉTHODES = Accordéon  */
 /* ===================== */
@@ -334,6 +332,10 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     align-items: center;
     column-gap: clamp(16px, 3vw, 24px);
     border-bottom: $bd-2 solid $blue;
+
+    /* homogénéise l’espacement fermé/ouvert */
+    padding-block-start: 0;
+    row-gap: 0;
   }
 
   .row-line{ display: contents; }
@@ -370,8 +372,8 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   }
 
   .chevron{
-    width: 24px;
-    height: 34.66px;
+    width: 20px;
+    height: 30px;
     transform: rotate(90deg);
     transition: transform .25s ease;
   }
@@ -391,8 +393,13 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     p:last-child{ margin-bottom: 0; }
   }
 
-  @media (max-width: 768px) {
+  /* espace barre ↔ titre + titre ↔ description quand ouvert */
+  .eval-row.open{
+    padding-block-start: 16px;
+    row-gap: 20px;
+  }
 
+  @media (max-width: 768px) {
     .chevron {
       width: 18px;
       height: 18px;

@@ -1,59 +1,68 @@
 <div class="homepage-wrapper pt-6" *ngIf="acf">
   <section id="hero"
-         class="hero-section"
-         (mouseenter)="pauseAutoplay()"
-         (mouseleave)="resumeAutoplay()"
-         tabindex="0"
-         role="region"
-         aria-label="Carrousel d'images – section Héro"
-         (keydown)="onKeydown($event)"
-         (pointerdown)="onPointerDown($event)"
-         (pointerup)="onPointerUp($event)">
+           class="hero-section"
+           (mouseenter)="pauseAutoplay()"
+           (mouseleave)="resumeAutoplay()"
+           tabindex="0"
+           role="region"
+           aria-label="Carrousel d'images – section Héro"
+           (keydown)="onKeydown($event)"
+           (pointerdown)="onPointerDown($event)"
+           (pointerup)="onPointerUp($event)">
 
-  <div class="hero-bg" #heroBg>
-    <div class="hero-layer"
-         #heroLayer
-         *ngFor="let s of heroSlides; let i = index; trackBy: trackByIndex"
-         [class.active]="i === heroIndex"
-         [style.backgroundImage]="'url(' + s.bg + ')'">
-    </div>
-  </div>
-
-  <div class="hero-overlay pb-10">
-    <div class="hero-content mt-9 mt-lg-0" aria-live="polite">
-      <h1 class="hero-title" #heroTitle>{{ currentSlide?.title }}</h1>
-      <p class="hero-subtitle" #heroSubtitle>{{ currentSlide?.subtitle }}</p>
+    <div class="hero-bg" #heroBg>
+      <div class="hero-layer"
+           #heroLayer
+           *ngFor="let sld of heroSlides; let i = index; trackBy: trackByIndex"
+           [class.active]="i === heroIndex"
+           [style.backgroundImage]="'url(' + (s(sld?.bg) || '/assets/fallbacks/hero-placeholder.jpg') + ')'">
+      </div>
     </div>
 
-    <div class="hero-dots" *ngIf="heroSlides.length > 1">
-      <button *ngFor="let s of heroSlides; let i = index; trackBy: trackByIndex"
-              type="button"
-              class="hero-dot"
-              [class.active]="i === heroIndex"
-              [attr.aria-label]="'Aller au slide ' + (i + 1)"
-              [attr.aria-current]="i === heroIndex ? 'true' : null"
-              (click)="goTo(i)">
-      </button>
+    <div class="hero-overlay pb-10">
+      <div class="hero-content mt-9 mt-lg-0" aria-live="polite">
+        <h1 class="hero-title" #heroTitle data-wg-notranslate>
+          {{ currentSlide?.title }}
+        </h1>
+        <p class="hero-subtitle" #heroSubtitle data-wg-notranslate>
+          {{ currentSlide?.subtitle }}
+        </p>
+      </div>
+
+      <div class="hero-dots" *ngIf="heroSlides.length > 1">
+        <button *ngFor="let _ of heroSlides; let i = index; trackBy: trackByIndex"
+                type="button"
+                class="hero-dot"
+                [class.active]="i === heroIndex"
+                [attr.aria-label]="'Aller au slide ' + (i + 1)"
+                [attr.aria-current]="i === heroIndex ? 'true' : null"
+                (click)="goTo(i)">
+        </button>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
 
-<!-- ===== Key figure ===== -->
 
+  <!-- Key figures -->
   <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">
-    <ul>
+    <ul [style.--n]="maxValueCh">
       <li *ngFor="let fig of keyFigures; let i = index; trackBy: trackByIndex"
           #kfItem
           [attr.data-index]="i"
-          [ngStyle]="{'--value-w': (fig.digits + 'ch')}">
-        <span class="value">{{ fig.display || '\u00A0' }}</span>
-        <span class="label"
-              [class.typing]="fig.typed.length < fig.fullLabel.length">
+          [ngStyle]="{ '--value-w': (fig.digits + 'ch') }"
+          [ngClass]="{ col1: i < 5, col2: i >= 5 && i < 9, col3: i >= 9, 'grp-sep': i === 5 || i === 9 }">
+
+        <!-- chiffres : ne jamais traduire -->
+        <span class="value" data-wg-notranslate>{{ fig.display || '\u00A0' }}</span>
+
+        <!-- libellé : affiché directement, switch FR/EN instantané -->
+        <span class="label" data-wg-notranslate>
           {{ fig.typed }}
         </span>
       </li>
     </ul>
   </section>
+
 
   <!-- ===== Identity : Qui / Où ===== -->
   <section id="identity" class="identity" *ngIf="identity?.whoTitle || identity?.whereTitle">
@@ -66,7 +75,10 @@
         <div class="who-text mt-5" [innerHTML]="identity.whoHtml"></div>
 
         <div class="who-actions">
-          <button type="button" class="cta-btn mt-5">
+          <button
+            class="cta-btn mt-5"
+            type="button"
+            routerLink="/qui-sommes-nous">
             <span class="cta-label">Lire la suite</span>
             <span class="cta-plus" aria-hidden="true">
               <svg viewBox="0 0 24 24" class="icon-plus">
@@ -80,7 +92,7 @@
       <!-- Où ? (colonne droite) -->
       <div class="where py-5 py-lg-5" [class.open]="whereOpen">
         <div class="where-head">
-          <h3 class="block-title">{{ identity.whereTitle }}</h3>
+          <h2 class="block-title">{{ identity.whereTitle }}</h2>
 
           <button class="where-toggle"
                   type="button"
@@ -96,9 +108,14 @@
         <div id="where-body" class="where-body">
           <!-- Carte -->
           <div class="where-panel panel-map" [attr.aria-hidden]="whereOpen">
-            <div class="where-map">
-              <img [src]="identity.whereMap"
-                  alt="Carte des zones d'intervention du Groupe ABC">
+            <div class="where-map py-6 px-3">
+              <img
+                [appImgFast]="s(identity.whereMap)"
+                [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+                loading="lazy"
+                decoding="async"
+                alt="Carte des zones d'intervention du Groupe ABC"
+              />
             </div>
           </div>
 
@@ -117,14 +134,14 @@
     <div class="wh-grid">
       <div class="wh-left">
         <article class="what py-5 py-lg-5">
-          <h3 class="block-title">{{ whatHow.whatTitle }}</h3>
+          <h2 class="block-title">{{ whatHow.whatTitle }}</h2>
 
           <ul class="dash-list mt-5">
             <li *ngFor="let item of whatHow.whatItems">{{ item }}</li>
           </ul>
 
           <div class="wh-actions">
-            <button type="button" class="cta-btn">
+            <button type="button" class="cta-btn" routerLink="/biens-et-methodes">
               <span class="cta-label">Lire la suite</span>
               <span class="cta-plus" aria-hidden="true">
                 <svg viewBox="0 0 24 24" class="icon-plus">
@@ -138,10 +155,10 @@
         <!-- Download : rendu même si pas de fichier pour garder l’alignement -->
         <article class="download py-5 py-lg-5">
           <a class="dl-link"
-            [class.disabled]="!presentation.file"
-            [attr.href]="presentation.file || null"
-            [attr.tabindex]="presentation.file ? null : '-1'"
-            [attr.aria-disabled]="!presentation.file ? 'true' : null">
+             [class.disabled]="!presentation.file"
+             [attr.href]="presentation.file || null"
+             [attr.tabindex]="presentation.file ? null : '-1'"
+             [attr.aria-disabled]="!presentation.file ? 'true' : null">
 
             <div class="dl-text">
               <div class="dl-line dl-line--hard">
@@ -152,9 +169,9 @@
             </div>
 
             <img class="dl-icon-img"
-                src="assets/icons/download.webp"
-                alt="Télécharger"
-                width="48" height="56" loading="lazy">
+                 src="assets/icons/download.webp"
+                 alt="Télécharger"
+                 width="48" height="56" loading="lazy">
           </a>
         </article>
 
@@ -163,7 +180,7 @@
       <!-- Colonne droite : Comment + CTA aligné en bas -->
       <div class="wh-right">
         <article class="how">
-          <h3 class="block-title">{{ whatHow.howTitle }}</h3>
+          <h2 class="block-title">{{ whatHow.howTitle }}</h2>
 
           <ul class="dash-list mt-5">
             <li *ngFor="let item of whatHow.howItems">{{ item }}</li>
@@ -184,39 +201,37 @@
     </div>
   </section>
 
- <!-- ===== Contextes d’intervention ===== -->
-<section class="contexts" aria-labelledby="contexts-title" *ngIf="contexts?.items?.length">
-  <!-- Fond full-bleed -->
-  <div class="contexts-bg" aria-hidden="true"></div>
+  <!-- ===== Contextes d’intervention ===== -->
+  <section class="contexts" aria-labelledby="contexts-title" *ngIf="contexts?.items?.length">
+    <!-- Fond full-bleed -->
+    <div class="contexts-bg" aria-hidden="true"></div>
 
-  <div class="contexts-inner px-0">
-    <div class="contexts-head">
-      <h3 id="contexts-title" class="contexts-title mt-lg-0 mt-8">{{ contexts?.title }}</h3>
+    <div class="contexts-inner px-0">
+      <div class="contexts-head">
+        <h2 id="contexts-title" class="contexts-title mt-lg-0 mt-8">{{ contexts?.title }}</h2>
 
-      <div class="contexts-actions mt-6 mt-lg-0 mb-5 mb-lg-0">
-        <button type="button" class="cta-btn">
-          <span class="cta-label">Plus d'infos</span>
-          <span class="cta-plus" aria-hidden="true">
-            <svg viewBox="0 0 24 24" class="icon-plus">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-          </span>
-        </button>
-      </div>
-    </div>
-
-    <ul class="contexts-grid px-0 pb-4" role="list">
-      <li class="ctx-item mt-lg-0 mt-5" *ngFor="let it of contexts?.items; let i = index; trackBy: trackByIndex">
-        <!-- .ctx-icon = le carré ; l'image interne est décorative -->
-        <div class="ctx-icon" role="img" [attr.aria-label]="it.label || ('Contexte ' + (i+1))">
-          <img class="ctx-img" [src]="it.icon" alt="" loading="lazy">
+        <div class="contexts-actions mt-6 mt-lg-0 mb-5 mb-lg-0">
+          <button type="button" class="cta-btn">
+            <span class="cta-label">Plus d'infos</span>
+            <span class="cta-plus" aria-hidden="true">
+              <svg viewBox="0 0 24 24" class="icon-plus">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </span>
+          </button>
         </div>
-        <div class="ctx-label mt-4" [appAlignFirstWord]="it.label"></div>
-      </li>
-    </ul>
-  </div>
-</section>
+      </div>
 
+      <ul class="contexts-grid px-0 pb-4" role="list">
+        <li class="ctx-item mt-lg-0 mt-5" *ngFor="let it of contexts?.items; let i = index; trackBy: trackByIndex">
+          <div class="ctx-icon" role="img" [attr.aria-label]="it.label || ('Contexte ' + (i+1))">
+            <img class="ctx-img" [src]="s(it?.icon)" alt="" loading="lazy">
+          </div>
+          <div class="ctx-label mt-4" [appAlignFirstWord]="it.label"></div>
+        </li>
+      </ul>
+    </div>
+  </section>
 
   <!-- ===== Nos clients ===== -->
   <section class="clients" aria-labelledby="clients-title" *ngIf="clients?.items?.length">
@@ -228,43 +243,52 @@
         <div class="col-lg-auto clients-left pe-lg-5">
           <img
             class="clients-icon d-block"
-            [src]="clients?.icon"
+            [src]="s(clients?.icon)"
             alt=""
             aria-hidden="true"
             loading="lazy"
             decoding="async"
             fetchpriority="low"
           />
-          <h3 id="clients-title" class="clients-title">{{ clients?.title }}</h3>
+          <h2 id="clients-title" class="clients-title">{{ clients?.title }}</h2>
         </div>
 
         <!-- Colonne droite : liste -->
         <div class="col-lg clients-right">
-          <ul class="dash-list clients-list list-unstyled m-0" role="list">
-            <li *ngFor="let item of clients?.items; trackBy: trackByIndex">{{ item }}</li>
-          </ul>
+          <div class="col-lg clients-right">
+            <ul class="dash-list clients-list list-unstyled m-0" role="list">
+              <li *ngFor="let item of clients?.items; trackBy: trackByIndex">{{ item }}</li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
-
-<!-- ===== Team ===== -->
+  <!-- ===== Team ===== -->
   <section id="team" class="team" *ngIf="teamPages.length">
     <div class="team-inner px-0">
-      <h3 class="team-title">
+      <h2 class="team-title" #teamTitle>
         <span class="line1">{{ teamTitleLine1 }}</span>
         <span class="line2">{{ teamTitleLine2 }}</span>
-      </h3>
+      </h2>
 
       <!-- 2 cartes visibles -->
       <div class="team-grid" aria-live="polite">
-        <article class="member-card " *ngFor="let m of teamPages[teamPageIndex]; trackBy: trackByIndex">
+        <article
+          class="member-card"
+          #teamCard
+          *ngFor="let m of teamPages[teamPageIndex]; trackBy: trackByIndex">
+
           <div class="photo-tile">
-            <img [src]="m.photo" [alt]="'Portrait de ' + m.nameFirst + ' ' + m.nameLast" loading="lazy" decoding="async">
+            <img
+              [src]="s(m?.photo) || defaultPortrait"
+              [attr.alt]="'Portrait de ' + (m?.nameFirst || '') + ' ' + (m?.nameLast || '')"
+              loading="lazy"
+              decoding="async"
+              (error)="$any($event.target).src = defaultPortrait">
           </div>
 
-          <!-- Colonne texte contrainte exactement à la hauteur de la photo -->
           <div class="member-text pt-3">
             <div class="member-area">{{ m.area }}</div>
             <div class="member-name">
@@ -276,9 +300,6 @@
         </article>
       </div>
 
-      <!-- Bas de section aligné sur les colonnes globales :
-          - les points occupent la 1re colonne (largeur = photo)
-          - le CTA est poussé complètement à droite -->
       <div class="team-bottom">
         <div class="team-dots" role="tablist" aria-label="Profils de l’équipe">
           <button
@@ -294,8 +315,7 @@
         </div>
 
         <div class="team-cta">
-          <button type="button" class="cta-btn"
-                [routerLink]="['/notre-equipe']">
+          <button type="button" class="cta-btn" [routerLink]="['/notre-equipe']">
             <span class="cta-label">Découvrez notre équipe</span>
             <span class="cta-plus" aria-hidden="true">
               <svg viewBox="0 0 24 24" class="icon-plus"><path d="M12 5v14M5 12h14"/></svg>
@@ -306,62 +326,58 @@
     </div>
   </section>
 
-<!-- ===================== NEWS ===================== -->
-<section class="news" *ngIf="news"
-         style="--news-side-right:40px; --news-side-gap:83px">
-  <div class="news-bg" aria-hidden="true"></div>
+  <!-- ===================== NEWS ===================== -->
+  <section class="news" *ngIf="news"
+           style="--news-side-right:40px; --news-side-gap:83px">
+    <div class="news-bg" aria-hidden="true"></div>
 
-  <div class="news-inner px-0">
-    <h3 class="news-title">{{ news.title }}</h3>
+    <div class="news-inner px-0">
+      <h2 class="news-title">{{ news.title }}</h2>
 
-    <div class="news-row">
-      <div class="news-grid">
-        <article class="news-card"
-                 *ngFor="let it of news?.items; let i = index; trackBy: trackByIndex"
-                 [ngClass]="themeClass(it.themeKey)">
-          <!-- Calque décoratif coloré (thème) -->
-          <span class="news-card-bg" aria-hidden="true"></span>
+      <div class="news-row">
+        <div class="news-grid">
+          <article class="news-card"
+                   *ngFor="let it of news?.items; let i = index; trackBy: trackByIndex"
+                   [ngClass]="themeClass(it.themeKey)">
+            <span class="news-card-bg" aria-hidden="true"></span>
 
-          <!-- Header -->
-          <header class="news-head">
-            <img *ngIf="it.logo" class="news-logo" [src]="it.logo" alt="" aria-hidden="true" />
-            <div class="news-meta">
-              <div class="news-firm">{{ it.firm }}</div>
-              <div class="news-author">{{ it.authorDate }}</div>
+            <header class="news-head">
+              <img *ngIf="it.logo"
+                   class="news-logo"
+                   [src]="s(it.logo)"
+                   alt=""
+                   aria-hidden="true" />
+              <div class="news-meta">
+                <div class="news-firm">{{ it.firm }}</div>
+                <div class="news-author">{{ it.authorDate }}</div>
+              </div>
+            </header>
+
+            <h4 class="news-item-title">{{ it.title }}</h4>
+            <div class="news-body" [innerHTML]="it.html"></div>
+
+            <div class="news-cta">
+              <a class="cta-btn"
+                 [routerLink]="['/actualites']"
+                 [queryParams]="{ open: it.slug || it.id }">
+                <span class="cta-label">Lire la suite</span>
+                <span class="cta-plus" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" class="icon-plus"><path d="M12 5v14M5 12h14"/></svg>
+                </span>
+              </a>
             </div>
-          </header>
+          </article>
+        </div>
 
-          <!-- Titre -->
-          <h4 class="news-item-title">{{ it.title }}</h4>
+        <a
+          class="news-side-btn"
+          [routerLink]="['/actualites']"
+          aria-label="Voir toutes les actualités"
+        >
+          Retrouvez nos derniers articles publiés ici
+        </a>
 
-          <!-- Excerpt -->
-          <div class="news-body" [innerHTML]="it.html"></div>
-
-          <!-- CTA -->
-          <div class="news-cta">
-            <a class="cta-btn"
-               [routerLink]="['/actualites']"
-               [queryParams]="{ open: it.slug || it.id }">
-              <span class="cta-label">Lire la suite</span>
-              <span class="cta-plus" aria-hidden="true">
-                <svg viewBox="0 0 24 24" class="icon-plus"><path d="M12 5v14M5 12h14"/></svg>
-              </span>
-            </a>
-          </div>
-        </article>
       </div>
-
-      <a
-        class="news-side-btn"
-        [routerLink]="['/actualites']"
-        aria-label="Voir toutes les actualités"
-      >
-        Retrouvez nos derniers articles publiés ici
-      </a>
-
     </div>
-  </div>
-</section>
-
-
+  </section>
 </div>

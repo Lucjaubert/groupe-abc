@@ -1,7 +1,7 @@
 <section class="section contact-page" aria-labelledby="contact-title">
   <div class="section-inner">
     <header class="contact-head">
-      <h1 #contactTitle id="contact-title" class="page-title prehide">Contactez-nous</h1>
+      <h1 #contactTitle id="contact-title" class="page-title prehide">Connectez-nous</h1>
 
       <a *ngIf="linkedinUrl as li"
          #contactLinkedin
@@ -20,31 +20,31 @@
       </a>
     </header>
 
-    <form class="form-card" novalidate>
+    <form class="form-card" novalidate (submit)="onSubmit($event)">
       <fieldset #radiosEl class="radios" aria-label="Civilité / Type">
         <legend class="sr-only">Civilité / Type</legend>
 
         <div class="rad-row">
           <div class="rad-left">
             <label #radioItem class="radio prehide-row">
-              <input type="radio" name="civ" value="madame">
+              <input type="radio" name="civ" value="madame" (change)="onFormChange()">
               <span>Madame</span>
             </label>
 
             <label #radioItem class="radio prehide-row">
-              <input type="radio" name="civ" value="monsieur">
+              <input type="radio" name="civ" value="monsieur" (change)="onFormChange()">
               <span>Monsieur</span>
             </label>
           </div>
 
           <div class="rad-right">
             <label #radioItem class="radio prehide-row">
-              <input type="radio" name="profil" value="pro">
+              <input type="radio" name="profil" value="pro" (change)="onFormChange()">
               <span>Professionnel</span>
             </label>
 
             <label #radioItem class="radio prehide-row">
-              <input type="radio" name="profil" value="part">
+              <input type="radio" name="profil" value="part" (change)="onFormChange()">
               <span>Particulier</span>
             </label>
           </div>
@@ -54,32 +54,45 @@
       <div #formGridEl class="form-grid">
         <label #fgLabel class="prehide-row">
           <span class="sr-only">Prénom*</span>
-          <input type="text" name="firstname" placeholder="Prénom*" autocomplete="given-name">
+          <input type="text" name="firstname" placeholder="Prénom*" autocomplete="given-name" required (input)="onFormChange()">
         </label>
         <label #fgLabel class="prehide-row">
           <span class="sr-only">eMail*</span>
-          <input type="email" name="email" placeholder="eMail*" autocomplete="email">
+          <input type="email" name="email" placeholder="eMail*" autocomplete="email" required (input)="onFormChange()">
         </label>
         <label #fgLabel class="prehide-row">
           <span class="sr-only">Nom*</span>
-          <input type="text" name="lastname" placeholder="Nom*" autocomplete="family-name">
+          <input type="text" name="lastname" placeholder="Nom*" autocomplete="family-name" required (input)="onFormChange()">
         </label>
         <label #fgLabel class="prehide-row">
           <span class="sr-only">Téléphone</span>
-          <input type="tel" name="phone" placeholder="Téléphone" autocomplete="tel">
+          <input type="tel" name="phone" placeholder="Téléphone" autocomplete="tel" (input)="onFormChange()">
         </label>
 
         <label #fgLabel class="full prehide-row">
-          <span class="sr-only">Message</span>
-          <textarea name="message" placeholder="Message"></textarea>
+          <span class="sr-only">Message*</span>
+          <textarea name="message" placeholder="Message*" required (input)="onFormChange()"></textarea>
         </label>
+
+        <!-- Honeypot anti-bot -->
+        <input class="sr-only" id="website" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
       </div>
 
       <div class="form-actions">
-        <a #sendBtn class="btn-contact prehide" href="#" role="button">
-          <span>Envoyer</span>
+        <button
+          #sendBtn
+          type="submit"
+          class="btn-contact prehide"
+          [class.is-loading]="isLoading"
+          [class.is-success]="isSuccess"
+          [disabled]="isLoading || isSuccess"
+          aria-live="polite"
+          [attr.aria-pressed]="isSuccess ? 'true' : 'false'"
+          [attr.aria-label]="isSuccess ? 'Message envoyé' : 'Envoyer le message'">
+          <span class="btn-label">{{ isSuccess ? 'Envoyé' : 'Envoyer' }}</span>
+
+          <!-- Icône avion (envoi) -->
           <span class="ico-mail" aria-hidden="true">
-            <!-- SVG mail inchangé -->
             <svg xmlns="http://www.w3.org/2000/svg" width="31" height="19" viewBox="0 0 31 19" fill="none">
               <path d="M24.7339 12.681L21.2219 9.38599" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M16.524 9.38501L13.011 12.685" stroke="#A33536" stroke-linecap="round"/>
@@ -95,9 +108,17 @@
               </g>
             </svg>
           </span>
-        </a>
+
+          <!-- Icône check (succès) -->
+          <svg class="ico-check" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M20.285 6.708a1 1 0 0 1 .007 1.414l-9.2 9.2a1 1 0 0 1-1.414 0l-5-5a1 1 0 1 1 1.414-1.414l4.293 4.293 8.493-8.493a1 1 0 0 1 1.407 0z"/>
+          </svg>
+        </button>
       </div>
+
+      <p *ngIf="isError && messageError" class="form-error" role="alert">{{ messageError }}</p>
     </form>
+
 
     <div #bigInfosEl class="big-infos">
       <p #bigLine class="prehide">18 rue Pasquier</p>
