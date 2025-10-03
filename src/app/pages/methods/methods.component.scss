@@ -297,7 +297,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 }
 
 
-
 /* ===================== */
 /* MÉTHODES = Accordéon  */
 /* ===================== */
@@ -333,6 +332,10 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     align-items: center;
     column-gap: clamp(16px, 3vw, 24px);
     border-bottom: $bd-2 solid $blue;
+
+    /* homogénéise l’espacement fermé/ouvert */
+    padding-block-start: 0;
+    row-gap: 0;
   }
 
   .row-line{ display: contents; }
@@ -390,8 +393,13 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     p:last-child{ margin-bottom: 0; }
   }
 
-  @media (max-width: 768px) {
+  /* espace barre ↔ titre + titre ↔ description quand ouvert */
+  .eval-row.open{
+    padding-block-start: 16px;
+    row-gap: 20px;
+  }
 
+  @media (max-width: 768px) {
     .chevron {
       width: 18px;
       height: 18px;

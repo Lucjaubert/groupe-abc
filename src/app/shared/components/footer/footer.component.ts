@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input } from '@angular/core';
 import { RouterModule } from '@angular/router';
-import { environment } from '../../../../environments/environment';
+import { LangLinkPipe } from '../../../pipes/lang-link.pipe';
+import { ContactService } from '../../../services/contact.service'; // ⬅️ service d’envoi
 
 export interface FooterLink { label: string; url: string; external?: boolean; }
 export interface FooterSocial { label: string; url: string; }
@@ -21,7 +22,7 @@ type SendState = 'idle' | 'loading' | 'success' | 'error';
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, LangLinkPipe],
   templateUrl: './footer.component.html',
   styleUrls: ['./footer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -32,35 +33,20 @@ export class FooterComponent {
   sendState: SendState = 'idle';
   messageError = '';
 
-  private readonly sendApiBase: string = this.computeApiBase();
-
-  constructor(private cdr: ChangeDetectorRef) {}
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private contact: ContactService,          // ⬅️ injection du service
+  ) {}
 
   // 👉 Getters utilisés dans le template
   get isLoading(): boolean { return this.sendState === 'loading'; }
   get isSuccess(): boolean { return this.sendState === 'success'; }
   get isError(): boolean { return this.sendState === 'error'; }
 
-  private computeApiBase(): string {
-    const envAny = environment as any;
-
-    if (envAny.apiGabc) {
-      return String(envAny.apiGabc).replace(/\/+$/, '');
-    }
-
-    if (envAny.apiUrl) {
-      const base = String(envAny.apiUrl).replace(/\/+$/, '');
-      if (base.includes('/wp-json/wp/v2')) {
-        return base.replace('/wp-json/wp/v2', '/wp-json/groupeabc/v1');
-      }
-    }
-
-    if (envAny.apiBase) {
-      const root = String(envAny.apiBase).replace(/\/+$/, '');
-      return `${root}/wp-json/groupeabc/v1`;
-    }
-
-    return '';
+  // --- Liens externes (pour le template si besoin) ----------
+  isExternal(url?: string | null): boolean {
+    if (!url) return false;
+    return /^(?:https?:|mailto:|tel:|#)/i.test(url);
   }
 
   telHref(phone?: string | null) {
@@ -69,6 +55,7 @@ export class FooterComponent {
     return `tel:${cleaned}`;
   }
 
+  // ---------------- Formulaire ------------------------------
   async onSubmit(ev: Event) {
     ev.preventDefault();
     if (this.sendState === 'loading') return;
@@ -81,7 +68,9 @@ export class FooterComponent {
       email:   String(fd.get('email') ?? '').trim(),
       phone:   String(fd.get('phone') ?? '').trim(),
       message: String(fd.get('message') ?? '').trim(),
-      website: String(fd.get('website') ?? ''),
+      website: String(fd.get('website') ?? ''), // honeypot
+      source:  'footer',
+      lang:    'fr', // ajuste si tu as un LanguageService
     };
 
     // Honeypot
@@ -96,16 +85,10 @@ export class FooterComponent {
       return;
     }
 
+    // Validations mini
     if (!payload.name || !payload.email || !payload.message) {
       this.sendState = 'error';
       this.messageError = 'Merci de renseigner Nom, E-mail et Message.';
-      this.cdr.markForCheck();
-      return;
-    }
-
-    if (!this.sendApiBase) {
-      this.sendState = 'error';
-      this.messageError = 'Configuration API manquante (apiGabc / apiUrl / apiBase).';
       this.cdr.markForCheck();
       return;
     }
@@ -114,40 +97,19 @@ export class FooterComponent {
     this.messageError = '';
     this.cdr.markForCheck();
 
-    const endpoint = `${this.sendApiBase}/send-message`;
-
     try {
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'omit',
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json().catch(() => ({}));
-      console.log('[Footer] API →', res.status, data);
-
-      if (res.ok && data?.status === 'success') {
-        this.sendState = 'success';
+      await this.contact.send(payload);
+      this.sendState = 'success';
+      this.cdr.markForCheck();
+      setTimeout(() => {
+        this.sendState = 'idle';
+        form.reset();
         this.cdr.markForCheck();
-        setTimeout(() => {
-          this.sendState = 'idle';
-          form.reset();
-          this.cdr.markForCheck();
-        }, 3000);
-      } else {
-        this.sendState = 'error';
-        this.messageError = data?.message || 'Échec de l’envoi.';
-        this.cdr.markForCheck();
-        setTimeout(() => {
-          this.sendState = 'idle';
-          this.cdr.markForCheck();
-        }, 3000);
-      }
-    } catch (e) {
+      }, 3000);
+    } catch (e: any) {
       console.error('[Footer] API error', e);
       this.sendState = 'error';
-      this.messageError = 'Erreur réseau.';
+      this.messageError = e?.message || 'Échec de l’envoi.';
       this.cdr.markForCheck();
       setTimeout(() => {
         this.sendState = 'idle';

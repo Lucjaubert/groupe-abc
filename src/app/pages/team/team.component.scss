@@ -83,7 +83,7 @@ $white:      map.get(vars.$theme-colors, "white");
     }
   }
 
-  .map-image img{ display:block; width:100%; height:auto; }
+  .map-image img{ display:block; width:70%; height:auto; }
 
   .map-list{ padding-top: var(--map-title-offset); }
 
@@ -138,13 +138,25 @@ $white:      map.get(vars.$theme-colors, "white");
 .team-wrapper,
 .section.firms { overflow-anchor: none; }
 
+/* --- fail-safe pour que rien ne reste invisible si GSAP ne tourne pas --- */
+.section.firms .prehide,
+.section.firms .prehide-row {
+  /* on garde visible ! GSAP pilotera l'opacité/transform */
+  visibility: visible !important;
+  /* L'opacité à 0 sert uniquement de point de départ d'animation */
+  opacity: 0;
+  transform: translateY(20px);
+  will-change: transform, opacity;
+}
+
+/* corrige la classe wrapper (singulier dans le HTML) */
+.firms .section-member { padding-top: 0 !important; }
+
 .firms {
   --row-h: 98px;
   --logo: 80px;
   --gap: clamp(16px, 3vw, 24px);
   --region-left: 582px;
-
-  .section-members { padding-top: 0 !important; }
 
   .firms-title{
     color: $blue;
@@ -189,8 +201,9 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .fr-name{
     color: $blue-hero;
-    font-size: clamp(14px, 2.1vw, 24px);
+    font-size: clamp(17px, 2.1vw, 26px);
     line-height: 1.25;
+    font-weight: 500;
     min-width: 0;
   }
 
@@ -304,20 +317,105 @@ $white:      map.get(vars.$theme-colors, "white");
     display: flex; align-items: center; gap: 12px; margin-top: auto;
   }
 
+  /* ============================ */
+  /* CTA "Contact" (responsive)   */
+  /* ============================ */
+
   .btn-contact{
-    width: 185px; height: 39px; flex-shrink: 0;
-    display: inline-grid; grid-template-columns: 1fr auto; align-items: center; justify-content: space-between;
-    padding: 0 10px 0 14px; border: 0; border-radius: 6px; background: $red; color: #FFF;
-    text-decoration: none; font-size: 13px; font-weight: 400; line-height: normal;
+    /* Desktop (valeurs hautes) */
+    inline-size: 185px;
+    block-size: 39px;
+    flex-shrink: 0;
+
+    display: inline-grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 0 10px 0 14px;
+    border: 0;
+    border-radius: 6px;
+    background: $red;
+    color: #fff;
+    text-decoration: none;
+
+    /* Font fluide (16→18px) */
+    font-size: clamp(16px, 4vw, 18px);
+    font-weight: 400;
+    line-height: 1;
   }
+
+  /* Icône mail → prend la couleur via currentColor */
   .btn-contact .ico-mail{
-    inline-size: 31px;
-    block-size: 19px;
+    inline-size: clamp(22px, 5.5vw, 31px);  /* 22px sur mobile, 31px desktop */
+    block-size: clamp(16px, 4vw, 19px);     /* garde les proportions */
     display: grid;
     place-items: center;
-    color: #A33536;
+    color: map.get(vars.$theme-colors, "dark-red");
   }
-  .btn-contact .ico-mail svg{ display:block; }
+  .btn-contact .ico-mail svg{
+    width: 100%;
+    height: 100%;
+    display: block;
+    /* si ton SVG n’utilise pas currentColor, dé-commente ci-dessous :
+    *,
+    path { stroke: currentColor; fill: currentColor; }
+    */
+  }
+
+  /* Hover desktop : l’icône suit la couleur du texte */
+  @media (hover: hover) and (pointer: fine){
+    .btn-contact:hover { color:#fff; }
+    .btn-contact:hover .ico-mail { color:#fff; }
+  }
+
+  /* ============================ */
+  /* Download block (texte + icône)
+  /* ============================ */
+
+  .download .dl-link{
+    /* largeur fluide : 280→364px */
+    inline-size: clamp(280px, 72vw, 364px);
+    display: grid;
+    grid-template-columns: 1fr auto;     /* texte à gauche | icône à droite */
+    align-items: end;
+    gap: clamp(12px, 3.2vw, 24px);
+    text-decoration: none;
+  }
+
+  /* Texte du bloc téléchargement : 16→18px */
+  .download .dl-text .dl-line{
+    font-size: clamp(16px, 4vw, 18px);
+    line-height: 1.15;
+  }
+
+  /* Icône download : 32→48px, garde la proportion */
+  .download .dl-icon-img{
+    inline-size: clamp(32px, 8vw, 48px);
+    block-size: auto;
+    display: block;
+    align-self: end;
+    transform: translateY(2px);
+    flex-shrink: 0;
+  }
+
+  /* ============================ */
+  /* Filets “mobile-first < 738px” (si tu préfères un break net) */
+  /* ============================ */
+  @media (max-width: 737.98px){
+    .btn-contact{
+      inline-size: clamp(160px, 48vw, 185px);  /* rétrécit un peu sous 738px */
+      block-size: clamp(40px, 6vw, 39px);      /* garde ~40px de cible tactile */
+      padding: 0 10px 0 12px;
+    }
+
+    .download .dl-link{
+      inline-size: clamp(260px, 86vw, 364px);
+      gap: clamp(10px, 3vw, 16px);
+    }
+  }
+
+
 
   .lk{
     display: inline-flex; align-items: center; justify-content: center;
@@ -374,9 +472,21 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 }
 
+/* Accessibilité : si l’utilisateur réduit les animations → tout visible */
+@media (prefers-reduced-motion: reduce){
+  .section.firms .prehide,
+  .section.firms .prehide-row{
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+}
+
+
 /* ===== Teaching ===== */
 .section.teaching{
-  --row-h: 98px;
+  --row-h: 110px;
   --gap: clamp(16px, 3vw, 24px);
 
   .teach-title{

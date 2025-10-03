@@ -105,7 +105,7 @@ $fw-bold:    map.get(vars.$font-weight, "bold");           /* 700 */
       transform: translateX(-50%);
       z-index: 0;
       pointer-events: none;
-      background: $grey-100;      /* remplace #F5F5F7 par light-grey du thème */
+      background: $grey-100;
 
       &.prehide-row {
         opacity: 0;
@@ -114,15 +114,15 @@ $fw-bold:    map.get(vars.$font-weight, "bold");           /* 700 */
     }
 
     &.theme-expertise .news-bg {
-      background: #EEE;           /* pas de token dédié → on garde la valeur */
+      background: #EEE;
     }
 
     &.theme-juridique .news-bg {
-      background: rgba(234, 77, 77, 0.08);  /* variante douce du $red */
+      background: rgba(234, 77, 77, 0.08);
     }
 
     &.theme-marche .news-bg {
-      background: rgba(88, 80, 173, 0.16);  /* spécifique à la maquette */
+      background: rgba(88, 80, 173, 0.16);
     }
 
     .news-box {
@@ -405,7 +405,6 @@ $fw-bold:    map.get(vars.$font-weight, "bold");           /* 700 */
       grid-template-columns: 1fr;
       min-height: auto;
       row-gap: 20px;
-      padding: 24px;
     }
 
     .news-row .news-col--image {

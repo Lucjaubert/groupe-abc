@@ -9,7 +9,6 @@ import { WordpressService, PartnerCard } from '../../services/wordpress.service'
 import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ImgFromPipe } from '../../pipes/img-from.pipe';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
 
 /* =========================

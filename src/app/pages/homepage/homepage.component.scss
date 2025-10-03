@@ -244,6 +244,17 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     animation: kf-caret .9s steps(1, end) infinite;
   }
 
+  /* quelque part importé sur la page */
+  .label-cache {
+    position: absolute;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+
   /* -------- Fallback iOS/WebKit (tous les navigateurs iOS utilisent WebKit) ------- */
   /* On aligne en haut puis on descend légèrement le chiffre pour coïncider */
   @supports (-webkit-touch-callout: none) {
@@ -441,7 +452,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
 
 .where-map img {
   display: block;
-  width: 100%;
+  width: 70%;
   max-width: 720px;
   height: auto;
   object-fit: contain;
@@ -833,7 +844,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
     margin: 0;
   }
 
-  /* H3 mobile 24px */
+  /* h2 mobile 24px */
   .contexts .contexts-title {
     margin: 0;
     color: #FFF;
@@ -1638,7 +1649,7 @@ $bg-marche:    rgba(88, 80, 173, 0.16);
     font-family: "Plus Jakarta Sans";
     font-size: 40px;
     font-style: normal;
-    font-weight: 500;
+    font-weight: 700;
     line-height: normal;
   }
 

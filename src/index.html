@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#444697" />
 
-    <!-- Description & robots (fallback si une page n’injecte pas ses metas) -->
+    <!-- Description & robots (fallback) -->
     <meta name="description" content="Groupe ABC : réseau d’experts en évaluation immobilière. Méthodes comparatives, rendement, DCF. Paris & DOM-TOM." />
     <meta name="robots" content="index,follow,max-image-preview:large" />
     <link rel="canonical" href="https://groupe-abc.fr/" />
@@ -21,36 +21,83 @@
     <link rel="mask-icon" href="/assets/favicons/safari-pinned-tab.svg" color="#EA4D4D" />
     <meta name="msapplication-TileColor" content="#444697" />
 
-    <!-- Fonts critiques (preload) -->
+    <!-- Fonts -->
     <link rel="preload" href="/assets/fonts/PlusJakartaSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
     <link rel="preload" href="/assets/fonts/PlusJakartaSans-Medium.woff2"  as="font" type="font/woff2" crossorigin>
-    <!-- Ajouts pour éviter le FOIT sur les textes en 600/700 -->
     <link rel="preload" href="/assets/fonts/PlusJakartaSans-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Bold.woff2"      as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Bold.woff2" as="font" type="font/woff2" crossorigin>
 
     <!-- Resource hints -->
     <link rel="dns-prefetch" href="//groupe-abc.fr">
     <link rel="preconnect" href="https://groupe-abc.fr" crossorigin>
+    <link rel="preconnect" href="https://cdn.weglot.com" crossorigin>
 
-    <!-- Open Graph / Twitter (fallback) -->
+    <!-- Open Graph / Twitter -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Groupe ABC" />
     <meta property="og:title" content="Groupe ABC – Experts en évaluation immobilière" />
     <meta property="og:description" content="Évaluations, conseils, méthodes (comparaison, rendement, DCF). Paris & DOM-TOM." />
     <meta property="og:url" content="https://groupe-abc.fr/" />
     <meta property="og:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
+
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Groupe ABC – Experts en évaluation immobilière" />
     <meta name="twitter:description" content="Évaluations, conseils, méthodes (comparaison, rendement, DCF)." />
     <meta name="twitter:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
 
-    <!-- hreflang (Weglot FR/EN) -->
+    <!-- hreflang (préfixe Weglot /en/) -->
     <link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/" />
     <link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/" />
     <link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/" />
   </head>
+
   <body>
     <app-root></app-root>
     <noscript>Activez JavaScript pour utiliser le changeur de langue.</noscript>
+
+    <!-- Weglot (intégration JavaScript, post-hydratation) -->
+    <script>
+      (function () {
+        window.addEventListener('load', function () {
+
+          // 1) Charger la librairie Weglot
+          var s = document.createElement('script');
+          s.src = 'https://cdn.weglot.com/weglot.min.js';
+          s.async = true;
+
+          // 2) Initialiser quand le script est prêt
+          s.onload = function () {
+            try {
+              Weglot.initialize({
+                api_key: 'wg_ac7e31958c0226867529d4e1c48d7a651',
+                originalLanguage: 'fr',
+                destinationLanguages: ['en'],
+                dynamic: true,
+                translateMeta: true,
+                hrefLang: true,
+                // traduit aussi certains attributs fréquemment remplis depuis ACF
+                translateAttributes: ['alt','title','placeholder','aria-label'],
+                // ne touche pas à l’admin/API WP
+                excludedPaths: [
+                  '/wordpress/wp-json*',
+                  '/wp-json*',
+                  '/wordpress/wp-admin*',
+                  '/wordpress/wp-login*',
+                  '?rest_route='
+                ]
+              });
+            } catch (e) {
+              console.error('[Weglot] init error', e);
+            }
+          };
+
+          s.onerror = function (e) {
+            console.error('[Weglot] script load error', e);
+          };
+
+          document.body.appendChild(s);
+        });
+      })();
+    </script>
   </body>
 </html>

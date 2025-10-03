@@ -1,22 +1,19 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "dist/groupe-abc/server",
+    "outDir": "./out-tsc/server",
     "target": "ES2022",
     "module": "CommonJS",
     "moduleResolution": "Node",
     "types": ["node"],
     "useDefineForClassFields": false,
-    "noUnusedLocals": false,
-    "allowSyntheticDefaultImports": true,
     "emitDecoratorMetadata": false,
     "experimentalDecorators": true,
     "sourceMap": false
   },
   "files": [
-    "server.ts",
     "src/main.server.ts",
-    "src/app/app.config.server.ts"
+    "src/types/weglot.d.ts"
   ],
   "exclude": [
     "src/test.ts",

@@ -65,19 +65,27 @@
     #footer-mail{ grid-column: 2; grid-row: 2; }
     #footer-tel { grid-column: 3; grid-row: 1; }
 
+    /* --- Bouton d'envoi --- */
     .btn-send{
       grid-column: 3; grid-row: 2;
       height: 42.69px; width: 100%;
       display: flex; align-items: center; justify-content: space-between;
+      gap: 10px;
       padding: 0 12px;
-      background: #E74040; color:#FFF;
+      background: #E74040;
+      color:#FFF;
       border: none; border-radius: 6px; cursor: pointer;
-      transition: background-color .2s ease, transform .15s ease, opacity .15s ease;
+      transition:
+        background-color .18s ease,
+        color .18s ease,
+        transform .15s ease,
+        opacity .15s ease;
 
       .btn-label{ pointer-events: none; }
 
-      .ico-send { width: 30.642px; height: 18.813px; flex-shrink: 0; }
-      .ico-check{ display: none; width: 22px; height: 22px; flex-shrink: 0; fill:#FFF; }
+      .ico-send { width: 30.642px; height: 18.813px; flex-shrink: 0; display:block; }
+
+      .ico-check{ display:none; width: 22px; height: 22px; flex-shrink: 0; fill:#FFF; }
 
       &:hover:not(:disabled){ transform: translateY(-1px); opacity:.95; }
       &:active:not(:disabled){ transform: none; opacity:.9; }
@@ -86,16 +94,16 @@
       &.is-loading{ cursor: progress; opacity:.8; }
 
       &.is-success{
-        background:#2BB673;
+        background:#34D399;
         .ico-send{ display:none; }
         .ico-check{ display:block; }
       }
 
       &:disabled{ cursor: default; }
     }
+
   }
 
-  /* ---- Ligne d’info : contact gauche, LinkedIn droite, mentions en dessous ---- */
   .meta-row{
     display: grid;
     grid-template-columns: 1fr auto;
@@ -112,15 +120,13 @@
     color:#FFF;
     text-align: left;
 
-    /* espaces garantis autour des slash */
     .sep{
       display:inline-block;
-      margin: 0 .5em;           /* ← espace avant et après “/” */
+      margin: 0 .5em;
       opacity:.95;
       user-select:none;
     }
 
-    /* liens en blanc (desktop & mobile) */
     a,
     a:visited{
       color:#FFF;
@@ -136,7 +142,7 @@
   }
 
   .footer-legal{
-    grid-column: 1 / -1; /* prend toute la ligne en dessous */
+    grid-column: 1 / -1;
     margin: 0;
     color:#FFF;
     font-size: 12px;

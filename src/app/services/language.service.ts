@@ -1,26 +1,28 @@
-// src/app/services/language.service.ts
 import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
-import { filter } from 'rxjs/operators';
+import { BehaviorSubject, filter } from 'rxjs';
 import { isPlatformBrowser, DOCUMENT } from '@angular/common';
-import { Router, NavigationEnd, UrlTree } from '@angular/router';
+import { Router, NavigationEnd } from '@angular/router';
+import { WeglotService } from './weglot.service';
 
 export type Lang = 'fr' | 'en';
 
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
-  /** Langue courante observable */
+  /** Langue courante observée (par défaut 'fr' au boot) */
   readonly lang$ = new BehaviorSubject<Lang>('fr');
-
-  /** Getter pratique */
   get lang(): Lang { return this.lang$.value; }
+
+  private weglotReady = false;
+  private bindingDone = false;
+  private isNavigating = false;
 
   constructor(
     private router: Router,
+    private wg: WeglotService,
     @Inject(DOCUMENT) private doc: Document,
     @Inject(PLATFORM_ID) private platformId: Object
   ) {
-    // 1) Détection initiale (SSR-friendly) + préférence utilisateur
+    // Déterminer la langue initiale (URL > localStorage > 'fr')
     const detected = this.detectFromUrl() ?? 'fr';
     const remembered = this.getRememberedLang();
     const initial = (remembered ?? detected) as Lang;
@@ -28,7 +30,7 @@ export class LanguageService {
     this.lang$.next(initial);
     this.applyHtmlLang(initial);
 
-    // 2) Se resynchroniser à chaque navigation (utile SSR/hydratation)
+    // Sync sur navigation Angular (SPA)
     this.router.events
       .pipe(filter(e => e instanceof NavigationEnd))
       .subscribe(() => {
@@ -36,107 +38,133 @@ export class LanguageService {
         if (l !== this.lang) {
           this.lang$.next(l as Lang);
           this.applyHtmlLang(l as Lang);
+          this.safeSwitch(l as Lang);
         }
       });
+
+    // Quand Weglot est prêt (initialisé via index.html), on synchronise
+    this.wg.ready$.subscribe(ok => {
+      if (!ok || this.bindingDone || !isPlatformBrowser(this.platformId)) return;
+
+      this.weglotReady = true;
+      this.bindingDone = true;
+
+      // 1) Aligner Weglot sur l’état app
+      this.safeSwitch(this.lang);
+
+      // 2) Écouter Weglot → propager dans l’URL si l’utilisateur change la langue
+      try {
+        window.Weglot?.on?.('languageChanged', () => {
+          const w = window.Weglot;
+          const wlang = w?.getCurrentLang?.() ?? w?.getCurrentLanguage?.();
+          const l: Lang = (wlang === 'en' ? 'en' : 'fr');
+          if (l !== this.lang) {
+            this.lang$.next(l);
+            this.applyHtmlLang(l);
+            this.rememberLang(l);
+            this.navigateToLang(l);
+          }
+        });
+      } catch {}
+    });
   }
 
-  /** FR <-> EN */
-  toggle(): void {
-    this.set(this.lang === 'fr' ? 'en' : 'fr');
-  }
+  /** Basculement manuel (bouton/sélecteur) */
+  toggle(): void { this.set(this.lang === 'fr' ? 'en' : 'fr'); }
 
   /** Fixer explicitement la langue */
   set(l: Lang): void {
-    if (l === this.lang) {
-      this.applyHtmlLang(l);
-      return;
-    }
+    if (l === this.lang) { this.applyHtmlLang(l); return; }
     this.lang$.next(l);
     this.applyHtmlLang(l);
     this.rememberLang(l);
     this.navigateToLang(l);
+    this.safeSwitch(l);
   }
 
-  /* =============== PRIVÉ =============== */
+  /** Préfixe URL pour générer des liens internes */
+  prefixFor(l: Lang = this.lang): '' | '/en' {
+    return l === 'en' ? '/en' : '';
+  }
 
-  /** Détecte la langue depuis l’URL courante (browser ou SSR) */
-  private detectFromUrl(): Lang | null {
-    // Navigateur : window.location.pathname
-    if (isPlatformBrowser(this.platformId)) {
-      try {
-        const path = this.doc?.defaultView?.location?.pathname || '/';
-        return this.langFromPath(path);
-      } catch {
-        // Fall back sur Router si besoin
-        return this.langFromPath(this.router.url || '/');
-      }
-    }
-    // SSR : utiliser l’URL routeur (toujours dispo)
+  /** Construit un lien tenant compte de la langue courante */
+  link(path: string): string {
+    const p = path.startsWith('/') ? path : `/${path}`;
+    return `${this.prefixFor()}${p}`.replace(/\/{2,}/g, '/');
+  }
+
+  // ---------- privé ----------
+
+  /** Demande à Weglot de basculer, sans erreur si non prêt */
+  private safeSwitch(l: Lang): void {
+    if (!isPlatformBrowser(this.platformId) || !this.weglotReady) return;
     try {
-      return this.langFromPath(this.router.url || '/');
-    } catch {
-      return null;
-    }
+      const w = window.Weglot;
+      const curr = w?.getCurrentLang?.() ?? w?.getCurrentLanguage?.();
+      if (curr !== l) w?.switchTo?.(l);
+    } catch {}
   }
 
-  /** Calcule 'fr' | 'en' à partir d’un chemin */
+  /** Détecte la langue depuis le pathname */
+  private detectFromUrl(): Lang | null {
+    const path = this.safePathname();
+    return this.langFromPath(path);
+  }
+
+  private safePathname(): string {
+    if (isPlatformBrowser(this.platformId)) {
+      try { return this.doc?.defaultView?.location?.pathname || '/'; }
+      catch { /* ignore */ }
+    }
+    try { return this.router.url || '/'; } catch { return '/'; }
+  }
+
   private langFromPath(pathname: string): Lang {
     const p = (pathname || '/').replace(/\/{2,}/g, '/');
     return (p === '/en' || p.startsWith('/en/')) ? 'en' : 'fr';
   }
 
-  /** Met à jour <html lang="..."> pour SEO & a11y (SSR + browser) */
+  /** Met à jour <html lang="..."> */
   private applyHtmlLang(l: Lang): void {
-    try {
-      this.doc.documentElement.setAttribute('lang', l === 'en' ? 'en' : 'fr');
-    } catch { /* no-op */ }
+    try { this.doc.documentElement.setAttribute('lang', l); } catch {}
   }
 
-  /** Navigue vers l’URL équivalente dans la langue cible en préservant QS + hash */
+  /**
+   * Navigue vers l’URL correspondant à la langue (gère / ↔ /en, garde query & hash)
+   * Evite les boucles via le flag isNavigating.
+   */
   private navigateToLang(target: Lang): void {
+    if (this.isNavigating) return;
     const isBrowser = isPlatformBrowser(this.platformId);
     const win = isBrowser ? this.doc.defaultView : null;
 
-    // Base actuelle
     const currPath = (isBrowser ? win?.location?.pathname : this.router.url) || '/';
     const qs   = isBrowser ? (win?.location?.search || '')   : '';
     const hash = isBrowser ? (win?.location?.hash   || '')   : '';
 
     let newPath: string;
     if (target === 'en') {
-      newPath =
-        currPath === '/en' || currPath.startsWith('/en/')
-          ? currPath
-          : currPath === '/'
-            ? '/en'
-            : `/en${currPath}`;
+      newPath = (currPath === '/en' || currPath.startsWith('/en/'))
+        ? currPath
+        : (currPath === '/' ? '/en' : `/en${currPath}`);
     } else {
-      // vers FR : retirer le préfixe /en
-      newPath =
-        currPath === '/en'
-          ? '/'
-          : currPath.replace(/^\/en(\/?)/, '/');
+      newPath = (currPath === '/en') ? '/' : currPath.replace(/^\/en(\/?)/, '/');
     }
     newPath = newPath.replace(/\/{2,}/g, '/');
 
-    // Construire un UrlTree pour préserver proprement paramètres & fragment
-    const tree: UrlTree = this.router.createUrlTree([newPath], {
-      queryParams: this.router.parseUrl(qs || '').queryParams,
-      fragment: (hash || '').replace(/^#/, '') || undefined
-    });
+    const finalUrl = `${newPath}${qs}${hash}`;
+    if (finalUrl === `${currPath}${qs}${hash}`) return;
 
-    const finalUrl = this.router.serializeUrl(tree);
-
-    // Navigue via Router, fallback hard si échec (rare)
-    this.router.navigateByUrl(finalUrl, { replaceUrl: true }).catch(() => {
-      if (isBrowser) win?.location?.assign(finalUrl);
-    });
+    this.isNavigating = true;
+    this.router.navigateByUrl(finalUrl, { replaceUrl: true })
+      .catch(() => { if (isBrowser) win?.location?.assign(finalUrl); })
+      .finally(() => { this.isNavigating = false; });
   }
 
-  /** Mémoriser la langue (navigateur uniquement) */
+  /** Persistance locale */
   private rememberLang(l: Lang): void {
     if (!isPlatformBrowser(this.platformId)) return;
-    try { localStorage.setItem('lang', l); } catch { /* no-op */ }
+    try { localStorage.setItem('lang', l); } catch {}
   }
   private getRememberedLang(): Lang | null {
     if (!isPlatformBrowser(this.platformId)) return null;

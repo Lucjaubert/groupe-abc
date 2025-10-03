@@ -103,11 +103,11 @@ h1 {
   }
 }
 h2 {
-  @include heading-styles(48px, 48px);
+  @include heading-styles(36px, 36px);
   font-weight: 400;
   color: map.get(vars.$theme-colors, "light-blue");
   @media (max-width: map.get(vars.$breakpoints, "md")) {
-    @include heading-styles(40px, 40px);
+    @include heading-styles(24px, 24px);
     font-weight: 400;
   }
 }
@@ -310,3 +310,16 @@ body.no-scroll { overflow: hidden; }
 
 .fast-img { opacity: 0; transition: opacity .15s ease; }
 .fast-img.is-ready { opacity: 1; }
+
+.weglot-container { display: none !important; }
+
+:host ::ng-deep .section.evals > .section-inner { padding-top: 105px; }
+@media (max-width: 767.98px){
+  :host ::ng-deep .section.evals > .section-inner { padding-top: 0 !important; }
+}
+
+.wg-probe{
+  position:absolute;
+  left:-9999px;
+  width:1px;height:1px;overflow:hidden;
+}

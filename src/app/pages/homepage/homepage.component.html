@@ -21,8 +21,12 @@
 
     <div class="hero-overlay pb-10">
       <div class="hero-content mt-9 mt-lg-0" aria-live="polite">
-        <h1 class="hero-title" #heroTitle>{{ currentSlide?.title }}</h1>
-        <p class="hero-subtitle" #heroSubtitle>{{ currentSlide?.subtitle }}</p>
+        <h1 class="hero-title" #heroTitle data-wg-notranslate>
+          {{ currentSlide?.title }}
+        </h1>
+        <p class="hero-subtitle" #heroSubtitle data-wg-notranslate>
+          {{ currentSlide?.subtitle }}
+        </p>
       </div>
 
       <div class="hero-dots" *ngIf="heroSlides.length > 1">
@@ -38,28 +42,27 @@
     </div>
   </section>
 
-  <!-- ===== Key figure ===== -->
+
+  <!-- Key figures -->
   <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">
     <ul [style.--n]="maxValueCh">
-      <li
-        *ngFor="let fig of keyFigures; let i = index; trackBy: trackByIndex"
-        #kfItem
-        [attr.data-index]="i"
-        [ngStyle]="{ '--value-w': (fig.digits + 'ch') }"
-        [ngClass]="{
-          col1: i < 5,
-          col2: i >= 5 && i < 9,
-          col3: i >= 9,
-          'grp-sep': i === 5 || i === 9
-        }"
-      >
-        <span class="value">{{ fig.display || '\u00A0' }}</span>
-        <span class="label" [class.typing]="fig.typed.length < fig.fullLabel.length">
+      <li *ngFor="let fig of keyFigures; let i = index; trackBy: trackByIndex"
+          #kfItem
+          [attr.data-index]="i"
+          [ngStyle]="{ '--value-w': (fig.digits + 'ch') }"
+          [ngClass]="{ col1: i < 5, col2: i >= 5 && i < 9, col3: i >= 9, 'grp-sep': i === 5 || i === 9 }">
+
+        <!-- chiffres : ne jamais traduire -->
+        <span class="value" data-wg-notranslate>{{ fig.display || '\u00A0' }}</span>
+
+        <!-- libellé : affiché directement, switch FR/EN instantané -->
+        <span class="label" data-wg-notranslate>
           {{ fig.typed }}
         </span>
       </li>
     </ul>
   </section>
+
 
   <!-- ===== Identity : Qui / Où ===== -->
   <section id="identity" class="identity" *ngIf="identity?.whoTitle || identity?.whereTitle">
@@ -72,7 +75,10 @@
         <div class="who-text mt-5" [innerHTML]="identity.whoHtml"></div>
 
         <div class="who-actions">
-          <button type="button" class="cta-btn mt-5">
+          <button
+            class="cta-btn mt-5"
+            type="button"
+            routerLink="/qui-sommes-nous">
             <span class="cta-label">Lire la suite</span>
             <span class="cta-plus" aria-hidden="true">
               <svg viewBox="0 0 24 24" class="icon-plus">
@@ -86,7 +92,7 @@
       <!-- Où ? (colonne droite) -->
       <div class="where py-5 py-lg-5" [class.open]="whereOpen">
         <div class="where-head">
-          <h3 class="block-title">{{ identity.whereTitle }}</h3>
+          <h2 class="block-title">{{ identity.whereTitle }}</h2>
 
           <button class="where-toggle"
                   type="button"
@@ -102,7 +108,7 @@
         <div id="where-body" class="where-body">
           <!-- Carte -->
           <div class="where-panel panel-map" [attr.aria-hidden]="whereOpen">
-            <div class="where-map">
+            <div class="where-map py-6 px-3">
               <img
                 [appImgFast]="s(identity.whereMap)"
                 [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
@@ -128,14 +134,14 @@
     <div class="wh-grid">
       <div class="wh-left">
         <article class="what py-5 py-lg-5">
-          <h3 class="block-title">{{ whatHow.whatTitle }}</h3>
+          <h2 class="block-title">{{ whatHow.whatTitle }}</h2>
 
           <ul class="dash-list mt-5">
             <li *ngFor="let item of whatHow.whatItems">{{ item }}</li>
           </ul>
 
           <div class="wh-actions">
-            <button type="button" class="cta-btn">
+            <button type="button" class="cta-btn" routerLink="/biens-et-methodes">
               <span class="cta-label">Lire la suite</span>
               <span class="cta-plus" aria-hidden="true">
                 <svg viewBox="0 0 24 24" class="icon-plus">
@@ -174,7 +180,7 @@
       <!-- Colonne droite : Comment + CTA aligné en bas -->
       <div class="wh-right">
         <article class="how">
-          <h3 class="block-title">{{ whatHow.howTitle }}</h3>
+          <h2 class="block-title">{{ whatHow.howTitle }}</h2>
 
           <ul class="dash-list mt-5">
             <li *ngFor="let item of whatHow.howItems">{{ item }}</li>
@@ -202,7 +208,7 @@
 
     <div class="contexts-inner px-0">
       <div class="contexts-head">
-        <h3 id="contexts-title" class="contexts-title mt-lg-0 mt-8">{{ contexts?.title }}</h3>
+        <h2 id="contexts-title" class="contexts-title mt-lg-0 mt-8">{{ contexts?.title }}</h2>
 
         <div class="contexts-actions mt-6 mt-lg-0 mb-5 mb-lg-0">
           <button type="button" class="cta-btn">
@@ -244,7 +250,7 @@
             decoding="async"
             fetchpriority="low"
           />
-          <h3 id="clients-title" class="clients-title">{{ clients?.title }}</h3>
+          <h2 id="clients-title" class="clients-title">{{ clients?.title }}</h2>
         </div>
 
         <!-- Colonne droite : liste -->
@@ -262,10 +268,10 @@
   <!-- ===== Team ===== -->
   <section id="team" class="team" *ngIf="teamPages.length">
     <div class="team-inner px-0">
-      <h3 class="team-title" #teamTitle>
+      <h2 class="team-title" #teamTitle>
         <span class="line1">{{ teamTitleLine1 }}</span>
         <span class="line2">{{ teamTitleLine2 }}</span>
-      </h3>
+      </h2>
 
       <!-- 2 cartes visibles -->
       <div class="team-grid" aria-live="polite">
@@ -326,7 +332,7 @@
     <div class="news-bg" aria-hidden="true"></div>
 
     <div class="news-inner px-0">
-      <h3 class="news-title">{{ news.title }}</h3>
+      <h2 class="news-title">{{ news.title }}</h2>
 
       <div class="news-row">
         <div class="news-grid">

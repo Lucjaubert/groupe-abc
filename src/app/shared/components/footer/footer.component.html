@@ -60,7 +60,10 @@
           <img src="assets/icons/linkedin.webp" alt="LinkedIn" />
         </a>
       </div>
-      <a routerLink="/mentions-legales" class="footer-legal mt-9 mt-lg-5 mb-4 mb-lg-0">©2025 - Mentions légales - Crédits</a>
+
+      <a [routerLink]="'/mentions-legales' | langLink" class="footer-legal mt-9 mt-lg-5 mb-4 mb-lg-0">
+        ©2025 - Mentions légales - Crédits
+      </a>
     </div>
 
   </div>

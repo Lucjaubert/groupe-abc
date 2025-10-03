@@ -92,6 +92,10 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     border-bottom: $bd-2 solid $blue;
     min-height: 98px;
     min-block-size: 98px;
+
+    /* NEW: gestion d’espaces homogènes */
+    padding-block-start: 0;
+    row-gap: 0;
   }
 
   .row-line { display: contents; }
@@ -156,6 +160,12 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     p:last-child { margin-bottom: 0; }
   }
 
+  /* NEW: espace au-dessus du titre et entre titre/description quand ouvert */
+  .ctx-row.open {
+    padding-block-start: 16px;  /* espace entre la barre et le titre */
+    row-gap: 20px;              /* espace entre ligne (titre) et description */
+  }
+
   @media (max-width: 768px) {
     .chevron { width: 18px; height: 18px; }
   }
@@ -197,6 +207,10 @@ img:not([src]), img[src=""] { opacity: 0; }
     border-bottom: $bd-2 solid $blue;
     min-height: 98px;
     min-block-size: 98px;
+
+    /* NEW: gestion d’espaces homogènes */
+    padding-block-start: 0;
+    row-gap: 0;
   }
 
   .row-line{ display: contents; }
@@ -242,6 +256,12 @@ img:not([src]), img[src=""] { opacity: 0; }
   .row-desc-inner{
     color: $blue; font-size: $fs16; line-height: 1.55;
     p{ margin: 0 0 10px; } p:last-child{ margin-bottom: 0; }
+  }
+
+  /* NEW: espace au-dessus du titre et entre titre/description quand ouvert */
+  .cli-row.open {
+    padding-block-start: 16px;  /* espace entre la barre et le titre */
+    row-gap: 20px;              /* espace entre ligne (titre) et description */
   }
 
   @media (max-width: 768px) {

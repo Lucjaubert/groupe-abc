@@ -4,7 +4,7 @@
 $logo-w: 95px;
 $rail-w: 40px;
 
-/* ================== DESKTOP (inchangé) ================== */
+/* ================== DESKTOP ================== */
 .header {
   position: relative;
   padding-top: 60px;
@@ -103,7 +103,7 @@ $rail-w: 40px;
 }
 .menu a:hover { color: map.get(vars.$theme-colors, "dark-orange"); }
 
-/* ----- RAIL DROIT ----- */
+/* ----- RAIL DROIT (cliquabilité prioritaire) ----- */
 .right-rail {
   position: fixed;
   top: 0;
@@ -113,8 +113,13 @@ $rail-w: 40px;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  z-index: 20;
+
+  /* >>> CLÉ : priorité clique + nouveau contexte empilement */
+  z-index: 2000;
+  isolation: isolate;
+  pointer-events: auto;
 }
+
 .lang-switch {
   width: $rail-w;
   height: $rail-w;
@@ -130,7 +135,21 @@ $rail-w: 40px;
   align-items: center;
   justify-content: center;
   border-radius: 2px;
+
+  /* >>> CLÉ : le bouton capte les clics au-dessus de tout */
+  position: relative;
+  z-index: 2100;
+  pointer-events: auto;
+  cursor: pointer;
+  border: 0;
+
+  &:focus-visible{
+    outline: 2px solid #444697;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
 }
+
 .extranet-badge {
   width: $rail-w;
   height: 204px;
@@ -142,6 +161,8 @@ $rail-w: 40px;
   align-items: center;
   justify-content: center;
   border-radius: 2px;
+  position: relative;
+  z-index: 2001;
 
   .extranet-text {
     font-family: "Plus Jakarta Sans", sans-serif;
@@ -157,216 +178,18 @@ $rail-w: 40px;
   }
 }
 
-/* ================== TABLETTE (≤ lg) ==================
-   On cache seulement la baseline ici, pour ne PAS toucher au desktop. */
-
-$rail-w: 40px;
-
-/* ================== MOBILE (≤ md ≈ 768px) ================== */
-@media (max-width: map.get(vars.$breakpoints, "md")) {
-
-  .header{
-    padding-top: clamp(16px, 4vw, 28px);
-    padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
-    background: map.get(vars.$theme-colors, "white");
-  }
-
-  .header-inner{
-    display: grid;
-    grid-template-columns: 1fr auto; /* brand | rail droit */
-    align-items: start;
-    row-gap: clamp(8px, 3vw, 16px);
-  }
-
-  /* ---- Brand (logo + slogan rouge) ---- */
-  .brand{
-    grid-column: 1 / 2;
-    display: grid;
-    align-items: center;
-    text-decoration: none;
-    color: inherit;
-  }
-  .logo{
-    inline-size: 89.654px;
-    block-size: 90px;
-    aspect-ratio: 89.654 / 90;
-    flex-shrink: 0;
-  }
-  .slogan{
-    max-width: clamp(260px, 64vw, 420px);
-    text-align: left;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 20px;             /* maquette */
-    font-weight: 400;
-    line-height: normal;         /* maquette = normal */
-    color: #EA4D4D;              /* maquette */
-    overflow: visible;
-  }
-
-  /* ---- Baseline (texte bleu + logo RICS) ---- */
-  .tagline{
-    grid-column: 1 / -1;
-    display: block !important;
-    align-items: flex-start !important;
-    margin-top: clamp(6px, 2vw, 12px);
-  }
-  .tagline-text{
-    display: inline-block;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 16px;             /* maquette */
-    font-weight: 400;
-    line-height: normal;
-    color: #444697;              /* maquette */
-    text-align: left !important;
-  }
-  .tagline-text br:nth-of-type(2){ display: none; } /* forcer 2 lignes */
-  .rics{
-    margin-top: 10px;
-    inline-size: 57px;           /* maquette */
-    block-size: 21px;            /* maquette */
-    aspect-ratio: 19 / 7;
-    flex-shrink: 0;
-    margin-left: 0;
-  }
-
-  /* ---- Menu (inline sous header en mobile quand ouvert) ---- */
-  .menu-bar{ grid-column: 1 / -1; padding: 0; width: 100%; }
-  .menu{ display: none !important; }
-  .header.menu-open .menu,
-  .menu-bar.open .menu{
-    display: grid !important;
-    grid-template-columns: 1fr;
-    border-top: 1px solid rgba(68,71,152,.5);
-    margin-top: 12px;
-  }
-  .header.menu-open .menu li + li,
-  .menu-bar.open .menu li + li{
-    border-left: 0;
-    border-top: 1px solid rgba(68,71,152,.5);
-  }
-  .header.menu-open .menu a,
-  .menu-bar.open .menu a{
-    text-align: left; padding: 14px 0; font-size: 18px;
-  }
-
-  /* ---- Rail droit : Burger (remplace FR) + EXTRANET ---- */
-  .right-rail{
-    position: fixed;
-    top: clamp(8px, 3vw, 16px);
-    right: 0;
-    width: $rail-w;                 /* 40px */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    z-index: 20;
-  }
-
-  /* Burger : trois traits EXACTS (29.668 / 22.039 / 15.258 × 2px) */
-  .lang-switch{
-    inline-size: $rail-w;
-    block-size: $rail-w;            /* 40×40 */
-    background: transparent;        /* pas de pastille */
-    border-radius: 2px;
-    font-size: 0;                   /* masque le texte */
-    writing-mode: initial;
-    transform: none;
-    position: relative;
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-
-    /* 3 traits alignés à gauche, positions maquette */
-    background-image:
-      linear-gradient(#444697, #444697),  /* grand 29.668×2 */
-      linear-gradient(#444697, #444697),  /* moyen 22.039×2 */
-      linear-gradient(#444697, #444697);  /* petit 15.258×2 */
-    background-repeat: no-repeat;
-    background-size:
-      29.668px 2px,
-      22.039px 2px,
-      15.258px 2px;
-    background-position:
-      left 6px top 8px,   /* grand */
-      left 6px top 14px,  /* moyen */
-      left 6px top 20px;  /* petit */
-
-    /* Focus visible accessible */
-    &:focus-visible{
-      outline: 2px solid #444697;
-      outline-offset: 2px;
-      border-radius: 4px;
-    }
-  }
-
-  /* Badge EXTRANET : 40 × 180, texte blanc 11px */
-  .extranet-badge{
-    inline-size: 40px;
-    block-size: 180px;
-    flex-shrink: 0;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(-90deg);      /* lecture de bas en haut */
-    background: rgba(68,70,151,.68);
-    border-radius: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    position: relative;
-    right: 0;
-    align-self: center;
-    text-decoration: none;
-
-    .extranet-text{
-      white-space: nowrap;
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 11px;              /* maquette */
-      font-style: normal;
-      font-weight: 400;
-      line-height: normal;
-      color: #FFF;
-      transform: rotate(-90deg);    /* remet le texte à l’endroit */
-    }
-    .extranet-slash{ color: map.get(vars.$theme-colors, "light-red"); }
-  }
-
-  /* >>> FR / ENG en ROUGE uniquement en mobile <<< */
-  .overlay-lang{
-    .lang-btn{
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 16px;
-      font-style: italic;
-      font-weight: 400;
-      line-height: 40px;  /* 250% */
-      color: #444697;     /* non actif */
-      opacity: 1;
-    }
-    .lang-btn.active{
-      color: #EA4D4D;     /* actif en rouge – mobile only */
-    }
-    .sep{
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 16px;
-      font-style: italic;
-      font-weight: 400;
-      line-height: 40px;
-      color: #444697;
-    }
-  }
-}
-
-
 /* ===== Overlay plein écran ===== */
 .menu-overlay{
-  position: fixed; inset: 0; background: #fff; z-index: 50;
+  position: fixed; inset: 0; background: #fff; z-index: 1500; /* < right-rail */
   opacity: 0; visibility: hidden;
   transition: opacity .25s ease, visibility .25s step-end;
   display: grid; place-items: start stretch;
 
   &.open{ opacity: 1; visibility: visible; transition: opacity .25s ease, visibility 0s; }
 }
+/* Fermé -> n’intercepte pas les clics */
+.menu-overlay:not(.open){ pointer-events: none !important; }
 
-/* ===== Inner : grille 2 colonnes (contenu | rail 40px) ===== */
 .menu-overlay-inner{
   --step: clamp(35px, 4.8vh, 70px);
   --pad: 13px;
@@ -392,12 +215,7 @@ $rail-w: 40px;
   min-height: 100dvh;
 }
 
-/* Haut : logo (colonne 1) */
-.overlay-top{
-  grid-area: top;
-  display: grid;
-  align-items: center;
-}
+.overlay-top{ grid-area: top; display: grid; }
 .overlay-brand{
   text-decoration: none; color: inherit;
   img{ inline-size: 89.654px; block-size: 90px; aspect-ratio: 89.654 / 90; flex-shrink: 0; }
@@ -407,7 +225,7 @@ $rail-w: 40px;
   }
 }
 
-/* ===== Wrapper des items : FR/ENG + liste ===== */
+/* Wrapper items */
 .overlay{
   grid-area: nav;
   display: grid;
@@ -415,14 +233,12 @@ $rail-w: 40px;
   row-gap: var(--step);
 }
 
-/* ---------- FR horizontal ici ---------- */
+/* Lang FR/ENG horizontal */
 .overlay-lang{
   margin: 0 !important;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-
-  /* force l’écriture horizontale, au cas où un parent serait vertical/rotaté */
   writing-mode: horizontal-tb !important;
 
   .lang-btn{
@@ -434,8 +250,6 @@ $rail-w: 40px;
     font-size: 14px;
     color: #444697;
     opacity: .6;
-
-    /* neutralise toute rotation/écriture héritée */
     transform: none !important;
     writing-mode: horizontal-tb;
     text-orientation: mixed;
@@ -447,7 +261,6 @@ $rail-w: 40px;
   .sep{ color: #444697; opacity: .6; }
 }
 
-/* Liste */
 .overlay-nav{
   margin: 0;
   display: grid;
@@ -463,7 +276,7 @@ $rail-w: 40px;
   }
 }
 
-/* === EXTRANET en colonne 'rail' === */
+/* Extranet dans l’overlay */
 .menu-overlay .extranet-badge{
   grid-area: rail;
   justify-self: center;
@@ -498,7 +311,6 @@ $rail-w: 40px;
   .extranet-slash{ color: map.get(vars.$theme-colors, "light-red"); }
 }
 
-/* Bas */
 .overlay-bottom{ grid-area: bottom; }
 .overlay-social.linkedin{
   inline-size: 32px; block-size: 32px;
@@ -509,8 +321,135 @@ $rail-w: 40px;
   font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 12px; color: #444697; opacity: .8;
 }
+.mm-legal { text-decoration: none; }
+
+/* ================== MOBILE (≤ md ≈ 768px) ================== */
+@media (max-width: map.get(vars.$breakpoints, "md")) {
+  .header{
+    padding-top: clamp(16px, 4vw, 28px);
+    padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
+    background: map.get(vars.$theme-colors, "white");
+  }
+
+  .header-inner{
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    row-gap: clamp(8px, 3vw, 16px);
+  }
+
+  .brand{
+    grid-column: 1 / 2;
+    display: grid;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+  }
+  .logo{
+    inline-size: 89.654px;
+    block-size: 90px;
+    aspect-ratio: 89.654 / 90;
+    flex-shrink: 0;
+  }
+  .slogan{
+    max-width: clamp(260px, 64vw, 420px);
+    text-align: left;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: normal;
+    color: #EA4D4D;
+    overflow: visible;
+  }
+
+  .tagline{
+    grid-column: 1 / -1;
+    display: block !important;
+    align-items: flex-start !important;
+    margin-top: clamp(6px, 2vw, 12px);
+  }
+  .tagline-text{
+    display: inline-block;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: normal;
+    color: #444697;
+    text-align: left !important;
+  }
+  .tagline-text br:nth-of-type(2){ display: none; }
+  .rics{
+    margin-top: 10px;
+    inline-size: 57px;
+    block-size: 21px;
+    aspect-ratio: 19 / 7;
+    flex-shrink: 0;
+    margin-left: 0;
+  }
+
+  .menu-bar{ grid-column: 1 / -1; padding: 0; width: 100%; }
+  .menu{ display: none !important; }
+  .header.menu-open .menu,
+  .menu-bar.open .menu{
+    display: grid !important;
+    grid-template-columns: 1fr;
+    border-top: 1px solid rgba(68,71,152,.5);
+    margin-top: 12px;
+  }
+  .header.menu-open .menu li + li,
+  .menu-bar.open .menu li + li{
+    border-left: 0;
+    border-top: 1px solid rgba(68,71,152,.5);
+  }
+  .header.menu-open .menu a,
+  .menu-bar.open .menu a{
+    text-align: left; padding: 14px 0; font-size: 18px;
+  }
+
+  .right-rail{
+    top: calc(env(safe-area-inset-top) + 0px);
+    width: $rail-w;
+    gap: 10px;
+  }
+
+  /* En mobile, on garde le look « burger » si souhaité :
+     (ici on laisse la pastille transparente possible, à adapter si besoin) */
+  .lang-switch{
+    background: rgba(68, 70, 151, 0.68);
+    font-size: 0; /* le label 'FR/EN' reste visuel via contenu, on peut ajuster si souhaité */
+  }
+
+  /* Un seul badge extranet visible selon l’état overlay (exemple) */
+  .menu-overlay:not(.open) .extranet-badge { display: none !important; }
+  .header.menu-open .right-rail .extranet-badge { display: none !important; }
+
+  /* FR/ENG rouge dans l’overlay (mobile) */
+  .overlay-lang{
+    .lang-btn{
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 16px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 40px;
+      color: #444697;
+      opacity: 1;
+    }
+    .lang-btn.active{ color: #EA4D4D; }
+    .sep{
+      font-family: "Plus Jakarta Sans", sans-serif;
+      font-size: 16px;
+      font-style: italic;
+      font-weight: 400;
+      line-height: 40px;
+      color: #444697;
+    }
+  }
+}
 
 /* Hauteurs faibles */
 @media (max-height: 680px){
   .menu-overlay-inner{ --step: clamp(14px, 4.2vh, 28px); }
 }
+
+/* Divers */
+.no-scroll{ overflow: hidden !important; }

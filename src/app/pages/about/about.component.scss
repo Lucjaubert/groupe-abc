@@ -126,6 +126,10 @@ $white:      map.get(vars.$theme-colors, "white");
 
   --team-tile-w: 290px;
 
+  @media (max-width: 768px) {
+    .core-block.core-right.partners { --team-tile-w: 200px; }
+  }
+
   .partners-controls {
     position: absolute;
     top: 8px; right: 8px;
@@ -318,7 +322,7 @@ $white:      map.get(vars.$theme-colors, "white");
   .map-image,
   .map-list { align-self: center; }
 
-  .map-image img { display:block; width:100%; height:auto; }
+  .map-image img { display:block; width:70%; height:auto; }
 
   .map-title {
     color: $blue-hero;
@@ -558,10 +562,12 @@ $white:      map.get(vars.$theme-colors, "white");
     align-items: center;
     column-gap: clamp(24px, 4vw, 48px);
     min-block-size: var(--row-h);
-    padding-block: 0;
+    padding-block: 0; /* pas d'espace par défaut */
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
+    row-gap: 0; /* pas d'espace entre titre et desc par défaut */
   }
-  .deon-line { display: contents; }
+
+  .deon-line { display: contents; } /* donc pas de margin/padding ici */
 
   .deon-name {
     color: $blue-hero;
@@ -582,11 +588,14 @@ $white:      map.get(vars.$theme-colors, "white");
     .chevron {
       width: 20px;
       height: 30px;
-      transform: rotate(90deg); transition: transform .25s ease; }
+      transform: rotate(90deg);
+      transition: transform .25s ease;
+    }
     &[aria-expanded='true'] .chevron { transform: rotate(0deg); }
   }
 
   .deon-desc { grid-column: 1 / -1; padding: 8px 0 18px; }
+
   .deon-desc-inner {
     color: $blue;
     font-size: 16px !important;
@@ -595,6 +604,14 @@ $white:      map.get(vars.$theme-colors, "white");
     p { margin: 0 0 8px; }
     p:last-child { margin-bottom: 0; }
   }
+
+  /* ➜ espace entre la barre et le titre quand c'est ouvert */
+  .deon-row.open {
+    padding-block-start: 16px;   /* ajuste 12–24px selon le rendu */
+    row-gap: 20px;               /* (optionnel) espace entre titre et description */
+  }
+
+
 
   @media (max-width: 768px) {
     .aff-logo { width: 58px; height: 58px; min-width: 58px; }

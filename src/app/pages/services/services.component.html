@@ -4,9 +4,9 @@
     <div class="section-inner">
       <h1 #heroTitle class="page-title prehide">{{ pageTitle }}</h1>
 
-      <h3 #ctxTitle class="ctx-title prehide mt-6">
+      <h2 #ctxTitle class="ctx-title prehide mt-6">
         {{ ctxIntro.title }}
-      </h3>
+      </h2>
 
       <div #ctxSub class="ctx-sub prehide mt-4" [innerHTML]="ctxIntro.html"></div>
     </div>
@@ -60,7 +60,7 @@
   <!-- ===== CLIENTS ===== -->
   <section class="clients">
     <div class="section-clients">
-      <h3 #clientsTitleEl class="clients-title prehide">{{ clientsTitle }}</h3>
+      <h2 #clientsTitleEl class="clients-title prehide">{{ clientsTitle }}</h2>
 
       <ul #cliList class="cli-list prehide" role="list">
         <li
@@ -96,7 +96,7 @@
   <!-- ===== RÉFÉRENCES ===== -->
   <section class="refs">
     <div class="section-refs">
-      <h3 #refsTitleEl class="refs-title prehide">{{ refsTitle }}</h3>
+      <h2 #refsTitleEl class="refs-title prehide">{{ refsTitle }}</h2>
 
       <ul #refsGrid class="refs-grid prehide" role="list">
         <li *ngFor="let r of references; trackBy: trackByIndex">

@@ -1,4 +1,3 @@
-// src/app/services/seo.service.ts
 import { Injectable, Inject, Renderer2, RendererFactory2, PLATFORM_ID } from '@angular/core';
 import { Title, Meta } from '@angular/platform-browser';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';

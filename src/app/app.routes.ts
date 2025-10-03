@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
-export const routes: Routes = [
+/** Routes « pages » (sans 404 / wildcard) réutilisées pour FR et EN */
+const pageRoutes: Routes = [
   {
     path: '',
     loadComponent: () =>
@@ -49,11 +50,24 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/legal-mentions/mentions-legales.component').then(m => m.MentionsLegalesComponent),
     title: 'Mentions légales'
+  }
+];
+
+export const routes: Routes = [
+
+  ...pageRoutes,
+
+
+  {
+    path: 'en',
+    children: pageRoutes
   },
+
+  // 404
   {
     path: '404',
     loadComponent: () =>
-      import('./pages/not-found/not-found.component').then((m) => m.NotFoundComponent),
+      import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent),
     title: 'Page non trouvée'
   },
   { path: '**', redirectTo: '404' }
