@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { LangLinkPipe } from '../../../pipes/lang-link.pipe';
-import { ContactService } from '../../../services/contact.service'; // ⬅️ service d’envoi
+import { ContactService } from '../../../services/contact.service';
 
 export interface FooterLink { label: string; url: string; external?: boolean; }
 export interface FooterSocial { label: string; url: string; }
@@ -35,7 +35,7 @@ export class FooterComponent {
 
   constructor(
     private cdr: ChangeDetectorRef,
-    private contact: ContactService,          // ⬅️ injection du service
+    private contact: ContactService,
   ) {}
 
   // 👉 Getters utilisés dans le template
@@ -55,6 +55,14 @@ export class FooterComponent {
     return `tel:${cleaned}`;
   }
 
+  // --- Quand l'utilisateur modifie un champ, on repasse à "idle"
+  onFormChange() {
+    if (this.sendState === 'success' || this.sendState === 'error') {
+      this.sendState = 'idle';
+      this.cdr.markForCheck();
+    }
+  }
+
   // ---------------- Formulaire ------------------------------
   async onSubmit(ev: Event) {
     ev.preventDefault();
@@ -68,20 +76,16 @@ export class FooterComponent {
       email:   String(fd.get('email') ?? '').trim(),
       phone:   String(fd.get('phone') ?? '').trim(),
       message: String(fd.get('message') ?? '').trim(),
-      website: String(fd.get('website') ?? ''), // honeypot
+      website: String(fd.get('website') ?? ''),
       source:  'footer',
-      lang:    'fr', // ajuste si tu as un LanguageService
+      lang:    'fr',
     };
 
-    // Honeypot
+    // Honeypot → succès immédiat (on reste en vert, bouton désactivé)
     if (payload.website) {
       this.sendState = 'success';
+      form.reset();
       this.cdr.markForCheck();
-      setTimeout(() => {
-        this.sendState = 'idle';
-        form.reset();
-        this.cdr.markForCheck();
-      }, 1500);
       return;
     }
 
@@ -99,18 +103,16 @@ export class FooterComponent {
 
     try {
       await this.contact.send(payload);
-      this.sendState = 'success';
+      this.sendState = 'success'; // reste vert tant que l'utilisateur ne retape pas
+      form.reset();               // on vide le formulaire
       this.cdr.markForCheck();
-      setTimeout(() => {
-        this.sendState = 'idle';
-        form.reset();
-        this.cdr.markForCheck();
-      }, 3000);
     } catch (e: any) {
       console.error('[Footer] API error', e);
       this.sendState = 'error';
       this.messageError = e?.message || 'Échec de l’envoi.';
       this.cdr.markForCheck();
+
+      // Option : repasser en idle après quelques secondes sur erreur
       setTimeout(() => {
         this.sendState = 'idle';
         this.cdr.markForCheck();

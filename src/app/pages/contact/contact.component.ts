@@ -1,19 +1,24 @@
 import { CommonModule } from '@angular/common';
 import {
   Component, Input, OnInit, AfterViewInit, OnDestroy,
-  ElementRef, ViewChild, ViewChildren, QueryList, inject
+  ElementRef, ViewChild, ViewChildren, QueryList, inject,
+  ChangeDetectionStrategy, ChangeDetectorRef
 } from '@angular/core';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SeoService } from '../../services/seo.service';
 import { ImgFromPipe } from '../../pipes/img-from.pipe';
+import { ContactService } from '../../services/contact.service';
+
+type SendState = 'idle' | 'loading' | 'success' | 'error';
 
 @Component({
   selector: 'app-contact',
   standalone: true,
-  imports: [ CommonModule, ImgFromPipe ],
+  imports: [ CommonModule ],
   templateUrl: './contact.component.html',
-  styleUrls: ['./contact.component.scss']
+  styleUrls: ['./contact.component.scss'],
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
 
@@ -62,6 +67,15 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   private bindScheduled = false;
   private heroPlayed = false;
 
+  /* ===== Form state (même logique que footer) ===== */
+  sendState: SendState = 'idle';
+  messageError = '';
+
+  constructor(
+    private cdr: ChangeDetectorRef,
+    private contact: ContactService,
+  ) {}
+
   /* ==================================================== */
   /*                       LIFECYCLE                      */
   /* ==================================================== */
@@ -86,105 +100,101 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ==================================================== */
   /*                         SEO                           */
   /* ==================================================== */
-  /* ==================================================== */
-/*                         SEO                           */
-/* ==================================================== */
-private applySeo(): void {
-  const nowPath = this.currentPath();
-  const isEN    = nowPath.startsWith('/en/');
+  private applySeo(): void {
+    const nowPath = this.currentPath();
+    const isEN    = nowPath.startsWith('/en/');
 
-  // Canonicals par langue
-  const canonPath = isEN ? this.canonicalPathEn : this.canonicalPath;
-  const canonical = this.normalizeUrl(this.siteUrl, canonPath);
+    // Canonicals par langue
+    const canonPath = isEN ? this.canonicalPathEn : this.canonicalPath;
+    const canonical = this.normalizeUrl(this.siteUrl, canonPath);
 
-  // Langues / locales
-  const lang      = isEN ? 'en'    : 'fr';
-  const locale    = isEN ? 'en_US' : 'fr_FR';
-  const localeAlt = isEN ? ['fr_FR'] : ['en_US'];
+    // Langues / locales
+    const lang      = isEN ? 'en'    : 'fr';
+    const locale    = isEN ? 'en_US' : 'fr_FR';
+    const localeAlt = isEN ? ['fr_FR'] : ['en_US'];
 
-  // Alternates hreflang
-  const altFR = this.normalizeUrl(this.siteUrl, this.canonicalPath);
-  const altEN = this.normalizeUrl(this.siteUrl, this.canonicalPathEn);
-  const alternates = [
-    { lang: 'fr',        href: altFR },
-    { lang: 'en',        href: altEN },
-    { lang: 'x-default', href: altFR }
-  ];
+    // Alternates hreflang
+    const altFR = this.normalizeUrl(this.siteUrl, this.canonicalPath);
+    const altEN = this.normalizeUrl(this.siteUrl, this.canonicalPathEn);
+    const alternates = [
+      { lang: 'fr',        href: altFR },
+      { lang: 'en',        href: altEN },
+      { lang: 'x-default', href: altFR }
+    ];
 
-  // Title / description localisés (intègrent les infos métier)
-  const title = isEN
-    ? `Contact – ${this.orgName} | Real estate valuation`
-    : `Contact – ${this.orgName} | Expertise immobilière`;
+    // Title / description localisés
+    const title = isEN
+      ? `Contact – ${this.orgName} | Real estate valuation`
+      : `Contact – ${this.orgName} | Expertise immobilière`;
 
-  const descFR =
-    `Groupe d’Experts immobiliers (6 cabinets, 20+ collab.) – tous types d’actifs ` +
-    `(résidentiel, commercial, tertiaire, industriel, hôtellerie, loisirs, santé, foncier/terrains) – ` +
-    `amiable & judiciaire. ${this.streetAddress}, ${this.postalCode} ${this.addressLocality}.`;
-  const descEN =
-    `Independent valuation group (6 firms, 20+ staff) – all asset classes ` +
-    `(residential, commercial, office, industrial, hospitality, leisure, healthcare, land) – ` +
-    `amicable & judicial. ${this.streetAddress}, ${this.postalCode} ${this.addressLocality}.`;
+    const descFR =
+      `Groupe d’Experts immobiliers (6 cabinets, 20+ collab.) – tous types d’actifs ` +
+      `(résidentiel, commercial, tertiaire, industriel, hôtellerie, loisirs, santé, foncier/terrains) – ` +
+      `amiable & judiciaire. ${this.streetAddress}, ${this.postalCode} ${this.addressLocality}.`;
+    const descEN =
+      `Independent valuation group (6 firms, 20+ staff) – all asset classes ` +
+      `(residential, commercial, office, industrial, hospitality, leisure, healthcare, land) – ` +
+      `amicable & judicial. ${this.streetAddress}, ${this.postalCode} ${this.addressLocality}.`;
 
-  const description = (isEN ? descEN : descFR).slice(0, 300); // on reste concis
+    const description = (isEN ? descEN : descFR).slice(0, 300);
 
-  // Keywords orientées métier
-  const kwFR = [
-    'contact', 'expertise immobilière', 'évaluation immobilière', 'Paris', 'DOM-TOM',
-    'résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé',
-    'foncier','terrains','DCF','comparaison','rendement','expert judiciaire','RICS','IFEI','CNEJI'
-  ].join(', ');
-  const kwEN = [
-    'contact', 'real estate valuation','property appraisal','Paris','French overseas',
-    'residential','commercial','office','industrial','hospitality','leisure','healthcare',
-    'land','DCF','market comparison','yield','expert witness','RICS','IFEI','CNEJI'
-  ].join(', ');
+    // Keywords
+    const kwFR = [
+      'contact', 'expertise immobilière', 'évaluation immobilière', 'Paris', 'DOM-TOM',
+      'résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé',
+      'foncier','terrains','DCF','comparaison','rendement','expert judiciaire','RICS','IFEI','CNEJI'
+    ].join(', ');
+    const kwEN = [
+      'contact', 'real estate valuation','property appraisal','Paris','French overseas',
+      'residential','commercial','office','industrial','hospitality','leisure','healthcare',
+      'land','DCF','market comparison','yield','expert witness','RICS','IFEI','CNEJI'
+    ].join(', ');
 
-  // Image OG (absolutiser si besoin)
-  const og = this.socialImage || '/assets/og/og-default.jpg';
-  const ogAbs = this.absUrl(og, this.siteUrl);
-  const isDefaultOg = /\/og-default\.jpg$/.test(og);
+    // Image OG
+    const og = this.socialImage || '/assets/og/og-default.jpg';
+    const ogAbs = this.absUrl(og, this.siteUrl);
+    const isDefaultOg = /\/og-default\.jpg$/.test(og);
 
-  // IDs JSON-LD
-  const siteId = this.siteUrl.replace(/\/+$/, '') + '#website';
-  const orgId  = this.siteUrl.replace(/\/+$/, '') + '#organization';
+    // IDs JSON-LD
+    const siteId = this.siteUrl.replace(/\/+$/, '') + '#website';
+    const orgId  = this.siteUrl.replace(/\/+$/, '') + '#organization';
 
-  // Organization enrichie (associations, zones, savoir-faire)
-  const organization = {
-    '@type': 'Organization',
-    '@id': orgId,
-    name: this.orgName,
-    url: this.siteUrl,
-    sameAs: [ this.linkedinUrl ].filter(Boolean),
-    memberOf: [
-      { '@type': 'Organization', name: 'RICS',  url: 'https://www.rics.org' },
-      { '@type': 'Organization', name: 'IFEI',  url: 'https://www.ifei.org' },
-      { '@type': 'Organization', name: 'CNEJI', url: 'https://www.cneji.org' }
-    ],
-    knowsAbout: [
-      'évaluation immobilière','property appraisal','DCF','méthode par comparaison','méthode par rendement',
-      'résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé','foncier','terrains'
-    ],
-    areaServed: ['FR','GP','RE','MQ','GF','YT','PF','NC','PM','WF','BL','MF'], // France + DOM-TOM
-    contactPoint: [{
-      '@type': 'ContactPoint',
-      contactType: 'customer service',
-      telephone: this.phoneIntl,
-      email: this.email,
-      areaServed: ['FR','EU'],
-      availableLanguage: ['fr-FR','en-US']
-    }],
-    address: {
-      '@type': 'PostalAddress',
-      streetAddress: this.streetAddress,
-      postalCode: this.postalCode,
-      addressLocality: this.addressLocality,
-      addressCountry: 'FR'
-    }
-  };
+    const organization = {
+      '@type': 'Organization',
+      '@id': orgId,
+      name: this.orgName,
+      url: this.siteUrl,
+      sameAs: [ this.linkedinUrl ].filter(Boolean),
+      memberOf: [
+        { '@type': 'Organization', name: 'RICS',  url: 'https://www.rics.org' },
+        { '@type': 'Organization', name: 'IFEI',  url: 'https://www.ifei.org' },
+        { '@type': 'Organization', name: 'CNEJI', url: 'https://www.cneji.org' }
+      ],
+      knowsAbout: [
+        'évaluation immobilière','property appraisal','DCF','méthode par comparaison','méthode par rendement',
+        'résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé','foncier','terrains'
+      ],
+      areaServed: ['FR','GP','RE','MQ','GF','YT','PF','NC','PM','WF','BL','MF'],
+      contactPoint: [{
+        '@type': 'ContactPoint',
+        contactType: 'customer service',
+        telephone: this.phoneIntl,
+        email: this.email,
+        areaServed: ['FR','EU'],
+        availableLanguage: ['fr-FR','en-US']
+      }],
+      address: {
+        '@type': 'PostalAddress',
+        streetAddress: this.streetAddress,
+        postalCode: this.postalCode,
+        addressLocality: this.addressLocality,
+        addressCountry: 'FR'
+      }
+    };
 
-  const contactPage = {
-    '@type': 'ContactPage',
-    '@id': canonical + '#webpage',
+    const contactPage = {
+      '@type': 'ContactPage',
+      '@id': canonical + '#webpage',
       name: `Contact – ${this.orgName}`,
       url: canonical,
       inLanguage: isEN ? 'en-US' : 'fr-FR',
@@ -244,7 +254,6 @@ private applySeo(): void {
       }
     });
   }
-
 
   /* ==================================================== */
   /*                        UTILS SEO                      */
@@ -381,5 +390,93 @@ private applySeo(): void {
     }
 
     try { ScrollTrigger.refresh(); } catch {}
+  }
+
+  /* ==================================================== */
+  /*                     FORM HANDLERS                     */
+  /* ==================================================== */
+
+  /** Getters utilisés dans le template */
+  get isLoading(): boolean { return this.sendState === 'loading'; }
+  get isSuccess(): boolean { return this.sendState === 'success'; }
+  get isError(): boolean   { return this.sendState === 'error'; }
+
+  /** Quand l’utilisateur modifie un champ → retour à idle si succès/erreur */
+  onFormChange() {
+    if (this.sendState === 'success' || this.sendState === 'error') {
+      this.sendState = 'idle';
+      this.cdr.markForCheck();
+    }
+  }
+
+  /** Soumission identique au footer */
+  async onSubmit(ev: Event) {
+    ev.preventDefault();
+    if (this.sendState === 'loading') return;
+
+    const form = ev.target as HTMLFormElement;
+    const fd   = new FormData(form);
+
+    const firstname = String(fd.get('firstname') ?? '').trim();
+    const lastname  = String(fd.get('lastname')  ?? '').trim();
+    const email     = String(fd.get('email')     ?? '').trim();
+    const phone     = String(fd.get('phone')     ?? '').trim();
+    const message   = String(fd.get('message')   ?? '').trim();
+    const website   = String(fd.get('website')   ?? '');
+    const civ       = String(fd.get('civ')       ?? '').trim();
+    const profil    = String(fd.get('profil')    ?? '').trim();
+
+    const fullName = [firstname, lastname].filter(Boolean).join(' ').trim();
+    const lang = this.currentPath().startsWith('/en/') ? 'en' : 'fr';
+
+    // Honeypot → succès immédiat (UX identique au footer)
+    if (website) {
+      this.sendState = 'success';
+      form.reset();
+      this.cdr.markForCheck();
+      return;
+    }
+
+    // Validations mini
+    if (!firstname || !lastname || !email || !message) {
+      this.sendState = 'error';
+      this.messageError = 'Merci de renseigner Prénom, Nom, eMail et Message.';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    const payload = {
+      name: fullName,
+      email,
+      phone,
+      message,
+      website,        // honeypot (doit rester vide)
+      source: 'contact',
+      lang,
+      civ,
+      profil
+    };
+
+    this.sendState = 'loading';
+    this.messageError = '';
+    this.cdr.markForCheck();
+
+    try {
+      await this.contact.send(payload);
+      this.sendState = 'success';
+      form.reset();
+      this.cdr.markForCheck();
+    } catch (e: any) {
+      console.error('[Contact] API error', e);
+      this.sendState = 'error';
+      this.messageError = e?.message || 'Échec de l’envoi.';
+      this.cdr.markForCheck();
+
+      // Option : retour auto à idle après 3s
+      setTimeout(() => {
+        this.sendState = 'idle';
+        this.cdr.markForCheck();
+      }, 3000);
+    }
   }
 }

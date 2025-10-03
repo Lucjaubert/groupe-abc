@@ -80,6 +80,7 @@ $dark-blue: map.get(vars.$theme-colors, "dark-blue", #26285e);
   border: 0;
   padding: 0;
   margin: 0 0 71.5px 0;
+  margin-top: 105px;
 }
 
 /* =========================================================================
@@ -220,11 +221,15 @@ textarea:focus {
   width: 185px;
   height: 39px;
   flex-shrink: 0;
+
+  /* Texte à gauche | icône à droite */
   display: inline-grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: space-between;
+
+  /* le texte démarre à 14px du bord gauche */
   padding: 0 10px 0 14px;
+
   border: 0;
   border-radius: 6px;
   background: $red;
@@ -233,13 +238,47 @@ textarea:focus {
   font-size: 13px;
   font-weight: 400;
   line-height: normal;
+  cursor: pointer;
+  transition:
+    background-color .18s ease,
+    color .18s ease,
+    transform .15s ease,
+    opacity .15s ease;
+
+  /* Libellé collé au bord gauche (après padding) */
+  .btn-label {
+    pointer-events: none;
+    justify-self: start;
+    text-align: left;
+  }
+
+  /* Icônes collées à droite */
+  .ico-mail,
+  .ico-check {
+    justify-self: end;
+  }
+
+  .ico-mail  { inline-size: 31px; block-size: 19px; display: grid; place-items: center; }
+  .ico-check { display: none; width: 22px; height: 22px; fill: #FFF; }
+
+  &:hover:not(:disabled)   { transform: translateY(-1px); opacity: .95; }
+  &:active:not(:disabled)  { transform: none; opacity: .9; }
+  &:focus-visible          { outline: 2px solid #444798; outline-offset: 2px; }
+  &:disabled               { cursor: default; opacity: .8; }
+
+  &.is-loading { cursor: progress; opacity: .8; }
+  &.is-success {
+    background: #2cbb78;
+    .ico-mail  { display: none; }
+    .ico-check { display: inline-block; }
+  }
 }
 
-.btn-contact .ico-mail {
-  inline-size: 31px;
-  block-size: 19px;
-  display: grid;
-  place-items: center;
+/* petit message d’erreur */
+.form-error {
+  margin-top: 10px;
+  color: #b91c1c;
+  font-size: 14px;
 }
 
 .form-actions {
@@ -252,9 +291,9 @@ textarea:focus {
 .big-infos {
   inline-size: 100%;
   color: $blue-hero;
-  margin-bottom: 40px;
+  margin-bottom: 100px;
   --gap-lines: 10px;
-  --gap-site: 67px !important; // ← sera disponible pour .big-infos et tous ses descendants
+  --gap-site: 67px !important;
 }
 
 .big-infos p {
@@ -415,9 +454,9 @@ textarea:focus {
                  "Segoe UI Emoji",
                  "Segoe UI Symbol",
                  "Noto Color Emoji";
-    font-size: 30px;
+    font-size: 35px;
     font-style: normal;
-    font-weight: 300;
+    font-weight: 400;
     line-height: 50px;
   }
 }
