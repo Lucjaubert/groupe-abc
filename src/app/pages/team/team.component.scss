@@ -83,7 +83,7 @@ $white:      map.get(vars.$theme-colors, "white");
     }
   }
 
-  .map-image img{ display:block; width:70%; height:auto; }
+  .map-image img{ display:block; width:100%; height:auto; }
 
   .map-list{ padding-top: var(--map-title-offset); }
 
@@ -201,9 +201,9 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .fr-name{
     color: $blue-hero;
-    font-size: clamp(17px, 2.1vw, 26px);
+    font-size: clamp(20px, 2.1vw, 26px);
     line-height: 1.25;
-    font-weight: 500;
+    font-weight: 600;
     min-width: 0;
   }
 
@@ -340,7 +340,7 @@ $white:      map.get(vars.$theme-colors, "white");
     text-decoration: none;
 
     /* Font fluide (16→18px) */
-    font-size: clamp(16px, 4vw, 18px);
+    font-size: clamp(13px, 4vw, 16px);
     font-weight: 400;
     line-height: 1;
   }
@@ -486,7 +486,7 @@ $white:      map.get(vars.$theme-colors, "white");
 
 /* ===== Teaching ===== */
 .section.teaching{
-  --row-h: 110px;
+  --row-h: 120px;
   --gap: clamp(16px, 3vw, 24px);
 
   .teach-title{
@@ -525,7 +525,7 @@ $white:      map.get(vars.$theme-colors, "white");
   .teach-logo img{ width: 100%; height: 100%; object-fit: contain; display:block; }
 
   .teach-school{ display:flex; flex-direction:column; gap:6px; }
-  .ts-school-name{ color:$blue-hero; font-size: clamp(18px, 2.1vw, 22px); line-height: 1.25; }
+  .ts-school-name{ color:$blue-hero; font-size: clamp(18px, 2.1vw, 19px); line-height: 1.25; font-weight: 500;}
   .ts-level, .ts-link{ color:$blue; font-size:14px; text-decoration:none; font-weight: 400; line-height: normal;}
 
   .teach-speaker{
@@ -654,4 +654,8 @@ $white:      map.get(vars.$theme-colors, "white");
 }
 :host ::ng-deep .ff-titles p + p {
   margin-top: 2px !important;
+}
+
+.where-link {
+  text-decoration: none;
 }

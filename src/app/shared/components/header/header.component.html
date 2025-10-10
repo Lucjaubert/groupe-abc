@@ -10,13 +10,26 @@
       </span>
     </a>
 
+    <!-- Bouton burger : visible uniquement ≤ 768px -->
+    <button
+      class="burger mr-2"
+      type="button"
+      aria-label="Ouvrir le menu"
+      aria-controls="main-menu-overlay"
+      [attr.aria-expanded]="menuOpen ? 'true' : 'false'"
+      (click)="toggleMenu()">
+      <span class="burger-bar" aria-hidden="true"></span>
+      <span class="burger-bar" aria-hidden="true"></span>
+      <span class="burger-bar" aria-hidden="true"></span>
+    </button>
+
     <div class="tagline d-flex flex-column align-items-end">
       <span class="tagline-text text-end mt-3 mt-lg-0" data-wg-notranslate>
         Expertise amiable & judiciaire<br>
         en France métropolitaine<br>
         et Dom-Tom
       </span>
-      <img class="rics mt-6 mt-lg-5" src="assets/img/logos-organisms/rics-logo.svg" alt="RICS">
+      <img class="rics mt-6 mt-lg-5" src="assets/img/logos-organisms/rics-logo.png" alt="RICS">
     </div>
 
     <nav class="menu-bar" [class.open]="menuOpen">
@@ -24,7 +37,7 @@
         <li><a [routerLink]="'/qui-sommes-nous'   | langLink">Qui sommes-nous ?</a></li>
         <li><a [routerLink]="'/nos-services'      | langLink">Nos Services</a></li>
         <li><a [routerLink]="'/biens-et-methodes' | langLink">Biens & Méthodes</a></li>
-        <li><a [routerLink]="'/notre-equipe'      | langLink">Équipe</a></li>
+        <li><a [routerLink]="'/nos-equipes'      | langLink">Équipes</a></li>
         <li><a [routerLink]="'/actualites'        | langLink">Actualités</a></li>
         <li><a [routerLink]="'/contact'           | langLink">Contact</a></li>
       </ul>
@@ -32,25 +45,25 @@
 
   </div>
 
-  <!-- Rail droit : badge extranet + bouton langue -->
+  <!-- Rail droit : badge extranet + bouton langue/burger -->
   <div class="right-rail d-flex flex-column align-items-end">
     <a class="extranet-badge d-flex align-items-center justify-content-center mt-8 mt-lg-0"
-       href="#"
-       rel="nofollow"
-       aria-label="Espace Extranet Groupe ABC">
-      <span class="extranet-text">
-        GROUPE ABC <span class="extranet-slash">/</span> EXTRANET
+      href="#"
+      rel="nofollow"
+      aria-label="Espace Extranet Groupe ABC">
+      <span class="extranet-text" data-wg-notranslate>
+        GROUPE ABC <span class="extranet-slash" data-wg-notranslate aria-hidden="true">/</span> EXTRANET
       </span>
     </a>
 
-    <!-- Bouton langue : TOUJOURS toggle FR/EN -->
+    <!-- Bouton rail : desktop = switch langue / mobile = burger -->
     <button class="lang-switch d-flex align-items-center justify-content-center"
             type="button"
             data-wg-notranslate
             aria-label="Switch language"
-            (click)="onLangButtonClick($event)"
-            (keydown.enter)="onLangButtonClick($event)"
-            (keydown.space)="onLangButtonClick($event)">
+            aria-controls="main-menu-overlay"
+            [attr.aria-expanded]="menuOpen ? 'true' : 'false'"
+            (click)="onPrimaryAction()">
       {{ (lang.lang$ | async) === 'en' ? 'EN' : 'FR' }}
     </button>
   </div>
@@ -58,6 +71,7 @@
 
 <!-- MENU OVERLAY (plein écran, fond blanc) -->
 <div
+  id="main-menu-overlay"
   class="menu-overlay"
   [class.open]="menuOpen"
   (click)="closeOnBackdrop($event)"
@@ -66,6 +80,18 @@
   <div class="menu-overlay-inner pe-0 pe-lg-3"
        role="dialog"
        [attr.aria-modal]="'true'">
+
+    <!-- Bouton “X” pour fermer -->
+    <button
+      class="overlay-close"
+      type="button"
+      aria-label="Fermer le menu"
+      (click)="setMenu(false)">
+      <!-- SVG croix accessible -->
+      <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+        <path d="M18.3 5.7a1 1 0 0 0-1.4-1.4L12 9.17 7.1 4.3A1 1 0 0 0 5.7 5.7L10.6 10.6 5.7 15.5a1 1 0 1 0 1.4 1.4L12 12.03l4.9 4.87a1 1 0 1 0 1.4-1.4l-4.9-4.87 4.8-4.93Z" fill="currentColor"/>
+      </svg>
+    </button>
 
     <div class="overlay-top">
       <a [routerLink]="'/' | langLink" class="overlay-brand d-flex" (click)="closeAfterNav()">
@@ -89,7 +115,7 @@
 
     <div class="overlay">
 
-      <!-- Choix FR / ENG explicite dans l’overlay -->
+      <!-- Choix FR / ENG explicite dans l’overlay (mobile) -->
       <div class="overlay-lang">
         <button type="button"
                 class="lang-btn"
@@ -106,7 +132,7 @@
         <a [routerLink]="'/qui-sommes-nous'   | langLink" (click)="closeAfterNav()">QUI SOMMES-NOUS ?</a>
         <a [routerLink]="'/nos-services'      | langLink" (click)="closeAfterNav()">NOS SERVICES</a>
         <a [routerLink]="'/biens-et-methodes' | langLink" (click)="closeAfterNav()">BIENS ET MÉTHODES</a>
-        <a [routerLink]="'/notre-equipe'      | langLink" (click)="closeAfterNav()">ÉQUIPES</a>
+        <a [routerLink]="'/nos-equipes'      | langLink" (click)="closeAfterNav()">ÉQUIPES</a>
         <a [routerLink]="'/actualites'        | langLink" (click)="closeAfterNav()">ACTUALITÉS</a>
         <a [routerLink]="'/contact'           | langLink" (click)="closeAfterNav()">CONTACT</a>
       </nav>

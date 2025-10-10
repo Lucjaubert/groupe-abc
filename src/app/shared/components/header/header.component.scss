@@ -28,14 +28,11 @@ $rail-w: 40px;
   color: inherit;
 }
 
-.logo {
-  width: $logo-w;
-  height: auto;
-}
+.logo { width: $logo-w; height: auto; }
 
 .slogan {
   display: inline-block;
-  width: 280px;
+  width: 380px;
   text-align: left;
   font-family: "Plus Jakarta Sans", sans-serif;
   font-size: 24px;
@@ -54,19 +51,10 @@ $rail-w: 40px;
   color: map.get(vars.$theme-colors, "light-blue");
   line-height: normal;
 }
-.rics {
-  display: block;
-  margin-top: 10px;
-  height: 22px;
-  margin-left: auto;
-}
+.rics { display: block; margin-top: 10px; height: 22px; margin-left: auto; }
 
 /* ----- MENU BAR ----- */
-.menu-bar {
-  grid-column: 1 / -1;
-  width: 100%;
-  padding: 10px 0 0;
-}
+.menu-bar { grid-column: 1 / -1; width: 100%; padding: 10px 0 0; }
 
 /* ===== MENU ===== */
 .menu {
@@ -113,87 +101,60 @@ $rail-w: 40px;
   flex-direction: column;
   align-items: center;
   gap: 10px;
-
-  /* >>> CLÉ : priorité clique + nouveau contexte empilement */
   z-index: 2000;
   isolation: isolate;
   pointer-events: auto;
 }
 
 .lang-switch {
-  width: $rail-w;
-  height: $rail-w;
+  width: $rail-w; height: $rail-w;
   writing-mode: horizontal-tb !important;
   transform: none !important;
   background: rgba(68, 70, 151, 0.68);
   color: map.get(vars.$theme-colors, "white");
   font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: .05rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 11px; font-weight: 400; letter-spacing: .05rem;
+  display: flex; align-items: center; justify-content: center;
   border-radius: 2px;
+  position: relative; z-index: 2100; pointer-events: auto;
+  cursor: pointer; border: 0;
 
-  /* >>> CLÉ : le bouton capte les clics au-dessus de tout */
-  position: relative;
-  z-index: 2100;
-  pointer-events: auto;
-  cursor: pointer;
-  border: 0;
-
-  &:focus-visible{
-    outline: 2px solid #444697;
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
+  &:focus-visible{ outline: 2px solid #444697; outline-offset: 2px; border-radius: 4px; }
 }
 
 .extranet-badge {
-  width: $rail-w;
-  height: 204px;
+  width: $rail-w; height: 204px;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   background: rgba(68, 70, 151, 0.68);
   text-decoration: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   border-radius: 2px;
-  position: relative;
-  z-index: 2001;
+  position: relative; z-index: 2001;
 
   .extranet-text {
     font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 11px;
-    font-weight: 400;
-    line-height: normal;
+    font-size: 11px; font-weight: 400; line-height: normal;
     color: #FFF;
 
-    .extranet-slash {
-      color: map.get(vars.$theme-colors, "light-red");
-      margin: 0 4px;
-    }
+    .extranet-slash { color: map.get(vars.$theme-colors, "light-red") !important; margin: 0 4px; }
   }
 }
 
 /* ===== Overlay plein écran ===== */
 .menu-overlay{
-  position: fixed; inset: 0; background: #fff; z-index: 1500; /* < right-rail */
+  position: fixed; inset: 0; background: #fff; z-index: 1500;
   opacity: 0; visibility: hidden;
   transition: opacity .25s ease, visibility .25s step-end;
   display: grid; place-items: start stretch;
 
   &.open{ opacity: 1; visibility: visible; transition: opacity .25s ease, visibility 0s; }
 }
-/* Fermé -> n’intercepte pas les clics */
 .menu-overlay:not(.open){ pointer-events: none !important; }
 
 .menu-overlay-inner{
   --step: clamp(35px, 4.8vh, 70px);
   --pad: 13px;
-
   --rail-w: 40px;
   --logo-h: 90px;
   --offset-under-logo: 21px;
@@ -215,17 +176,28 @@ $rail-w: 40px;
   min-height: 100dvh;
 }
 
+/* ===== Bouton CLOSE "X" dans l'overlay ===== */
+.overlay-close{
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 12px);
+  right: calc(12px + env(safe-area-inset-right));
+  inline-size: 40px; block-size: 40px;
+  display: grid; place-items: center;
+  background: transparent; border: 0; cursor: pointer;
+  color: #444697;
+  z-index: 2002; /* au-dessus du rail dans l'overlay */
+
+  &:focus-visible{ outline: 2px solid #444697; outline-offset: 2px; border-radius: 4px; }
+}
+
+/* Overlay content */
 .overlay-top{ grid-area: top; display: grid; }
 .overlay-brand{
   text-decoration: none; color: inherit;
   img{ inline-size: 89.654px; block-size: 90px; aspect-ratio: 89.654 / 90; flex-shrink: 0; }
-  .brand-text{
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 20px; font-weight: 400; line-height: normal; color: #EA4D4D;
-  }
+  .brand-text{ font-family: "Plus Jakarta Sans", sans-serif; font-size: 20px; font-weight: 400; line-height: normal; color: #EA4D4D; }
 }
 
-/* Wrapper items */
 .overlay{
   grid-area: nav;
   display: grid;
@@ -233,45 +205,25 @@ $rail-w: 40px;
   row-gap: var(--step);
 }
 
-/* Lang FR/ENG horizontal */
 .overlay-lang{
   margin: 0 !important;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  display: inline-flex; align-items: center; gap: 6px;
   writing-mode: horizontal-tb !important;
 
   .lang-btn{
-    background: none;
-    border: 0;
-    padding: 0;
-    cursor: pointer;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 14px;
-    color: #444697;
-    opacity: .6;
-    transform: none !important;
-    writing-mode: horizontal-tb;
-    text-orientation: mixed;
-    display: inline-block;
-    white-space: nowrap;
+    background: none; border: 0; padding: 0; cursor: pointer;
+    font-family: "Plus Jakarta Sans", sans-serif; font-size: 14px; color: #444697;
+    opacity: .6; transform: none !important; writing-mode: horizontal-tb; text-orientation: mixed; display: inline-block; white-space: nowrap;
   }
-
   .lang-btn.active{ opacity: 1; font-weight: 600; }
   .sep{ color: #444697; opacity: .6; }
 }
 
 .overlay-nav{
-  margin: 0;
-  display: grid;
-  gap: var(--step);
+  margin: 0; display: grid; gap: var(--step);
   a{
-    text-decoration: none;
-    color: #444697;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-weight: 500;
-    font-size: 20px;
-    line-height: 1.1;
+    text-decoration: none; color: #444697;
+    font-family: "Plus Jakarta Sans", sans-serif; font-weight: 500; font-size: 20px; line-height: 1.1;
     &:hover{ color: map.get(vars.$theme-colors, "dark-orange"); }
   }
 }
@@ -279,171 +231,103 @@ $rail-w: 40px;
 /* Extranet dans l’overlay */
 .menu-overlay .extranet-badge{
   grid-area: rail;
-  justify-self: center;
-  align-self: center;
-  margin: 0 !important;
-  margin-top: var(--offset-under-logo);
-  inline-size: 40px;
-  block-size: 180px;
-  flex-shrink: 0;
-  writing-mode: vertical-rl;
-  text-orientation: mixed;
-  transform: rotate(-90deg);
-  background: rgba(68, 70, 151, 0.68);
-  border-radius: 2px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  right: 0;
-  text-decoration: none;
-  bottom: 130px;
+  justify-self: center; align-self: center;
+  margin: 0 !important; margin-top: var(--offset-under-logo);
+  inline-size: 40px; block-size: 180px; flex-shrink: 0;
+  writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(-90deg);
+  background: rgba(68, 70, 151, 0.68); border-radius: 2px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; right: 0; text-decoration: none; bottom: 130px;
 
   .extranet-text{
-    white-space: nowrap;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 11px;
-    font-weight: 400;
-    line-height: normal;
-    color: #FFF;
-    transform: rotate(-90deg);
+    white-space: nowrap; font-family: "Plus Jakarta Sans", sans-serif; font-size: 11px; font-weight: 400; line-height: normal; color: #FFF; transform: rotate(-90deg);
   }
   .extranet-slash{ color: map.get(vars.$theme-colors, "light-red"); }
 }
 
 .overlay-bottom{ grid-area: bottom; }
-.overlay-social.linkedin{
-  inline-size: 32px; block-size: 32px;
-  display: inline-grid; place-items: center;
-  img{ inline-size: 100%; block-size: 100%; }
-}
-.overlay-legal{
-  font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 12px; color: #444697; opacity: .8;
-}
+.overlay-social.linkedin{ inline-size: 32px; block-size: 32px; display: inline-grid; place-items: center; img{ inline-size: 100%; block-size: 100%; } }
+.overlay-legal{ font-family: "Plus Jakarta Sans", sans-serif; font-size: 12px; color: #444697; opacity: .8; }
 .mm-legal { text-decoration: none; }
+
+/* ===== Bouton burger caché en desktop ===== */
+.burger { display: none; }
 
 /* ================== MOBILE (≤ md ≈ 768px) ================== */
 @media (max-width: map.get(vars.$breakpoints, "md")) {
   .header{
-    padding-top: clamp(16px, 4vw, 28px);
+    padding-top: clamp(17px, 4vw, 28px);
     padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
     background: map.get(vars.$theme-colors, "white");
   }
 
   .header-inner{
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: start;
-    row-gap: clamp(8px, 3vw, 16px);
+    display: grid; grid-template-columns: 1fr auto;
+    align-items: start; row-gap: clamp(8px, 3vw, 16px);
   }
 
-  .brand{
-    grid-column: 1 / 2;
-    display: grid;
-    align-items: center;
-    text-decoration: none;
-    color: inherit;
-  }
-  .logo{
-    inline-size: 89.654px;
-    block-size: 90px;
-    aspect-ratio: 89.654 / 90;
-    flex-shrink: 0;
-  }
+  .brand{ grid-column: 1 / 2; display: grid; align-items: center; text-decoration: none; color: inherit; }
+  .logo{ inline-size: 89.654px; block-size: 90px; aspect-ratio: 89.654 / 90; flex-shrink: 0; }
   .slogan{
     max-width: clamp(260px, 64vw, 420px);
-    text-align: left;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 20px;
-    font-weight: 400;
-    line-height: normal;
-    color: #EA4D4D;
-    overflow: visible;
+    text-align: left; font-family: "Plus Jakarta Sans", sans-serif; font-size: 20px; font-weight: 400; line-height: normal; color: #EA4D4D; overflow: visible;
   }
 
-  .tagline{
-    grid-column: 1 / -1;
-    display: block !important;
-    align-items: flex-start !important;
-    margin-top: clamp(6px, 2vw, 12px);
-  }
-  .tagline-text{
-    display: inline-block;
-    font-family: "Plus Jakarta Sans", sans-serif;
-    font-size: 16px;
-    font-weight: 400;
-    line-height: normal;
-    color: #444697;
-    text-align: left !important;
-  }
+  .tagline{ grid-column: 1 / -1; display: block !important; align-items: flex-start !important; margin-top: clamp(6px, 2vw, 12px); }
+  .tagline-text{ display: inline-block; font-family: "Plus Jakarta Sans", sans-serif; font-size: 16px; font-weight: 400; line-height: normal; color: #444697; text-align: left !important; }
   .tagline-text br:nth-of-type(2){ display: none; }
-  .rics{
-    margin-top: 10px;
-    inline-size: 57px;
-    block-size: 21px;
-    aspect-ratio: 19 / 7;
-    flex-shrink: 0;
-    margin-left: 0;
-  }
+  .rics{ margin-top: 10px; inline-size: 57px; block-size: 21px; aspect-ratio: 19 / 7; flex-shrink: 0; margin-left: 0; }
 
   .menu-bar{ grid-column: 1 / -1; padding: 0; width: 100%; }
   .menu{ display: none !important; }
-  .header.menu-open .menu,
-  .menu-bar.open .menu{
-    display: grid !important;
-    grid-template-columns: 1fr;
-    border-top: 1px solid rgba(68,71,152,.5);
-    margin-top: 12px;
+  .header.menu-open .menu, .menu-bar.open .menu{
+    display: grid !important; grid-template-columns: 1fr;
+    border-top: 1px solid rgba(68,71,152,.5); margin-top: 12px;
   }
-  .header.menu-open .menu li + li,
-  .menu-bar.open .menu li + li{
-    border-left: 0;
-    border-top: 1px solid rgba(68,71,152,.5);
+  .header.menu-open .menu li + li, .menu-bar.open .menu li + li{
+    border-left: 0; border-top: 1px solid rgba(68,71,152,.5);
   }
-  .header.menu-open .menu a,
-  .menu-bar.open .menu a{
-    text-align: left; padding: 14px 0; font-size: 18px;
-  }
+  .header.menu-open .menu a, .menu-bar.open .menu a{ text-align: left; padding: 14px 0; font-size: 18px; }
 
-  .right-rail{
-    top: calc(env(safe-area-inset-top) + 0px);
-    width: $rail-w;
-    gap: 10px;
-  }
+  .right-rail{ top: calc(env(safe-area-inset-top) + 0px); width: $rail-w; gap: 10px; }
 
-  /* En mobile, on garde le look « burger » si souhaité :
-     (ici on laisse la pastille transparente possible, à adapter si besoin) */
-  .lang-switch{
-    background: rgba(68, 70, 151, 0.68);
-    font-size: 0; /* le label 'FR/EN' reste visuel via contenu, on peut ajuster si souhaité */
-  }
+  /* En mobile, pas de switch langue — via l’overlay */
+  .lang-switch{ display: none !important; }
 
-  /* Un seul badge extranet visible selon l’état overlay (exemple) */
+  /* Badge extranet : un seul visible selon l’état overlay */
   .menu-overlay:not(.open) .extranet-badge { display: none !important; }
   .header.menu-open .right-rail .extranet-badge { display: none !important; }
 
   /* FR/ENG rouge dans l’overlay (mobile) */
   .overlay-lang{
-    .lang-btn{
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 16px;
-      font-style: italic;
-      font-weight: 400;
-      line-height: 40px;
-      color: #444697;
-      opacity: 1;
-    }
+    .lang-btn{ font-family: "Plus Jakarta Sans", sans-serif; font-size: 16px; font-style: italic; font-weight: 400; line-height: 40px; color: #444697; opacity: 1; }
     .lang-btn.active{ color: #EA4D4D; }
-    .sep{
-      font-family: "Plus Jakarta Sans", sans-serif;
-      font-size: 16px;
-      font-style: italic;
-      font-weight: 400;
-      line-height: 40px;
-      color: #444697;
-    }
+    .sep{ font-family: "Plus Jakarta Sans", sans-serif; font-size: 16px; font-style: italic; font-weight: 400; line-height: 40px; color: #444697; }
   }
+
+  /* ===== Burger (statique) collé au bord droit ===== */
+  .burger{
+    display: inline-grid;
+    place-content: center; gap: 4px;
+
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 8px);
+    right: calc(0px + env(safe-area-inset-right));
+    inline-size: $rail-w; block-size: $rail-w;
+
+    padding: 0; border: 0; background: transparent; cursor: pointer;
+    z-index: 3000;
+
+    .burger-bar{
+      inline-size: 28px; block-size: 2px;
+      background: #444697; border-radius: 2px; display: block;
+    }
+    .burger-bar:nth-child(2){ inline-size: 21px; } /* 75% */
+    .burger-bar:nth-child(3){ inline-size: 14px; } /* 50% */
+  }
+
+  /* Quand l’overlay est ouvert, on masque le burger (on utilise le bouton X) */
+  .header.menu-open .burger{ display: none !important; }
 }
 
 /* Hauteurs faibles */
@@ -453,3 +337,24 @@ $rail-w: 40px;
 
 /* Divers */
 .no-scroll{ overflow: hidden !important; }
+
+/* Force la couleur du "/" en light-red partout (rail + overlay) */
+.right-rail .extranet-badge .extranet-text .extranet-slash,
+.menu-overlay .extranet-badge .extranet-text .extranet-slash{
+  color: map.get(vars.$theme-colors, "light-red") !important;
+}
+.extranet-slash *{ color: inherit !important; }
+
+
+/* Force la couleur du "/" malgré l'encapsulation Angular */
+:host ::ng-deep .right-rail .extranet-badge .extranet-text .extranet-slash,
+:host ::ng-deep .menu-overlay .extranet-badge .extranet-text .extranet-slash{
+  color: map.get(vars.$theme-colors, "light-red") !important;
+  -webkit-text-fill-color: map.get(vars.$theme-colors, "light-red") !important; /* iOS/Safari */
+}
+
+/* Si un script wrappe le slash, garder la couleur héritée */
+:host ::ng-deep .extranet-slash *{
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
+}

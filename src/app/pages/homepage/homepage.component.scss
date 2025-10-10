@@ -427,7 +427,8 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   inset: 0;
   opacity: 0;
   pointer-events: none;
-  transition: opacity .28s ease; /* garde la petite transition pour le toggle map/liste */
+  transition: opacity .28s ease;
+  text-decoration: none;
 }
 
 .panel-map {
@@ -452,10 +453,14 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
 
 .where-map img {
   display: block;
-  width: 70%;
+  width: 90%;
   max-width: 720px;
   height: auto;
   object-fit: contain;
+}
+
+.where-link {
+  text-decoration: none;
 }
 
 .panel-list {

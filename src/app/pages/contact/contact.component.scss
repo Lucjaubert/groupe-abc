@@ -1,3 +1,4 @@
+/* src/app/pages/contact/contact.component.scss */
 @use "sass:map";
 @use "../../../styles/_variables.scss" as vars;
 
@@ -5,7 +6,15 @@ $blue-hero: #444798; // titres & gros textes (60px)
 $blue: #444697;      // petits textes + contours (14px)
 $red: #E44D4D;       // bouton
 $grey-100: #F5F4F8;
-$dark-blue: map.get(vars.$theme-colors, "dark-blue", #26285e);
+
+// Fallbacks sûrs si la clé n'existe pas dans tes maps
+$dark-blue: if(map.has-key(vars.$theme-colors, "dark-blue"), map.get(vars.$theme-colors, "dark-blue"), #26285e);
+$fs-80: if(map.has-key(vars.$font-size, "80"), map.get(vars.$font-size, "80"), 36px);
+$fw-regular: if(map.has-key(vars.$font-weight, "regular"), map.get(vars.$font-weight, "regular"), 400);
+
+/* ===== Helpers d’affichage ===== */
+.only-mobile  { display: none; }
+.only-desktop { display: inline; }
 
 /* ===== Hooks d’animation (scopés au composant) ===== */
 .contact-page {
@@ -79,12 +88,12 @@ $dark-blue: map.get(vars.$theme-colors, "dark-blue", #26285e);
   inline-size: 100%;
   border: 0;
   padding: 0;
-  margin: 0 0 71.5px 0;
+  margin: 0 0 32px 0; /* marge réduite pour rapprocher la plaquette */
   margin-top: 105px;
 }
 
 /* =========================================================================
-   RADIOS — 2 groupes sur la ligne, alignés sur les colonnes de .form-grid
+   RADIOS
    ========================================================================= */
 .radios {
   width: 100%;
@@ -109,7 +118,7 @@ $dark-blue: map.get(vars.$theme-colors, "dark-blue", #26285e);
   gap: 28px;
 }
 
-/* ===== Radio custom (input masqué + cercle CSS) ===== */
+/* ===== Radio custom ===== */
 .radio {
   position: relative;
   display: inline-flex !important;
@@ -178,13 +187,8 @@ $dark-blue: map.get(vars.$theme-colors, "dark-blue", #26285e);
   row-gap: 18px;
 }
 
-.form-grid label {
-  display: grid;
-}
-
-.form-grid label.full {
-  grid-column: 1 / -1;
-}
+.form-grid label { display: grid; }
+.form-grid label.full { grid-column: 1 / -1; }
 
 /* Champs */
 input,
@@ -201,14 +205,8 @@ textarea {
   line-height: normal;
 }
 
-input {
-  min-block-size: 40px;
-}
-
-textarea {
-  min-block-size: 199px;
-  resize: vertical;
-}
+input { min-block-size: 40px; }
+textarea { min-block-size: 199px; resize: vertical; }
 
 input:focus,
 textarea:focus {
@@ -220,16 +218,10 @@ textarea:focus {
 .btn-contact {
   width: 185px;
   height: 39px;
-  flex-shrink: 0;
-
-  /* Texte à gauche | icône à droite */
   display: inline-grid;
   grid-template-columns: 1fr auto;
   align-items: center;
-
-  /* le texte démarre à 14px du bord gauche */
   padding: 0 10px 0 14px;
-
   border: 0;
   border-radius: 6px;
   background: $red;
@@ -239,25 +231,11 @@ textarea:focus {
   font-weight: 400;
   line-height: normal;
   cursor: pointer;
-  transition:
-    background-color .18s ease,
-    color .18s ease,
-    transform .15s ease,
-    opacity .15s ease;
+  transition: background-color .18s ease, color .18s ease, transform .15s ease, opacity .15s ease;
 
-  /* Libellé collé au bord gauche (après padding) */
-  .btn-label {
-    pointer-events: none;
-    justify-self: start;
-    text-align: left;
-  }
-
-  /* Icônes collées à droite */
+  .btn-label { pointer-events: none; justify-self: start; text-align: left; }
   .ico-mail,
-  .ico-check {
-    justify-self: end;
-  }
-
+  .ico-check { justify-self: end; }
   .ico-mail  { inline-size: 31px; block-size: 19px; display: grid; place-items: center; }
   .ico-check { display: none; width: 22px; height: 22px; fill: #FFF; }
 
@@ -274,26 +252,34 @@ textarea:focus {
   }
 }
 
-/* petit message d’erreur */
-.form-error {
-  margin-top: 10px;
-  color: #b91c1c;
-  font-size: 14px;
-}
+.form-error { margin-top: 10px; color: #b91c1c; font-size: 14px; }
 
 .form-actions {
   display: flex;
   justify-content: flex-end;
   margin-top: 12px;
+
+  .ico-mail {
+    justify-self: end;
+    inline-size: 31px;
+    block-size: 19px;
+    display: grid;
+    place-items: center;
+    color: #7a7a7a;
+    transition: color .2s ease;
+
+    svg, svg * { fill: currentColor; }
+    &:hover { color: #fff; }
+  }
 }
 
-/* ===== Bloc coordonnées – grand texte (60px partout) ===== */
+/* ====== BLOC COORDONNÉES ====== */
 .big-infos {
   inline-size: 100%;
   color: $blue-hero;
   margin-bottom: 100px;
   --gap-lines: 10px;
-  --gap-site: 67px !important;
+  --gap-site: 67px;
 }
 
 .big-infos p {
@@ -304,9 +290,7 @@ textarea:focus {
   color: $blue-hero;
 }
 
-.big-infos p + p {
-  margin-top: var(--gap-lines);
-}
+.big-infos p + p { margin-top: var(--gap-lines); }
 
 .big-infos a {
   color: inherit;
@@ -316,147 +300,126 @@ textarea:focus {
   line-height: normal;
 }
 
-.big-infos a:hover {
-  text-decoration: underline;
-}
+.big-infos a:hover { text-decoration: underline; }
+.big-infos .site { margin-top: var(--gap-site); }
 
-.big-infos .site {
-  margin-top: var(--gap-site);
-}
-
-
-/* ==== Bande “Prise de contact rapide” (si présente) ==== */
-.contact-quick {
-  background: $dark-blue;
-  color: #fff;
-}
-
-.quick-title {
-  font-size: clamp(16px, 2vw, 20px);
-  font-weight: 400;
-  margin: 0 0 12px 0;
-}
-
-.quick-grid {
+/* ===== Wrapper adresse + download (desktop : 2 colonnes) ===== */
+.contact-bottom {
   display: grid;
-  grid-template-columns: 1.2fr 0.9fr 0.9fr 1fr auto;
-  gap: 12px;
+  grid-template-columns: 1fr auto; /* l'adresse prend la place, le download à droite */
+  align-items: start;               /* même hauteur que “18 rue Pasquier” */
+  column-gap: clamp(24px, 6vw, 64px);
+  margin: 8px 0 28px 0;
 }
 
-.quick-grid label {
-  display: grid;
+/* ===== Download (plaquette) — à droite, aligné en haut ===== */
+.download {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-end;
+  gap: clamp(16px, 2.8vw, 24px);
+  margin: 0; /* l’espacement vertical est géré par le wrapper */
 }
 
-.quick-grid input {
-  background: #fff;
-  color: $blue-hero;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, .1);
-  padding: 12px 14px;
-  min-block-size: 42px;
+.download .dl-text { max-width: 540px; }
+
+.download .dl-line {
+  color: $blue;
+  font-size: $fs-80; // ~36px par défaut si token absent
+  font-weight: $fw-regular;
+  white-space: normal;
+  margin: 0;
+  padding: 0;
 }
 
-.quick-grid .full {
-  grid-column: 1 / 2;
-}
+.download .dl-accent { color: $red; }
 
-.send-mini {
-  align-self: center;
-}
-
-.quick-foot {
+/* ✅ s’assure que le lien est au-dessus et cliquable */
+.download .dl-link {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
   display: grid;
   grid-template-columns: 1fr auto;
-  align-items: center;
-  margin-top: clamp(16px, 3vw, 24px);
+  align-items: end;
+  gap: clamp(16px, 2.8vw, 24px);
+  text-decoration: none;
+  width: 364px; /* largeur desktop */
+  color: inherit;
+  cursor: pointer;
+}
+.download .dl-link:focus-visible {
+  outline: 2px solid rgba(68,71,152,.35);
+  outline-offset: 2px;
+}
+.download .dl-link.disabled {
+  opacity: .6;
+  /* pas de pointer-events:none pour garder la navigabilité clavier si besoin */
 }
 
-.quick-foot p {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 400;
-  color: #fff;
-  opacity: .85;
+.download .dl-icon-img {
+  width: clamp(36px, 4vw, 48px);
+  height: auto;
+  display: block;
+  align-self: end;
+  transform: translateY(2px);
 }
 
-/* ===== Accessibilité ===== */
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* =======================================================================
-   RESPONSIVE — unique breakpoint à 768px
-   ======================================================================= */
+/* ================= Mobile ================= */
 @media (max-width: 768px) {
-  .rad-left,
-  .rad-right {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
+  .only-mobile  {
+    display: inline !important;
+    font-size: 23px;
+    font-weight: 400;
   }
+  .only-desktop { display: none !important; }
+
+  .contact-bottom {
+    grid-template-columns: 1fr;
+    row-gap: 14px;
+  }
+  .download { order: 1; }
+  .big-infos { order: 2; }
+
+  .download {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    width: 100%;
+    margin: 0;
+  }
+  .download .dl-text { max-width: none; }
+  .download .dl-link {
+    width: 232px;
+    align-self: flex-start;
+    margin-top: 4px;
+  }
+
+  .contact-head .linkedin img { width: 34.9px; height: 35px; flex-shrink: 0; }
+  .contact-head .page-title {
+    color: #444798;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto,
+                 "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+                 "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-size: 32px; font-style: normal; font-weight: 300; line-height: 30px;
+  }
+
+  .big-infos { color: #444697; }
+  .big-infos p,
+  .big-infos a {
+    color: #444697;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto,
+                 "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+                 "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-size: 35px; font-weight: 400; line-height: 50px;
+  }
+
+  .rad-left,
+  .rad-right { flex-direction: column; align-items: flex-start; gap: 14px; }
 
   .form-grid {
     grid-template-columns: 1fr 1fr;
     column-gap: 14px;
     row-gap: 14px;
-  }
-
-  .contact-head .linkedin img {
-    width: 34.908px;
-    height: 35px;
-    flex-shrink: 0;
-  }
-
-  .contact-head .page-title {
-    color: #444798;
-    font-family: "Plus Jakarta Sans",
-                 system-ui,
-                 -apple-system,
-                 Segoe UI,
-                 Roboto,
-                 "Helvetica Neue",
-                 Arial,
-                 "Noto Sans",
-                 "Apple Color Emoji",
-                 "Segoe UI Emoji",
-                 "Segoe UI Symbol",
-                 "Noto Color Emoji";
-    font-size: 32px;
-    font-style: normal;
-    font-weight: 300;
-    line-height: 30px;
-  }
-
-  .big-infos {
-    color: #444697;
-  }
-
-  .big-infos p,
-  .big-infos a {
-    color: #444697;
-    font-family: "Plus Jakarta Sans",
-                 system-ui,
-                 -apple-system,
-                 Segoe UI,
-                 Roboto,
-                 "Helvetica Neue",
-                 Arial,
-                 "Noto Sans",
-                 "Apple Color Emoji",
-                 "Segoe UI Emoji",
-                 "Segoe UI Symbol",
-                 "Noto Color Emoji";
-    font-size: 35px;
-    font-style: normal;
-    font-weight: 400;
-    line-height: 50px;
   }
 }

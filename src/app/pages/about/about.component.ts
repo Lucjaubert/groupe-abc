@@ -1,9 +1,10 @@
+// src/app/pages/about/about.component.ts
 import {
   Component, OnInit, AfterViewInit, OnDestroy,
   inject, ElementRef, ViewChild, ViewChildren, QueryList, ChangeDetectorRef
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { forkJoin, firstValueFrom } from 'rxjs';
 import { WordpressService, PartnerCard } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
@@ -19,7 +20,7 @@ type CoreValue    = { title?: string; html?: string; icon?: string|number };
 type CoreBlock    = { title?: string; html?: string; items?: string[] };
 type TimelineStep = { year?: string; title?: string; html?: string };
 type AffItem      = { logo?: string; excerpt?: string; content?: string };
-type DeonItem     = { title?: string; html?: string };
+type DeonItem     = { title?: string; html?: string; file?: string | null };
 type Mesh         = { title?: string; image?: string; levels: string[] };
 type MapSection   = { title?: string; image?: string; items: string[] };
 type ValueItem    = { title: string; html: string; iconUrl: string };
@@ -35,6 +36,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   private wp  = inject(WordpressService);
   private seo = inject(SeoService);
   private cdr = inject(ChangeDetectorRef);
+  private router = inject(Router);
 
   coreReady = false;
 
@@ -115,6 +117,56 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
+  }
+
+  /* ============ ROUTES / MAP → TEAM (même logique Homepage) ============ */
+  // Adapte si ton slug FR est différent (ex. '/nos-equipes').
+  private TEAM_ROUTE_FR = '/nos-equipes';
+  private TEAM_ROUTE_EN = '/en/team';
+
+  isEnglish(): boolean { // public
+    try { return (window?.location?.pathname || '/').startsWith('/en'); }
+    catch { return false; }
+  }
+
+  /** minuscules, sans accents, espaces normalisés */
+  private norm(s: string): string {
+    return (s || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** Label lisible → clé courte (?region=key) */
+  private regionKeyFromLabel(label: string): string {
+    const n = this.norm(label);
+    if (n.includes('paris') || n.includes('ile-de-france') || n.includes('ile de france')) return 'idf';
+    if (n.includes('grand ouest'))                          return 'grand-ouest';
+    if (n.includes('rhone') || n.includes('auvergne'))      return 'rhone-alpes';
+    if (n.includes('cote d\'azur') || n.includes('cote d azur') || n.includes('cote-d-azur') || n.includes('sud-est')) return 'cote-azur';
+    if (n.includes('sud-ouest') || n.includes('sud ouest')) return 'sud-ouest';
+    if (n.includes('grand est') || n.includes('nord & est') || n.includes('nord et est') || n.includes('nord-est') || n.includes('nord est')) return 'grand-est';
+    if (n.includes('antilles') || n.includes('guyane'))     return 'antilles-guyane';
+    if (n.includes('reunion') || n.includes('mayotte'))     return 'reunion-mayotte';
+    // fallback slug
+    return n.replace(/[^a-z0-9- ]/g,'').replace(/\s+/g,'-');
+  }
+
+  /** Click → navigate vers Team avec ?region=... */
+  openRegion(label: string): void {
+    const key = this.regionKeyFromLabel(label);
+    const path = this.isEnglish() ? this.TEAM_ROUTE_EN : this.TEAM_ROUTE_FR;
+    this.router.navigate([path], { queryParams: { region: key } });
+  }
+
+  /** Accessibilité clavier sur li (Enter / Space) */
+  openRegionOnKey(evt: KeyboardEvent, label: string): void {
+    const k = evt.key?.toLowerCase();
+    if (k === 'enter' || k === ' ' || k === 'spacebar') {
+      evt.preventDefault();
+      this.openRegion(label);
+    }
   }
 
   /* ========================= */
@@ -200,7 +252,22 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       this.deonTitle = d.deo_title || 'Déontologie';
       this.deontology = [1,2,3,4].map(i => {
         const di = (d as any)[`deo_${i}`];
-        return di ? { title: di.title || '', html: di.deo_description || '' } : null;
+        if (!di) return null;
+
+        // Champ fichier : différentes clés possibles
+        const rawFile =
+          di['deo-doc-download'] ??
+          di['deo_doc_download'] ??
+          di.deoDocDownload ??
+          null;
+
+        const file = (typeof rawFile === 'string' && rawFile.trim()) ? rawFile.trim() : null;
+
+        return {
+          title: di.title || '',
+          html: di.deo_description || '',
+          file
+        } as DeonItem;
       }).filter(Boolean) as DeonItem[];
       this.deonOpen = new Array(this.deontology.length).fill(false);
 
@@ -332,7 +399,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     if (inflight) return inflight;
 
     const promise = (async () => {
-      const url = await this.resolveImgUrl((p as any).photo, 'large'); // <— préférence 'large' comme le pipe
+      const url = await this.resolveImgUrl((p as any).photo, 'large');
       const finalUrl = url || this.defaultPortrait;
       await this.preload(finalUrl);
       this.partnerPhotoCache.set(p, finalUrl);
@@ -418,6 +485,24 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     catch { return false; }
   }
 
+  /* ===== Helpers pour l’icône de téléchargement ===== */
+  isSameOrigin(url: string): boolean {
+    try {
+      const u = new URL(url, window.location.origin);
+      return u.origin === window.location.origin;
+    } catch { return false; }
+  }
+
+  safeDownloadName(url: string): string {
+    try {
+      const u = new URL(url, window.location.origin);
+      const name = u.pathname.split('/').pop() || 'document.pdf';
+      return name.replace(/[^\w.\-()\[\] ]+/g, '_');
+    } catch {
+      return 'document.pdf';
+    }
+  }
+
   /* ===== Hover zoom (GSAP) ===== */
   private clearHoverBindings(){
     this.hoverCleanup.forEach(fn => { try { fn(); } catch {} });
@@ -496,7 +581,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.killAllScrollTriggers();
-    try { this._ro?.disconnect(); } catch {}
+    try { (this as any)._ro?.disconnect(); } catch {}
     try { gsap.globalTimeline.clear(); } catch {}
     try { this.coreGridTrigger?.kill(); } catch {}
     this.clearHoverBindings();
