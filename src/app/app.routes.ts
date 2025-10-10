@@ -28,7 +28,7 @@ const pageRoutes: Routes = [
     title: 'Biens & Méthodes – Groupe ABC'
   },
   {
-    path: 'notre-equipe',
+    path: 'nos-equipes',
     loadComponent: () =>
       import('./pages/team/team.component').then(m => m.TeamComponent),
     title: 'Équipe – Groupe ABC'

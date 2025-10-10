@@ -47,13 +47,13 @@ type News = { title: string; items: NewsItem[] };
 /* ===== KeyFigures (interface utilisée par le template) ===== */
 interface KeyFigure {
   value: number;
-  label: string;      // libellé (FR/EN) affiché
-  labelBis: string;   // inutilisé ici, mais on garde pour compat avec ton template
-  fullLabel: string;  // même chose que label (compat)
-  display: string;    // chiffres animés (string pour padding éventuel)
-  typed: string;      // libellé final, non animé
-  digits: number;     // largeur du bloc chiffres (en ch)
-  played: boolean;    // flag anim
+  label: string;
+  labelBis: string;
+  fullLabel: string;
+  display: string;
+  typed: string;
+  digits: number;
+  played: boolean;
 }
 
 /* ==========================================================
@@ -141,13 +141,28 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ---------- KEY FIGURES ---------- */
   keyFigures: KeyFigure[] = [];
   @ViewChildren('kfItem') kfItems!: QueryList<ElementRef<HTMLLIElement>>;
-  maxValueCh = 6; // fallback
+  maxValueCh = 6;
 
   /* ---------- IDENTITY / WHAT-HOW / DOWNLOAD ---------- */
   identity: Identity = { whoTitle: '', whoHtml: '', whereTitle: '', whereMap: '', whereItems: [] };
   whereItems: string[] = [];
   whereOpen = false;
   toggleWhere(): void { this.whereOpen = !this.whereOpen; }
+
+  // === Chemins Team + mapping exact libellés → clé de région
+  private TEAM_ROUTE_FR = '/nos-equipes'; // ajuste si nécessaire
+  private TEAM_ROUTE_EN = '/en/team';
+
+  private readonly REGION_LABEL_TO_KEY: Record<string, string> = {
+    'Grand Paris': 'idf',
+    'Grand Ouest': 'grand-ouest',
+    'Rhône-Alpes': 'rhone-alpes',
+    "Côte d'Azur": 'cote-azur',
+    'Sud-Ouest': 'sud-ouest',
+    'Grand Est': 'grand-est',
+    'Antilles & Guyane': 'antilles-guyane',
+    "Île de la Réunion & Mayotte": 'reunion-mayotte',
+  };
 
   whatHow: WhatHow | null = null;
   presentation: Presentation = { text1: '', text2: '', file: null };
@@ -207,7 +222,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.tryInitHeroIntro();
 
       // Sections
-      this.extractKeyFigures(); // <-- figées FR/EN + langue
+      this.extractKeyFigures();
       this.extractIdentity();
       this.extractWhatHowAndPresentation();
       this.extractExpertiseContext();
@@ -231,7 +246,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       .subscribe(() => {
         this.extractHero();
         this.applySeoFromHero();
-        this.extractKeyFigures(); // <-- reconstruit KeyFigures en FR/EN instantanément
+        this.extractKeyFigures();
         this.cdr.detectChanges();
       });
 
@@ -239,7 +254,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit(): void {
-    // Observer chiffres (déclenche l’animation dans le viewport)
+    // Observer chiffres
     const io = new IntersectionObserver(entries => {
       for (const e of entries) {
         if (e.isIntersecting) {
@@ -258,7 +273,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.viewReady = true;
     this.tryInitHeroIntro();
 
-    // Re-scan Weglot (utile pour Hero/Team – KeyFigures est protégée via data-wg-notranslate)
+    // Weglot rescans
     this.wgAddNodeDouble(document.getElementById('hero'));
     this.wgAddNodeDouble(document.getElementById('key-figures'));
 
@@ -432,10 +447,46 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ==================================================== */
+  /*               LISTE « OÙ ? » CLIQUABLE               */
+  /* ==================================================== */
+
+  private norm(s: string): string {
+    return (s || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private regionKeyFromLabel(label: string): string {
+    // 1) essai exact (après trim) pour matcher tes libellés ACF tels quels
+    const exact = this.REGION_LABEL_TO_KEY[(label || '').trim()];
+    if (exact) return exact;
+
+    // 2) fallback tolérant
+    const n = this.norm(label);
+    if (n.includes('paris') || n.includes('ile-de-france')) return 'idf';
+    if (n.includes('grand ouest'))                          return 'grand-ouest';
+    if (n.includes('rhone') || n.includes('auvergne'))      return 'rhone-alpes';
+    if (n.includes('cote d azur') || n.includes('sud-est')) return 'cote-azur';
+    if (n.includes('sud-ouest'))                            return 'sud-ouest';
+    if (n.includes('grand est') || n.includes('nord & est') || n.includes('nord et est')) return 'grand-est';
+    if (n.includes('antilles') || n.includes('guyane'))     return 'antilles-guyane';
+    if (n.includes('reunion') || n.includes('mayotte'))     return 'reunion-mayotte';
+    return n.replace(/[^a-z0-9- ]/g,'').replace(/\s+/g,'-');
+  }
+
+  /** Appelée par le `(click)` sur chaque item « Où ? » */
+  openRegion(label: string): void {
+    const key  = this.regionKeyFromLabel(label);
+    const path = this.isEnglish() ? this.TEAM_ROUTE_EN : this.TEAM_ROUTE_FR;
+    this.router.navigate([path], { queryParams: { region: key } });
+  }
+
+  /* ==================================================== */
   /*                     KEY FIGURES (fixes)              */
   /* ==================================================== */
 
-  /** Construit les KeyFigures à partir des données en dur + langue URL */
   private extractKeyFigures(): void {
     const isEN = this.isEnglish();
 
@@ -447,14 +498,13 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         label,
         labelBis: '',
         fullLabel: label,
-        display: '',                 // évolue pendant l’animation
-        typed: label,                // libellé final directement (PAS d’anim de lettres)
+        display: '',
+        typed: label,
         digits: String(value).length,
         played: false
       } as KeyFigure;
     });
 
-    // largeur max (en ch) de la colonne chiffres
     const widths = KEY_FIGURES_STATIC.map(k => {
       const s = String(k.value);
       const hasDecimal = /[,.]/.test(s);
@@ -463,7 +513,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.maxValueCh = Math.max(6, ...(widths.length ? widths : [6]));
   }
 
-  /** Animation uniquement des CHIFFRES (libellé affiché tel quel) */
   private playFigure(index: number): void {
     const f = this.keyFigures[index];
     if (!f || f.played) return;
@@ -682,7 +731,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const tmp: TeamMember[] = [];
     for (let i = 1; i <= 8; i++) {
-      const photo = t[`team_photo_${i}`]; // ID ou URL
+      const photo = t[`team_photo_${i}`];
       const name = (t[`team_name_${i}`] || '').toString().trim() || '';
       const area = t[`team_area_${i}`] || '';
       const jobHtml = t[`team_job_${i}`] || '';
@@ -700,7 +749,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.teamMembers = this.shuffleArray(tmp);
 
-    // Pages de 2 personnes
     this.teamPages = [];
     for (let i = 0; i < this.teamMembers.length; i += 2) {
       this.teamPages.push(this.teamMembers.slice(i, i + 2));

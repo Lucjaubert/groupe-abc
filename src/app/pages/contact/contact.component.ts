@@ -1,3 +1,4 @@
+// src/app/pages/contact/contact.component.ts
 import { CommonModule } from '@angular/common';
 import {
   Component, Input, OnInit, AfterViewInit, OnDestroy,
@@ -7,10 +8,17 @@ import {
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { SeoService } from '../../services/seo.service';
-import { ImgFromPipe } from '../../pipes/img-from.pipe';
 import { ContactService } from '../../services/contact.service';
+import { WordpressService } from '../../services/wordpress.service';
+import { firstValueFrom } from 'rxjs';
 
 type SendState = 'idle' | 'loading' | 'success' | 'error';
+
+type PresentationDl = {
+  text1: string;
+  text2: string;
+  file: string | null;
+};
 
 @Component({
   selector: 'app-contact',
@@ -21,35 +29,39 @@ type SendState = 'idle' | 'loading' | 'success' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
-
-  /* ====== SEO – Inputs configurables ====== */
-  /** Domaine du site (utilisé pour canonical & JSON-LD) */
   @Input() siteUrl         = 'https://groupe-abc.fr';
-  /** Chemin canonique FR de la page */
   @Input() canonicalPath   = '/contact';
-  /** Chemin canonique EN de la page */
   @Input() canonicalPathEn = '/en/contact';
-
-  /** Nom de l’organisation (pour Title/JSON-LD) */
   @Input() orgName         = 'Groupe ABC';
 
-  /** Coordonnées (déjà affichées dans le template) */
   @Input() streetAddress   = '18 rue Pasquier';
   @Input() postalCode      = '75008';
   @Input() addressLocality = 'Paris';
   @Input() phoneIntl       = '+33178414441';
   @Input() phoneDisplay    = '01 78 41 44 41';
   @Input() email           = 'contact@groupe-abc.fr';
-
-  /** Réseaux */
   @Input() linkedinUrl     = 'https://www.linkedin.com/company/groupe-abc-experts/';
-
-  /** Image sociale de fallback pour OG/Twitter */
   @Input() socialImage     = '/assets/og/og-default.jpg';
 
-  private seo = inject(SeoService);
+  @Input() acf?: any;
 
-  /* ===== Refs ===== */
+  presentation: PresentationDl = {
+    text1: 'Télécharger la présentation du',
+    text2: 'Groupe ABC',
+    file: null
+  };
+
+  dlL1 = 'Télécharger la';
+  dlL2 = 'présentation du';
+
+  get hasFile(): boolean {
+    const f = this.presentation?.file;
+    return !!(f && typeof f === 'string' && f.trim().length > 0);
+  }
+
+  private seo = inject(SeoService);
+  private wp  = inject(WordpressService);
+
   @ViewChild('contactTitle')    contactTitle!: ElementRef<HTMLElement>;
   @ViewChild('contactLinkedin') contactLinkedin?: ElementRef<HTMLElement>;
 
@@ -67,7 +79,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   private bindScheduled = false;
   private heroPlayed = false;
 
-  /* ===== Form state (même logique que footer) ===== */
   sendState: SendState = 'idle';
   messageError = '';
 
@@ -76,11 +87,26 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     private contact: ContactService,
   ) {}
 
-  /* ==================================================== */
-  /*                       LIFECYCLE                      */
-  /* ==================================================== */
   ngOnInit(): void {
-    // SEO côté serveur (SSR) dès l'init
+    if (this.acf?.presentation_download_section) {
+      console.log('[INIT] ACF fourni à ContactComponent (depuis Homepage).');
+      this.hydratePresentationFrom(this.acf.presentation_download_section);
+    } else {
+      console.log('[INIT] ACF non fourni → fetch via WordpressService.getHomepageData()');
+      this.wp.getHomepageData().subscribe({
+        next: (acf) => {
+          if (acf?.presentation_download_section) {
+            this.hydratePresentationFrom(acf.presentation_download_section);
+            this.cdr.markForCheck();
+          } else {
+            console.warn('[INIT] Pas de presentation_download_section dans les données homepage.');
+          }
+        },
+        error: (e) => { console.error('[INIT] getHomepageData() error', e); }
+      });
+    }
+
+    this.applySplitForText1(this.presentation.text1);
     this.applySeo();
   }
 
@@ -97,23 +123,84 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     try { gsap.globalTimeline.clear(); } catch {}
   }
 
-  /* ==================================================== */
-  /*                         SEO                           */
-  /* ==================================================== */
+  /* ===== Hydratation plaquette ===== */
+  private async hydratePresentationFrom(dl: any) {
+    const t1 = dl?.presentation_button_text_1 || 'Télécharger la présentation du';
+    const t2 = dl?.presentation_button_text_2 || 'Groupe ABC';
+    const raw = dl?.presentation_file;
+    console.log('[DL] ACF raw file =', raw);
+
+    const resolved = await this.resolveMedia(raw);
+    const abs = this.absUrl(resolved || '', this.siteUrl);
+    console.log('[DL] resolved =', resolved, '| abs =', abs);
+
+    this.presentation = { text1: t1, text2: t2, file: abs || null };
+    this.applySplitForText1(this.presentation.text1);
+    if (this.presentation.file) this.preload(this.presentation.file);
+    this.cdr.markForCheck();
+  }
+
+  private async resolveMedia(idOrUrl: any): Promise<string> {
+    if (!idOrUrl) return '';
+
+    if (typeof idOrUrl === 'object') {
+      const src = idOrUrl?.source_url || idOrUrl?.url || '';
+      if (src) return src;
+      if (idOrUrl?.id != null) idOrUrl = idOrUrl.id;
+    }
+
+    if (typeof idOrUrl === 'number') {
+      try { return (await firstValueFrom(this.wp.getMediaUrl(idOrUrl))) || ''; }
+      catch { return ''; }
+    }
+
+    if (typeof idOrUrl === 'string') {
+      const s = idOrUrl.trim();
+      if (/^\d+$/.test(s)) {
+        try { return (await firstValueFrom(this.wp.getMediaUrl(+s))) || ''; }
+        catch { return ''; }
+      }
+      if (/^(https?:)?\/\//.test(s) || s.startsWith('/') || s.startsWith('data:')) return s;
+      return s;
+    }
+
+    return '';
+  }
+
+  private preload(src: string): Promise<void> {
+    if (!src) return Promise.resolve();
+    return new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve();
+      img.onerror = () => resolve();
+      img.decoding = 'async';
+      img.loading = 'eager';
+      img.src = src;
+    });
+  }
+
+  private applySplitForText1(t: string) {
+    const words = (t || '').trim().replace(/\s+/g, ' ').split(' ');
+    if (words.length >= 3) {
+      this.dlL1 = words.slice(0, 2).join(' ');
+      this.dlL2 = words.slice(2).join(' ');
+    } else {
+      this.dlL1 = 'Télécharger la';
+      this.dlL2 = 'présentation du';
+    }
+  }
+
+  /* ===== SEO ===== */
   private applySeo(): void {
     const nowPath = this.currentPath();
     const isEN    = nowPath.startsWith('/en/');
-
-    // Canonicals par langue
     const canonPath = isEN ? this.canonicalPathEn : this.canonicalPath;
     const canonical = this.normalizeUrl(this.siteUrl, canonPath);
 
-    // Langues / locales
     const lang      = isEN ? 'en'    : 'fr';
     const locale    = isEN ? 'en_US' : 'fr_FR';
     const localeAlt = isEN ? ['fr_FR'] : ['en_US'];
 
-    // Alternates hreflang
     const altFR = this.normalizeUrl(this.siteUrl, this.canonicalPath);
     const altEN = this.normalizeUrl(this.siteUrl, this.canonicalPathEn);
     const alternates = [
@@ -122,7 +209,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       { lang: 'x-default', href: altFR }
     ];
 
-    // Title / description localisés
     const title = isEN
       ? `Contact – ${this.orgName} | Real estate valuation`
       : `Contact – ${this.orgName} | Expertise immobilière`;
@@ -138,7 +224,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const description = (isEN ? descEN : descFR).slice(0, 300);
 
-    // Keywords
     const kwFR = [
       'contact', 'expertise immobilière', 'évaluation immobilière', 'Paris', 'DOM-TOM',
       'résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé',
@@ -150,12 +235,10 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       'land','DCF','market comparison','yield','expert witness','RICS','IFEI','CNEJI'
     ].join(', ');
 
-    // Image OG
     const og = this.socialImage || '/assets/og/og-default.jpg';
     const ogAbs = this.absUrl(og, this.siteUrl);
     const isDefaultOg = /\/og-default\.jpg$/.test(og);
 
-    // IDs JSON-LD
     const siteId = this.siteUrl.replace(/\/+$/, '') + '#website';
     const orgId  = this.siteUrl.replace(/\/+$/, '') + '#organization';
 
@@ -165,24 +248,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       name: this.orgName,
       url: this.siteUrl,
       sameAs: [ this.linkedinUrl ].filter(Boolean),
-      memberOf: [
-        { '@type': 'Organization', name: 'RICS',  url: 'https://www.rics.org' },
-        { '@type': 'Organization', name: 'IFEI',  url: 'https://www.ifei.org' },
-        { '@type': 'Organization', name: 'CNEJI', url: 'https://www.cneji.org' }
-      ],
-      knowsAbout: [
-        'évaluation immobilière','property appraisal','DCF','méthode par comparaison','méthode par rendement',
-        'résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé','foncier','terrains'
-      ],
-      areaServed: ['FR','GP','RE','MQ','GF','YT','PF','NC','PM','WF','BL','MF'],
-      contactPoint: [{
-        '@type': 'ContactPoint',
-        contactType: 'customer service',
-        telephone: this.phoneIntl,
-        email: this.email,
-        areaServed: ['FR','EU'],
-        availableLanguage: ['fr-FR','en-US']
-      }],
       address: {
         '@type': 'PostalAddress',
         streetAddress: this.streetAddress,
@@ -212,32 +277,23 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     };
 
     this.seo.update({
-      // langue & locales
       lang, locale, localeAlt,
-
-      // metas principales
       title,
       description,
       keywords: isEN ? kwEN : kwFR,
       canonical,
       robots: 'index,follow',
-
-      // Open Graph / Twitter
       image: ogAbs,
       imageAlt: `${this.orgName} – Contact`,
       ...(isDefaultOg ? { imageWidth: 1200, imageHeight: 630 } : {}),
       type: 'website',
-
-      // hreflang
       alternates,
-
-      // JSON-LD
       jsonLd: {
         '@context': 'https://schema.org',
         '@graph': [
           {
             '@type': 'WebSite',
-            '@id': siteId,
+            '@id': this.siteUrl.replace(/\/+$/, '') + '#website',
             url: this.siteUrl,
             name: this.orgName,
             inLanguage: isEN ? 'en-US' : 'fr-FR',
@@ -255,9 +311,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /* ==================================================== */
-  /*                        UTILS SEO                      */
-  /* ==================================================== */
+  /* ===== Utils ===== */
   private normalizeUrl(base: string, path: string): string {
     const b = base.endsWith('/') ? base.slice(0, -1) : base;
     const p = path.startsWith('/') ? path : `/${path}`;
@@ -267,10 +321,10 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   private absUrl(url: string, origin: string): string {
     if (!url) return '';
     try {
-      if (/^https?:\/\//i.test(url)) return url;                    // absolue
-      if (/^\/\//.test(url)) return 'https:' + url;                 // protocole-relative
+      if (/^https?:\/\//i.test(url)) return url;
+      if (/^\/\//.test(url)) return 'https:' + url;
       const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
-      return url.startsWith('/') ? o + url : `${o}/${url}`;         // relative
+      return url.startsWith('/') ? o + url : `${o}/${url}`;
     } catch { return url; }
   }
 
@@ -278,9 +332,81 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     try { return window?.location?.pathname || '/'; } catch { return '/'; }
   }
 
-  /* ==================================================== */
-  /*                        UTILS UI                       */
-  /* ==================================================== */
+  private getBrowserOrigin(): string {
+    try { return window.location.origin; } catch { return this.siteUrl; }
+  }
+
+  isSameOrigin(url: string): boolean {
+    try {
+      const u = new URL(url, this.siteUrl);
+      const currentOrigin = this.getBrowserOrigin();
+      return u.origin === currentOrigin;
+    } catch { return false; }
+  }
+
+  safeDownloadName(url: string): string {
+    try {
+      const u = new URL(url, this.siteUrl);
+      const base = u.pathname.split('/').pop() || 'plaquette.pdf';
+      return decodeURIComponent(base);
+    } catch { return 'plaquette.pdf'; }
+  }
+
+  /* ===== Clic Download (avec logs) ===== */
+  onDlClick(ev: MouseEvent, url: string | null) {
+    const a = ev.currentTarget as HTMLAnchorElement | null;
+
+    console.log('[CLICK] start', {
+      url,
+      hasFile: this.hasFile,
+      defaultPrevented: ev.defaultPrevented,
+      anchorPresent: !!a
+    });
+
+    if (!url) {
+      console.warn('[CLICK] Pas d’URL → rien à faire');
+      return;
+    }
+
+    if (a) {
+      console.log('[CLICK] anchor attrs', {
+        href: a.getAttribute('href'),
+        target: a.getAttribute('target'),
+        rel: a.getAttribute('rel'),
+        download: a.getAttribute('download'),
+        // ⬇️ fix: pas de spread sur DOMTokenList
+        classList: Array.from(a.classList)
+      });
+    }
+
+    const same = this.isSameOrigin(url);
+    console.log('[CLICK] isSameOrigin(url)?', same, '| browserOrigin =', window.location.origin);
+
+    setTimeout(() => {
+      try {
+        console.log('[CLICK] fallback window.open()');
+        const w = window.open(url, same ? '_self' : '_blank', same ? '' : 'noopener');
+        console.log('[CLICK] window.open returned =', w);
+      } catch (e) {
+        console.error('[CLICK] window.open error', e);
+      }
+    }, 0);
+  }
+
+  downloadNameOrNull(url: string | null): string | null {
+    if (!url) return null;
+    try {
+      const u = new URL(url, this.siteUrl);
+      const currentOrigin = window.location.origin;
+      if (u.origin !== currentOrigin) return null;
+      const base = decodeURIComponent(u.pathname.split('/').pop() || 'plaquette.pdf');
+      return base || 'plaquette.pdf';
+    } catch {
+      return null;
+    }
+  }
+
+  /* ===== Animations ===== */
   private forceInitialHidden(host: HTMLElement){
     const pre  = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));
     const rows = Array.from(host.querySelectorAll<HTMLElement>('.prehide-row'));
@@ -297,9 +423,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     }));
   }
 
-  /* ==================================================== */
-  /*                      ANIMATIONS                       */
-  /* ==================================================== */
   private bindAnimations(): void {
     const host = (document.querySelector('.contact-page') as HTMLElement) || document.body;
     this.forceInitialHidden(host);
@@ -309,7 +432,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     const rm = (els: Element | Element[]) =>
       (Array.isArray(els) ? els : [els]).forEach(el => el.classList.remove('prehide','prehide-row'));
 
-    /* --- HERO --- */
     const title = this.contactTitle?.nativeElement;
     const li    = this.contactLinkedin?.nativeElement;
 
@@ -328,7 +450,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    /* --- RADIOS --- */
     {
       const radios = this.radiosEl?.nativeElement;
       const items  = (this.radioItems?.toArray() || []).map(r => r.nativeElement);
@@ -344,7 +465,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    /* --- FORM GRID --- */
     {
       const grid   = this.formGridEl?.nativeElement;
       const labels = (this.fgLabels?.toArray() || []).map(r => r.nativeElement);
@@ -360,7 +480,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    /* --- BOUTON ENVOYER --- */
     {
       const btn = this.sendBtn?.nativeElement;
       if (btn){
@@ -373,7 +492,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    /* --- BIG INFOS --- */
     {
       const wrap  = this.bigInfosEl?.nativeElement;
       const lines = (this.bigLines?.toArray() || []).map(r => r.nativeElement);
@@ -392,16 +510,11 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     try { ScrollTrigger.refresh(); } catch {}
   }
 
-  /* ==================================================== */
-  /*                     FORM HANDLERS                     */
-  /* ==================================================== */
-
-  /** Getters utilisés dans le template */
+  /* ===== Form ===== */
   get isLoading(): boolean { return this.sendState === 'loading'; }
   get isSuccess(): boolean { return this.sendState === 'success'; }
   get isError(): boolean   { return this.sendState === 'error'; }
 
-  /** Quand l’utilisateur modifie un champ → retour à idle si succès/erreur */
   onFormChange() {
     if (this.sendState === 'success' || this.sendState === 'error') {
       this.sendState = 'idle';
@@ -409,7 +522,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /** Soumission identique au footer */
   async onSubmit(ev: Event) {
     ev.preventDefault();
     if (this.sendState === 'loading') return;
@@ -429,15 +541,13 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     const fullName = [firstname, lastname].filter(Boolean).join(' ').trim();
     const lang = this.currentPath().startsWith('/en/') ? 'en' : 'fr';
 
-    // Honeypot → succès immédiat (UX identique au footer)
     if (website) {
       this.sendState = 'success';
-      form.reset();
+      (ev.target as HTMLFormElement).reset();
       this.cdr.markForCheck();
       return;
     }
 
-    // Validations mini
     if (!firstname || !lastname || !email || !message) {
       this.sendState = 'error';
       this.messageError = 'Merci de renseigner Prénom, Nom, eMail et Message.';
@@ -450,7 +560,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       email,
       phone,
       message,
-      website,        // honeypot (doit rester vide)
+      website,
       source: 'contact',
       lang,
       civ,
@@ -464,7 +574,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       await this.contact.send(payload);
       this.sendState = 'success';
-      form.reset();
+      (ev.target as HTMLFormElement).reset();
       this.cdr.markForCheck();
     } catch (e: any) {
       console.error('[Contact] API error', e);
@@ -472,7 +582,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       this.messageError = e?.message || 'Échec de l’envoi.';
       this.cdr.markForCheck();
 
-      // Option : retour auto à idle après 3s
       setTimeout(() => {
         this.sendState = 'idle';
         this.cdr.markForCheck();

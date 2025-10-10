@@ -4,40 +4,44 @@ import {
   inject, ElementRef, QueryList, ViewChild, ViewChildren
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ActivatedRoute, Router } from '@angular/router';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { ImgFromPipe } from '../../pipes/img-from.pipe';
 import { firstValueFrom } from 'rxjs';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
 
 type NewsIntro = { title: string; html: string; linkedinUrl?: string; };
 type ThemeKey = 'expertise' | 'juridique' | 'marche' | 'autre';
 type NewsPost = {
+  id?: number | string;        // ← ajouté
+  slug?: string;               // ← ajouté
   uid?: string;
   theme?: string;
   themeKey?: ThemeKey;
-  firmLogo?: string | number;   // ← URL ou ID
+  firmLogo?: string | number;  // URL ou ID
   firmName?: string;
   author?: string;
   date?: string;
   title?: string;
   html?: string;
-  imageUrl?: string | number;   // ← URL ou ID
+  imageUrl?: string | number;  // URL ou ID
   linkedinUrl?: string;
 };
 
 @Component({
   selector: 'app-news',
   standalone: true,
-  imports: [CommonModule, ImgFromPipe, ImgFastDirective],
+  imports: [CommonModule, ImgFastDirective],
   templateUrl: './news.component.html',
   styleUrls: ['./news.component.scss'],
 })
 export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
-  private wp  = inject(WordpressService);
-  private seo = inject(SeoService);
+  private wp     = inject(WordpressService);
+  private seo    = inject(SeoService);
+  private route  = inject(ActivatedRoute);
+  private router = inject(Router);
 
   s(v: unknown): string { return v == null ? '' : '' + v; }
 
@@ -85,7 +89,6 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
       const p = it?.acf?.post || {};
       if (!p) continue;
 
-      // On garde tel quel (ID ou URL) : le pipe résoudra
       const firmLogo: string | number | undefined =
         typeof p.logo_firm === 'number' || typeof p.logo_firm === 'string' ? p.logo_firm : undefined;
 
@@ -93,6 +96,8 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
         typeof p.post_image === 'number' || typeof p.post_image === 'string' ? p.post_image : undefined;
 
       mapped.push({
+        id: it?.id,                          // ← ajouté
+        slug: it?.slug,                      // ← ajouté
         uid: (it?.id ? String(it.id) : '') + '|' + (p.post_title || '') + '|' + (p.date || ''),
         theme: p.theme || '',
         themeKey: this.toThemeKey(p.theme),
@@ -109,8 +114,34 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.posts = mapped;
     this.expanded = new Array(this.posts.length).fill(false);
-    this.baseOrder = this.restoreOrBuildOrder(this.posts);
+
+    // --- Réordonner si ?open=<slug|id> est présent ---
+    const open = this.route.snapshot.queryParamMap.get('open');
+    if (open) {
+      const idx = this.posts.findIndex(p =>
+        (p.slug && p.slug === open) || (p.id && String(p.id) === open)
+      );
+      if (idx > -1) {
+        const target = this.posts[idx];
+        const rest = this.posts.filter((_, i) => i !== idx);
+        this.baseOrder = [target, ...rest];
+      } else {
+        this.baseOrder = this.restoreOrBuildOrder(this.posts);
+      }
+    } else {
+      this.baseOrder = this.restoreOrBuildOrder(this.posts);
+    }
+
     this.rebuildView();
+
+    // Ouvrir l’article ciblé (dés-agrandir l’extrait) puis nettoyer l’URL
+    if (open) {
+      setTimeout(() => {
+        this.expanded[0] = true;  // article 1 affiché en entier
+        try { window.scrollTo({ top: 0 }); } catch {}
+        this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+      });
+    }
 
     /* =======================
      *          SEO
@@ -134,8 +165,6 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     const extraEN  = ' Market, legal, expertise – Paris & Regions, Overseas.';
     const description = (baseDesc + (isEN ? extraEN : extraFR)).trim();
 
-    // Pour l’OG, on ne résout pas les IDs ici (le pipe est pour le template).
-    // On ne garde qu’une URL absolue si déjà string, sinon fallback.
     const firstWithImgStr =
       (this.posts.find(p => typeof p.imageUrl === 'string')?.imageUrl as string) || '/assets/og/og-default.jpg';
     const ogAbs = this.absUrl(firstWithImgStr, siteUrl);
@@ -152,14 +181,11 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
       canonical,
       robots: 'index,follow',
       locale: isEN ? 'en_US' : 'fr_FR',
-
       image: ogAbs,
       imageAlt: isEN ? 'Groupe ABC – News' : 'Groupe ABC – Actualités',
       ...(isDefaultOG ? { imageWidth: 1200, imageHeight: 630 } : {}),
       type: 'website',
-
       alternates,
-
       jsonLd: {
         '@context': 'https://schema.org',
         '@graph': [
@@ -510,7 +536,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
   private strip(html: string, max = 160) {
     const t = (html || '').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim();
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
-    }
+  }
 
   private forceInitialHidden(host: HTMLElement){
     const pre  = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));

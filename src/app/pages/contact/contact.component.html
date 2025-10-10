@@ -1,12 +1,12 @@
 <section class="section contact-page" aria-labelledby="contact-title">
   <div class="section-inner">
     <header class="contact-head">
-      <h1 #contactTitle id="contact-title" class="page-title prehide">Connectez-nous</h1>
+      <h1 #contactTitle id="contact-title" class="page-title prehide">Contactez-nous</h1>
 
       <a *ngIf="linkedinUrl as li"
          #contactLinkedin
          class="linkedin prehide"
-         [href]="li"
+         [attr.href]="li"
          target="_blank"
          rel="noopener"
          aria-label="Voir notre page LinkedIn">
@@ -119,13 +119,53 @@
       <p *ngIf="isError && messageError" class="form-error" role="alert">{{ messageError }}</p>
     </form>
 
+    <!-- ==================== BLOC BOTTOM (Adresse + Download côte à côte) ==================== -->
+    <div class="contact-bottom mt-lg-10">
+      <div #bigInfosEl class="big-infos">
+        <p #bigLine class="prehide">18 rue Pasquier</p>
+        <p #bigLine class="prehide">75008 Paris</p>
+        <p #bigLine class="prehide"><a href="tel:+33178414441">T. 01 78 41 44 41</a></p>
+        <p #bigLine class="prehide"><a href="mailto:contact@groupe-abc.fr">contact&#64;groupe-abc.fr</a></p>
+        <p #bigLine class="site mt-8 prehide">groupe-abc.fr</p>
+      </div>
 
-    <div #bigInfosEl class="big-infos">
-      <p #bigLine class="prehide">18 rue Pasquier</p>
-      <p #bigLine class="prehide">75008 Paris</p>
-      <p #bigLine class="prehide"><a href="tel:+33178414441">T. 01 78 41 44 41</a></p>
-      <p #bigLine class="prehide"><a href="mailto:contact@groupe-abc.fr">contact&#64;groupe-abc.fr</a></p>
-      <p #bigLine class="site mt-8 prehide">groupe-abc.fr</p>
+      <article class="download pb-lg-0 pb-7" *ngIf="presentation as pres">
+        <a class="dl-link"
+        (click)="onDlClick($event, pres.file)"
+        [class.disabled]="!hasFile"
+        [attr.href]="hasFile ? pres.file : null"
+        [attr.tabindex]="hasFile ? null : '-1'"
+        [attr.download]="hasFile && isSameOrigin(pres.file!) ? safeDownloadName(pres.file!) : null"
+        [attr.target]="hasFile && !isSameOrigin(pres.file!) ? '_blank' : null"
+        [attr.rel]="hasFile && !isSameOrigin(pres.file!) ? 'noopener' : null">
+
+
+          <div class="dl-text">
+            <div class="dl-line">
+              <!-- Desktop -->
+              <span class="only-desktop">
+                {{ dlL1 }} {{ dlL2 }}
+                <span class="dl-accent">{{ presentation.text2 }}</span>
+              </span>
+              <!-- Mobile (3 lignes fixes) -->
+              <span class="only-mobile">
+                {{ dlL1 }}<br>
+                {{ dlL2 }}<br>
+                <span class="dl-accent">{{ presentation.text2 }}</span>
+              </span>
+            </div>
+          </div>
+
+          <img class="dl-icon-img"
+              src="assets/icons/download.webp"
+              alt="Télécharger"
+              width="48" height="56"
+              loading="lazy">
+        </a>
+      </article>
+
+
     </div>
+
   </div>
 </section>

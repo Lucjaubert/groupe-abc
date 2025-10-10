@@ -6,7 +6,7 @@
         <article #coreLeft class="core-block core-left">
           <div class="block-html" [innerHTML]="core[0].html"></div>
         </article>
-         <aside
+        <aside
           #coreRight
           class="core-block core-right partners"
           [class.is-empty]="!activePartner"
@@ -29,7 +29,7 @@
               <div class="member-job" [innerHTML]="activePartner?.jobHtml || ''"></div>
             </div>
           </article>
-  </aside>
+        </aside>
       </div>
     </div>
   </section>
@@ -39,8 +39,8 @@
       <h2 #meshTitleEl class="mesh-title mb-5 prehide" *ngIf="mesh?.title">{{ mesh?.title }}</h2>
       <div #meshSkylineEl class="mesh-skyline mt-5 prehide" *ngIf="mesh?.image">
         <img [appImgFast]="mesh?.image || ''"
-          [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
-          loading="lazy" decoding="async" alt="" aria-hidden="true" />
+             [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+             loading="lazy" decoding="async" alt="" aria-hidden="true" />
       </div>
       <ul #meshLevelsEl class="mesh-levels" *ngIf="mesh?.levels?.length">
         <li #meshLevelEl class="prehide" *ngFor="let l of mesh?.levels; trackBy: trackByIndex">{{ l }}</li>
@@ -53,13 +53,22 @@
       <div class="map-grid">
         <div #mapImageEl class="map-image prehide">
           <img [appImgFast]="ms.image || ''"
-            [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
-            loading="lazy" decoding="async" alt="Carte du Groupe ABC" />
+               [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+               loading="lazy" decoding="async" alt="Carte du Groupe ABC" />
         </div>
         <div class="map-list ps-lg-0 ps-5">
           <h2 #mapTitleEl class="map-title prehide" *ngIf="ms.title">{{ ms.title }}</h2>
           <ul *ngIf="ms.items?.length">
-            <li #mapItem class="prehide-row" *ngFor="let item of ms.items; trackBy: trackByIndex">
+            <li
+              #mapItem
+              class="prehide-row map-item--clickable"
+              *ngFor="let item of ms.items; trackBy: trackByIndex"
+              tabindex="0"
+              role="button"
+              (click)="openRegion(item)"
+              (keydown.enter)="openRegion(item)"
+              (keydown.space)="openRegion(item)"
+              [attr.aria-label]="'Voir l’\u00A0équipe région ' + item">
               {{ item }}
             </li>
           </ul>
@@ -78,8 +87,8 @@
         <li #valueItemEl class="value-item prehide" *ngFor="let v of coreValues; index as i; trackBy: trackByIndex">
           <div class="icon-wrap">
             <img [appImgFast]="v.iconUrl || ''"
-              [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
-              loading="lazy" decoding="async" alt="" aria-hidden="true" />
+                 [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+                 loading="lazy" decoding="async" alt="" aria-hidden="true" />
           </div>
           <h3 class="value-name" *ngIf="v.title">{{ v.title }}</h3>
           <div class="value-desc" *ngIf="v.html" [innerHTML]="v.html"></div>
@@ -122,27 +131,59 @@
   <section class="section deon" *ngIf="deontology?.length">
     <div class="section-inner px-0">
       <h2 #deonTitleEl class="deon-title prehide" *ngIf="deonTitle">{{ deonTitle }}</h2>
+
       <ul class="deon-list" role="list">
         <li
           #deonRowEl
           class="deon-row prehide-row"
           *ngFor="let d of deontology; let i = index; trackBy: trackByIndex"
-          [class.open]="deonOpen[i]">
+          [class.open]="deonOpen[i]"
+        >
           <div class="deon-line">
             <div class="deon-name">{{ d.title }}</div>
-            <button class="deon-toggle" type="button" [attr.aria-expanded]="deonOpen[i] ? 'true':'false'" (click)="toggleDeon(i)">
+
+            <button
+              class="deon-toggle"
+              type="button"
+              [attr.aria-expanded]="deonOpen[i] ? 'true' : 'false'"
+              (click)="toggleDeon(i)"
+            >
               <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
                 <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
               </svg>
             </button>
           </div>
+
           <div class="deon-desc" *ngIf="d.html && deonOpen[i]">
             <div class="deon-desc-inner pe-5" [innerHTML]="d.html"></div>
+            <!-- Icône de téléchargement (si fichier présent) -->
+            <a
+              *ngIf="d.file"
+              class="deon-dl"
+              [attr.href]="d.file"
+              [attr.download]="isSameOrigin(d.file) ? safeDownloadName(d.file) : null"
+              [attr.target]="!isSameOrigin(d.file) ? '_blank' : null"
+              [attr.rel]="!isSameOrigin(d.file) ? 'noopener' : null"
+              [attr.aria-label]="(isEnglish() ? 'Download the document: ' : 'Télécharger le document : ') + d.title"
+            >
+              <img
+                class="dl-icon-img"
+                src="assets/icons/download.webp"
+                alt=""
+                width="48" height="56" loading="lazy"
+              />
+              <span class="dl-label">
+                {{ isEnglish() ? 'Download documentation' : 'Télécharger la documentation' }}
+              </span>
+            </a>
           </div>
+
+
         </li>
       </ul>
     </div>
   </section>
+
 
   <section class="section timeline" *ngIf="timeline.length">
     <div class="timeline-bg"><div class="timeline-layer"></div></div>

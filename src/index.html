@@ -7,6 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#444697" />
 
+    <!-- Google Search Console (URL Prefix). Remplacer le token si nécessaire -->
+    <meta name="google-site-verification" content="vVZ7W-srvDTqDhQh7rH3PMjrkh1oZdbwy0sujaH_C40" />
+
     <!-- Description & robots (fallback) -->
     <meta name="description" content="Groupe ABC : réseau d’experts en évaluation immobilière. Méthodes comparatives, rendement, DCF. Paris & DOM-TOM." />
     <meta name="robots" content="index,follow,max-image-preview:large" />
@@ -49,6 +52,18 @@
     <link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/" />
     <link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/" />
     <link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/" />
+
+    <!-- JSON-LD Organization (bonus SEO) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Groupe ABC",
+      "url": "https://groupe-abc.fr/",
+      "logo": "https://groupe-abc.fr/assets/og/og-default.jpg",
+      "sameAs": ["https://www.linkedin.com/company/groupeabc/"]
+    }
+    </script>
   </head>
 
   <body>
@@ -59,7 +74,6 @@
     <script>
       (function () {
         window.addEventListener('load', function () {
-
           // 1) Charger la librairie Weglot
           var s = document.createElement('script');
           s.src = 'https://cdn.weglot.com/weglot.min.js';
@@ -75,9 +89,7 @@
                 dynamic: true,
                 translateMeta: true,
                 hrefLang: true,
-                // traduit aussi certains attributs fréquemment remplis depuis ACF
                 translateAttributes: ['alt','title','placeholder','aria-label'],
-                // ne touche pas à l’admin/API WP
                 excludedPaths: [
                   '/wordpress/wp-json*',
                   '/wp-json*',
