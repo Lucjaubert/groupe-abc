@@ -165,6 +165,10 @@ ul, li, a {
   line-height: normal;
   font-size: 22px;
   color: map.get(vars.$theme-colors, "light-blue");
+
+  @media (max-width: map.get(vars.$breakpoints, "md")) {
+    font-size: 16px;
+  }
 }
 
 /* ===================================================================
@@ -308,4 +312,14 @@ body.no-scroll { overflow: hidden; }
   position:absolute;
   left:-9999px;
   width:1px;height:1px;overflow:hidden;
+}
+
+/* masque aussi les <p> qui ne contiennent que des &nbsp; et/ou des <br> (navigateurs modernes) */
+@supports(selector(p:has(*))) {
+  .block-html p:has(> br:only-child),
+  .block-html p:has(> span:empty),
+  .block-html p:has(> :where(em, strong):empty) { display: none; }
+
+  /* nb : &nbsp; est un texte, pas un élément ; :has ne peut pas cibler le texte brut.
+     D’où la préférence pour le nettoyage TS (#1). */
 }

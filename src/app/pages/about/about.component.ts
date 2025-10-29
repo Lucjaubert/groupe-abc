@@ -11,6 +11,7 @@ import { SeoService } from '../../services/seo.service';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
+import { environment } from '../../../environments/environment';
 
 /* =========================
  *  Types locaux
@@ -24,6 +25,28 @@ type DeonItem     = { title?: string; html?: string; file?: string | null };
 type Mesh         = { title?: string; image?: string; levels: string[] };
 type MapSection   = { title?: string; image?: string; items: string[] };
 type ValueItem    = { title: string; html: string; iconUrl: string };
+
+/* =========================
+ *  SEO statique (FR/EN)
+ * ========================= */
+const ABOUT_SEO = {
+  fr: {
+    title: 'Réseau national d’experts immobiliers agréés',
+    descFallback:
+      'Présentation du Groupe ABC : experts agréés en évaluation immobilière, méthodologie, réseau et déontologie.',
+    canonicalPath: '/expert-immobilier-reseau-national',
+    locale: 'fr_FR',
+    imageAlt: 'Groupe ABC – Présentation'
+  },
+  en: {
+    title: 'National network of accredited real-estate valuation experts',
+    descFallback:
+      'About ABC Group: accredited real-estate appraisal experts, methodology, network and code of ethics.',
+    canonicalPath: '/en/expert-immobilier-reseau-national',
+    locale: 'en_US',
+    imageAlt: 'ABC Group – About'
+  }
+} as const;
 
 @Component({
   selector: 'app-about',
@@ -73,6 +96,8 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /** Fallbacks */
   defaultPortrait = '/assets/fallbacks/portrait-placeholder.svg';
+  socialImage = '/assets/og/og-default.jpg';
+  orgName = 'Groupe ABC';
 
   get hasMultiplePartners(): boolean { return this.allPartners.length > 1; }
 
@@ -120,8 +145,8 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ============ ROUTES / MAP → TEAM (même logique Homepage) ============ */
-  // Adapte si ton slug FR est différent (ex. '/nos-equipes').
-  private TEAM_ROUTE_FR = '/nos-equipes';
+  // Correction : slug FR aligné avec TeamComponent
+  private TEAM_ROUTE_FR = '/equipes';
   private TEAM_ROUTE_EN = '/en/team';
 
   isEnglish(): boolean { // public
@@ -178,6 +203,13 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       whereFromHome: this.wp.getHomepageIdentityWhereItems(),
       teamPartners: this.wp.getTeamPartners(),
     }).subscribe(async ({ about, whereFromHome, teamPartners }) => {
+      /* util: résolution media locale (ID/objet/URL) */
+      const resolveMediaInline = async (idOrUrl: any) => {
+        if (!idOrUrl) return '';
+        if (typeof idOrUrl === 'string') return idOrUrl;
+        try { return await firstValueFrom(this.wp.getMediaUrl(idOrUrl)) || ''; } catch { return ''; }
+      };
+
       /* Intro */
       const hero = about?.hero ?? {};
       const introBody: string = about?.intro_body || '';
@@ -193,7 +225,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.mapSection = {
         title: mapSecRaw.where_title || 'Où ?',
-        image: typeof mapSecRaw.map_image === 'string' ? mapSecRaw.map_image : '',
+        image: await resolveMediaInline(mapSecRaw.map_image), // ← corrige : résout aussi les IDs/objets
         items: whereItems
       };
 
@@ -208,11 +240,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       const meshLevels = [
         meshRaw.level_label_1, meshRaw.level_label_2, meshRaw.level_label_3
       ].filter(Boolean) as string[];
-      const resolveMediaInline = async (idOrUrl: any) => {
-        if (!idOrUrl) return '';
-        if (typeof idOrUrl === 'string') return idOrUrl;
-        try { return await firstValueFrom(this.wp.getMediaUrl(idOrUrl)) || ''; } catch { return ''; }
-      };
+
       this.mesh = {
         title: (meshRaw.section_title || 'Un maillage à toutes les échelles de notre territoire').trim(),
         image: await resolveMediaInline(meshRaw.skyline_image),
@@ -250,25 +278,27 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       /* Déontologie */
       const d = about?.deontology ?? {};
       this.deonTitle = d.deo_title || 'Déontologie';
-      this.deontology = [1,2,3,4].map(i => {
+      this.deontology = [];
+      for (let i = 1; i <= 4; i++) {
         const di = (d as any)[`deo_${i}`];
-        if (!di) return null;
+        if (!di) continue;
 
-        // Champ fichier : différentes clés possibles
         const rawFile =
           di['deo-doc-download'] ??
           di['deo_doc_download'] ??
           di.deoDocDownload ??
+          di['deo_document'] ??
           null;
 
-        const file = (typeof rawFile === 'string' && rawFile.trim()) ? rawFile.trim() : null;
+        // correction : si c'est un ID/objet ACF, on le résout en URL absolue
+        const fileUrl = rawFile ? await resolveMediaInline(rawFile) : null;
 
-        return {
+        this.deontology.push({
           title: di.title || '',
           html: di.deo_description || '',
-          file
-        } as DeonItem;
-      }).filter(Boolean) as DeonItem[];
+          file: fileUrl
+        });
+      }
       this.deonOpen = new Array(this.deontology.length).fill(false);
 
       /* Timeline */
@@ -302,14 +332,95 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   private stripHtml(raw: string): string {
     return (raw || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   }
+
+  /** Injection SEO “béton” (SSR-friendly) */
   private applySeo(): void {
-    const baseTitle = this.intro?.title?.trim() || 'Qui sommes-nous ?';
-    const desc = this.stripHtml(this.intro?.content || '').slice(0, 160);
-    try { (this.seo as any).setTags?.({ title: baseTitle, description: desc, ogTitle: baseTitle, ogDescription: desc, ogType: 'website' }); } catch {}
-    try { (this.seo as any).setTitle?.(baseTitle); } catch {}
-    try { (this.seo as any).setDescription?.(desc); } catch {}
-    try { (this.seo as any).update?.({ title: baseTitle, description: desc }); } catch {}
-    void this.seo;
+    const isEN = this.isEnglish();
+    const M = isEN ? ABOUT_SEO.en : ABOUT_SEO.fr;
+
+    const siteUrl = (environment.siteUrl || '').replace(/\/+$/,''); // ex: https://groupe-abc.fr
+    const canonical = siteUrl + M.canonicalPath;
+
+    const lang   = isEN ? 'en'    : 'fr';
+    const locale = isEN ? ABOUT_SEO.en.locale : ABOUT_SEO.fr.locale;
+    const localeAlt = isEN ? [ABOUT_SEO.fr.locale] : [ABOUT_SEO.en.locale];
+
+    const altFR = siteUrl + ABOUT_SEO.fr.canonicalPath;
+    const altEN = siteUrl + ABOUT_SEO.en.canonicalPath;
+
+    const title = (this.intro?.title?.trim() || M.title).trim();
+    const descRaw = this.stripHtml(this.intro?.content || '');
+    const description = (descRaw || (isEN ? ABOUT_SEO.en.descFallback : ABOUT_SEO.fr.descFallback)).slice(0, 160);
+
+    const ogImgAbs = this.absUrl(this.socialImage, siteUrl);
+
+    const siteId = siteUrl + '#website';
+    const orgId  = siteUrl + '#organization';
+
+    const website = {
+      '@type': 'WebSite', '@id': siteId, url: siteUrl, name: this.orgName,
+      inLanguage: isEN ? 'en-US' : 'fr-FR',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${siteUrl}/?s={search_term_string}`,
+        'query-input': 'required name=search_term_string'
+      }
+    };
+
+    const organization = {
+      '@type': 'Organization', '@id': orgId, name: this.orgName, url: siteUrl, logo: ogImgAbs
+    };
+
+    const webpage = {
+      '@type': 'AboutPage',
+      '@id': canonical + '#about',
+      url: canonical,
+      name: title,
+      description,
+      isPartOf: { '@id': siteId },
+      inLanguage: isEN ? 'en-US' : 'fr-FR',
+      primaryImageOfPage: ogImgAbs
+    };
+
+    const breadcrumb = {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl + '/' },
+        { '@type': 'ListItem', position: 2, name: isEN ? 'About' : 'À propos', item: canonical }
+      ]
+    };
+
+    this.seo.update({
+      title,
+      description,
+      lang,
+      locale,
+      localeAlt,
+      canonical,
+      robots: 'index,follow',
+      image: ogImgAbs,
+      imageAlt: M.imageAlt,
+      type: 'website',
+      alternates: [
+        { lang: 'fr', href: altFR },
+        { lang: 'en', href: altEN },
+        { lang: 'x-default', href: altFR }
+      ],
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@graph': [website, organization, webpage, breadcrumb]
+      }
+    });
+  }
+
+  private absUrl(url: string, origin: string): string {
+    if (!url) return '';
+    try {
+      if (/^https?:\/\//i.test(url)) return url;
+      if (/^\/\//.test(url)) return 'https:' + url;
+      const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
+      return url.startsWith('/') ? o + url : `${o}/${url}`;
+    } catch { return url; }
   }
 
   /* ========================= */
@@ -450,6 +561,24 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   startAutoRotate() {
     this.stopAutoRotate();
     if (this.allPartners.length <= 1) return;
+
+    const pause = () => this.stopAutoRotate();
+    const play  = () => { this.stopAutoRotate(); this.autoTimer = setInterval(() => this.nextPartner(), this.autoMs); };
+
+    // pause quand l’onglet est masqué
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) pause(); else play();
+    });
+
+    // pause au survol/focus du bloc carrousel
+    const host = document.querySelector('.about-wrapper .partners') as HTMLElement | null;
+    if (host) {
+      host.addEventListener('mouseenter', pause);
+      host.addEventListener('mouseleave', play);
+      host.addEventListener('focusin',  pause);
+      host.addEventListener('focusout', play);
+    }
+
     this.autoTimer = setInterval(() => this.nextPartner(), this.autoMs);
   }
   stopAutoRotate() {

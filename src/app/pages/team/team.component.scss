@@ -23,8 +23,7 @@ $white:      map.get(vars.$theme-colors, "white");
     padding-block: var(--pad-y);
   }
 
-  /* IMPORTANT : on garde visible pour que les images puissent s'afficher,
-     l'animation ne joue que sur l'opacité/transform */
+  /* IMPORTANT : on garde visible pour que les images puissent s'afficher */
   .prehide     { opacity:0; visibility:visible; transform: translateY(20px); will-change: transform, opacity; }
   .prehide-row { opacity:0; visibility:visible; }
 }
@@ -65,9 +64,7 @@ $white:      map.get(vars.$theme-colors, "white");
     pointer-events: none;
     z-index: 0;
   }
-  .map-bg .map-layer{
-    position: absolute; inset: 0; background: $grey-100;
-  }
+  .map-bg .map-layer{ position: absolute; inset: 0; background: $grey-100; }
 
   .section-inner{ padding-inline: 0; }
 
@@ -138,12 +135,10 @@ $white:      map.get(vars.$theme-colors, "white");
 .team-wrapper,
 .section.firms { overflow-anchor: none; }
 
-/* --- fail-safe pour que rien ne reste invisible si GSAP ne tourne pas --- */
+/* fail-safe si GSAP off */
 .section.firms .prehide,
-.section.firms .prehide-row {
-  /* on garde visible ! GSAP pilotera l'opacité/transform */
+.section.firms .prehide-row{
   visibility: visible !important;
-  /* L'opacité à 0 sert uniquement de point de départ d'animation */
   opacity: 0;
   transform: translateY(20px);
   will-change: transform, opacity;
@@ -163,6 +158,8 @@ $white:      map.get(vars.$theme-colors, "white");
     font-size: clamp(24px, 3.2vw, 36px);
     line-height: normal;
     margin: 0 0 56px;
+
+    @media (max-width: 768px){ margin: 0; }
   }
 
   .firm-list{
@@ -201,9 +198,9 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .fr-name{
     color: $blue-hero;
-    font-size: clamp(20px, 2.1vw, 26px);
+    font-size: clamp(18px, 2.1vw, 23px);
     line-height: 1.25;
-    font-weight: 600;
+    font-weight: 500;
     min-width: 0;
   }
 
@@ -258,9 +255,7 @@ $white:      map.get(vars.$theme-colors, "white");
   .ff-right{ display: flex; flex-direction: column; min-height: 100%; }
 
   .ff-left { margin-top: 10px; }
-  @media (max-width: 768px){
-    .ff-left{ margin-top: 0; }
-  }
+  @media (max-width: 768px){ .ff-left{ margin-top: 0; } }
 
   .ff-desc{
     color: $blue;
@@ -287,9 +282,7 @@ $white:      map.get(vars.$theme-colors, "white");
     object-fit: cover; display: block; background: #f5e1dd;
     opacity: 0; transition: opacity .16s ease;
   }
-  .ff-portrait[src]:not([src=""]):not([src="null"]):not([src="undefined"]){
-    opacity: 1;
-  }
+  .ff-portrait[src]:not([src=""]):not([src="null"]):not([src="undefined"]){ opacity: 1; }
 
   .ff-person-name{
     color: #444697;
@@ -313,8 +306,8 @@ $white:      map.get(vars.$theme-colors, "white");
     margin-top: 2px;
   }
 
-  .ff-cta{
-    display: flex; align-items: center; gap: 12px; margin-top: auto;
+  .fr-cta{
+    display: flex; align-items: center; gap: 12px;
   }
 
   /* ============================ */
@@ -322,7 +315,6 @@ $white:      map.get(vars.$theme-colors, "white");
   /* ============================ */
 
   .btn-contact{
-    /* Desktop (valeurs hautes) */
     inline-size: 185px;
     block-size: 39px;
     flex-shrink: 0;
@@ -339,57 +331,41 @@ $white:      map.get(vars.$theme-colors, "white");
     color: #fff;
     text-decoration: none;
 
-    /* Font fluide (16→18px) */
     font-size: clamp(13px, 4vw, 16px);
     font-weight: 400;
     line-height: 1;
   }
 
-  /* Icône mail → prend la couleur via currentColor */
   .btn-contact .ico-mail{
-    inline-size: clamp(22px, 5.5vw, 31px);  /* 22px sur mobile, 31px desktop */
-    block-size: clamp(16px, 4vw, 19px);     /* garde les proportions */
+    inline-size: clamp(22px, 5.5vw, 31px);
+    block-size: clamp(16px, 4vw, 19px);
     display: grid;
     place-items: center;
     color: map.get(vars.$theme-colors, "dark-red");
   }
-  .btn-contact .ico-mail svg{
-    width: 100%;
-    height: 100%;
-    display: block;
-    /* si ton SVG n’utilise pas currentColor, dé-commente ci-dessous :
-    *,
-    path { stroke: currentColor; fill: currentColor; }
-    */
-  }
+  .btn-contact .ico-mail svg{ width: 100%; height: 100%; display: block; }
 
-  /* Hover desktop : l’icône suit la couleur du texte */
   @media (hover: hover) and (pointer: fine){
     .btn-contact:hover { color:#fff; }
     .btn-contact:hover .ico-mail { color:#fff; }
   }
 
   /* ============================ */
-  /* Download block (texte + icône)
-  /* ============================ */
-
+  /* Download block (texte + icône) */
   .download .dl-link{
-    /* largeur fluide : 280→364px */
     inline-size: clamp(280px, 72vw, 364px);
     display: grid;
-    grid-template-columns: 1fr auto;     /* texte à gauche | icône à droite */
+    grid-template-columns: 1fr auto;
     align-items: end;
     gap: clamp(12px, 3.2vw, 24px);
     text-decoration: none;
   }
 
-  /* Texte du bloc téléchargement : 16→18px */
   .download .dl-text .dl-line{
     font-size: clamp(16px, 4vw, 18px);
     line-height: 1.15;
   }
 
-  /* Icône download : 32→48px, garde la proportion */
   .download .dl-icon-img{
     inline-size: clamp(32px, 8vw, 48px);
     block-size: auto;
@@ -399,13 +375,10 @@ $white:      map.get(vars.$theme-colors, "white");
     flex-shrink: 0;
   }
 
-  /* ============================ */
-  /* Filets “mobile-first < 738px” (si tu préfères un break net) */
-  /* ============================ */
   @media (max-width: 737.98px){
     .btn-contact{
-      inline-size: clamp(160px, 48vw, 185px);  /* rétrécit un peu sous 738px */
-      block-size: clamp(40px, 6vw, 39px);      /* garde ~40px de cible tactile */
+      inline-size: clamp(160px, 48vw, 185px);
+      block-size: clamp(40px, 6vw, 39px);
       padding: 0 10px 0 12px;
     }
 
@@ -414,8 +387,6 @@ $white:      map.get(vars.$theme-colors, "white");
       gap: clamp(10px, 3vw, 16px);
     }
   }
-
-
 
   .lk{
     display: inline-flex; align-items: center; justify-content: center;
@@ -472,17 +443,62 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 }
 
-/* Accessibilité : si l’utilisateur réduit les animations → tout visible */
+/* === MOBILE: placer ff-right juste sous ff-region ======================= */
+/* .fr-details devient une grid à zones; .ff-left est "aplatie" pour cibler
+   directement .ff-region et .ff-desc. .fr-cta est prévue si présente dans .fr-details. */
+@media (max-width: 720px){
+  .firms .fr-details{
+    display: grid !important;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    grid-template-areas:
+      "region"  /* 1. ff-region */
+      "right"   /* 2. ff-right (juste sous region) */
+      "desc"    /* 3. ff-desc */
+      "cta";    /* 4. fr-cta (si présent) */
+  }
+
+  .firms .ff-left{        /* aplatit le conteneur gauche */
+    display: contents;
+    margin-top: 0 !important;
+  }
+
+  .firms .ff-region{ grid-area: region; }
+  .firms .ff-right { grid-area: right;  }
+  .firms .ff-desc  { grid-area: desc;   }
+  .firms .fr-cta   { grid-area: cta;    }
+
+  .firms .ff-right{ gap: 10px; }
+  .firms .fr-cta .btn-contact{
+    inline-size: 100%;
+    max-inline-size: 200px;
+  }
+}
+
+/* A11y (global) */
 @media (prefers-reduced-motion: reduce){
-  .section.firms .prehide,
-  .section.firms .prehide-row{
+  .section .prehide,
+  .section .prehide-row{
     opacity: 1 !important;
     visibility: visible !important;
     transform: none !important;
     will-change: auto !important;
   }
+  .map-section .panel-list li{
+    transition: none !important;
+    transform: none !important;
+  }
 }
 
+/* ::ng-deep pour les <p> injectés dans ff-titles */
+:host ::ng-deep .ff-titles p {
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1.10;
+}
+:host ::ng-deep .ff-titles p + p { margin-top: 2px !important; }
+
+.where-link { text-decoration: none; }
 
 /* ===== Teaching ===== */
 .section.teaching{
@@ -526,7 +542,8 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .teach-school{ display:flex; flex-direction:column; gap:6px; }
   .ts-school-name{ color:$blue-hero; font-size: clamp(18px, 2.1vw, 19px); line-height: 1.25; font-weight: 500;}
-  .ts-level, .ts-link{ color:$blue; font-size:14px; text-decoration:none; font-weight: 400; line-height: normal;}
+  .ts-level { color:$blue; font-size:14px; text-decoration:none; font-weight: 600; line-height: normal;}
+  .ts-link{ color:$blue; font-size:14px; text-decoration:none; font-weight: 400; line-height: normal;}
 
   .teach-speaker{
     display: grid;
@@ -539,9 +556,7 @@ $white:      map.get(vars.$theme-colors, "white");
     width: 80px; height: 80px; object-fit: cover; display:block; background:#f5e1dd;
     opacity: 0; transition: opacity .16s ease;
   }
-  .ts-photo[src]:not([src=""]):not([src="null"]):not([src="undefined"]){
-    opacity: 1;
-  }
+  .ts-photo[src]:not([src=""]):not([src="null"]):not([src="undefined"]){ opacity: 1; }
   .ts-person{ display:flex; flex-direction:column; justify-content: space-between; gap:6px; min-height: 100%; }
   .ts-name{ color:$blue-hero; font-size: clamp(16px, 1.9vw, 20px); line-height: 1.1; }
   .lk{ display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; }
@@ -559,7 +574,7 @@ $white:      map.get(vars.$theme-colors, "white");
     white-space: normal;
     font-family: "Plus Jakarta Sans";
     font-size: 16px;
-    font-weight: 400;
+    font-weight: 600;
     line-height: normal;
   }
   .tc-city{ color:$red; font-size: 16px; }
@@ -597,7 +612,7 @@ $white:      map.get(vars.$theme-colors, "white");
 
     .teach-school{ gap: 4px; }
     .ts-school-name{ font-size: clamp(14px, 4.2vw, 18px); line-height: 1.25; }
-    .ts-level, .ts-link{ font-size: 12px; }
+    .ts-level, .ts-link{ font-size: 12px; font-weight: 400; }
 
     .teach-speaker{
       grid-column: 1 / -1;
@@ -629,33 +644,4 @@ $white:      map.get(vars.$theme-colors, "white");
     }
     .tc-city{ font-size: 14px; }
   }
-}
-
-/* A11y */
-@media (prefers-reduced-motion: reduce){
-  .section .prehide,
-  .section .prehide-row{
-    opacity: 1 !important;
-    visibility: visible !important;
-    transform: none !important;
-    will-change: auto !important;
-  }
-  .map-section .panel-list li{
-    transition: none !important;
-    transform: none !important;
-  }
-}
-
-/* ::ng-deep pour les <p> injectés dans ff-titles */
-:host ::ng-deep .ff-titles p {
-  margin: 0 !important;
-  padding: 0 !important;
-  line-height: 1.10;
-}
-:host ::ng-deep .ff-titles p + p {
-  margin-top: 2px !important;
-}
-
-.where-link {
-  text-decoration: none;
 }

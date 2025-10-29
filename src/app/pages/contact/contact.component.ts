@@ -29,11 +29,17 @@ type PresentationDl = {
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
+  /* ====== SEO / URLs ======
+   * Canonique FR: /contact
+   * Canonique EN: /en/contact
+   * (Les éventuelles anciennes URLs doivent rediriger en 301 côté serveur/routeur)
+   */
   @Input() siteUrl         = 'https://groupe-abc.fr';
   @Input() canonicalPath   = '/contact';
   @Input() canonicalPathEn = '/en/contact';
   @Input() orgName         = 'Groupe ABC';
 
+  /* ====== Coordonnées (affichage + JSON-LD ContactPoint) ====== */
   @Input() streetAddress   = '18 rue Pasquier';
   @Input() postalCode      = '75008';
   @Input() addressLocality = 'Paris';
@@ -89,17 +95,13 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.acf?.presentation_download_section) {
-      console.log('[INIT] ACF fourni à ContactComponent (depuis Homepage).');
       this.hydratePresentationFrom(this.acf.presentation_download_section);
     } else {
-      console.log('[INIT] ACF non fourni → fetch via WordpressService.getHomepageData()');
       this.wp.getHomepageData().subscribe({
         next: (acf) => {
           if (acf?.presentation_download_section) {
             this.hydratePresentationFrom(acf.presentation_download_section);
             this.cdr.markForCheck();
-          } else {
-            console.warn('[INIT] Pas de presentation_download_section dans les données homepage.');
           }
         },
         error: (e) => { console.error('[INIT] getHomepageData() error', e); }
@@ -128,15 +130,18 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     const t1 = dl?.presentation_button_text_1 || 'Télécharger la présentation du';
     const t2 = dl?.presentation_button_text_2 || 'Groupe ABC';
     const raw = dl?.presentation_file;
-    console.log('[DL] ACF raw file =', raw);
 
     const resolved = await this.resolveMedia(raw);
     const abs = this.absUrl(resolved || '', this.siteUrl);
-    console.log('[DL] resolved =', resolved, '| abs =', abs);
 
     this.presentation = { text1: t1, text2: t2, file: abs || null };
     this.applySplitForText1(this.presentation.text1);
-    if (this.presentation.file) this.preload(this.presentation.file);
+
+    // préchargement uniquement si c’est une image (pas pour PDF)
+    if (this.presentation.file && /\.(png|jpe?g|webp|gif|svg)(\?|#|$)/i.test(this.presentation.file)) {
+      void this.preloadImage(this.presentation.file);
+    }
+
     this.cdr.markForCheck();
   }
 
@@ -167,7 +172,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     return '';
   }
 
-  private preload(src: string): Promise<void> {
+  private preloadImage(src: string): Promise<void> {
     if (!src) return Promise.resolve();
     return new Promise<void>((resolve) => {
       const img = new Image();
@@ -195,11 +200,9 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     const nowPath = this.currentPath();
     const isEN    = nowPath.startsWith('/en/');
     const canonPath = isEN ? this.canonicalPathEn : this.canonicalPath;
-    const canonical = this.normalizeUrl(this.siteUrl, canonPath);
+    const canonicalAbs = this.normalizeUrl(this.siteUrl, canonPath);
 
-    const lang      = isEN ? 'en'    : 'fr';
     const locale    = isEN ? 'en_US' : 'fr_FR';
-    const localeAlt = isEN ? ['fr_FR'] : ['en_US'];
 
     const altFR = this.normalizeUrl(this.siteUrl, this.canonicalPath);
     const altEN = this.normalizeUrl(this.siteUrl, this.canonicalPathEn);
@@ -210,38 +213,26 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     ];
 
     const title = isEN
-      ? `Contact – ${this.orgName} | Real estate valuation`
-      : `Contact – ${this.orgName} | Expertise immobilière`;
+      ? `Contact – ${this.orgName} | Real-estate valuation experts`
+      : `Contact – ${this.orgName} | Experts immobiliers agréés`;
 
     const descFR =
-      `Groupe d’Experts immobiliers (6 cabinets, 20+ collab.) – tous types d’actifs ` +
-      `(résidentiel, commercial, tertiaire, industriel, hôtellerie, loisirs, santé, foncier/terrains) – ` +
-      `amiable & judiciaire. ${this.streetAddress}, ${this.postalCode} ${this.addressLocality}.`;
+      `Contactez le ${this.orgName}, réseau national d’experts immobiliers agréés (amiable & judiciaire). ` +
+      `${this.streetAddress}, ${this.postalCode} ${this.addressLocality} – ${this.phoneDisplay} – ${this.email}.`;
     const descEN =
-      `Independent valuation group (6 firms, 20+ staff) – all asset classes ` +
-      `(residential, commercial, office, industrial, hospitality, leisure, healthcare, land) – ` +
-      `amicable & judicial. ${this.streetAddress}, ${this.postalCode} ${this.addressLocality}.`;
+      `Contact ${this.orgName}, nationwide network of qualified real-estate valuation experts (amicable & judicial). ` +
+      `${this.streetAddress}, ${this.postalCode} ${this.addressLocality} – ${this.phoneIntl} – ${this.email}.`;
 
-    const description = (isEN ? descEN : descFR).slice(0, 300);
-
-    const kwFR = [
-      'contact', 'expertise immobilière', 'évaluation immobilière', 'Paris', 'DOM-TOM',
-      'résidentiel','commercial','tertiaire','industriel','hôtellerie','loisirs','santé',
-      'foncier','terrains','DCF','comparaison','rendement','expert judiciaire','RICS','IFEI','CNEJI'
-    ].join(', ');
-    const kwEN = [
-      'contact', 'real estate valuation','property appraisal','Paris','French overseas',
-      'residential','commercial','office','industrial','hospitality','leisure','healthcare',
-      'land','DCF','market comparison','yield','expert witness','RICS','IFEI','CNEJI'
-    ].join(', ');
+    const description = (isEN ? descEN : descFR).slice(0, 160);
 
     const og = this.socialImage || '/assets/og/og-default.jpg';
     const ogAbs = this.absUrl(og, this.siteUrl);
-    const isDefaultOg = /\/og-default\.jpg$/.test(og);
+    const isDefaultOg = /\/og-default\.jpg$/.test(ogAbs);
 
     const siteId = this.siteUrl.replace(/\/+$/, '') + '#website';
     const orgId  = this.siteUrl.replace(/\/+$/, '') + '#organization';
 
+    // Organization + ContactPoint (téléphone & email)
     const organization = {
       '@type': 'Organization',
       '@id': orgId,
@@ -254,14 +245,24 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
         postalCode: this.postalCode,
         addressLocality: this.addressLocality,
         addressCountry: 'FR'
-      }
+      },
+      contactPoint: [
+        {
+          '@type': 'ContactPoint',
+          contactType: isEN ? 'Customer service' : 'Service client',
+          telephone: this.phoneIntl,
+          email: this.email,
+          areaServed: 'FR',
+          availableLanguage: ['fr', 'en']
+        }
+      ]
     };
 
     const contactPage = {
       '@type': 'ContactPage',
-      '@id': canonical + '#webpage',
+      '@id': canonicalAbs + '#webpage',
       name: `Contact – ${this.orgName}`,
-      url: canonical,
+      url: canonicalAbs,
       inLanguage: isEN ? 'en-US' : 'fr-FR',
       about: { '@id': orgId },
       isPartOf: { '@id': siteId },
@@ -272,17 +273,16 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       '@type': 'BreadcrumbList',
       itemListElement: [
         { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: this.siteUrl },
-        { '@type': 'ListItem', position: 2, name: 'Contact', item: canonical }
+        { '@type': 'ListItem', position: 2, name: 'Contact', item: canonicalAbs }
       ]
     };
 
     this.seo.update({
-      lang, locale, localeAlt,
       title,
       description,
-      keywords: isEN ? kwEN : kwFR,
-      canonical,
+      canonical: canonPath, // on passe le path canonique; le service fera l’URL absolue
       robots: 'index,follow',
+      locale,
       image: ogAbs,
       imageAlt: `${this.orgName} – Contact`,
       ...(isDefaultOg ? { imageWidth: 1200, imageHeight: 630 } : {}),
@@ -293,7 +293,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
         '@graph': [
           {
             '@type': 'WebSite',
-            '@id': this.siteUrl.replace(/\/+$/, '') + '#website',
+            '@id': siteId,
             url: this.siteUrl,
             name: this.orgName,
             inLanguage: isEN ? 'en-US' : 'fr-FR',
@@ -356,37 +356,24 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   onDlClick(ev: MouseEvent, url: string | null) {
     const a = ev.currentTarget as HTMLAnchorElement | null;
 
-    console.log('[CLICK] start', {
-      url,
-      hasFile: this.hasFile,
-      defaultPrevented: ev.defaultPrevented,
-      anchorPresent: !!a
-    });
-
-    if (!url) {
-      console.warn('[CLICK] Pas d’URL → rien à faire');
-      return;
-    }
+    if (!url) return;
 
     if (a) {
-      console.log('[CLICK] anchor attrs', {
+      // log léger et robuste
+      // eslint-disable-next-line no-console
+      console.log('[CLICK] DL anchor', {
         href: a.getAttribute('href'),
         target: a.getAttribute('target'),
         rel: a.getAttribute('rel'),
         download: a.getAttribute('download'),
-        // ⬇️ fix: pas de spread sur DOMTokenList
         classList: Array.from(a.classList)
       });
     }
 
     const same = this.isSameOrigin(url);
-    console.log('[CLICK] isSameOrigin(url)?', same, '| browserOrigin =', window.location.origin);
-
     setTimeout(() => {
       try {
-        console.log('[CLICK] fallback window.open()');
-        const w = window.open(url, same ? '_self' : '_blank', same ? '' : 'noopener');
-        console.log('[CLICK] window.open returned =', w);
+        window.open(url, same ? '_self' : '_blank', same ? '' : 'noopener');
       } catch (e) {
         console.error('[CLICK] window.open error', e);
       }
@@ -541,6 +528,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     const fullName = [firstname, lastname].filter(Boolean).join(' ').trim();
     const lang = this.currentPath().startsWith('/en/') ? 'en' : 'fr';
 
+    // Honeypot
     if (website) {
       this.sendState = 'success';
       (ev.target as HTMLFormElement).reset();

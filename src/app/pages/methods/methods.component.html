@@ -93,7 +93,8 @@
               decoding="async"
             />
 
-            <span class="row-name">{{ m.title }}</span>
+            <span class="row-name" [innerHTML]="m.title"></span>
+
             <button
               class="row-toggle"
               type="button"

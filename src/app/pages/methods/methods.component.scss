@@ -301,22 +301,17 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 /* MÉTHODES = Accordéon  */
 /* ===================== */
 .evals {
-  /* écart exact entre la section précédente (image au-dessus) et le H2 ci-dessous */
   --evals-top-gap: 105px;
-  /* espace sous le titre avant le tableau (à ajuster si besoin) */
   --evals-title-bottom-gap: 57px;
 
-  /* on applique le gap en padding pour fiabiliser la mesure */
-  .section-inner{
-    padding-top: var(--evals-top-gap);
-  }
+  .section-inner { padding-top: var(--evals-top-gap); }
 
   .eval-title{
     color: $blue;
     font-size: clamp(24px, 3.2vw, 36px);
     font-weight: 400;
     line-height: normal;
-    margin: 0 0 var(--evals-title-bottom-gap); /* 0 en haut, gap contrôlé en bas */
+    margin: 0 0 var(--evals-title-bottom-gap);
   }
 
   .eval-list{
@@ -326,26 +321,25 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     border-top: $bd-2 solid $blue;
   }
 
+  /* grille INCHANGÉE ⇒ icône | titre | chevron */
   .eval-row{
     display: grid;
     grid-template-columns: auto 1fr auto;
-    align-items: center;
-    column-gap: clamp(16px, 3vw, 24px);
+    align-items: center;                       /* centrage vertical */
+    column-gap: clamp(16px, 3vw, 24px);        /* garde le départ du texte */
     border-bottom: $bd-2 solid $blue;
-
-    /* homogénéise l’espacement fermé/ouvert */
     padding-block-start: 0;
     row-gap: 0;
   }
 
-  .row-line{ display: contents; }
+  .row-line { display: contents; }
 
   .row-line > .eval-icon,
   .row-line > .row-name,
   .row-line > .row-toggle{
     block-size: clamp(78px, 10vw, 98px);
     display: flex;
-    align-items: center;
+    align-items: center;                       /* centrés verticalement */
   }
 
   .eval-icon{
@@ -355,11 +349,34 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     justify-self: start;
   }
 
-  .row-name{
+  /* ===== Titre : largeur bornée à 15ch SANS bouger le chevron ===== */
+  /* on met une spécificité forte pour gagner contre toute autre règle */
+  .eval-row .row-line > .row-name{
+    max-width: 15ch !important;                /* largeur cible en “caractères” */
+    width: fit-content !important;             /* s’arrête à max-width */
+    text-align: left;
+    align-self: center;                         /* centrage vertical local (belt & suspenders) */
+
     color: $blue;
     font-size: clamp(14px, 3vw, 24px);
     font-weight: 400;
-    line-height: 1;
+    line-height: 1.25;
+
+    /* respecte les \n si tu passes par [innerHTML] */
+    white-space: pre-line;
+
+    /* coupures propres si un mot est très long */
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  /* Si ACF/WYSIWYG injecte des balises, on neutralise leur mise en page */
+  .eval-row .row-line > .row-name > p,
+  .eval-row .row-line > .row-name > div,
+  .eval-row .row-line > .row-name > span{
+    display: inline;            /* évite qu’un <p> prenne toute la ligne */
+    margin: 0;
+    padding: 0;
   }
 
   .row-toggle{
@@ -368,7 +385,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     padding: 0;
     color: $blue;
     cursor: pointer;
-    justify-self: end;
+    justify-self: end;          /* le chevron reste tout à droite */
   }
 
   .chevron{
@@ -388,24 +405,19 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     color: $blue;
     font-size: $fs12;
     line-height: 1.55;
-
     p{ margin: 0 0 10px; }
     p:last-child{ margin-bottom: 0; }
   }
 
-  /* espace barre ↔ titre + titre ↔ description quand ouvert */
   .eval-row.open{
     padding-block-start: 16px;
     row-gap: 20px;
   }
 
-  @media (max-width: 768px) {
-    .chevron {
-      width: 18px;
-      height: 18px;
-      transform: rotate(90deg);
-      transition: transform .25s ease;
-    }
+  @media (max-width: 768px){
+    .chevron { width: 18px; height: 18px; }
+    /* si tu veux resserrer en mobile :
+       .eval-row .row-line > .row-name{ max-width: 13ch !important; } */
   }
 }
 
@@ -442,6 +454,10 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
       width: 100%;
       height: auto;
       display: block;
+
+      @media (max-width: 768px){
+        width: 120%;
+      }
     }
     figcaption{
       color: $blue;

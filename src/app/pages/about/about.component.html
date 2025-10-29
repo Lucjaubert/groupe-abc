@@ -110,7 +110,7 @@
           <div class="aff-line">
             <img class="aff-logo" *ngIf="a.logo" [src]="a.logo || ''" alt="" loading="lazy" decoding="async" />
             <div class="aff-name" *ngIf="a.excerpt as n">
-              <span class="aff-abbr">{{ splitAffName(n).abbr }} :</span>
+              <span class="aff-abbr">{{ splitAffName(n).abbr }} : </span>
               <span class="aff-label">{{ splitAffName(n).label }}</span>
             </div>
             <button class="aff-toggle" type="button" [attr.aria-expanded]="affOpen[i] ? 'true':'false'" (click)="toggleAff(i)">

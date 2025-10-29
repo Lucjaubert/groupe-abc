@@ -68,30 +68,16 @@ $rail-w: 40px;
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
 }
-.menu li {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-}
+.menu li { position: relative; display: flex; align-items: center; justify-content: center; min-width: 0; }
 .menu li + li { border-left: 1px solid rgba(68, 71, 152, .5); }
 .menu a {
-  display: block;
-  width: 100%;
-  text-decoration: none;
-  white-space: nowrap;
-  font-family: "Plus Jakarta Sans", sans-serif;
-  font-size: 18px;
-  font-weight: 500;
-  line-height: 1;
-  color: #444697;
-  text-align: center;
-  padding: 8px 0;
+  display: block; width: 100%; text-decoration: none; white-space: nowrap;
+  font-family: "Plus Jakarta Sans", sans-serif; font-size: 18px; font-weight: 500; line-height: 1;
+  color: #444697; text-align: center; padding: 8px 0;
 }
 .menu a:hover { color: map.get(vars.$theme-colors, "dark-orange"); }
 
-/* ----- RAIL DROIT (cliquabilité prioritaire) ----- */
+/* ----- RAIL DROIT (fixe) ----- */
 .right-rail {
   position: fixed;
   top: 0;
@@ -123,7 +109,7 @@ $rail-w: 40px;
 }
 
 .extranet-badge {
-  width: $rail-w; height: 204px;
+  width: $rail-w; height: 160px;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   background: rgba(68, 70, 151, 0.68);
@@ -141,82 +127,83 @@ $rail-w: 40px;
   }
 }
 
-/* ===== Overlay plein écran ===== */
+/* LinkedIn dans le rail (desktop only) */
+.rail-social {
+  text-decoration: none;
+  position: relative;
+  z-index: 2100;
+  cursor: pointer;
+
+  svg { inline-size: 40px; block-size: 40px; display: block; }
+
+  &:hover,
+  &:focus-visible { background: map.get(vars.$theme-colors, "dark-orange"); }
+
+  &:focus-visible {
+    outline: 2px solid #444697;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+/* ===== Overlay plein écran – version corrigée ===== */
 .menu-overlay{
-  position: fixed; inset: 0; background: #fff; z-index: 1500;
+  position: fixed; inset: 0; background: #fff; z-index: 2500; /* > rail */
   opacity: 0; visibility: hidden;
   transition: opacity .25s ease, visibility .25s step-end;
-  display: grid; place-items: start stretch;
-
-  &.open{ opacity: 1; visibility: visible; transition: opacity .25s ease, visibility 0s; }
+  display: grid; place-items: stretch;
 }
-.menu-overlay:not(.open){ pointer-events: none !important; }
+.menu-overlay.open{ opacity: 1; visibility: visible; }
 
+/* Grille 3 lignes : top (auto) / nav (1fr scroll) / bottom (auto) */
 .menu-overlay-inner{
-  --step: clamp(35px, 4.8vh, 70px);
+  --step: clamp(auto, 6vh, 92px);
   --pad: 13px;
-  --rail-w: 40px;
-  --logo-h: 90px;
-  --offset-under-logo: 21px;
+
+  display: grid;
+  grid-template-rows: auto 1fr auto; /* clé : footer collé bas */
+  grid-template-columns: 1fr;
+  min-height: 100dvh; /* viewport réel mobile */
+  row-gap: var(--step);
 
   padding: var(--pad);
   padding-right: calc(var(--pad) + env(safe-area-inset-right));
   padding-left:  calc(var(--pad) + env(safe-area-inset-left));
   padding-top:   calc(var(--pad) + env(safe-area-inset-top));
   padding-bottom:calc(var(--pad) + env(safe-area-inset-bottom));
-
-  display: grid;
-  grid-template-columns: 1fr calc(var(--rail-w) + env(safe-area-inset-right));
-  grid-template-areas:
-    "top rail"
-    "nav rail"
-    "bottom rail";
-  column-gap: clamp(8px, 2vw, 16px);
-  row-gap: var(--step);
-  min-height: 100dvh;
 }
 
-/* ===== Bouton CLOSE "X" dans l'overlay ===== */
+/* Bouton CLOSE "X" dans l'overlay – hit-area + z-index assurés */
 .overlay-close{
   position: fixed;
   top: calc(env(safe-area-inset-top) + 12px);
   right: calc(12px + env(safe-area-inset-right));
-  inline-size: 40px; block-size: 40px;
+  inline-size: 48px; block-size: 48px;
   display: grid; place-items: center;
   background: transparent; border: 0; cursor: pointer;
   color: #444697;
-  z-index: 2002; /* au-dessus du rail dans l'overlay */
+  z-index: 2600; /* au-dessus du rail et de tout */
+  pointer-events: auto;
 
   &:focus-visible{ outline: 2px solid #444697; outline-offset: 2px; border-radius: 4px; }
 }
 
 /* Overlay content */
-.overlay-top{ grid-area: top; display: grid; }
+.overlay-top{ display: grid; }
 .overlay-brand{
   text-decoration: none; color: inherit;
   img{ inline-size: 89.654px; block-size: 90px; aspect-ratio: 89.654 / 90; flex-shrink: 0; }
   .brand-text{ font-family: "Plus Jakarta Sans", sans-serif; font-size: 20px; font-weight: 400; line-height: normal; color: #EA4D4D; }
 }
 
+/* Zone NAV scrollable uniquement */
 .overlay{
-  grid-area: nav;
   display: grid;
   align-content: start;
   row-gap: var(--step);
-}
-
-.overlay-lang{
-  margin: 0 !important;
-  display: inline-flex; align-items: center; gap: 6px;
-  writing-mode: horizontal-tb !important;
-
-  .lang-btn{
-    background: none; border: 0; padding: 0; cursor: pointer;
-    font-family: "Plus Jakarta Sans", sans-serif; font-size: 14px; color: #444697;
-    opacity: .6; transform: none !important; writing-mode: horizontal-tb; text-orientation: mixed; display: inline-block; white-space: nowrap;
-  }
-  .lang-btn.active{ opacity: 1; font-weight: 600; }
-  .sep{ color: #444697; opacity: .6; }
+  overflow: auto;       /* scrolle si manque de place */
+  min-height: 0;        /* indispensable pour overflow dans un grid child */
+  -webkit-overflow-scrolling: touch;
 }
 
 .overlay-nav{
@@ -228,37 +215,40 @@ $rail-w: 40px;
   }
 }
 
-/* Extranet dans l’overlay */
-.menu-overlay .extranet-badge{
-  grid-area: rail;
-  justify-self: center; align-self: center;
-  margin: 0 !important; margin-top: var(--offset-under-logo);
-  inline-size: 40px; block-size: 180px; flex-shrink: 0;
-  writing-mode: vertical-rl; text-orientation: mixed; transform: rotate(-90deg);
-  background: rgba(68, 70, 151, 0.68); border-radius: 2px;
-  display: flex; align-items: center; justify-content: center;
-  position: relative; right: 0; text-decoration: none; bottom: 130px;
-
-  .extranet-text{
-    white-space: nowrap; font-family: "Plus Jakarta Sans", sans-serif; font-size: 11px; font-weight: 400; line-height: normal; color: #FFF; transform: rotate(-90deg);
-  }
-  .extranet-slash{ color: map.get(vars.$theme-colors, "light-red"); }
+.overlay-bottom{
+  align-self: end;
 }
-
-.overlay-bottom{ grid-area: bottom; }
-.overlay-social.linkedin{ inline-size: 32px; block-size: 32px; display: inline-grid; place-items: center; img{ inline-size: 100%; block-size: 100%; } }
 .overlay-legal{ font-family: "Plus Jakarta Sans", sans-serif; font-size: 12px; color: #444697; opacity: .8; }
 .mm-legal { text-decoration: none; }
+
+/* Quand overlay ouvert : neutraliser le rail droit pour éviter de manger les clics */
+.no-scroll .right-rail{ pointer-events: none; }
+.no-scroll .overlay-close{ pointer-events: auto; }
+
+/* ===== Icône LinkedIn générique (si utilisée en <img>) ===== */
+.linkedin {
+  display: inline-block;
+  img { width: 39.47px; height: 39.47px; flex-shrink: 0; display: block; }
+}
 
 /* ===== Bouton burger caché en desktop ===== */
 .burger { display: none; }
 
 /* ================== MOBILE (≤ md ≈ 768px) ================== */
 @media (max-width: map.get(vars.$breakpoints, "md")) {
+  /* mêmes espacements header/overlay + réserve pour rail */
   .header{
     padding-top: clamp(17px, 4vw, 28px);
     padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
     background: map.get(vars.$theme-colors, "white");
+  }
+
+  .menu-overlay .menu-overlay-inner,
+  .menu-overlay.open .menu-overlay-inner{
+    padding-top: clamp(17px, 4vw, 28px);
+    padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
+    background: map.get(vars.$theme-colors, "white");
+    --step: clamp(8px, 6vh, 84px);
   }
 
   .header-inner{
@@ -290,71 +280,50 @@ $rail-w: 40px;
   .header.menu-open .menu a, .menu-bar.open .menu a{ text-align: left; padding: 14px 0; font-size: 18px; }
 
   .right-rail{ top: calc(env(safe-area-inset-top) + 0px); width: $rail-w; gap: 10px; }
+  .header.menu-open .right-rail .lang-switch{ margin-top: 10px; }
 
-  /* En mobile, pas de switch langue — via l’overlay */
-  .lang-switch{ display: none !important; }
+  .overlay-nav{ gap: var(--step); }
 
-  /* Badge extranet : un seul visible selon l’état overlay */
-  .menu-overlay:not(.open) .extranet-badge { display: none !important; }
-  .header.menu-open .right-rail .extranet-badge { display: none !important; }
-
-  /* FR/ENG rouge dans l’overlay (mobile) */
-  .overlay-lang{
-    .lang-btn{ font-family: "Plus Jakarta Sans", sans-serif; font-size: 16px; font-style: italic; font-weight: 400; line-height: 40px; color: #444697; opacity: 1; }
-    .lang-btn.active{ color: #EA4D4D; }
-    .sep{ font-family: "Plus Jakarta Sans", sans-serif; font-size: 16px; font-style: italic; font-weight: 400; line-height: 40px; color: #444697; }
+  .overlay-bottom{
+    align-self: end;
+    margin-bottom: 0;
+    padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
+    font-size: 16px;
   }
 
-  /* ===== Burger (statique) collé au bord droit ===== */
   .burger{
-    display: inline-grid;
-    place-content: center; gap: 4px;
-
+    display: inline-grid; place-content: center; gap: 4px;
     position: fixed;
     top: calc(env(safe-area-inset-top) + 8px);
     right: calc(0px + env(safe-area-inset-right));
     inline-size: $rail-w; block-size: $rail-w;
-
     padding: 0; border: 0; background: transparent; cursor: pointer;
     z-index: 3000;
 
-    .burger-bar{
-      inline-size: 28px; block-size: 2px;
-      background: #444697; border-radius: 2px; display: block;
-    }
-    .burger-bar:nth-child(2){ inline-size: 21px; } /* 75% */
-    .burger-bar:nth-child(3){ inline-size: 14px; } /* 50% */
+    .burger-bar{ inline-size: 28px; block-size: 2px; background: #444697; border-radius: 2px; display: block; }
+    .burger-bar:nth-child(2){ inline-size: 21px; }
+    .burger-bar:nth-child(3){ inline-size: 14px; }
   }
-
-  /* Quand l’overlay est ouvert, on masque le burger (on utilise le bouton X) */
   .header.menu-open .burger{ display: none !important; }
+
+  .rail-social { display: none !important; }
 }
 
 /* Hauteurs faibles */
-@media (max-height: 680px){
-  .menu-overlay-inner{ --step: clamp(14px, 4.2vh, 28px); }
+@media (max-height: 768px){
+  .menu-overlay-inner{ --step: clamp(24px, 5vh, 64px); }
 }
 
 /* Divers */
 .no-scroll{ overflow: hidden !important; }
-
-/* Force la couleur du "/" en light-red partout (rail + overlay) */
 .right-rail .extranet-badge .extranet-text .extranet-slash,
-.menu-overlay .extranet-badge .extranet-text .extranet-slash{
-  color: map.get(vars.$theme-colors, "light-red") !important;
-}
+.menu-overlay .extranet-badge .extranet-text .extranet-slash{ color: map.get(vars.$theme-colors, "light-red") !important; }
 .extranet-slash *{ color: inherit !important; }
-
-
-/* Force la couleur du "/" malgré l'encapsulation Angular */
 :host ::ng-deep .right-rail .extranet-badge .extranet-text .extranet-slash,
 :host ::ng-deep .menu-overlay .extranet-badge .extranet-text .extranet-slash{
   color: map.get(vars.$theme-colors, "light-red") !important;
-  -webkit-text-fill-color: map.get(vars.$theme-colors, "light-red") !important; /* iOS/Safari */
+  -webkit-text-fill-color: map.get(vars.$theme-colors, "light-red") !important;
 }
-
-/* Si un script wrappe le slash, garder la couleur héritée */
 :host ::ng-deep .extranet-slash *{
-  color: inherit !important;
-  -webkit-text-fill-color: inherit !important;
+  color: inherit !important; -webkit-text-fill-color: inherit !important;
 }

@@ -7,8 +7,8 @@ import { environment } from '../../environments/environment';
 export type OgType = 'website' | 'article';
 
 export interface Hreflang {
-  lang: string;  // 'fr', 'en', 'x-default', ...
-  href: string;  // URL absolue recommandée
+  lang: string;
+  href: string;
 }
 
 export interface SeoConfig {
@@ -18,17 +18,17 @@ export interface SeoConfig {
 
   // Langues
   lang?:        'fr' | 'en';
-  locale?:      string;               // 'fr_FR' | 'en_US'
-  localeAlt?:   string[];             // ['en_US']…
+  locale?:      string;
+  localeAlt?:   string[];
 
-  image?:       string;               // absolue ou relative
+  image?:       string;
   imageAlt?:    string;
   imageWidth?:  number;
   imageHeight?: number;
 
-  type?:        OgType;               // 'website' | 'article'
-  canonical?:   string;               // absolue ou relative
-  robots?:      string;               // 'index,follow'…
+  type?:        OgType;
+  canonical?:   string;
+  robots?:      string;
 
   // Twitter
   twitterSite?:    string;
@@ -62,7 +62,6 @@ export class SeoService {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
-  /** Mise à jour complète (title, metas, OG/Twitter, canonical, hreflang, JSON-LD, langue) */
   update(cfg: SeoConfig): void {
     if (cfg.title) this.title.setTitle(cfg.title);
 
@@ -76,12 +75,13 @@ export class SeoService {
     this.setNamedMeta('description', cfg.description);
     this.setNamedMeta('keywords',    cfg.keywords);
 
-    // Robots (Googlebot suit 'robots')
-    this.setNamedMeta('robots',    cfg.robots);
-    this.setNamedMeta('googlebot', cfg.robots);
+    // Robots (default index,follow)
+    const robots = cfg.robots && cfg.robots.trim().length ? cfg.robots : 'index,follow';
+    this.setNamedMeta('robots',    robots);
+    this.setNamedMeta('googlebot', robots);
 
-    // Origin (navigateur → window.origin ; SSR → environment.siteUrl)
-    const origin  = this.siteOrigin() || environment.siteUrl || '';
+    // Origin & URLs (origin garanti en SSR)
+    const origin  = this.siteOrigin();
     const pageUrl = this.absUrl(cfg.canonical || this.currentUrl() || this.routerUrlAsAbs(origin), origin);
     const imgUrl  = this.absUrl(cfg.image || '', origin);
 
@@ -127,11 +127,26 @@ export class SeoService {
       ...(cfg.twitterCreator ? { 'twitter:creator': cfg.twitterCreator } : {})
     });
 
-    // Canonical
+    // Canonical absolu
     this.setCanonical(pageUrl || undefined);
 
-    // hreflang alternates
-    this.setAlternates(cfg.alternates || []);
+    // ============================
+    // hreflang alternates (fallback FR/EN si rien fourni) — symétriques et absolus
+    // ============================
+    const routerPath = (this.router.url || '/').replace(/\/{2,}/g, '/');
+    const isEn = routerPath === '/en' || routerPath.startsWith('/en/');
+
+    // Chemins "sœurs" FR/EN
+    const frPath = isEn ? routerPath.replace(/^\/en(\/|$)/, '/') : routerPath;
+    const enPath = isEn ? routerPath : (routerPath === '/' ? '/en' : `/en${routerPath}`);
+
+    const defaultAlts: Hreflang[] = [
+      { lang: 'fr',        href: `${origin}${frPath}`.replace(/\/{2,}/g, '/') },
+      { lang: 'en',        href: `${origin}${enPath}`.replace(/\/{2,}/g, '/') },
+      { lang: 'x-default', href: isEn ? `${origin}${enPath}` : `${origin}${frPath}` },
+    ];
+
+    this.setAlternates((cfg.alternates && cfg.alternates.length) ? cfg.alternates : defaultAlts);
 
     // JSON-LD (page)
     this.clearJsonLd();
@@ -179,7 +194,6 @@ export class SeoService {
   }
 
   setAlternates(alts: Hreflang[]): void {
-    // purge existants
     Array.from(this.doc.head.querySelectorAll('link[rel="alternate"][hreflang]'))
       .forEach(el => el.remove());
 
@@ -194,17 +208,15 @@ export class SeoService {
     }
   }
 
-  /** Supprime les metas og:locale:alternate existantes (évite les doublons) */
   private clearOgLocaleAlternate(): void {
     try {
       this.doc
         .querySelectorAll('meta[property="og:locale:alternate"]')
         .forEach(m => m.remove());
     } catch {
-      // no-op (SSR ou environnement sans DOM)
+
     }
   }
-
 
   /* ======================
    * JSON-LD page
@@ -227,39 +239,51 @@ export class SeoService {
    * Helpers URL / meta
    * ====================== */
 
-  /** URL absolue courante (browser). En SSR, on renvoie siteUrl + router.url */
   currentUrl(): string {
-    if (this.isBrowser) {
-      try { return this.doc.defaultView?.location?.href ?? ''; } catch { return ''; }
+
+    const base = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/$/, '');
+    const path = (this.router.url || '/').replace(/\/{2,}/g, '/');
+    if (!this.isBrowser) {
+      return `${base}${path.startsWith('/') ? path : `/${path}`}`;
     }
-    return this.routerUrlAsAbs(environment.siteUrl || '');
+
+    try {
+      return this.doc.defaultView?.location?.href ?? `${base}${path.startsWith('/') ? path : `/${path}`}`;
+    } catch {
+      return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+    }
   }
 
-  /** Origin du site (browser) */
   siteOrigin(): string {
-    if (!this.isBrowser) return '';
+    const fallback = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/$/, '');
+    if (!this.isBrowser) return fallback;
     try {
       const loc = this.doc.defaultView?.location;
-      return loc ? `${loc.protocol}//${loc.host}` : '';
-    } catch { return ''; }
+      return loc ? `${loc.protocol}//${loc.host}` : fallback;
+    } catch {
+      return fallback;
+    }
   }
 
-  /** Construit une absolue depuis router.url (SSR) */
   private routerUrlAsAbs(origin: string): string {
     const base = (origin || '').replace(/\/$/, '');
     const path = (this.router.url || '/').replace(/\/{2,}/g, '/');
     return base + (path.startsWith('/') ? path : `/${path}`);
   }
 
-  /** Absolutise si besoin, en utilisant origin ou environment.siteUrl */
   private absUrl(url: string, origin: string): string {
     if (!url) return '';
     try {
-      if (/^https?:\/\//i.test(url)) return url;           // déjà absolue
-      if (/^\/\//.test(url)) return (this.isBrowser ? (this.doc.defaultView?.location?.protocol ?? 'https:') : 'https:') + url;
+      if (/^https?:\/\//i.test(url)) return url;
+      if (/^\/\//.test(url)) {
+        const proto = this.isBrowser ? (this.doc.defaultView?.location?.protocol ?? 'https:') : 'https:';
+        return proto + url;
+      }
       const base = (origin || environment.siteUrl || '').replace(/\/$/, '');
       return base ? `${base}${url.startsWith('/') ? url : `/${url}`}` : url;
-    } catch { return url; }
+    } catch {
+      return url;
+    }
   }
 
   private setNamedMeta(name: string, content?: string): void {
@@ -294,7 +318,6 @@ export class SeoService {
   }
 }
 
-/** Échappe une valeur pour un sélecteur CSS attribute */
 function cssEscape(v: string): string {
   return v.replace(/"/g, '\\"');
 }

@@ -22,20 +22,19 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
 
   private navSub?: Subscription;
   private mq?: MediaQueryList;
-  /** Empêche la fermeture de l’overlay sur la prochaine navigation (ex : changement de langue) */
   private suppressCloseOnNextNav = false;
 
   private onMqChange = (e: MediaQueryListEvent) => {
     if (!e.matches && this.menuOpen) this.setMenu(false);
   };
 
-  /** Dictionnaire I18N “en dur” */
+  /** Dictionnaire I18N */
   private I18N: Record<Lang, {
     slogan_html: string;
     tagline_html: string;
     menu: string[];
     menu_overlay: string[];
-    brand_text_html: string;
+    brand_text_html: string;   // ← on garde la clé pour compat, mais on la calera = slogan_html
     extranet_text_html: string;
   }> = {
     fr: {
@@ -44,16 +43,17 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
       menu: ['Qui sommes-nous ?','Nos Services','Biens & Méthodes','Équipes','Actualités','Contact'],
       menu_overlay: ['QUI SOMMES-NOUS ?','NOS SERVICES','BIENS ET MÉTHODES','ÉQUIPES','ACTUALITÉS','CONTACT'],
       brand_text_html: `Groupement<br>d’Experts immobiliers<br>indépendants`,
-      extranet_text_html: `GROUPE ABC <span class="extranet-slash">/</span> EXTRANET`,
+      extranet_text_html: `EXTRANET`,
     },
     en: {
-      // 3 lignes comme demandé
-      slogan_html: `Groupe of independant<br>real estate<br>experts`,
+      // ✅ mêmes 3 lignes en EN (orthographe corrigée)
+      slogan_html: `Group of<br>independent real estate<br>experts`,
       tagline_html: `Out-of-court & judicial expertise<br>in mainland France<br>and Overseas Territories`,
       menu: ['About us','Our Services','Assets & Methods','Teams','News','Contact'],
       menu_overlay: ['ABOUT US','OUR SERVICES','ASSETS & METHODS','TEAMS','NEWS','CONTACT'],
-      brand_text_html: `Groupe of independant<br>real estate<br>experts`,
-      extranet_text_html: `ABC GROUP <span class="extranet-slash">/</span> EXTRANET`,
+      // on force brand_text_html identique au slogan pour overlay
+      brand_text_html: `Group of<br>independent real estate<br>experts`,
+      extranet_text_html: `EXTRANET`,
     }
   };
 
@@ -72,7 +72,6 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
         this.syncLangFromUrl();
         setTimeout(() => this.applyI18nToDom(), 0);
 
-        // Ne pas fermer l’overlay si la nav vient d’un clic FR/ENG
         if (!this.suppressCloseOnNextNav) {
           this.setMenu(false);
         }
@@ -90,7 +89,6 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     setTimeout(() => this.applyI18nToDom(), 0);
   }
 
-  /** Aligne la langue sur l’URL courante */
   private syncLangFromUrl(): void {
     const url = this.router.url || '/';
     const path = url.split('?')[0].split('#')[0];
@@ -99,7 +97,6 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     if (this.lang.lang !== fromUrl) this.lang.set(fromUrl);
   }
 
-  /** Construit l’URL cible dans la langue demandée */
   private goToLang(target: Lang): void {
     const full = this.router.url || '/';
     const [beforeHash, hash = ''] = full.split('#');
@@ -114,7 +111,6 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     this.router.navigateByUrl(nextUrl);
   }
 
-  /** Fallback PNG du logo */
   onBrandError(ev: Event): void {
     if (this.brandTriedPng) return;
     this.brandTriedPng = true;
@@ -123,39 +119,27 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     if (img) img.src = this.brandSrc;
   }
 
-  /**
-   * Action principale du bouton du rail :
-   * - MOBILE : ouvre/ferme l’overlay
-   * - DESKTOP : bascule la langue (et reste sur la page)
-   */
   onPrimaryAction(evt?: Event): void {
     if (evt) { evt.preventDefault(); evt.stopPropagation(); }
-    if (this.mq?.matches) {
-      this.toggleMenu();
-    } else {
-      const current: Lang = this.lang.lang;
-      const target: Lang = current === 'fr' ? 'en' : 'fr';
-      this.lang.set(target);
-      this.applyI18nToDom();
-      this.suppressCloseOnNextNav = true;   // ne pas fermer si la nav est due au switch langue
-      this.goToLang(target);
-    }
+    const current: Lang = this.lang.lang;
+    const target: Lang  = current === 'fr' ? 'en' : 'fr';
+    this.lang.set(target);
+    this.applyI18nToDom();
+    this.suppressCloseOnNextNav = true;
+    this.goToLang(target);
   }
 
-  /** Choix explicite depuis l’overlay (FR ou EN) — garder l’overlay ouvert */
   setLang(l: Lang): void {
     if (this.lang.lang !== l) {
       this.lang.set(l);
       this.applyI18nToDom();
-      this.suppressCloseOnNextNav = true;   // ⬅️ clé : l’overlay reste ouvert
+      this.suppressCloseOnNextNav = true;
       this.goToLang(l);
     }
   }
 
-  /** Gestion menu overlay */
   toggleMenu(): void { this.setMenu(!this.menuOpen); }
 
-  /** Publique car appelée depuis le template (bouton X) */
   setMenu(state: boolean): void {
     this.menuOpen = state;
     const body = this.doc.body;
@@ -167,22 +151,23 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     }
   }
 
-  /** Applique les libellés FR/EN dans le DOM (sans Weglot) */
+  /** Applique FR/EN dans le DOM – slogan & overlay brand synchronisés */
   private applyI18nToDom(): void {
     const L = this.lang.lang;
     const dict = this.I18N[L];
 
+    // même HTML pour le slogan du header et le texte de marque de l’overlay
     const slogan = this.doc.querySelector('.slogan') as HTMLElement | null;
     if (slogan) slogan.innerHTML = dict.slogan_html;
+
+    const overlayBrandTxt = this.doc.querySelector('.overlay-brand .brand-text') as HTMLElement | null;
+    if (overlayBrandTxt) overlayBrandTxt.innerHTML = dict.slogan_html;
 
     const tagline = this.doc.querySelector('.tagline-text') as HTMLElement | null;
     if (tagline) tagline.innerHTML = dict.tagline_html;
 
     const headerMenuLinks = Array.from(this.doc.querySelectorAll('.menu a')) as HTMLAnchorElement[];
     dict.menu.forEach((txt, i) => { if (headerMenuLinks[i]) headerMenuLinks[i].textContent = txt; });
-
-    const overlayBrandTxt = this.doc.querySelector('.overlay-brand .brand-text') as HTMLElement | null;
-    if (overlayBrandTxt) overlayBrandTxt.innerHTML = dict.brand_text_html;
 
     const overlayLinks = Array.from(this.doc.querySelectorAll('.overlay-nav a')) as HTMLAnchorElement[];
     dict.menu_overlay.forEach((txt, i) => { if (overlayLinks[i]) overlayLinks[i].textContent = txt; });

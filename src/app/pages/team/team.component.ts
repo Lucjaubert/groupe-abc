@@ -12,6 +12,7 @@ import { firstValueFrom } from 'rxjs';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
 import { ImgFromPipe } from '../../pipes/img-from.pipe';
 import { ActivatedRoute, Router } from '@angular/router';
+import { environment } from '../../../environments/environment';
 
 /* ===== Types ===== */
 type MapSection = { title?: string; image?: any; items: string[] };
@@ -28,8 +29,6 @@ type Firm = {
   organismLogoUrl?: any;
   titlesHtml?: SafeHtml | '';
   partnerLinkedin?: string;
-
-  /* URLs résolues (pour le template) */
   _partnerImgUrl?: string;
 };
 
@@ -43,8 +42,6 @@ type TeachingCourse = {
   speakerPhotoUrl?: any;
   speakerLinkedin?: string;
   schoolUrl?: string;
-
-  /* URL résolue (pour le template) */
   _speakerImgUrl?: string;
 };
 
@@ -68,13 +65,12 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   heroTitle = 'Équipes';
   heroIntroHtml: SafeHtml | '' = '';
   mapSection: MapSection | null = null;
-  whereOpen = true; // pour [attr.aria-hidden] dans ton HTML
+  whereOpen = true;
 
   firmsTitle = '';
   firms: Firm[] = [];
   openFirmIndex: number | null = null;
 
-  /* Doc à télécharger (pattern "presentation.file") */
   contactsSheet: { file: string | null } = { file: null };
 
   /* Teaching */
@@ -92,13 +88,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('firmsBarEl') firmsBarEl!: ElementRef<HTMLElement>;
   @ViewChild('mapTitleEl')  mapTitleEl!: ElementRef<HTMLElement>;
   @ViewChild('mapImageEl')  mapImageEl!: ElementRef<HTMLElement>;
-  // Ton HTML de la map n'a plus #mapItem ; on animera en querySelectorAll dans bindAnimations.
 
   @ViewChild('firmsTitleEl') firmsTitleEl!: ElementRef<HTMLElement>;
   @ViewChildren('firmRowEl') firmRowEls!: QueryList<ElementRef<HTMLElement>>;
   @ViewChildren('detailEl')  detailEls!: QueryList<ElementRef<HTMLElement>>;
 
-  /* Teaching refs */
   @ViewChild('teachingTitleEl') teachingTitleEl!: ElementRef<HTMLElement>;
   @ViewChild('teachingIntroEl') teachingIntroEl!: ElementRef<HTMLElement>;
   @ViewChildren('teachingRowEl') teachingRowEls!: QueryList<ElementRef<HTMLElement>>;
@@ -115,6 +109,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private RANDOMIZE_FIRMS_ON_LOAD = true;
   private OPEN_ONLY_IF_HAS_DETAILS = true;
+
+  private TEACHING_RANDOMIZE = true;
+  private TEACHING_MAX_TRIES = 200;
 
   /* ===== Helpers fail-safe ===== */
   private revealAllFailSafe(host?: HTMLElement){
@@ -177,7 +174,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!key) return;
     const idx = this.firms.findIndex(f => this.regionKeyFromLabel(f.region || '') === key);
     if (idx >= 0) {
-      // mets le fragment dans l’URL (pour partage/navigation) puis ouvre/scroll
       this.router.navigate([], { queryParams: { region: key }, fragment: key, replaceUrl: true });
       this.openAndScrollTo(idx);
     }
@@ -301,7 +297,12 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
                 }
               });
             }
+
             this.teachingCourses = courses;
+
+            if (this.TEACHING_RANDOMIZE && this.teachingCourses.length > 1) {
+              this.shuffleTeachingCourses(this.teachingCourses);
+            }
 
             /* Images */
             await this.hydrateImages();
@@ -399,20 +400,8 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onMapImgError(e: Event){ const img = e.target as HTMLImageElement; if (img) img.src = this.defaultMap; }
-
-  onTeachImgError(e: Event){
-    const img = e.target as HTMLImageElement;
-    if (img && img.src !== this.defaultPortrait){
-      img.src = this.defaultPortrait;
-    }
-  }
-
-  onFirmImgError(e: Event){
-    const img = e.target as HTMLImageElement;
-    if (img && img.src !== this.defaultPortrait){
-      img.src = this.defaultPortrait;
-    }
-  }
+  onTeachImgError(e: Event){ const img = e.target as HTMLImageElement; if (img && img.src !== this.defaultPortrait){ img.src = this.defaultPortrait; } }
+  onFirmImgError(e: Event){ const img = e.target as HTMLImageElement; if (img && img.src !== this.defaultPortrait){ img.src = this.defaultPortrait; } }
 
   private strip(html: string, max = 160): string {
     const t = (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
@@ -429,8 +418,8 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!host) return;
       const pre  = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));
       const rows = Array.from(host.querySelectorAll<HTMLElement>('.prehide-row'));
-      if (pre.length)  gsap.set(pre,  { opacity: 0, y: 20 });
-      if (rows.length) gsap.set(rows, { opacity: 0 });
+      if (pre.length)  gsap.set(pre,  { autoAlpha: 0, y: 20, visibility: 'hidden' });
+      if (rows.length) gsap.set(rows, { autoAlpha: 0, visibility: 'hidden' });
     } catch {}
   }
 
@@ -552,7 +541,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     }));
   }
 
-  /* ===== Animations ===== */
+  /* ================= Animations ================= */
   ngAfterViewInit(): void {
     try { gsap.registerPlugin(ScrollTrigger); } catch {}
     this.firmRowEls?.changes?.subscribe(() => this.scheduleBind());
@@ -606,7 +595,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const trows = (this.teachingRowEls?.toArray() || []).map(r => r.nativeElement);
     const tlist = (trows.length ? trows[0].closest('.teach-list') : null) as HTMLElement | null;
 
-    /* ---------- MAP (nouveau HTML) ---------- */
+    /* ---------- MAP ---------- */
     const mt = this.mapTitleEl?.nativeElement || null;
     const mi = this.mapImageEl?.nativeElement || null;
     const mapListEl = document.querySelector('.where-panel') as HTMLElement | null;
@@ -689,7 +678,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (hi) {
       rmPrehide(hi);
       tl.fromTo(hi, { autoAlpha: 0, y: 14 }, {
-        autoAlpha: 1, y: 0, duration: .5
+        autoAlpha: 1, y: 0, duration: .5, immediateRender: false
       }, '>-0.10').add(() => { gsap.set(hi, { clearProps: 'all' }); }, '>');
     }
 
@@ -699,8 +688,8 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         if (h2) rmPrehide(h2);
         if (link) rmPrehide(link);
         tl.addLabel('firmsTitlebar')
-          .fromTo(h2,   { autoAlpha: 0, x: -24 }, { autoAlpha: 1, x: 0, duration: .50 }, 'firmsTitlebar')
-          .fromTo(link, { autoAlpha: 0, x:  24 }, { autoAlpha: 1, x: 0, duration: .50 }, 'firmsTitlebar+=0.08')
+          .fromTo(h2,   { autoAlpha: 0, x: -24 }, { autoAlpha: 1, x: 0, duration: .50, immediateRender: false }, 'firmsTitlebar')
+          .fromTo(link, { autoAlpha: 0, x:  24 }, { autoAlpha: 1, x: 0, duration: .50, immediateRender: false }, 'firmsTitlebar+=0.08')
           .add(() => { gsap.set([h2, link].filter(Boolean) as HTMLElement[], { clearProps: 'all' }); });
         this.firmsTitlebarPlayed = true;
       } else {
@@ -738,7 +727,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
           trigger: triggerEl,
           start: 'top 85%',
           once: true,
-          onEnter: playTeaching
+          onEnter: () => playTeaching()
         });
       }
     }
@@ -766,8 +755,8 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       if (parts.length) {
         if (this.animateDetailOnFirstLoad && !this.skipDetailAnimNextBind) {
           rmPrehide(parts);
-          tl.fromTo(left,  { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .45 }, '>-0.10')
-            .fromTo(right, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .45 }, '>-0.36');
+          tl.fromTo(left,  { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .45, immediateRender: false }, '>-0.10')
+            .fromTo(right, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .45, immediateRender: false }, '>-0.36');
           this.animateDetailOnFirstLoad = false;
         } else {
           rmPrehide(parts);
@@ -785,16 +774,16 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const path = this.currentPath();
     const isEN = path.startsWith('/en/');
 
-    const site   = 'https://groupe-abc.fr';
+    const siteUrl = (environment.siteUrl || '').replace(/\/+$/,'') || 'https://groupe-abc.fr';
     const pathFR = '/equipes';
     const pathEN = '/en/team';
     const canonPath = isEN ? pathEN : pathFR;
-    const canonical = this.normalizeUrl(site, canonPath);
+    const canonicalAbs = this.normalizeUrl(siteUrl, canonPath);
 
     const alternates = [
-      { lang: 'fr',        href: this.normalizeUrl(site, pathFR) },
-      { lang: 'en',        href: this.normalizeUrl(site, pathEN) },
-      { lang: 'x-default', href: this.normalizeUrl(site, pathFR) }
+      { lang: 'fr',        href: this.normalizeUrl(siteUrl, pathFR) },
+      { lang: 'en',        href: this.normalizeUrl(siteUrl, pathEN) },
+      { lang: 'x-default', href: this.normalizeUrl(siteUrl, pathFR) }
     ];
 
     const orgName = 'Groupe ABC';
@@ -810,31 +799,31 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     );
 
     const ogImage = '/assets/og/og-default.jpg';
-    const ogAbs   = this.absUrl(ogImage, site);
+    const ogAbs   = this.absUrl(ogImage, siteUrl);
     const isDefaultOg = ogImage.endsWith('/og-default.jpg');
 
-    const siteId = site.replace(/\/+$/, '') + '#website';
-    const orgId  = site.replace(/\/+$/, '') + '#organization';
+    const siteId = siteUrl + '#website';
+    const orgId  = siteUrl + '#organization';
 
     const organization = {
       '@type': 'Organization',
       '@id': orgId,
       name: orgName,
-      url: site,
-      logo: `${site}/assets/favicons/android-chrome-512x512.png`,
-      sameAs: ['https://www.linkedin.com/company/groupe-abc-experts/']
+      url: siteUrl,
+      logo: `${siteUrl}/assets/favicons/android-chrome-512x512.png`,
+      sameAs: ['https://www.linkedin.com/company/groupe-abc']
     };
 
     const website = {
       '@type': 'WebSite',
       '@id': siteId,
-      url: site,
+      url: siteUrl,
       name: orgName,
       inLanguage: isEN ? 'en-US' : 'fr-FR',
       publisher: { '@id': orgId },
       potentialAction: {
         '@type': 'SearchAction',
-        target: `${site}/?s={search_term_string}`,
+        target: `${siteUrl}/?s={search_term_string}`,
         'query-input': 'required name=search_term_string'
       }
     };
@@ -843,7 +832,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       '@type': 'CollectionPage',
       name: title,
       description,
-      url: canonical,
+      url: canonicalAbs,
       inLanguage: isEN ? 'en-US' : 'fr-FR',
       isPartOf: { '@id': siteId },
       about: { '@id': orgId },
@@ -853,15 +842,15 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const breadcrumb = {
       '@type': 'BreadcrumbList',
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: site },
-        { '@type': 'ListItem', position: 2, name: isEN ? 'Team' : 'Équipes', item: canonical }
+        { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl },
+        { '@type': 'ListItem', position: 2, name: isEN ? 'Team' : 'Équipes', item: canonicalAbs }
       ]
     };
 
     this.seo.update({
       title,
       description,
-      canonical: canonPath,
+      canonical: canonicalAbs,            // absolu
       image: ogAbs,
       imageAlt: isEN ? `${orgName} – Team` : `${orgName} – Équipes`,
       ...(isDefaultOg ? { imageWidth: 1200, imageHeight: 630 } : {}),
@@ -891,5 +880,76 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
   private currentPath(): string {
     try { return window?.location?.pathname || '/'; } catch { return '/'; }
+  }
+
+  /* ========= NEW: shuffle Teaching avec contrainte no-adjacent ========= */
+  private speakerKey(c?: TeachingCourse | null): string {
+    const n = this.norm((c?.speakerName || '').toString());
+    return n;
+  }
+  private noAdjacentSameSpeaker(arr: TeachingCourse[]): boolean {
+    for (let i = 1; i < arr.length; i++) {
+      if (this.speakerKey(arr[i]) && this.speakerKey(arr[i]) === this.speakerKey(arr[i - 1])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  private shuffleTeachingCourses(arr: TeachingCourse[]): void {
+    if (arr.length < 2) return;
+
+    let tries = 0;
+    while (tries++ < this.TEACHING_MAX_TRIES) {
+      this.shuffleInPlace(arr);
+      if (this.noAdjacentSameSpeaker(arr)) return;
+    }
+
+    for (let i = 1; i < arr.length; i++) {
+      if (this.speakerKey(arr[i]) && this.speakerKey(arr[i]) === this.speakerKey(arr[i - 1])) {
+        let j = i + 1;
+        while (j < arr.length && (!this.speakerKey(arr[j]) || this.speakerKey(arr[j]) === this.speakerKey(arr[i]))) j++;
+        if (j < arr.length) { const tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp; }
+      }
+    }
+
+    if (!this.noAdjacentSameSpeaker(arr)) {
+      const buckets = new Map<string, TeachingCourse[]>();
+      const order: string[] = [];
+      for (const c of arr) {
+        const k = this.speakerKey(c) || '__unknown__';
+        if (!buckets.has(k)) { buckets.set(k, []); order.push(k); }
+        buckets.get(k)!.push(c);
+      }
+      order.sort((a, b) => (buckets.get(b)!.length - buckets.get(a)!.length));
+
+      const result: TeachingCourse[] = [];
+      let placed = true;
+      while (placed) {
+        placed = false;
+        for (const k of order) {
+          const list = buckets.get(k)!;
+          if (list.length) {
+            if (result.length && this.speakerKey(result[result.length - 1]) === (k === '__unknown__' ? '' : k)) {
+              continue;
+            }
+            result.push(list.shift()!);
+            placed = true;
+          }
+        }
+      }
+      for (const k of order) {
+        const list = buckets.get(k)!;
+        while (list.length) result.push(list.shift()!);
+      }
+      for (let i = 1; i < result.length; i++) {
+        if (this.speakerKey(result[i]) && this.speakerKey(result[i]) === this.speakerKey(result[i - 1])) {
+          const kPrev = this.speakerKey(result[i - 1]);
+          for (let j = i + 1; j < result.length; j++) {
+            if (this.speakerKey(result[j]) !== kPrev) { const t = result[i]; result[i] = result[j]; result[j] = t; break; }
+          }
+        }
+      }
+      arr.splice(0, arr.length, ...result);
+    }
   }
 }

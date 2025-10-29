@@ -4,14 +4,13 @@ import { NavigationEnd, NavigationStart, Router, RouterOutlet } from '@angular/r
 import { HeaderComponent } from './shared/components/header/header.component';
 import { FooterComponent, FooterSection } from './shared/components/footer/footer.component';
 import { SeoService } from './services/seo.service';
-
-// ✅ import du service WeglotRefresh
 import { WeglotRefreshService } from './services/weglot-refresh.service';
+import { FaqBubbleComponent } from './shared/components/faq-bubble/faq-bubble.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, HeaderComponent, FooterComponent],
+  imports: [RouterOutlet, CommonModule, HeaderComponent, FooterComponent, FaqBubbleComponent],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
@@ -30,7 +29,8 @@ export class AppComponent {
     address_label: 'Adresse',
     address: '12 rue Exemple, 75000 Paris',
     cta_text: 'Nous écrire',
-    cta_url: '/contact',
+    // ⬇️ Nouveau slug SEO (avant : /contact)
+    cta_url: '/contact-expert-immobilier',
     links: [
       { label: 'Mentions légales', url: '/mentions-legales' },
       { label: 'Politique de confidentialité', url: '/politique-de-confidentialite' },
@@ -50,6 +50,7 @@ export class AppComponent {
   ) {}
 
   ngOnInit(): void {
+    // JSON-LD sitewide conforme aux reco (Organization + WebSite)
     const origin = 'https://groupe-abc.fr';
     const logoUrl = `${origin}/assets/favicons/android-chrome-512x512.png`;
     this.seo.setSitewideJsonLd({
@@ -85,7 +86,7 @@ export class AppComponent {
       ]
     });
 
-    // Routing
+    // Routing / UX
     this.router.events.subscribe(event => {
       if (event instanceof NavigationStart) {
         this.showFooter = false;
@@ -98,7 +99,8 @@ export class AppComponent {
         if (isPlatformBrowser(this.platformId)) {
           window.scrollTo({ top: 0, behavior: 'smooth' });
 
-          if (this.currentRoute.includes('/contact')) {
+          // Classe body spécifique à la page Contact (penser au nouveau slug)
+          if (this.currentRoute.includes('/contact-expert-immobilier')) {
             this.renderer.addClass(document.body, 'contact-page');
           } else {
             this.renderer.removeClass(document.body, 'contact-page');

@@ -20,7 +20,7 @@
     </div>
 
     <div class="hero-overlay pb-10">
-      <div class="hero-content mt-9 mt-lg-0" aria-live="polite">
+      <div class="hero-content mt-5 mt-lg-0" aria-live="polite">
         <h1 class="hero-title" #heroTitle data-wg-notranslate>
           {{ currentSlide?.title }}
         </h1>
@@ -42,7 +42,6 @@
     </div>
   </section>
 
-
   <!-- Key figures -->
   <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">
     <ul [style.--n]="maxValueCh">
@@ -52,17 +51,11 @@
           [ngStyle]="{ '--value-w': (fig.digits + 'ch') }"
           [ngClass]="{ col1: i < 5, col2: i >= 5 && i < 9, col3: i >= 9, 'grp-sep': i === 5 || i === 9 }">
 
-        <!-- chiffres : ne jamais traduire -->
         <span class="value" data-wg-notranslate>{{ fig.display || '\u00A0' }}</span>
-
-        <!-- libellé : affiché directement, switch FR/EN instantané -->
-        <span class="label" data-wg-notranslate>
-          {{ fig.typed }}
-        </span>
+        <span class="label" data-wg-notranslate>{{ fig.typed }}</span>
       </li>
     </ul>
   </section>
-
 
   <!-- ===== Identity : Qui / Où ===== -->
   <section id="identity" class="identity" *ngIf="identity?.whoTitle || identity?.whereTitle">
@@ -78,7 +71,7 @@
           <button
             class="cta-btn mt-5"
             type="button"
-            routerLink="/qui-sommes-nous">
+            routerLink="/expert-immobilier-reseau-national">
             <span class="cta-label">Lire la suite</span>
             <span class="cta-plus" aria-hidden="true">
               <svg viewBox="0 0 24 24" class="icon-plus">
@@ -125,11 +118,9 @@
               <a
                 class="where-link"
                 href=""
-                (click)="$event.preventDefault(); openRegion(item)"
-                >{{ item }}</a>
+                (click)="$event.preventDefault(); openRegion(item)">{{ item }}</a>
             </li>
           </ul>
-
         </div>
       </div>
 
@@ -148,7 +139,7 @@
           </ul>
 
           <div class="wh-actions">
-            <button type="button" class="cta-btn" routerLink="/biens-et-methodes">
+            <button type="button" class="cta-btn" routerLink="/methodes-evaluation-immobiliere">
               <span class="cta-label">Lire la suite</span>
               <span class="cta-plus" aria-hidden="true">
                 <svg viewBox="0 0 24 24" class="icon-plus">
@@ -159,7 +150,7 @@
           </div>
         </article>
 
-        <!-- Download : rendu même si pas de fichier pour garder l’alignement -->
+        <!-- Download -->
         <article class="download py-5 py-lg-5">
           <a class="dl-link"
              [class.disabled]="!presentation.file"
@@ -181,10 +172,9 @@
                  width="48" height="56" loading="lazy">
           </a>
         </article>
-
       </div>
 
-      <!-- Colonne droite : Comment + CTA aligné en bas -->
+      <!-- Colonne droite : Comment + CTA -->
       <div class="wh-right">
         <article class="how">
           <h2 class="block-title">{{ whatHow.howTitle }}</h2>
@@ -195,7 +185,7 @@
         </article>
 
         <div class="wh-actions">
-          <button type="button" class="cta-btn">
+          <button type="button" class="cta-btn" routerLink="/expertise-immobiliere-services">
             <span class="cta-label">Lire la suite</span>
             <span class="cta-plus" aria-hidden="true">
               <svg viewBox="0 0 24 24" class="icon-plus">
@@ -210,7 +200,6 @@
 
   <!-- ===== Contextes d’intervention ===== -->
   <section class="contexts" aria-labelledby="contexts-title" *ngIf="contexts?.items?.length">
-    <!-- Fond full-bleed -->
     <div class="contexts-bg" aria-hidden="true"></div>
 
     <div class="contexts-inner px-0">
@@ -221,8 +210,7 @@
           <button
             type="button"
             class="cta-btn"
-            type="button"
-            routerLink="/nos-services">
+            routerLink="/expertise-immobiliere-services">
             <span class="cta-label">Plus d'infos</span>
             <span class="cta-plus" aria-hidden="true">
               <svg viewBox="0 0 24 24" class="icon-plus">
@@ -250,7 +238,6 @@
 
     <div class="clients-inner px-0">
       <div class="row align-items-start clients-row gx-0">
-        <!-- Colonne gauche : icône + titre -->
         <div class="col-lg-auto clients-left pe-lg-5">
           <img
             class="clients-icon d-block"
@@ -264,7 +251,6 @@
           <h2 id="clients-title" class="clients-title">{{ clients?.title }}</h2>
         </div>
 
-        <!-- Colonne droite : liste -->
         <div class="col-lg clients-right">
           <div class="col-lg clients-right">
             <ul class="dash-list clients-list list-unstyled m-0" role="list">
@@ -284,7 +270,6 @@
         <span class="line2">{{ teamTitleLine2 }}</span>
       </h2>
 
-      <!-- 2 cartes visibles -->
       <div class="team-grid" aria-live="polite">
         <article
           class="member-card"
@@ -326,8 +311,8 @@
         </div>
 
         <div class="team-cta">
-          <button type="button" class="cta-btn" [routerLink]="['/nos-equipes']">
-            <span class="cta-label">Découvrez nos équipes</span>
+          <button type="button" class="cta-btn" [routerLink]="['/experts-immobiliers-agrees']">
+            <span class="cta-label">Voir nos équipes</span>
             <span class="cta-plus" aria-hidden="true">
               <svg viewBox="0 0 24 24" class="icon-plus"><path d="M12 5v14M5 12h14"/></svg>
             </span>
@@ -369,7 +354,7 @@
 
             <div class="news-cta">
               <a class="cta-btn"
-                 [routerLink]="['/actualites']"
+                 [routerLink]="['/actualites-expertise-immobiliere']"
                  [queryParams]="{ open: it.slug || it.id }">
                 <span class="cta-label">Lire la suite</span>
                 <span class="cta-plus" aria-hidden="true">
@@ -382,12 +367,11 @@
 
         <a
           class="news-side-btn"
-          [routerLink]="['/actualites']"
+          [routerLink]="['/actualites-expertise-immobiliere']"
           aria-label="Voir toutes les actualités"
         >
           Retrouvez nos derniers articles publiés ici
         </a>
-
       </div>
     </div>
   </section>

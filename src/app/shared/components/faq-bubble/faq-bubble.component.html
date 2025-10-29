@@ -1,0 +1,28 @@
+<!-- Bouton flottant -->
+<button class="faq-fab"
+        type="button"
+        aria-haspopup="dialog"
+        aria-controls="faq-panel"
+        (click)="toggle()"
+        title="FAQ">
+  <span aria-hidden="true">?</span>
+  <span class="sr-only">Ouvrir la FAQ</span>
+</button>
+
+<!-- Panneau -->
+<div class="faq-panel" id="faq-panel" *ngIf="(vm$ | async) as vm" [class.open]="vm.open" role="dialog" aria-modal="true">
+  <header class="faq-head">
+    <strong>{{ vm.lang === 'en' ? 'Questions & Answers' : 'Questions fréquentes' }}</strong>
+    <button class="faq-close" type="button" (click)="close()" aria-label="Fermer">×</button>
+  </header>
+
+  <div class="faq-body">
+    <details *ngFor="let it of vm.items; trackBy: track">
+      <summary>{{ it.q }}</summary>
+      <div class="faq-answer" [innerHTML]="it.a"></div>
+    </details>
+    <p *ngIf="!vm.items?.length" class="faq-empty">
+      {{ vm.lang === 'en' ? 'No FAQ available on this page.' : 'Aucune FAQ pour cette page.' }}
+    </p>
+  </div>
+</div>
