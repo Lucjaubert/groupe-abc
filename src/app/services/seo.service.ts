@@ -7,8 +7,8 @@ import { environment } from '../../environments/environment';
 export type OgType = 'website' | 'article';
 
 export interface Hreflang {
-  lang: string;  // 'fr', 'en', 'x-default', ...
-  href: string;  // URL absolue recommandée
+  lang: string;
+  href: string;
 }
 
 export interface SeoConfig {
@@ -18,17 +18,17 @@ export interface SeoConfig {
 
   // Langues
   lang?:        'fr' | 'en';
-  locale?:      string;               // 'fr_FR' | 'en_US'
-  localeAlt?:   string[];             // ['en_US']…
+  locale?:      string;
+  localeAlt?:   string[];
 
-  image?:       string;               // absolue ou relative
+  image?:       string;
   imageAlt?:    string;
   imageWidth?:  number;
   imageHeight?: number;
 
-  type?:        OgType;               // 'website' | 'article'
-  canonical?:   string;               // absolue ou relative
-  robots?:      string;               // 'index,follow'…
+  type?:        OgType;
+  canonical?:   string;
+  robots?:      string;
 
   // Twitter
   twitterSite?:    string;
@@ -44,6 +44,28 @@ export interface SeoConfig {
   // JSON-LD (@graph ou objet)
   jsonLd?:       object;
 }
+
+/**
+ * Mapping canonique FR ⇄ EN pour les pages majeures.
+ * IMPORTANT :
+ *  - chemins ABSOLUS, incluant /en pour la version EN
+ *  - DOIT refléter tes vraies routes Angular.
+ */
+const ALT_MAP: { fr: string; en: string }[] = [
+  { fr: '/',                               en: '/en' },
+
+  { fr: '/expert-immobilier-reseau-national',  en: '/en/expert-network-chartered-valuers' },
+  { fr: '/expertise-immobiliere-services',     en: '/en/real-estate-valuation-services' },
+  { fr: '/methodes-evaluation-immobiliere',    en: '/en/assets-methods' },
+  { fr: '/experts-immobiliers-agrees',         en: '/en/chartered-valuation-experts' },
+  { fr: '/actualites-expertise-immobiliere',   en: '/en/news' },
+  { fr: '/contact-expert-immobilier',          en: '/en/contact' },
+
+  // Si tu as les routes EN correspondantes, dé-commente :
+  // { fr: '/mentions-legales',                   en: '/en/legal-notice' },
+  // { fr: '/politique-de-confidentialite',       en: '/en/privacy-policy' },
+  // { fr: '/politique-des-cookies',              en: '/en/cookies-policy' },
+];
 
 @Injectable({ providedIn: 'root' })
 export class SeoService {
@@ -62,7 +84,6 @@ export class SeoService {
     this.isBrowser = isPlatformBrowser(platformId);
   }
 
-  /** Mise à jour complète (title, metas, OG/Twitter, canonical, hreflang, JSON-LD, langue) */
   update(cfg: SeoConfig): void {
     if (cfg.title) this.title.setTitle(cfg.title);
 
@@ -76,13 +97,17 @@ export class SeoService {
     this.setNamedMeta('description', cfg.description);
     this.setNamedMeta('keywords',    cfg.keywords);
 
-    // Robots (Googlebot suit 'robots')
-    this.setNamedMeta('robots',    cfg.robots);
-    this.setNamedMeta('googlebot', cfg.robots);
+    // Robots (default index,follow)
+    const robots = cfg.robots && cfg.robots.trim().length ? cfg.robots : 'index,follow';
+    this.setNamedMeta('robots',    robots);
+    this.setNamedMeta('googlebot', robots);
 
-    // Origin (navigateur → window.origin ; SSR → environment.siteUrl)
-    const origin  = this.siteOrigin() || environment.siteUrl || '';
-    const pageUrl = this.absUrl(cfg.canonical || this.currentUrl() || this.routerUrlAsAbs(origin), origin);
+    // Origin & URLs
+    const origin  = this.siteOrigin();
+    const pageUrl = this.absUrl(
+      cfg.canonical || this.currentUrl() || this.routerUrlAsAbs(origin),
+      origin
+    );
     const imgUrl  = this.absUrl(cfg.image || '', origin);
 
     // Open Graph
@@ -103,7 +128,7 @@ export class SeoService {
     (cfg.localeAlt || (ogLocale.startsWith('fr') ? ['en_US'] : ['fr_FR']))
       .forEach(l => this.setPropMeta('og:locale:alternate', l));
 
-    // OG image détails
+    // OG image details
     if (imgUrl) {
       this.setPropMeta('og:image:alt',   cfg.imageAlt || cfg.title);
       if (cfg.imageWidth)  this.setPropMeta('og:image:width',  String(cfg.imageWidth));
@@ -127,11 +152,18 @@ export class SeoService {
       ...(cfg.twitterCreator ? { 'twitter:creator': cfg.twitterCreator } : {})
     });
 
-    // Canonical
+    // Canonical absolu
     this.setCanonical(pageUrl || undefined);
 
-    // hreflang alternates
-    this.setAlternates(cfg.alternates || []);
+    // ===== hreflang alternates =====
+    const routerPath = (this.router.url || '/').split(/[?#]/)[0].replace(/\/{2,}/g, '/');
+
+    const hreflangs =
+      (cfg.alternates && cfg.alternates.length)
+        ? cfg.alternates
+        : this.buildDefaultAlternates(origin, routerPath);
+
+    this.setAlternates(hreflangs);
 
     // JSON-LD (page)
     this.clearJsonLd();
@@ -149,6 +181,51 @@ export class SeoService {
       this.rnd.appendChild(this.doc.head, script);
     }
     script.text = JSON.stringify(obj);
+  }
+
+  /* ======================
+   * Hreflang mapping
+   * ====================== */
+
+  /**
+   * Construit les hreflang par défaut à partir du ALT_MAP.
+   * Si l’URL n’est pas dans le tableau :
+   *  - on garde l’ancien fallback /en + strip /en
+   *  - mais tes pages importantes sont béton.
+   */
+  private buildDefaultAlternates(origin: string, path: string): Hreflang[] {
+    const clean = path.replace(/\/{2,}/g, '/') || '/';
+
+    // 1) On cherche dans le ALT_MAP
+    const direct = ALT_MAP.find(p => p.fr === clean || p.en === clean);
+
+    if (direct) {
+      const isEn = (clean === direct.en);
+      const frHref = `${origin}${direct.fr}`.replace(/\/{2,}/g, '/');
+      const enHref = `${origin}${direct.en}`.replace(/\/{2,}/g, '/');
+
+      return [
+        { lang: 'fr',        href: frHref },
+        { lang: 'en',        href: enHref },
+        { lang: 'x-default', href: isEn ? enHref : frHref },
+      ];
+    }
+
+    // 2) Fallback générique (pour routes non mappées)
+    const isEn = clean === '/en' || clean.startsWith('/en/');
+    const frPath = isEn ? clean.replace(/^\/en(\/|$)/, '/') || '/' : clean;
+    const enPath = isEn
+      ? clean
+      : (clean === '/' ? '/en' : `/en${clean}`);
+
+    const frHref = `${origin}${frPath}`.replace(/\/{2,}/g, '/');
+    const enHref = `${origin}${enPath}`.replace(/\/{2,}/g, '/');
+
+    return [
+      { lang: 'fr',        href: frHref },
+      { lang: 'en',        href: enHref },
+      { lang: 'x-default', href: isEn ? enHref : frHref },
+    ];
   }
 
   /* ======================
@@ -179,7 +256,6 @@ export class SeoService {
   }
 
   setAlternates(alts: Hreflang[]): void {
-    // purge existants
     Array.from(this.doc.head.querySelectorAll('link[rel="alternate"][hreflang]'))
       .forEach(el => el.remove());
 
@@ -194,17 +270,13 @@ export class SeoService {
     }
   }
 
-  /** Supprime les metas og:locale:alternate existantes (évite les doublons) */
   private clearOgLocaleAlternate(): void {
     try {
       this.doc
         .querySelectorAll('meta[property="og:locale:alternate"]')
         .forEach(m => m.remove());
-    } catch {
-      // no-op (SSR ou environnement sans DOM)
-    }
+    } catch {}
   }
-
 
   /* ======================
    * JSON-LD page
@@ -227,39 +299,55 @@ export class SeoService {
    * Helpers URL / meta
    * ====================== */
 
-  /** URL absolue courante (browser). En SSR, on renvoie siteUrl + router.url */
   currentUrl(): string {
-    if (this.isBrowser) {
-      try { return this.doc.defaultView?.location?.href ?? ''; } catch { return ''; }
+    const base = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/$/, '');
+    const path = (this.router.url || '/').replace(/\/{2,}/g, '/');
+    if (!this.isBrowser) {
+      return `${base}${path.startsWith('/') ? path : `/${path}`}`;
     }
-    return this.routerUrlAsAbs(environment.siteUrl || '');
+
+    try {
+      return this.doc.defaultView?.location?.href
+        ?? `${base}${path.startsWith('/') ? path : `/${path}`}`;
+    } catch {
+      return `${base}${path.startsWith('/') ? path : `/${path}`}`;
+    }
   }
 
-  /** Origin du site (browser) */
   siteOrigin(): string {
-    if (!this.isBrowser) return '';
+    const fallback = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/$/, '');
+    if (!this.isBrowser) return fallback;
     try {
       const loc = this.doc.defaultView?.location;
-      return loc ? `${loc.protocol}//${loc.host}` : '';
-    } catch { return ''; }
+      return loc ? `${loc.protocol}//${loc.host}` : fallback;
+    } catch {
+      return fallback;
+    }
   }
 
-  /** Construit une absolue depuis router.url (SSR) */
   private routerUrlAsAbs(origin: string): string {
     const base = (origin || '').replace(/\/$/, '');
     const path = (this.router.url || '/').replace(/\/{2,}/g, '/');
     return base + (path.startsWith('/') ? path : `/${path}`);
   }
 
-  /** Absolutise si besoin, en utilisant origin ou environment.siteUrl */
   private absUrl(url: string, origin: string): string {
     if (!url) return '';
     try {
-      if (/^https?:\/\//i.test(url)) return url;           // déjà absolue
-      if (/^\/\//.test(url)) return (this.isBrowser ? (this.doc.defaultView?.location?.protocol ?? 'https:') : 'https:') + url;
+      if (/^https?:\/\//i.test(url)) return url;
+      if (/^\/\//.test(url)) {
+        const proto = this.isBrowser
+          ? (this.doc.defaultView?.location?.protocol ?? 'https:')
+          : 'https:';
+        return proto + url;
+      }
       const base = (origin || environment.siteUrl || '').replace(/\/$/, '');
-      return base ? `${base}${url.startsWith('/') ? url : `/${url}`}` : url;
-    } catch { return url; }
+      return base
+        ? `${base}${url.startsWith('/') ? url : `/${url}`}`
+        : url;
+    } catch {
+      return url;
+    }
   }
 
   private setNamedMeta(name: string, content?: string): void {
@@ -294,7 +382,6 @@ export class SeoService {
   }
 }
 
-/** Échappe une valeur pour un sélecteur CSS attribute */
 function cssEscape(v: string): string {
   return v.replace(/"/g, '\\"');
 }

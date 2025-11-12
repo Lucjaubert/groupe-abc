@@ -175,7 +175,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
 
 @media (min-width: $bp-lg) {
   .hero-section .hero-content {
-    padding: 280px 0 0;
+    padding: 200px 0 0;
   }
 }
 
@@ -1263,16 +1263,20 @@ $pink:  #F1D2DB;
     margin-top: 0;
 
     .cta-btn {
-      width: auto; min-width: 0; max-width: none;
+      min-width: 0; max-width: none;
       display: inline-flex; align-items: center; gap: 8px;
       padding: 8px 12px;
       border: 0; border-radius: 5px;
       background: $blue; color: #fff; line-height: 1; overflow: hidden;
+      min-width: 173px;
+      max-width: 244.5px;
 
       .cta-plus {
-        margin-left: 8px !important;
-        display: inline-grid; place-items: center;
-        width: 18px; height: 18px;
+        margin-left: auto;
+        display: inline-grid;
+        place-items: center;
+        width: 22px;
+        height: 22px;
 
         .icon-plus {
           width: 18px; height: 18px;

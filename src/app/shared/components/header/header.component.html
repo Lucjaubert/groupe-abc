@@ -1,9 +1,10 @@
 <header class="header main-wrapper" [class.menu-open]="menuOpen">
   <div class="header-inner">
 
-    <a [routerLink]="'/' | langLink" class="brand">
+    <!-- Brand : utilise la route selon la langue active -->
+    <a [routerLink]="getLink('about')" class="brand" (click)="closeAfterNav()">
       <img [src]="brandSrc" alt="Groupe ABC" class="logo" (error)="onBrandError($event)">
-      <span class="slogan pl-lg-5 pl-2" data-wg-notranslate>
+      <span class="slogan pl-lg-3 pl-1" data-wg-notranslate>
         Groupement<br>
         d’Experts immobiliers<br>
         indépendants
@@ -12,7 +13,7 @@
 
     <!-- Bouton burger : visible uniquement ≤ 768px -->
     <button
-      class="burger mr-2"
+      class="burger mr-1"
       type="button"
       aria-label="Ouvrir le menu"
       aria-controls="main-menu-overlay"
@@ -34,42 +35,74 @@
 
     <nav class="menu-bar" [class.open]="menuOpen">
       <ul class="menu">
-        <li><a [routerLink]="'/qui-sommes-nous'   | langLink">Qui sommes-nous ?</a></li>
-        <li><a [routerLink]="'/nos-services'      | langLink">Nos Services</a></li>
-        <li><a [routerLink]="'/biens-et-methodes' | langLink">Biens & Méthodes</a></li>
-        <li><a [routerLink]="'/nos-equipes'      | langLink">Équipes</a></li>
-        <li><a [routerLink]="'/actualites'        | langLink">Actualités</a></li>
-        <li><a [routerLink]="'/contact'           | langLink">Contact</a></li>
+        <li>
+          <a [routerLink]="getLink('about')" (click)="closeAfterNav()">
+            Qui sommes-nous ?
+          </a>
+        </li>
+        <li>
+          <a [routerLink]="getLink('services')" (click)="closeAfterNav()">
+            Nos Services
+          </a>
+        </li>
+        <li>
+          <a [routerLink]="getLink('methods')" (click)="closeAfterNav()">
+            Biens & Méthodes
+          </a>
+        </li>
+        <li>
+          <a [routerLink]="getLink('teams')" (click)="closeAfterNav()">
+            Équipes
+          </a>
+        </li>
+        <li>
+          <a [routerLink]="getLink('news')" (click)="closeAfterNav()">
+            Actualités
+          </a>
+        </li>
+        <li>
+          <a [routerLink]="getLink('contact')" (click)="closeAfterNav()">
+            Contact
+          </a>
+        </li>
       </ul>
     </nav>
 
   </div>
 
-  <!-- Rail droit : badge extranet + bouton langue/burger -->
+  <!-- Rail droit -->
   <div class="right-rail d-flex flex-column align-items-end">
     <a class="extranet-badge d-flex align-items-center justify-content-center mt-8 mt-lg-0"
-      href="#"
-      rel="nofollow"
-      aria-label="Espace Extranet Groupe ABC">
-      <span class="extranet-text" data-wg-notranslate>
-        GROUPE ABC <span class="extranet-slash" data-wg-notranslate aria-hidden="true">/</span> EXTRANET
-      </span>
+       href="#"
+       rel="nofollow"
+       aria-label="Espace Extranet Groupe ABC">
+      <span class="extranet-text" data-wg-notranslate>EXTRANET</span>
     </a>
 
-    <!-- Bouton rail : desktop = switch langue / mobile = burger -->
     <button class="lang-switch d-flex align-items-center justify-content-center"
             type="button"
             data-wg-notranslate
             aria-label="Switch language"
             aria-controls="main-menu-overlay"
             [attr.aria-expanded]="menuOpen ? 'true' : 'false'"
-            (click)="onPrimaryAction()">
+            (click)="onPrimaryAction($event)">
       {{ (lang.lang$ | async) === 'en' ? 'EN' : 'FR' }}
     </button>
+
+    <a class="rail-social linkedin-btn"
+       href="https://www.linkedin.com/company/groupe-abc/"
+       target="_blank"
+       rel="noopener noreferrer"
+       aria-label="Ouvrir la page LinkedIn du Groupe ABC">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45" aria-hidden="true" focusable="false">
+        <path d="M39.375 34.6875C39.375 37.2769 37.2769 39.375 34.6875 39.375H10.3125C7.72406 39.375 5.625 37.2769 5.625 34.6875V10.3125C5.625 7.72312 7.72406 5.625 10.3125 5.625H34.6875C37.2769 5.625 39.375 7.72312 39.375 10.3125V34.6875Z" fill="#444798"/>
+        <path d="M11.25 17.8125H15.9375V33.75H11.25V17.8125ZM13.5797 15.9375H13.5534C12.1547 15.9375 11.25 14.895 11.25 13.5928C11.25 12.2625 12.1828 11.25 13.6069 11.25C15.0328 11.25 15.9112 12.2625 15.9375 13.5928C15.9375 14.8941 15.0328 15.9375 13.5797 15.9375ZM33.75 33.75H29.0625V25.2197C29.0625 23.1591 27.9141 21.7528 26.07 21.7528C24.6628 21.7528 23.9016 22.7016 23.5322 23.6184C23.3972 23.9466 23.4375 24.8541 23.4375 25.3125V33.75H18.75V17.8125H23.4375V20.265C24.1134 19.2187 25.1719 17.8125 27.8794 17.8125C31.2337 17.8125 33.749 19.9219 33.749 24.6319L33.75 33.75Z" fill="white"/>
+      </svg>
+    </a>
   </div>
 </header>
 
-<!-- MENU OVERLAY (plein écran, fond blanc) -->
+<!-- MENU OVERLAY -->
 <div
   id="main-menu-overlay"
   class="menu-overlay"
@@ -81,72 +114,47 @@
        role="dialog"
        [attr.aria-modal]="'true'">
 
-    <!-- Bouton “X” pour fermer -->
     <button
       class="overlay-close"
       type="button"
       aria-label="Fermer le menu"
-      (click)="setMenu(false)">
-      <!-- SVG croix accessible -->
+      (click)="setMenu(false)"
+      (keydown.enter)="setMenu(false)"
+      (keydown.space)="setMenu(false)">
       <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
         <path d="M18.3 5.7a1 1 0 0 0-1.4-1.4L12 9.17 7.1 4.3A1 1 0 0 0 5.7 5.7L10.6 10.6 5.7 15.5a1 1 0 1 0 1.4 1.4L12 12.03l4.9 4.87a1 1 0 1 0 1.4-1.4l-4.9-4.87 4.8-4.93Z" fill="currentColor"/>
       </svg>
     </button>
 
     <div class="overlay-top">
-      <a [routerLink]="'/' | langLink" class="overlay-brand d-flex" (click)="closeAfterNav()">
+      <a [routerLink]="getLink('about')" class="overlay-brand d-flex" (click)="closeAfterNav()">
         <img src="assets/img/header/logo-groupe-abc.webp" alt="Groupe ABC" data-wg-notranslate>
-        <span class="brand-text ps-3 pt-2" data-wg-notranslate>
+        <span class="brand-text ps-2 pt-2" data-wg-notranslate>
           Groupement<br>d’Experts immobiliers<br>indépendants
         </span>
       </a>
     </div>
 
-    <!-- Badge extranet dans l’overlay (affiché quand ouvert) -->
-    <a class="extranet-badge d-flex align-items-center justify-content-center mt-13 mt-lg-0"
-       *ngIf="menuOpen"
-       href="#"
-       rel="nofollow"
-       aria-label="Espace Extranet Groupe ABC">
-      <span class="extranet-text">
-        GROUPE ABC <span class="extranet-slash">/</span> EXTRANET
-      </span>
-    </a>
-
     <div class="overlay">
-
-      <!-- Choix FR / ENG explicite dans l’overlay (mobile) -->
-      <div class="overlay-lang">
-        <button type="button"
-                class="lang-btn"
-                [class.active]="(lang.lang$ | async) === 'fr'"
-                (click)="setLang('fr')">FR</button>
-        <span class="sep">/</span>
-        <button type="button"
-                class="lang-btn"
-                [class.active]="(lang.lang$ | async) === 'en'"
-                (click)="setLang('en')">ENG</button>
-      </div>
-
       <nav class="overlay-nav">
-        <a [routerLink]="'/qui-sommes-nous'   | langLink" (click)="closeAfterNav()">QUI SOMMES-NOUS ?</a>
-        <a [routerLink]="'/nos-services'      | langLink" (click)="closeAfterNav()">NOS SERVICES</a>
-        <a [routerLink]="'/biens-et-methodes' | langLink" (click)="closeAfterNav()">BIENS ET MÉTHODES</a>
-        <a [routerLink]="'/nos-equipes'      | langLink" (click)="closeAfterNav()">ÉQUIPES</a>
-        <a [routerLink]="'/actualites'        | langLink" (click)="closeAfterNav()">ACTUALITÉS</a>
-        <a [routerLink]="'/contact'           | langLink" (click)="closeAfterNav()">CONTACT</a>
+        <a [routerLink]="getLink('about')"    (click)="closeAfterNav()">QUI SOMMES-NOUS ?</a>
+        <a [routerLink]="getLink('services')" (click)="closeAfterNav()">NOS SERVICES</a>
+        <a [routerLink]="getLink('methods')"  (click)="closeAfterNav()">BIENS ET MÉTHODES</a>
+        <a [routerLink]="getLink('teams')"    (click)="closeAfterNav()">ÉQUIPES</a>
+        <a [routerLink]="getLink('news')"     (click)="closeAfterNav()">ACTUALITÉS</a>
+        <a [routerLink]="getLink('contact')"  (click)="closeAfterNav()">CONTACT</a>
       </nav>
 
-      <a class="mm-social" href="https://www.linkedin.com/" target="_blank" rel="noopener" aria-label="LinkedIn">
-        <svg xmlns="http://www.w3.org/2000/svg" width="45" height="45" viewBox="0 0 45 45" fill="none" aria-hidden="true" focusable="false">
-          <path d="M39.375 34.6875C39.375 37.2769 37.2769 39.375 34.6875 39.375H10.3125C7.72406 39.375 5.625 37.2769 5.625 34.6875V10.3125C5.625 7.72312 7.72406 5.625 10.3125 5.625H34.6875C37.2769 5.625 39.375 7.72312 39.375 10.3125V34.6875Z" fill="#444798"/>
-          <path d="M11.25 17.8125H15.9375V33.75H11.25V17.8125ZM13.5797 15.9375H13.5534C12.1547 15.9375 11.25 14.895 11.25 13.5928C11.25 12.2625 12.1828 11.25 13.6069 11.25C15.0328 11.25 15.9112 12.2625 15.9375 13.5928C15.9375 14.8941 15.0328 15.9375 13.5797 15.9375ZM33.75 33.75H29.0625V25.2197C29.0625 23.1591 27.9141 21.7528 26.07 21.7528C24.6628 21.7528 23.9016 22.7016 23.5322 23.6184C23.3972 23.9466 23.4375 24.8541 23.4375 25.3125V33.75H18.75V17.8125H23.4375V20.265C24.1134 19.2187 25.1719 17.8125 27.8794 17.8125C31.2337 17.8125 33.749 19.9219 33.749 24.6319L33.75 33.75Z" fill="white"/>
-        </svg>
+      <a class="mm-social" href="https://www.linkedin.com/company/groupe-abc/" target="_blank" rel="noopener" aria-label="LinkedIn">
+        <!-- svg -->
       </a>
     </div>
 
     <div class="overlay-bottom">
-      <a [routerLink]="'/mentions-legales' | langLink" class="mm-legal mt-6">©2025 - Mentions Légales - Crédits</a>
+      <a [routerLink]="(activeLang === 'en' ? '/en/legal-notice' : '/mentions-legales')"
+         class="mm-legal mt-6">
+        ©2025 - Mentions Légales - Crédits
+      </a>
     </div>
   </div>
 </div>

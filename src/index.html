@@ -2,18 +2,17 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <title>Groupe ABC – Experts en évaluation immobilière</title>
+    <title>Groupe ABC</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#444697" />
 
-    <!-- Google Search Console (URL Prefix). Remplacer le token si nécessaire -->
+    <!-- Google Search Console -->
     <meta name="google-site-verification" content="vVZ7W-srvDTqDhQh7rH3PMjrkh1oZdbwy0sujaH_C40" />
 
-    <!-- Description & robots (fallback) -->
-    <meta name="description" content="Groupe ABC : réseau d’experts en évaluation immobilière. Méthodes comparatives, rendement, DCF. Paris & DOM-TOM." />
+    <!-- Fallback générique (SeoService/SSR surchargera par page) -->
+    <meta name="description" content="Groupe ABC : réseau national d’experts en évaluation immobilière." />
     <meta name="robots" content="index,follow,max-image-preview:large" />
-    <link rel="canonical" href="https://groupe-abc.fr/" />
 
     <!-- Favicons -->
     <link rel="icon" href="/favicon.ico" />
@@ -24,44 +23,62 @@
     <link rel="mask-icon" href="/assets/favicons/safari-pinned-tab.svg" color="#EA4D4D" />
     <meta name="msapplication-TileColor" content="#444697" />
 
-    <!-- Fonts -->
-    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Regular.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Medium.woff2"  as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/assets/fonts/PlusJakartaSans-SemiBold.woff2" as="font" type="font/woff2" crossorigin>
-    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <!-- Fonts (preload) -->
+    <link
+      rel="preload"
+      href="/assets/fonts/PlusJakartaSans-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/assets/fonts/PlusJakartaSans-Medium.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/assets/fonts/PlusJakartaSans-SemiBold.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/assets/fonts/PlusJakartaSans-Bold.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
 
     <!-- Resource hints -->
-    <link rel="dns-prefetch" href="//groupe-abc.fr">
-    <link rel="preconnect" href="https://groupe-abc.fr" crossorigin>
-    <link rel="preconnect" href="https://cdn.weglot.com" crossorigin>
+    <link rel="preconnect" href="https://cdn.weglot.com" crossorigin />
 
-    <!-- Open Graph / Twitter -->
+    <!-- Open Graph (fallback global) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Groupe ABC" />
-    <meta property="og:title" content="Groupe ABC – Experts en évaluation immobilière" />
-    <meta property="og:description" content="Évaluations, conseils, méthodes (comparaison, rendement, DCF). Paris & DOM-TOM." />
-    <meta property="og:url" content="https://groupe-abc.fr/" />
     <meta property="og:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
 
+    <!-- Twitter (fallback global) -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Groupe ABC – Experts en évaluation immobilière" />
-    <meta name="twitter:description" content="Évaluations, conseils, méthodes (comparaison, rendement, DCF)." />
     <meta name="twitter:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
 
-    <!-- hreflang (préfixe Weglot /en/) -->
-    <link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/" />
-    <link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/" />
-    <link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/" />
+    <!-- Pas de canonical/hreflang ici : gérés dynamiquement par SeoService/SSR -->
 
-    <!-- JSON-LD Organization (bonus SEO) -->
-    <script type="application/ld+json">
+    <!-- JSON-LD Organization sitewide -->
+    <script type="application/ld+json" id="ld-sitewide">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
+      "@id": "https://groupe-abc.fr/#organization",
       "name": "Groupe ABC",
       "url": "https://groupe-abc.fr/",
-      "logo": "https://groupe-abc.fr/assets/og/og-default.jpg",
-      "sameAs": ["https://www.linkedin.com/company/groupeabc/"]
+      "logo": "https://groupe-abc.fr/assets/favicons/android-chrome-512x512.png",
+      "sameAs": [
+        "https://www.linkedin.com/company/groupe-abc"
+      ]
     }
     </script>
   </head>
@@ -70,16 +87,13 @@
     <app-root></app-root>
     <noscript>Activez JavaScript pour utiliser le changeur de langue.</noscript>
 
-    <!-- Weglot (intégration JavaScript, post-hydratation) -->
+    <!-- Weglot (chargé après load pour ne pas bloquer SSR/SEO) -->
     <script>
       (function () {
         window.addEventListener('load', function () {
-          // 1) Charger la librairie Weglot
           var s = document.createElement('script');
           s.src = 'https://cdn.weglot.com/weglot.min.js';
           s.async = true;
-
-          // 2) Initialiser quand le script est prêt
           s.onload = function () {
             try {
               Weglot.initialize({
@@ -87,14 +101,13 @@
                 originalLanguage: 'fr',
                 destinationLanguages: ['en'],
                 dynamic: true,
-                translateMeta: true,
-                hrefLang: true,
+                translateMeta: false,   // balises gérées par SSR/SeoService
+                hrefLang: false,        // hreflang géré par SSR/SeoService
+                redirect: false,        // pas de redirection auto : URLs / et /en/ gérées par Angular
                 translateAttributes: ['alt','title','placeholder','aria-label'],
                 excludedPaths: [
-                  '/wordpress/wp-json*',
-                  '/wp-json*',
-                  '/wordpress/wp-admin*',
-                  '/wordpress/wp-login*',
+                  '/wordpress/wp-json*','/wp-json*',
+                  '/wordpress/wp-admin*','/wordpress/wp-login*',
                   '?rest_route='
                 ]
               });
@@ -102,11 +115,9 @@
               console.error('[Weglot] init error', e);
             }
           };
-
           s.onerror = function (e) {
             console.error('[Weglot] script load error', e);
           };
-
           document.body.appendChild(s);
         });
       })();

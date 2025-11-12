@@ -21,7 +21,7 @@ export interface PartnerCard {
 const SITE_ORIGIN = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
 const HOST = (() => { try { return new URL(SITE_ORIGIN).host; } catch { return 'groupe-abc.fr'; } })();
 
-/** Normalise une URL d’upload WP vers le bon chemin /wordpress/wp-content/uploads/... */
+/** Normalise une URL d’upload WP vers /wordpress/wp-content/uploads/... */
 function fixWpMediaUrl(url?: string): string {
   if (!url) return '';
   let u = url.trim();
@@ -30,45 +30,36 @@ function fixWpMediaUrl(url?: string): string {
   // protocole-relative → https:
   if (/^\/\//.test(u)) u = 'https:' + u;
 
-  // Si déjà en /wordpress/wp-content/uploads → OK
+  // déjà correct
   if (new RegExp(`^https?:\/\/${HOST}\/wordpress\/wp-content\/uploads\/`, 'i').test(u) ||
       /^\/wordpress\/wp-content\/uploads\//i.test(u)) {
     return u;
   }
 
-  // Absolue SANS /wordpress → insère /wordpress
+  // Absolue sur n'importe quel domaine → réécrit vers SITE_ORIGIN + /wordpress/...
   u = u.replace(
-    new RegExp(`^https?:\/\/${HOST}\/wp-content\/uploads\/`, 'i'),
+    /^https?:\/\/[^/]+\/wp-content\/uploads\//i,
     `${SITE_ORIGIN}/wordpress/wp-content/uploads/`
   );
 
-  // Relative SANS /wordpress → insère /wordpress
+  // Relative sans /wordpress → insère /wordpress
   u = u.replace(/^\/wp-content\/uploads\//i, '/wordpress/wp-content/uploads/');
 
   return u;
 }
 
-/** Réécrit les src= et url(...) dans un bloc HTML pour forcer /wordpress/wp-content/uploads */
+/** Réécrit les src= et url(...) dans un HTML pour forcer /wordpress/wp-content/uploads */
 function rewriteUploadsInHtml(html?: string): string {
   if (!html) return '';
-  const hostRe = HOST.replace(/\./g, '\\.');
   return html
-    .replace(
-      /(\ssrc=['"])\s*\/wp-content\/uploads\//gi,
-      '$1/wordpress/wp-content/uploads/'
-    )
-    .replace(
-      new RegExp(`(\\ssrc=['"])https?:\\/\\/${hostRe}\\/wp-content\\/uploads\\/`, 'gi'),
-      `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`
-    )
-    .replace(
-      /(url\(\s*['"]?)\/wp-content\/uploads\//gi,
-      '$1/wordpress/wp-content/uploads/'
-    )
-    .replace(
-      new RegExp(`(url\\(\\s*['"]?)https?:\\/\\/${hostRe}\\/wp-content\\/uploads\\/`, 'gi'),
-      `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`
-    );
+    // src="/wp-content/uploads/..."
+    .replace(/(\ssrc=['"])\s*\/wp-content\/uploads\//gi, '$1/wordpress/wp-content/uploads/')
+    // src="https://<any-host>/wp-content/uploads/..."
+    .replace(/(\ssrc=['"])https?:\/\/[^/]+\/wp-content\/uploads\//gi, `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`)
+    // url('/wp-content/uploads/...')
+    .replace(/(url\(\s*['"]?)\/wp-content\/uploads\//gi, '$1/wordpress/wp-content/uploads/')
+    // url('https://<any-host>/wp-content/uploads/...')
+    .replace(/(url\(\s*['"]?)https?:\/\/[^/]+\/wp-content\/uploads\//gi, `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`);
 }
 
 @Injectable({ providedIn: 'root' })
@@ -137,7 +128,6 @@ export class WordpressService {
     return this.getJson<any[]>('homepage', params).pipe(
       map(list => {
         const acf = list?.[0]?.acf ?? {};
-        // Si des champs HTML contiennent des <img>, on peut les nettoyer ici si besoin :
         if (acf?.identity_section?.who_text) {
           acf.identity_section.who_text = rewriteUploadsInHtml(acf.identity_section.who_text);
         }
@@ -203,7 +193,6 @@ export class WordpressService {
     return this.getJson<any[]>('about', params).pipe(
       map(list => {
         const acf = list?.[0]?.acf ?? {};
-        // Nettoyage éventuel d’HTML :
         if (acf?.who_text) acf.who_text = rewriteUploadsInHtml(acf.who_text);
         return acf;
       })
@@ -262,7 +251,6 @@ export class WordpressService {
       map(list => {
         const item = list?.[0] ?? {};
         if (item?.acf) {
-          // Exemple : réécrire des HTML/URL si besoin
           Object.keys(item.acf).forEach(k => {
             const v = (item.acf as any)[k];
             if (typeof v === 'string' && /<img|url\(/i.test(v)) {
@@ -294,7 +282,43 @@ export class WordpressService {
   getTeamData(): Observable<any> {
     const params = new HttpParams().set('per_page', '1');
     return this.getJson<any[]>('team', params).pipe(
-      map(list => list?.[0] ?? {}),
+      map(list => {
+        const item = list?.[0] ?? {};
+        const acf  = item?.acf ?? {};
+
+        // HERO intro
+        if (acf?.hero?.intro_body) {
+          acf.hero.intro_body = rewriteUploadsInHtml(acf.hero.intro_body);
+        }
+
+        // FIRMS : nettoie HTML + normalise les médias
+        const firms = acf?.firms ?? {};
+        for (let i = 1; i <= 12; i++) {
+          const key = `firm_${i}`;
+          const f = firms[key];
+          if (!f) continue;
+
+          if (f.partner_description) {
+            f.partner_description = rewriteUploadsInHtml(f.partner_description);
+          }
+          if (f.titles_partner_ != null) {
+            f.titles_partner_ = rewriteUploadsInHtml(f.titles_partner_);
+          } else if (f.titles_partner != null) {
+            f.titles_partner = rewriteUploadsInHtml(f.titles_partner);
+          }
+
+          if (typeof f.partner_image === 'string') f.partner_image = fixWpMediaUrl(f.partner_image);
+          if (typeof f.logo === 'string')          f.logo          = fixWpMediaUrl(f.logo);
+          if (typeof f.organism_logo === 'string') f.organism_logo = fixWpMediaUrl(f.organism_logo);
+        }
+
+        // TEACHING intro
+        if (acf?.teaching?.intro_body) {
+          acf.teaching.intro_body = rewriteUploadsInHtml(acf.teaching.intro_body);
+        }
+
+        return item;
+      }),
       catchError(err => { console.error('[WP] getTeamData error:', err); return of({}); })
     );
   }

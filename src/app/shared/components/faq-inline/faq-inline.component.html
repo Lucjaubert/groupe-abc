@@ -1,0 +1,14 @@
+<!-- faq-inline.component.html -->
+<section class="faq-inline" aria-labelledby="faq-title" data-faq-inline>
+  <h2 id="faq-title" class="faq-title">{{ title }}</h2>
+
+  <ul class="faq-list" role="list">
+    <li *ngFor="let it of items; trackBy: trackByIndex" class="faq-item">
+      <details [attr.open]="openFirst && items[0] === it ? '' : null">
+        <summary class="faq-q">{{ it.q }}</summary>
+        <!-- ✅ innerText pour éviter les styles inline/HTML non sanitisés côté SSR -->
+        <div class="faq-a" [innerText]="it.a"></div>
+      </details>
+    </li>
+  </ul>
+</section>
