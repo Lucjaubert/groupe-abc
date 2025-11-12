@@ -1,14 +1,12 @@
 import {
   Component, OnInit, AfterViewInit, OnDestroy,
-  inject, ElementRef, ViewChild, ViewChildren, QueryList
+  inject, ElementRef, ViewChild, ViewChildren, QueryList, PLATFORM_ID
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { firstValueFrom } from 'rxjs';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
-import { gsap } from 'gsap';
-import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
 import { FaqService, FaqItem } from '../../services/faq.service';
 import { environment } from '../../../environments/environment';
@@ -25,10 +23,24 @@ type ClientItem   = { title: string; html?: SafeHtml | string };
   styleUrls: ['./services.component.scss']
 })
 export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
-  private wp  = inject(WordpressService);
-  private seo = inject(SeoService);
+  private wp        = inject(WordpressService);
+  private seo       = inject(SeoService);
   private sanitizer = inject(DomSanitizer);
-  private faq = inject(FaqService);
+  private faq       = inject(FaqService);
+  private platformId = inject(PLATFORM_ID);
+
+  // GSAP lazy (SSR-safe)
+  private gsap: any | null = null;
+  private ScrollTrigger: any | null = null;
+  private isBrowser(): boolean { return isPlatformBrowser(this.platformId); }
+  private async setupGsap(): Promise<void> {
+    if (!this.isBrowser() || this.gsap) return;
+    const { gsap } = await import('gsap');
+    const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+    this.gsap = gsap;
+    this.ScrollTrigger = ScrollTrigger;
+    try { this.gsap.registerPlugin(this.ScrollTrigger); } catch {}
+  }
 
   s(v: unknown): string { return v == null ? '' : '' + v; }
 
@@ -47,6 +59,11 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   refsTitle = 'Ils nous font confiance';
   references: string[] = [];
+
+  /* ===== FAQ (bulle & SEO) ===== */
+  faqItems: FaqItem[] = [];
+  faqOpen: boolean[] = [];
+  isEN = false;
 
   /* ===== État visuel des chevrons ===== */
   deonOpen: boolean[] = [];
@@ -76,7 +93,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   private contextsPlayed = false;
   private contextsVisible = false;
   private bindScheduled = false;
-
   private animLock = false; // verrou pendant la séquence hero→contexts
 
   /* ===== Helpers ===== */
@@ -86,12 +102,13 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
   }
   private isEnglish(): boolean {
+    if (!this.isBrowser()) return false;
     try { return (window?.location?.pathname || '/').startsWith('/en'); }
     catch { return false; }
   }
   trackByIndex(i: number){ return i; }
 
-  /* ===================== FAQ – contenus Matthieu ===================== */
+  /* ===================== FAQ – contenus ===================== */
   private readonly SERVICES_FAQ_FR: FaqItem[] = [
     {
       q: 'Quels types de biens peuvent faire l’objet d’une expertise immobilière ?',
@@ -118,22 +135,36 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       a: 'Oui, les experts du réseau interviennent sur tout le territoire national et en Outre-mer. Si une connaissance fine du marché local est requise, un expert régional est mandaté pour garantir la fiabilité de l’évaluation.'
     }
   ];
-  private readonly SERVICES_FAQ_EN: FaqItem[] | undefined = undefined;
+  private readonly SERVICES_FAQ_EN: FaqItem[] = [
+    { q: 'What types of assets can be appraised?', a: 'All asset types: residential, office buildings, retail, warehouses, land (raw or buildable), industrial assets or specific properties. The methodology is adapted to the asset’s nature and use.' },
+    { q: 'What are the main valuation methods?', a: 'Depending on the context: comparable approach, income capitalization (yield), depreciated replacement cost, discounted cash flow (DCF) for income-producing assets, and developer’s residual method for development projects.' },
+    { q: 'In which situations should you request an appraisal?', a: 'Inheritance or donation, divorce or partition, bank financing or mortgage security, lease disputes or rent review, sale or arbitration, expropriation or court proceedings. The appraisal delivers a certified, defensible value.' },
+    { q: 'Difference between amicable and judicial appraisal?', a: 'Amicable appraisals are commissioned voluntarily by private or corporate clients. Judicial appraisals are ordered by courts and carried out by experts registered with a Court of Appeal. Both follow strict, documented methodologies.' },
+    { q: 'How long is an appraisal report valid?', a: 'As long as the asset and market conditions remain stable. A refresh is usually recommended every 12–24 months, especially in volatile markets.' },
+    { q: 'Do experts operate nationwide?', a: 'Yes, experts cover mainland France and overseas territories. When deep local knowledge is required, a regional expert is mandated.' }
+  ];
 
   /* ===================== Chargement data ===================== */
   ngOnInit(): void {
-    // Pousser la FAQ de la page dans la bulle
+    // Langue + FAQ
+    this.isEN = this.isEnglish();
+
+    // Expose la FAQ (FR + EN) au service global
     this.faq.set(this.SERVICES_FAQ_FR, this.SERVICES_FAQ_EN);
+
+    // Données FAQ locales (bloc accordéon)
+    this.faqItems = this.isEN ? this.SERVICES_FAQ_EN : this.SERVICES_FAQ_FR;
+    this.faqOpen  = new Array(this.faqItems.length).fill(false);
 
     this.wp.getServicesData().subscribe(async (payload: any) => {
       const root = Array.isArray(payload) ? payload[0] : payload;
       const acf  = root?.acf ?? {};
 
       /* ---------- HERO & CONTEXT INTRO ---------- */
-      this.pageTitle = acf?.hero?.section_title || 'Nos services';
+      this.pageTitle = acf?.hero?.section_title || (this.isEN ? 'Our services' : 'Nos services');
       const heroCtx  = acf?.hero?.contexts ?? {};
       this.ctxIntro = {
-        title: heroCtx?.section_title || 'Contextes d’interventions',
+        title: heroCtx?.section_title || (this.isEN ? 'Contexts of intervention' : 'Contextes d’interventions'),
         html : this.safe(heroCtx?.section_presentation || '')
       };
 
@@ -150,13 +181,12 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       this.contexts = raw.map(it => ({ ...it, iconUrl: this.defaultCtxIcon }));
       this.ctxOpen  = new Array(this.contexts.length).fill(false);
 
-      // ⬇️ Hydratation des icônes en batch et attente avant animations
       await this.hydrateContextIcons();
 
       /* ---------- CLIENTS ---------- */
       const clientsRoot = acf?.clients ?? {};
       const sectionClients = clientsRoot?.section_clients ?? {};
-      this.clientsTitle = sectionClients?.title || 'Nos Clients';
+      this.clientsTitle = sectionClients?.title || (this.isEN ? 'Clients' : 'Nos Clients');
       this.clients = Object.entries(clientsRoot)
         .filter(([k, v]) => /^client_type_/i.test(k) && v)
         .map(([, v]: any) => ({
@@ -167,7 +197,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
       /* ---------- RÉFÉRENCES ---------- */
       const refs = acf?.references ?? {};
-      this.refsTitle = refs?.section_title || 'Ils nous font confiance';
+      this.refsTitle = refs?.section_title || (this.isEN ? 'They trust us' : 'Ils nous font confiance');
       const logoTokens = Object.entries(refs)
         .filter(([k, v]) => /^logo_/i.test(k) && v != null && v !== '')
         .map(([, v]: any) =>
@@ -177,18 +207,30 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
       this.hydrateReferences(logoTokens);
 
-      /* ---------- SEO (Matthieu) ---------- */
+      /* ---------- SEO ---------- */
       this.applySeo(String(heroCtx?.section_presentation || ''));
 
-      // Animations après hydratation pour éviter tout “retard” visuel
       this.scheduleBind();
     });
   }
 
+  async ngAfterViewInit(): Promise<void> {
+    if (!this.isBrowser()) return;
+    await this.setupGsap();
+
+    this.ctxRows?.changes?.subscribe(() => { if (!this.animLock) this.scheduleBind(); });
+    this.cliRows?.changes?.subscribe(() => { if (!this.animLock) this.scheduleBind(); });
+    this.refLogos?.changes?.subscribe(() => { if (!this.animLock) this.scheduleBind(); });
+
+    this.scheduleBind();
+  }
+
   ngOnDestroy(): void {
-    try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
-    try { gsap.globalTimeline.clear(); } catch {}
-    // Option : this.faq.clear();
+    if (this.isBrowser() && this.ScrollTrigger) {
+      try { this.ScrollTrigger.getAll().forEach((t: any) => t.kill()); } catch {}
+      try { this.gsap?.globalTimeline?.clear?.(); } catch {}
+    }
+    this.faq.clear();
   }
 
   /* ===================== Hydratations asynchrones ===================== */
@@ -214,7 +256,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     return '';
   }
 
-  // ⬇️ Nouvelle version batchée + retournant une Promise qu’on attend dans ngOnInit
   private async hydrateContextIcons(): Promise<void> {
     if (!this.contexts?.length) return;
     const urls = await Promise.all(this.contexts.map(it => this.resolveMedia(it.icon)));
@@ -239,6 +280,11 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   toggleCli(i: number){
     this.setSingleOpen(this.cliOpen, i);
     this.syncChevronFrom(this.cliOpen);
+  }
+  toggleFaq(i: number){
+    const willOpen = !this.faqOpen[i];
+    this.faqOpen.fill(false);
+    if (willOpen) this.faqOpen[i] = true;
   }
 
   toggleDeon(i: number, ev?: MouseEvent){
@@ -279,14 +325,12 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   onImgError(evt: Event){ const img = evt.target as HTMLImageElement; if (img) img.src = this.defaultCtxIcon; }
   onRefImgError(evt: Event){ const img = evt.target as HTMLImageElement; if (img) img.src = this.defaultRefLogo; }
 
-  /* ===================== SEO (Matthieu) ===================== */
-  private applySeo(rawIntro: string): void {
-    const isEN = this.isEnglish();
-    const siteUrl = (environment.siteUrl || '').replace(/\/+$/,'') || 'https://groupe-abc.fr';
-
-    // Slugs canoniques validés
+  /* ===================== SEO ===================== */
+  private applySeo(_rawIntro: string): void {
+    const isEN   = this.isEN;
+    const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/,'');
     const pathFR = '/expertise-immobiliere-services';
-    const pathEN = '/en/expertise-immobiliere-services';
+    const pathEN = '/en/real-estate-valuation-services';
     const canonPath = isEN ? pathEN : pathFR;
     const canonicalAbs = this.normalizeUrl(siteUrl, canonPath);
 
@@ -301,31 +345,76 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     const META_TITLE_EN = 'Real-estate appraisal services – Market and rental value';
     const META_DESC_EN  = 'Discover our real-estate appraisal services: market value, rental value, leasehold, arbitration, inheritance, financing and expropriation.';
 
-    const title = isEN ? META_TITLE_EN : META_TITLE_FR;
-    const description = isEN ? META_DESC_EN : META_DESC_FR;
+    const title       = isEN ? META_TITLE_EN : META_TITLE_FR;
+    const description = (isEN ? META_DESC_EN : META_DESC_FR).slice(0, 160);
 
-    const service = {
-      '@type': 'Service',
-      'serviceType': 'Expertise immobilière – Valeur vénale et locative',
-      'provider': 'Groupe ABC – Experts agréés',
-      'areaServed': 'France métropolitaine et Outre-mer'
-    };
-
-    const faqList = (this.SERVICES_FAQ_EN && isEN ? this.SERVICES_FAQ_EN : this.SERVICES_FAQ_FR)
-      .map(q => ({
-        '@type': 'Question',
-        'name': q.q,
-        'acceptedAnswer': { '@type': 'Answer', 'text': q.a }
-      }));
-    const faq = { '@type': 'FAQPage', 'mainEntity': faqList };
+    const siteId = `${siteUrl}#website`;
+    const orgId  = `${siteUrl}#org`;
 
     const ogImage = '/assets/og/og-default.jpg';
-    const ogAbs = this.absUrl(ogImage, siteUrl);
+    const ogAbs   = this.absUrl(ogImage, siteUrl);
+
+    // Service spécifique à la page
+    const service = {
+      '@type': 'Service',
+      '@id': `${canonicalAbs}#service`,
+      serviceType: isEN
+        ? 'Real-estate appraisal – Market & rental value'
+        : 'Expertise immobilière – Valeur vénale et locative',
+      provider: 'Groupe ABC – Experts agréés',
+      areaServed: 'France métropolitaine et Outre-mer'
+    };
+
+    // FAQ JSON-LD (FR/EN)
+    const faqSource = isEN ? this.SERVICES_FAQ_EN : this.SERVICES_FAQ_FR;
+    const faqLd = {
+      '@type': 'FAQPage',
+      '@id': `${canonicalAbs}#faq`,
+      mainEntity: faqSource.map(q => ({
+        '@type': 'Question',
+        name: q.q,
+        acceptedAnswer: { '@type': 'Answer', text: q.a }
+      }))
+    };
+
+    const webPage = {
+      '@type': 'WebPage',
+      '@id': `${canonicalAbs}#webpage`,
+      url: canonicalAbs,
+      name: title,
+      description,
+      inLanguage: isEN ? 'en-US' : 'fr-FR',
+      isPartOf: { '@id': siteId },
+      about: { '@id': orgId },
+      primaryImageOfPage: {
+        '@type': 'ImageObject',
+        url: ogAbs
+      }
+    };
+
+    const breadcrumb = {
+      '@type': 'BreadcrumbList',
+      '@id': `${canonicalAbs}#breadcrumb`,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: isEN ? 'Home' : 'Accueil',
+          item: `${siteUrl}/`
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: isEN ? 'Services' : 'Services',
+          item: canonicalAbs
+        }
+      ]
+    };
 
     this.seo.update({
       title,
       description,
-      canonical: canonicalAbs, // absolu
+      canonical: canonicalAbs,
       robots: 'index,follow',
       image: ogAbs,
       imageAlt: isEN ? 'Groupe ABC – Services' : 'Groupe ABC – Services',
@@ -335,15 +424,10 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       jsonLd: {
         '@context': 'https://schema.org',
         '@graph': [
-          { '@type': 'WebSite', '@id': `${siteUrl}/#website`, url: siteUrl, name: 'Groupe ABC', inLanguage: isEN ? 'en-US' : 'fr-FR', publisher: { '@id': `${siteUrl}/#organization` } },
-          { '@type': 'Organization', '@id': `${siteUrl}/#organization`, name: 'Groupe ABC', url: siteUrl, logo: `${siteUrl}/assets/favicons/android-chrome-512x512.png` },
-          { '@type': 'WebPage', '@id': `${canonicalAbs}#webpage`, url: canonicalAbs, name: title, description, inLanguage: isEN ? 'en-US' : 'fr-FR', isPartOf: { '@id': `${siteUrl}/#website` }, primaryImageOfPage: ogAbs },
-          { '@type': 'BreadcrumbList', itemListElement: [
-            { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl },
-            { '@type': 'ListItem', position: 2, name: isEN ? 'Services' : 'Services', item: canonicalAbs }
-          ]},
+          webPage,
+          breadcrumb,
           service,
-          faq
+          faqLd
         ]
       }
     });
@@ -365,18 +449,8 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ================= Animations ================= */
-  ngAfterViewInit(): void {
-    gsap.registerPlugin(ScrollTrigger);
-
-    // Rebind uniquement si pas de lock (évite le clignotement)
-    this.ctxRows?.changes?.subscribe(() => { if (!this.animLock) this.scheduleBind(); });
-    this.cliRows?.changes?.subscribe(() => { if (!this.animLock) this.scheduleBind(); });
-    this.refLogos?.changes?.subscribe(() => { if (!this.animLock) this.scheduleBind(); });
-
-    this.scheduleBind();
-  }
-
   private scheduleBind(){
+    if (!this.isBrowser() || !this.gsap) return;
     if (this.bindScheduled) return;
 
     if (this.animLock) {
@@ -391,20 +465,22 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     }));
   }
 
-  /** Force l’état initial (évite le flash si la CSS charge tard) */
   private forceInitialHidden(root: HTMLElement){
-    if (this.animLock) return; // ne rien cacher pendant la séquence héro
+    if (!this.isBrowser() || !this.gsap) return;
+    if (this.animLock) return;
+    const gsap = this.gsap!;
     const pre  = Array.from(root.querySelectorAll<HTMLElement>('.prehide'));
     const rows = Array.from(root.querySelectorAll<HTMLElement>('.prehide-row'));
     if (pre.length)  gsap.set(pre,  { autoAlpha: 0, y: 20, visibility: 'hidden' });
     if (rows.length) gsap.set(rows, { autoAlpha: 0, visibility: 'hidden' });
   }
 
-  /** Cache totalement la section Contextes pendant le hero */
   private hideContextsSectionOnce(){
+    if (!this.isBrowser() || !this.gsap) return;
+    const gsap = this.gsap!;
     const contextsSection = document.querySelector('.contexts') as HTMLElement | null;
     const ctxListEl = this.ctxListRef?.nativeElement;
-    this.animLock = true; // verrou pendant la séquence hero
+    this.animLock = true;
 
     if (contextsSection) {
       gsap.set(contextsSection, { autoAlpha: 0, visibility: 'hidden', pointerEvents: 'none' });
@@ -414,16 +490,17 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /** Révèle la section Contextes après le Sub, sans flicker */
   private revealContextsAfterHero(){
+    if (!this.isBrowser() || !this.gsap) return;
     if (this.contextsPlayed || this.contextsVisible) return;
 
+    const gsap = this.gsap!;
+    const ScrollTrigger = this.ScrollTrigger!;
     const contextsSection = document.querySelector('.contexts') as HTMLElement | null;
     const ctxListEl = this.ctxListRef?.nativeElement;
     const ctxRowEls = (this.ctxRows?.toArray() || []).map(r => r.nativeElement);
     const EASE = 'power3.out';
 
-    // retirer les classes susceptibles d'être recachées par forceInitialHidden
     if (ctxListEl) (ctxListEl as HTMLElement).classList.remove('prehide', '_hold-bar');
     ctxRowEls.forEach(el => el.classList.remove('prehide-row'));
 
@@ -457,19 +534,22 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (ctxRowEls.length) {
       gsap.set(ctxRowEls, { autoAlpha: 0, y: 8 });
-      // ⬇️ Toutes les lignes en même temps, exactement au même instant que la liste
       tl.to(ctxRowEls, {
         autoAlpha: 1, y: 0, duration: 0.24,
         onComplete: () => { gsap.set(ctxRowEls, { clearProps: 'transform,opacity' }); }
-      }, '<'); // '<' = même repère temporel que l'étape précédente
+      }, '<');
     }
   }
 
   private bindAnimations(): void {
+    if (!this.isBrowser() || !this.gsap || !this.ScrollTrigger) return;
+    const gsap = this.gsap!;
+    const ScrollTrigger = this.ScrollTrigger!;
+
     const host = document.querySelector('.services-wrapper') as HTMLElement | null;
     if (host) this.forceInitialHidden(host);
 
-    try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
+    try { ScrollTrigger.getAll().forEach((t: any) => t.kill()); } catch {}
     const EASE = 'power3.out';
 
     const rmPrehide = (els: Element | Element[]) => {
@@ -481,10 +561,8 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       gsap.set(el, { visibility: 'visible' });
     };
 
-    // Assure que Contextes est bien caché pendant le hero au premier passage
     if (!this.heroPlayed) this.hideContextsSectionOnce();
 
-    /* ---------- HERO : H1 -> H3 -> Sub ---------- */
     const h1     = this.heroTitle?.nativeElement;
     const tTitle = this.ctxTitleRef?.nativeElement;
     const tSub   = this.ctxSubRef?.nativeElement;
@@ -492,7 +570,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     gsap.killTweensOf([h1, tTitle, tSub].filter(Boolean) as HTMLElement[]);
 
     if (!this.heroPlayed && h1) {
-      this.animLock = true; // garde-fou
+      this.animLock = true;
       gsap.timeline({ defaults: { ease: EASE } })
         .fromTo(h1, { autoAlpha: 0, y: 20, visibility: 'hidden' }, {
           autoAlpha: 1, y: 0, duration: 0.42,

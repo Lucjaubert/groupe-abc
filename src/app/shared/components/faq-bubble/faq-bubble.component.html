@@ -3,24 +3,39 @@
         type="button"
         aria-haspopup="dialog"
         aria-controls="faq-panel"
+        [attr.aria-expanded]="(vm$ | async)?.open ? 'true' : 'false'"
         (click)="toggle()"
-        title="FAQ">
+        [title]="(vm$ | async)?.lang === 'en' ? 'FAQ' : 'FAQ'">
   <span aria-hidden="true">?</span>
-  <span class="sr-only">Ouvrir la FAQ</span>
+  <span class="sr-only">
+    {{ (vm$ | async)?.lang === 'en' ? 'Open FAQ' : 'Ouvrir la FAQ' }}
+  </span>
 </button>
 
 <!-- Panneau -->
-<div class="faq-panel" id="faq-panel" *ngIf="(vm$ | async) as vm" [class.open]="vm.open" role="dialog" aria-modal="true">
+<div class="faq-panel"
+     id="faq-panel"
+     *ngIf="(vm$ | async) as vm"
+     [class.open]="vm.open"
+     role="dialog"
+     aria-modal="true"
+     [attr.aria-label]="vm.lang === 'en' ? 'Frequently Asked Questions' : 'Questions fréquentes'">
+
   <header class="faq-head">
     <strong>{{ vm.lang === 'en' ? 'Questions & Answers' : 'Questions fréquentes' }}</strong>
-    <button class="faq-close" type="button" (click)="close()" aria-label="Fermer">×</button>
+    <button class="faq-close"
+            type="button"
+            (click)="close()"
+            [attr.aria-label]="vm.lang === 'en' ? 'Close' : 'Fermer'">×</button>
   </header>
 
   <div class="faq-body">
     <details *ngFor="let it of vm.items; trackBy: track">
       <summary>{{ it.q }}</summary>
-      <div class="faq-answer" [innerHTML]="it.a"></div>
+      <!-- Utilise innerText pour éviter tout souci SSR/Domino -->
+      <div class="faq-answer" [innerText]="it.a"></div>
     </details>
+
     <p *ngIf="!vm.items?.length" class="faq-empty">
       {{ vm.lang === 'en' ? 'No FAQ available on this page.' : 'Aucune FAQ pour cette page.' }}
     </p>

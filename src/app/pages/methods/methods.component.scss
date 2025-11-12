@@ -49,7 +49,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   color: $blue;
   font-size: $fs16;
   line-height: 1.6;
-
 }
 
 /* ===================== */
@@ -61,7 +60,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 
   position: relative;
   isolation: isolate;
-   margin-top: clamp(36px, 5vw, 74px);
+  margin-top: clamp(36px, 5vw, 74px);
 
   /* ---- Bande de fond FULL-BLEED ---- */
   .assets-bg{
@@ -296,7 +295,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   }
 }
 
-
 /* ===================== */
 /* MÉTHODES = Accordéon  */
 /* ===================== */
@@ -355,7 +353,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     max-width: 15ch !important;                /* largeur cible en “caractères” */
     width: fit-content !important;             /* s’arrête à max-width */
     text-align: left;
-    align-self: center;                         /* centrage vertical local (belt & suspenders) */
+    align-self: center;                        /* centrage vertical local */
 
     color: $blue;
     font-size: clamp(14px, 3vw, 24px);
@@ -421,12 +419,12 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   }
 }
 
-
 /* ===================== */
 /* PILOTAGE DES MISSIONS */
 /* ===================== */
 .piloting {
   margin-bottom: 105px;
+
   .pilot-title{
     color: $blue;
     font-size: clamp(24px, 3.2vw, 36px);
@@ -434,11 +432,12 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     line-height: 1.2;
     margin: clamp(80px, 10vw, 120px) 0 16px;
   }
+
   .pilot-intro{
     color: $blue;
     font-size: $fs16;
     line-height: 1.55;
-    margin-bottom: clamp(24px, 5vw, 48px);
+    margin-bottom: clamp(40px, 5vw, 75px);
   }
 
   .pilot-grid{
@@ -446,19 +445,18 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     grid-template-columns: repeat(2, 1fr);
     gap: clamp(24px, 4vw, 48px);
   }
+
   .pilot-figure{
     margin: 0;
     text-align: center;
 
     img{
-      width: 100%;
-      height: auto;
       display: block;
-
-      @media (max-width: 768px){
-        width: 120%;
-      }
+      max-width: 60%;
+      height: auto;
+      margin-inline: auto; /* ⟵ centre l’image dans le figure */
     }
+
     figcaption{
       color: $blue;
       font-size: $fs12;

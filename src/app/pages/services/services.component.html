@@ -25,7 +25,7 @@
           <div class="row-line" (click)="toggleCtx(i)">
             <img
               class="ctx-icon"
-              [appImgFast]="c?.icon != null && c?.icon !== '' ? ('' + c.icon) : (c?.iconUrl || defaultCtxIcon)"
+              [appImgFast]="c?.iconUrl || defaultCtxIcon"
               [placeholder]="defaultCtxIcon"
               width="56" height="56"
               alt=""
@@ -41,6 +41,7 @@
               type="button"
               [attr.aria-expanded]="ctxOpen[i] ? 'true' : 'false'"
               (click)="toggleCtx(i); $event.stopPropagation()"
+              [attr.aria-controls]="'ctx-desc-' + i"
               aria-label="Afficher / masquer la description"
             >
               <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -49,7 +50,7 @@
             </button>
           </div>
 
-          <div class="row-desc" *ngIf="ctxOpen[i]">
+          <div class="row-desc" *ngIf="ctxOpen[i]" [id]="'ctx-desc-' + i">
             <div class="row-desc-inner" [innerHTML]="c.html"></div>
           </div>
         </li>
@@ -77,6 +78,7 @@
               type="button"
               [attr.aria-expanded]="cliOpen[i] ? 'true' : 'false'"
               (click)="toggleCli(i); $event.stopPropagation()"
+              [attr.aria-controls]="'cli-desc-' + i"
               aria-label="Afficher / masquer le détail"
             >
               <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -85,7 +87,7 @@
             </button>
           </div>
 
-          <div class="row-desc" *ngIf="cliOpen[i]">
+          <div class="row-desc" *ngIf="cliOpen[i]" [id]="'cli-desc-' + i">
             <div class="row-desc-inner" [innerHTML]="c.html"></div>
           </div>
         </li>
@@ -103,7 +105,7 @@
           <img
             #refLogo
             class="ref-logo"
-            [appImgFast]="r != null && r !== '' ? ('' + r) : defaultRefLogo"
+            [appImgFast]="r || defaultRefLogo"
             [placeholder]="defaultRefLogo"
             alt=""
             loading="lazy"
@@ -115,3 +117,22 @@
     </div>
   </section>
 </div>
+
+<!-- ========= FAQ INLINE SSR (INVISIBLE, SEO ONLY) ========= -->
+<section
+  class="sr-only"
+  data-faq-inline
+  aria-hidden="true"
+  style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;"
+>
+  <h2>{{ isEN ? 'Frequently Asked Questions' : 'Questions fréquentes' }}</h2>
+  <ul>
+    <li *ngFor="let it of faqItems; trackBy: trackByIndex">
+      <details>
+        <summary>{{ it.q }}</summary>
+        <!-- innerText pour éviter tout HTML non souhaité côté SSR -->
+        <div [innerText]="it.a"></div>
+      </details>
+    </li>
+  </ul>
+</section>

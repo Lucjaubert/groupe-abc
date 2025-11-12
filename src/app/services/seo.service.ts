@@ -45,6 +45,28 @@ export interface SeoConfig {
   jsonLd?:       object;
 }
 
+/**
+ * Mapping canonique FR ⇄ EN pour les pages majeures.
+ * IMPORTANT :
+ *  - chemins ABSOLUS, incluant /en pour la version EN
+ *  - DOIT refléter tes vraies routes Angular.
+ */
+const ALT_MAP: { fr: string; en: string }[] = [
+  { fr: '/',                               en: '/en' },
+
+  { fr: '/expert-immobilier-reseau-national',  en: '/en/expert-network-chartered-valuers' },
+  { fr: '/expertise-immobiliere-services',     en: '/en/real-estate-valuation-services' },
+  { fr: '/methodes-evaluation-immobiliere',    en: '/en/assets-methods' },
+  { fr: '/experts-immobiliers-agrees',         en: '/en/chartered-valuation-experts' },
+  { fr: '/actualites-expertise-immobiliere',   en: '/en/news' },
+  { fr: '/contact-expert-immobilier',          en: '/en/contact' },
+
+  // Si tu as les routes EN correspondantes, dé-commente :
+  // { fr: '/mentions-legales',                   en: '/en/legal-notice' },
+  // { fr: '/politique-de-confidentialite',       en: '/en/privacy-policy' },
+  // { fr: '/politique-des-cookies',              en: '/en/cookies-policy' },
+];
+
 @Injectable({ providedIn: 'root' })
 export class SeoService {
   private rnd: Renderer2;
@@ -80,9 +102,12 @@ export class SeoService {
     this.setNamedMeta('robots',    robots);
     this.setNamedMeta('googlebot', robots);
 
-    // Origin & URLs (origin garanti en SSR)
+    // Origin & URLs
     const origin  = this.siteOrigin();
-    const pageUrl = this.absUrl(cfg.canonical || this.currentUrl() || this.routerUrlAsAbs(origin), origin);
+    const pageUrl = this.absUrl(
+      cfg.canonical || this.currentUrl() || this.routerUrlAsAbs(origin),
+      origin
+    );
     const imgUrl  = this.absUrl(cfg.image || '', origin);
 
     // Open Graph
@@ -103,7 +128,7 @@ export class SeoService {
     (cfg.localeAlt || (ogLocale.startsWith('fr') ? ['en_US'] : ['fr_FR']))
       .forEach(l => this.setPropMeta('og:locale:alternate', l));
 
-    // OG image détails
+    // OG image details
     if (imgUrl) {
       this.setPropMeta('og:image:alt',   cfg.imageAlt || cfg.title);
       if (cfg.imageWidth)  this.setPropMeta('og:image:width',  String(cfg.imageWidth));
@@ -130,23 +155,15 @@ export class SeoService {
     // Canonical absolu
     this.setCanonical(pageUrl || undefined);
 
-    // ============================
-    // hreflang alternates (fallback FR/EN si rien fourni) — symétriques et absolus
-    // ============================
-    const routerPath = (this.router.url || '/').replace(/\/{2,}/g, '/');
-    const isEn = routerPath === '/en' || routerPath.startsWith('/en/');
+    // ===== hreflang alternates =====
+    const routerPath = (this.router.url || '/').split(/[?#]/)[0].replace(/\/{2,}/g, '/');
 
-    // Chemins "sœurs" FR/EN
-    const frPath = isEn ? routerPath.replace(/^\/en(\/|$)/, '/') : routerPath;
-    const enPath = isEn ? routerPath : (routerPath === '/' ? '/en' : `/en${routerPath}`);
+    const hreflangs =
+      (cfg.alternates && cfg.alternates.length)
+        ? cfg.alternates
+        : this.buildDefaultAlternates(origin, routerPath);
 
-    const defaultAlts: Hreflang[] = [
-      { lang: 'fr',        href: `${origin}${frPath}`.replace(/\/{2,}/g, '/') },
-      { lang: 'en',        href: `${origin}${enPath}`.replace(/\/{2,}/g, '/') },
-      { lang: 'x-default', href: isEn ? `${origin}${enPath}` : `${origin}${frPath}` },
-    ];
-
-    this.setAlternates((cfg.alternates && cfg.alternates.length) ? cfg.alternates : defaultAlts);
+    this.setAlternates(hreflangs);
 
     // JSON-LD (page)
     this.clearJsonLd();
@@ -164,6 +181,51 @@ export class SeoService {
       this.rnd.appendChild(this.doc.head, script);
     }
     script.text = JSON.stringify(obj);
+  }
+
+  /* ======================
+   * Hreflang mapping
+   * ====================== */
+
+  /**
+   * Construit les hreflang par défaut à partir du ALT_MAP.
+   * Si l’URL n’est pas dans le tableau :
+   *  - on garde l’ancien fallback /en + strip /en
+   *  - mais tes pages importantes sont béton.
+   */
+  private buildDefaultAlternates(origin: string, path: string): Hreflang[] {
+    const clean = path.replace(/\/{2,}/g, '/') || '/';
+
+    // 1) On cherche dans le ALT_MAP
+    const direct = ALT_MAP.find(p => p.fr === clean || p.en === clean);
+
+    if (direct) {
+      const isEn = (clean === direct.en);
+      const frHref = `${origin}${direct.fr}`.replace(/\/{2,}/g, '/');
+      const enHref = `${origin}${direct.en}`.replace(/\/{2,}/g, '/');
+
+      return [
+        { lang: 'fr',        href: frHref },
+        { lang: 'en',        href: enHref },
+        { lang: 'x-default', href: isEn ? enHref : frHref },
+      ];
+    }
+
+    // 2) Fallback générique (pour routes non mappées)
+    const isEn = clean === '/en' || clean.startsWith('/en/');
+    const frPath = isEn ? clean.replace(/^\/en(\/|$)/, '/') || '/' : clean;
+    const enPath = isEn
+      ? clean
+      : (clean === '/' ? '/en' : `/en${clean}`);
+
+    const frHref = `${origin}${frPath}`.replace(/\/{2,}/g, '/');
+    const enHref = `${origin}${enPath}`.replace(/\/{2,}/g, '/');
+
+    return [
+      { lang: 'fr',        href: frHref },
+      { lang: 'en',        href: enHref },
+      { lang: 'x-default', href: isEn ? enHref : frHref },
+    ];
   }
 
   /* ======================
@@ -213,9 +275,7 @@ export class SeoService {
       this.doc
         .querySelectorAll('meta[property="og:locale:alternate"]')
         .forEach(m => m.remove());
-    } catch {
-
-    }
+    } catch {}
   }
 
   /* ======================
@@ -240,7 +300,6 @@ export class SeoService {
    * ====================== */
 
   currentUrl(): string {
-
     const base = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/$/, '');
     const path = (this.router.url || '/').replace(/\/{2,}/g, '/');
     if (!this.isBrowser) {
@@ -248,7 +307,8 @@ export class SeoService {
     }
 
     try {
-      return this.doc.defaultView?.location?.href ?? `${base}${path.startsWith('/') ? path : `/${path}`}`;
+      return this.doc.defaultView?.location?.href
+        ?? `${base}${path.startsWith('/') ? path : `/${path}`}`;
     } catch {
       return `${base}${path.startsWith('/') ? path : `/${path}`}`;
     }
@@ -276,11 +336,15 @@ export class SeoService {
     try {
       if (/^https?:\/\//i.test(url)) return url;
       if (/^\/\//.test(url)) {
-        const proto = this.isBrowser ? (this.doc.defaultView?.location?.protocol ?? 'https:') : 'https:';
+        const proto = this.isBrowser
+          ? (this.doc.defaultView?.location?.protocol ?? 'https:')
+          : 'https:';
         return proto + url;
       }
       const base = (origin || environment.siteUrl || '').replace(/\/$/, '');
-      return base ? `${base}${url.startsWith('/') ? url : `/${url}`}` : url;
+      return base
+        ? `${base}${url.startsWith('/') ? url : `/${url}`}`
+        : url;
     } catch {
       return url;
     }

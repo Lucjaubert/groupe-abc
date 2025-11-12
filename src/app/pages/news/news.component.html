@@ -1,4 +1,5 @@
 <div class="news-wrapper">
+  <!-- ===== INTRO ===== -->
   <section class="section news-intro">
     <div class="section-inner">
       <h1 #introTitle class="page-title prehide">Actualités</h1>
@@ -27,17 +28,21 @@
     </div>
   </section>
 
+  <!-- ===== LISTE DES POSTS ===== -->
   <section class="section news-list" *ngIf="pagedPosts.length">
     <div class="section-inner px-0">
       <ul class="posts" role="list">
-        <li #newsRow class="news-row"
+        <li #newsRow
+            class="news-row"
             *ngFor="let p of pagedPosts; let i = index; trackBy: trackByIndex"
             [ngClass]="themeClass(p.themeKey)">
 
           <div class="news-bg prehide-row" aria-hidden="true"></div>
 
           <div class="news-box prehide-row">
+            <!-- Col texte -->
             <div class="news-col news-col--text">
+              <!-- Thème: bouton principal + puce de filtrage -->
               <button class="theme-chip"
                       type="button"
                       [attr.aria-pressed]="promoteTheme === p.themeKey"
@@ -63,10 +68,11 @@
                 </span>
               </button>
 
+              <!-- Métadonnées -->
               <div class="meta-line">
                 <img
                   class="firm-logo"
-                  [appImgFast]="p?.firmLogo != null && p?.firmLogo !== '' ? ('' + p.firmLogo) : '/assets/fallbacks/logo-placeholder.svg'"
+                  [appImgFast]="p?._firmLogoUrl || '/assets/fallbacks/logo-placeholder.svg'"
                   [placeholder]="'/assets/fallbacks/logo-placeholder.svg'"
                   alt=""
                   aria-hidden="true"
@@ -86,8 +92,10 @@
                 </div>
               </div>
 
+              <!-- Titre -->
               <h2 class="post-title" *ngIf="p.title">{{ p.title }}</h2>
 
+              <!-- Extrait repliable -->
               <div class="post-excerpt" #excerptClip>
                 <div class="excerpt-body"
                      #excerptBody
@@ -97,6 +105,7 @@
                 </div>
               </div>
 
+              <!-- CTA -->
               <div class="card-cta">
                 <button class="cta-btn"
                         type="button"
@@ -104,8 +113,8 @@
                         (click)="toggleExpand(i)"
                         [attr.aria-expanded]="expanded[i]">
                   <span class="cta-label">{{ expanded[i] ? 'Réduire' : 'Lire la suite' }}</span>
-                  <span class="cta-plus">
-                    <svg class="icon-plus" viewBox="0 0 24 24" aria-hidden="true">
+                  <span class="cta-plus" aria-hidden="true">
+                    <svg class="icon-plus" viewBox="0 0 24 24">
                       <path d="M12 5v14M5 12h14"/>
                     </svg>
                   </span>
@@ -121,11 +130,12 @@
               </div>
             </div>
 
+            <!-- Col image -->
             <div class="news-col news-col--image">
               <div class="post-media">
                 <img
                   class="post-media__img"
-                  [appImgFast]="p?.imageUrl != null && p?.imageUrl !== '' ? ('' + p.imageUrl) : '/assets/fallbacks/image-placeholder.svg'"
+                  [appImgFast]="p?._imageUrl || '/assets/fallbacks/image-placeholder.svg'"
                   [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
                   alt=""
                   loading="lazy"
@@ -133,14 +143,14 @@
                 />
               </div>
             </div>
-
           </div>
         </li>
       </ul>
     </div>
   </section>
 
-  <div #pagerWrapper class="pager-wrapper prehide-page">
+  <!-- ===== PAGER ===== -->
+  <div #pagerWrapper class="pager-wrapper prehide-page" aria-live="polite">
     <nav #pager class="pager prehide-row" aria-label="Pagination des actualités">
       <div class="pager-slot pager-left">
         <button class="pager-btn"
@@ -151,7 +161,7 @@
         </button>
       </div>
 
-      <div class="pager-slot pager-center" aria-live="polite">
+      <div class="pager-slot pager-center">
         {{ currentPage }}/{{ totalPages }}
       </div>
 

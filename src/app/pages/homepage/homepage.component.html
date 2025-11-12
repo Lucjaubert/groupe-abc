@@ -1,46 +1,49 @@
 <div class="homepage-wrapper pt-6" *ngIf="acf">
   <section id="hero"
-           class="hero-section"
-           (mouseenter)="pauseAutoplay()"
-           (mouseleave)="resumeAutoplay()"
-           tabindex="0"
-           role="region"
-           aria-label="Carrousel d'images – section Héro"
-           (keydown)="onKeydown($event)"
-           (pointerdown)="onPointerDown($event)"
-           (pointerup)="onPointerUp($event)">
+         class="hero-section"
+         (mouseenter)="pauseAutoplay()"
+         (mouseleave)="resumeAutoplay()"
+         tabindex="0"
+         role="region"
+         aria-roledescription="carousel"
+         aria-label="Carrousel d'images – section Héro"
+         (keydown)="onKeydown($event)"
+         (pointerdown)="onPointerDown($event)"
+         (pointerup)="onPointerUp($event)">
 
-    <div class="hero-bg" #heroBg>
-      <div class="hero-layer"
-           #heroLayer
-           *ngFor="let sld of heroSlides; let i = index; trackBy: trackByIndex"
-           [class.active]="i === heroIndex"
-           [style.backgroundImage]="'url(' + (s(sld?.bg) || '/assets/fallbacks/hero-placeholder.jpg') + ')'">
-      </div>
+  <div class="hero-bg" #heroBg>
+    <div class="hero-layer"
+         #heroLayer
+         *ngFor="let sld of heroSlides; let i = index; trackBy: trackByIndex"
+         [class.active]="i === heroIndex"
+         [style.backgroundImage]="'url(' + (s(sld?.bg) || '/assets/fallbacks/hero-placeholder.jpg') + ')'">
+    </div>
+  </div>
+
+  <div class="hero-overlay pb-10">
+    <div class="hero-content mt-5 mt-lg-0" aria-live="polite">
+      <!-- ✅ H1 toujours présent côté SSR grâce aux getters -->
+      <h1 class="hero-title" #heroTitle data-wg-notranslate>
+        {{ currentHeroTitle }}
+      </h1>
+      <p class="hero-subtitle" #heroSubtitle data-wg-notranslate>
+        {{ currentHeroSubtitle }}
+      </p>
     </div>
 
-    <div class="hero-overlay pb-10">
-      <div class="hero-content mt-5 mt-lg-0" aria-live="polite">
-        <h1 class="hero-title" #heroTitle data-wg-notranslate>
-          {{ currentSlide?.title }}
-        </h1>
-        <p class="hero-subtitle" #heroSubtitle data-wg-notranslate>
-          {{ currentSlide?.subtitle }}
-        </p>
-      </div>
-
-      <div class="hero-dots" *ngIf="heroSlides.length > 1">
-        <button *ngFor="let _ of heroSlides; let i = index; trackBy: trackByIndex"
-                type="button"
-                class="hero-dot"
-                [class.active]="i === heroIndex"
-                [attr.aria-label]="'Aller au slide ' + (i + 1)"
-                [attr.aria-current]="i === heroIndex ? 'true' : null"
-                (click)="goTo(i)">
-        </button>
-      </div>
+    <div class="hero-dots" *ngIf="heroSlides.length > 1">
+      <button *ngFor="let _ of heroSlides; let i = index; trackBy: trackByIndex"
+              type="button"
+              class="hero-dot"
+              [class.active]="i === heroIndex"
+              [attr.aria-label]="'Aller au slide ' + (i + 1)"
+              [attr.aria-current]="i === heroIndex ? 'true' : null"
+              (click)="goTo(i)">
+      </button>
     </div>
-  </section>
+  </div>
+</section>
+
 
   <!-- Key figures -->
   <section id="key-figures" class="key-figures" *ngIf="keyFigures.length">

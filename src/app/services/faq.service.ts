@@ -12,17 +12,15 @@ export class FaqService {
   private faqEN$ = new BehaviorSubject<FaqItem[]>([]);
   private open$  = new BehaviorSubject<boolean>(false);
 
-  /** Flux combiné pour le composant */
   vm$: Observable<{ open: boolean; items: FaqItem[]; lang: string }> =
     combineLatest([this.lang.lang$, this.faqFR$, this.faqEN$, this.open$]).pipe(
       map(([L, fr, en, open]) => ({
         open,
-        items: L === 'en' ? (en?.length ? en : fr) : fr, // fallback FR si EN vide
+        items: L === 'en' ? (en?.length ? en : fr) : fr,
         lang: L
       }))
     );
 
-  /** Appelé par chaque page avec ses Q/R (versions FR & EN) */
   set(fr: FaqItem[], en?: FaqItem[]): void {
     this.faqFR$.next(fr || []);
     this.faqEN$.next(en || []);

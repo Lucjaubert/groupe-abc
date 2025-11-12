@@ -3,11 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20 <23"
+  },
   "scripts": {
     "ng": "ng",
-
     "start": "ng serve --proxy-config proxy.conf.json",
-
     "build": "ng build",
 
     "build:ssr": "ng build --configuration=production && ng run groupe-abc:server:production",
@@ -31,7 +32,11 @@
     "deploy-assets:staging": "ng run groupe-abc:deploy-assets:staging",
 
     "build:prod": "ng build --configuration=production && ng run groupe-abc:server:production && npm run deploy-assets:prod",
-    "build:staging": "ng build --configuration=staging && ng run groupe-abc:server:staging && npm run deploy-assets:staging"
+    "build:staging": "ng build --configuration=staging && ng run groupe-abc:server:staging && npm run deploy-assets:staging",
+
+    "test": "ng test --watch=false",
+    "lint": "node -e \"console.log('Lint non configuré. Exécutez: ng add @angular-eslint/schematics');\"",
+    "clean": "rimraf dist .angular"
   },
   "dependencies": {
     "@angular/animations": "18.2.12",

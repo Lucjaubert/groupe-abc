@@ -1,11 +1,18 @@
 import {
-  Component, OnDestroy, Inject, Renderer2, HostListener, AfterViewInit
+  Component,
+  OnDestroy,
+  Inject,
+  Renderer2,
+  HostListener,
+  AfterViewInit,
 } from '@angular/core';
 import { CommonModule, DOCUMENT } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { LanguageService, Lang } from '../../../services/language.service';
 import { LangLinkPipe } from '../../../pipes/lang-link.pipe';
+
+type MenuKey = 'about' | 'services' | 'methods' | 'teams' | 'news' | 'contact';
 
 @Component({
   selector: 'app-header',
@@ -24,38 +31,107 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
   private mq?: MediaQueryList;
   private suppressCloseOnNextNav = false;
 
-  private onMqChange = (e: MediaQueryListEvent) => {
-    if (!e.matches && this.menuOpen) this.setMenu(false);
+  /** Mapping FR ⇄ EN des pages canoniques */
+  private readonly FR_TO_EN: Record<string, string> = {
+    '/': '/en',
+    '/expert-immobilier-reseau-national':
+      '/en/expert-network-chartered-valuers',
+    '/expertise-immobiliere-services':
+      '/en/real-estate-valuation-services',
+    '/methodes-evaluation-immobiliere': '/en/assets-methods',
+    '/experts-immobiliers-agrees': '/en/chartered-valuation-experts',
+    '/actualites-expertise-immobiliere': '/en/news',
+    '/contact-expert-immobilier': '/en/contact',
   };
 
-  /** Dictionnaire I18N */
-  private I18N: Record<Lang, {
-    slogan_html: string;
-    tagline_html: string;
-    menu: string[];
-    menu_overlay: string[];
-    brand_text_html: string;   // ← on garde la clé pour compat, mais on la calera = slogan_html
-    extranet_text_html: string;
-  }> = {
+  private readonly EN_TO_FR: Record<string, string> = {};
+
+  /**
+   * Routes de menu par langue.
+   * Ces routes SUIVENT la langue active.
+   * Cliquer sur un item ne doit JAMAIS changer de langue.
+   */
+  private readonly MENU_ROUTES: Record<Lang, Record<MenuKey, string>> = {
+    fr: {
+      about: '/',
+      services: '/expertise-immobiliere-services',
+      methods: '/methodes-evaluation-immobiliere',
+      teams: '/equipes',
+      news: '/actualites-expertise-immobiliere',
+      contact: '/contact-expert-immobilier',
+    },
+    en: {
+      about: '/en',
+      services: '/en/real-estate-valuation-services',
+      methods: '/en/assets-methods',
+      teams: '/en/team',
+      news: '/en/news',
+      contact: '/en/contact',
+    },
+  };
+
+  /** I18N pour les libellés */
+  private I18N: Record<
+    Lang,
+    {
+      slogan_html: string;
+      tagline_html: string;
+      menu: string[];
+      menu_overlay: string[];
+      brand_text_html: string;
+      extranet_text_html: string;
+    }
+  > = {
     fr: {
       slogan_html: `Groupement<br>d’Experts immobiliers<br>indépendants`,
       tagline_html: `Expertise amiable & judiciaire<br>en France métropolitaine<br>et Dom-Tom`,
-      menu: ['Qui sommes-nous ?','Nos Services','Biens & Méthodes','Équipes','Actualités','Contact'],
-      menu_overlay: ['QUI SOMMES-NOUS ?','NOS SERVICES','BIENS ET MÉTHODES','ÉQUIPES','ACTUALITÉS','CONTACT'],
+      menu: [
+        'Qui sommes-nous ?',
+        'Nos Services',
+        'Biens & Méthodes',
+        'Équipes',
+        'Actualités',
+        'Contact',
+      ],
+      menu_overlay: [
+        'QUI SOMMES-NOUS ?',
+        'NOS SERVICES',
+        'BIENS ET MÉTHODES',
+        'ÉQUIPES',
+        'ACTUALITÉS',
+        'CONTACT',
+      ],
       brand_text_html: `Groupement<br>d’Experts immobiliers<br>indépendants`,
       extranet_text_html: `EXTRANET`,
     },
     en: {
-      // ✅ mêmes 3 lignes en EN (orthographe corrigée)
       slogan_html: `Group of<br>independent real estate<br>experts`,
       tagline_html: `Out-of-court & judicial expertise<br>in mainland France<br>and Overseas Territories`,
-      menu: ['About us','Our Services','Assets & Methods','Teams','News','Contact'],
-      menu_overlay: ['ABOUT US','OUR SERVICES','ASSETS & METHODS','TEAMS','NEWS','CONTACT'],
-      // on force brand_text_html identique au slogan pour overlay
+      menu: [
+        'About us',
+        'Our Services',
+        'Assets & Methods',
+        'Teams',
+        'News',
+        'Contact',
+      ],
+      menu_overlay: [
+        'ABOUT US',
+        'OUR SERVICES',
+        'ASSETS & METHODS',
+        'TEAMS',
+        'NEWS',
+        'CONTACT',
+      ],
       brand_text_html: `Group of<br>independent real estate<br>experts`,
       extranet_text_html: `EXTRANET`,
-    }
+    },
   };
+
+  /** Langue actuellement active (utilisée dans le template) */
+  get activeLang(): Lang {
+    return this.lang.lang;
+  }
 
   constructor(
     public lang: LanguageService,
@@ -63,53 +139,46 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     private renderer: Renderer2,
     @Inject(DOCUMENT) private doc: Document
   ) {
-    this.syncLangFromUrl();
-    this.applyI18nToDom();
+    // Construire EN_TO_FR
+    Object.entries(this.FR_TO_EN).forEach(([fr, en]) => {
+      this.EN_TO_FR[en] = fr;
+    });
 
+    // À chaque navigation :
+    // - fermer le menu (sauf switch langue)
+    // - réappliquer les libellés
     this.navSub = this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
       .subscribe(() => {
-        this.syncLangFromUrl();
-        setTimeout(() => this.applyI18nToDom(), 0);
-
         if (!this.suppressCloseOnNextNav) {
           this.setMenu(false);
         }
         this.suppressCloseOnNextNav = false;
+        this.applyI18nToDom();
       });
 
+    // Media query : fermer le menu quand on repasse desktop
     if (typeof window !== 'undefined' && 'matchMedia' in window) {
       this.mq = window.matchMedia('(max-width: 768px)');
-      try { this.mq.addEventListener('change', this.onMqChange); }
-      catch { this.mq.addListener?.(this.onMqChange as any); }
+      const onMqChange = (e: MediaQueryListEvent) => {
+        if (!e.matches && this.menuOpen) this.setMenu(false);
+      };
+      try {
+        this.mq.addEventListener('change', onMqChange);
+      } catch {
+        this.mq.addListener?.(onMqChange as any);
+      }
     }
+
+    // Quand la langue change (service / Weglot), on MAJ les textes
+    this.lang.lang$.subscribe(() => this.applyI18nToDom());
   }
 
   ngAfterViewInit(): void {
     setTimeout(() => this.applyI18nToDom(), 0);
   }
 
-  private syncLangFromUrl(): void {
-    const url = this.router.url || '/';
-    const path = url.split('?')[0].split('#')[0];
-    const first = path.split('/').filter(Boolean)[0];
-    const fromUrl: Lang = first === 'en' ? 'en' : 'fr';
-    if (this.lang.lang !== fromUrl) this.lang.set(fromUrl);
-  }
-
-  private goToLang(target: Lang): void {
-    const full = this.router.url || '/';
-    const [beforeHash, hash = ''] = full.split('#');
-    const [pathname, qs = ''] = beforeHash.split('?');
-
-    const pathNoEn = pathname.startsWith('/en') ? (pathname.slice(3) || '/') : pathname;
-    const nextPath = target === 'en'
-      ? (pathNoEn === '/' ? '/en' : '/en' + pathNoEn)
-      : pathNoEn;
-
-    const nextUrl = nextPath + (qs ? `?${qs}` : '') + (hash ? `#${hash}` : '');
-    this.router.navigateByUrl(nextUrl);
-  }
+  /* ================= Helpers ================= */
 
   onBrandError(ev: Event): void {
     if (this.brandTriedPng) return;
@@ -119,26 +188,54 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     if (img) img.src = this.brandSrc;
   }
 
+  /** Route de menu adaptée à la langue active */
+  getLink(key: MenuKey): string {
+    return this.MENU_ROUTES[this.activeLang][key];
+  }
+
+  /**
+   * Clic sur le switch langue.
+   * C’est le SEUL endroit qui doit changer de langue.
+   */
   onPrimaryAction(evt?: Event): void {
-    if (evt) { evt.preventDefault(); evt.stopPropagation(); }
-    const current: Lang = this.lang.lang;
-    const target: Lang  = current === 'fr' ? 'en' : 'fr';
-    this.lang.set(target);
-    this.applyI18nToDom();
-    this.suppressCloseOnNextNav = true;
-    this.goToLang(target);
-  }
-
-  setLang(l: Lang): void {
-    if (this.lang.lang !== l) {
-      this.lang.set(l);
-      this.applyI18nToDom();
-      this.suppressCloseOnNextNav = true;
-      this.goToLang(l);
+    if (evt) {
+      evt.preventDefault();
+      evt.stopPropagation();
     }
+
+    const currentUrl = this.router.url || '/';
+    const [pathOnly, qsHash] = currentUrl.split(/(?=[?#])/);
+    const path = this.normalizePath(pathOnly);
+
+    const currentLang: Lang =
+      path === '/en' || path.startsWith('/en/') ? 'en' : 'fr';
+    const targetLang: Lang = currentLang === 'fr' ? 'en' : 'fr';
+
+    const targetPath = this.computeTargetPath(path, targetLang);
+    const finalUrl = targetPath + (qsHash || '');
+
+    this.suppressCloseOnNextNav = true;
+    this.lang.set(targetLang);
+    this.router.navigateByUrl(finalUrl, { replaceUrl: true });
   }
 
-  toggleMenu(): void { this.setMenu(!this.menuOpen); }
+  /** Force une langue donnée (si tu as un sélecteur ailleurs) */
+  setLang(l: Lang): void {
+    const currentUrl = this.router.url || '/';
+    const [pathOnly, qsHash] = currentUrl.split(/(?=[?#])/);
+    const path = this.normalizePath(pathOnly);
+
+    const targetPath = this.computeTargetPath(path, l);
+    const finalUrl = targetPath + (qsHash || '');
+
+    this.suppressCloseOnNextNav = true;
+    this.lang.set(l);
+    this.router.navigateByUrl(finalUrl, { replaceUrl: true });
+  }
+
+  toggleMenu(): void {
+    this.setMenu(!this.menuOpen);
+  }
 
   setMenu(state: boolean): void {
     this.menuOpen = state;
@@ -151,38 +248,82 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     }
   }
 
-  /** Applique FR/EN dans le DOM – slogan & overlay brand synchronisés */
-  private applyI18nToDom(): void {
-    const L = this.lang.lang;
-    const dict = this.I18N[L];
+  private normalizePath(p: string): string {
+    if (!p) return '/';
+    const clean = p.split('?')[0].split('#')[0].replace(/\/{2,}/g, '/');
+    return clean === '' ? '/' : clean;
+  }
 
-    // même HTML pour le slogan du header et le texte de marque de l’overlay
-    const slogan = this.doc.querySelector('.slogan') as HTMLElement | null;
-    if (slogan) slogan.innerHTML = dict.slogan_html;
+  private computeTargetPath(currPath: string, targetLang: Lang): string {
+    const path = this.normalizePath(currPath);
 
-    const overlayBrandTxt = this.doc.querySelector('.overlay-brand .brand-text') as HTMLElement | null;
-    if (overlayBrandTxt) overlayBrandTxt.innerHTML = dict.slogan_html;
-
-    const tagline = this.doc.querySelector('.tagline-text') as HTMLElement | null;
-    if (tagline) tagline.innerHTML = dict.tagline_html;
-
-    const headerMenuLinks = Array.from(this.doc.querySelectorAll('.menu a')) as HTMLAnchorElement[];
-    dict.menu.forEach((txt, i) => { if (headerMenuLinks[i]) headerMenuLinks[i].textContent = txt; });
-
-    const overlayLinks = Array.from(this.doc.querySelectorAll('.overlay-nav a')) as HTMLAnchorElement[];
-    dict.menu_overlay.forEach((txt, i) => { if (overlayLinks[i]) overlayLinks[i].textContent = txt; });
-
-    const extranetNodes = Array.from(this.doc.querySelectorAll('.extranet-badge .extranet-text')) as HTMLElement[];
-    extranetNodes.forEach(n => n.innerHTML = dict.extranet_text_html);
-
-    const railBtn = this.doc.querySelector('.lang-switch') as HTMLButtonElement | null;
-    if (railBtn) {
-      railBtn.setAttribute('aria-label', L === 'fr' ? 'Basculer la langue' : 'Switch language');
-      railBtn.textContent = (L === 'en') ? 'EN' : 'FR';
+    if (targetLang === 'en') {
+      if (this.FR_TO_EN[path]) return this.FR_TO_EN[path];
+      if (path === '/en' || path.startsWith('/en/')) return path;
+      return path === '/' ? '/en' : `/en${path}`;
+    } else {
+      if (this.EN_TO_FR[path]) return this.EN_TO_FR[path];
+      if (path === '/en') return '/';
+      if (path.startsWith('/en/')) {
+        const stripped = path.slice(3) || '/';
+        return stripped === '' ? '/' : stripped;
+      }
+      return path || '/';
     }
   }
 
-  closeAfterNav(): void { this.setMenu(false); }
+  /** Applique les textes FR/EN dans le DOM (labels uniquement) */
+  private applyI18nToDom(): void {
+    const L = this.activeLang;
+    const dict = this.I18N[L];
+
+    const slogan = this.doc.querySelector('.slogan') as HTMLElement | null;
+    if (slogan) slogan.innerHTML = dict.slogan_html;
+
+    const overlayBrandTxt = this.doc.querySelector(
+      '.overlay-brand .brand-text'
+    ) as HTMLElement | null;
+    if (overlayBrandTxt) overlayBrandTxt.innerHTML = dict.brand_text_html;
+
+    const tagline = this.doc.querySelector(
+      '.tagline-text'
+    ) as HTMLElement | null;
+    if (tagline) tagline.innerHTML = dict.tagline_html;
+
+    const headerMenuLinks = Array.from(
+      this.doc.querySelectorAll('.menu a')
+    ) as HTMLAnchorElement[];
+    dict.menu.forEach((txt, i) => {
+      if (headerMenuLinks[i]) headerMenuLinks[i].textContent = txt;
+    });
+
+    const overlayLinks = Array.from(
+      this.doc.querySelectorAll('.overlay-nav a')
+    ) as HTMLAnchorElement[];
+    dict.menu_overlay.forEach((txt, i) => {
+      if (overlayLinks[i]) overlayLinks[i].textContent = txt;
+    });
+
+    const extranetNodes = Array.from(
+      this.doc.querySelectorAll('.extranet-badge .extranet-text')
+    ) as HTMLElement[];
+    extranetNodes.forEach((n) => (n.innerHTML = dict.extranet_text_html));
+
+    const railBtn = this.doc.querySelector(
+      '.lang-switch'
+    ) as HTMLButtonElement | null;
+    if (railBtn) {
+      railBtn.setAttribute(
+        'aria-label',
+        L === 'fr' ? 'Basculer la langue' : 'Switch language'
+      );
+      railBtn.textContent = L === 'en' ? 'EN' : 'FR';
+    }
+  }
+
+  closeAfterNav(): void {
+    this.setMenu(false);
+  }
 
   closeOnBackdrop(evt: MouseEvent): void {
     if ((evt.target as HTMLElement).classList.contains('menu-overlay')) {
@@ -197,9 +338,5 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
 
   ngOnDestroy(): void {
     this.navSub?.unsubscribe();
-    if (this.mq) {
-      try { this.mq.removeEventListener('change', this.onMqChange); }
-      catch { this.mq.removeListener?.(this.onMqChange as any); }
-    }
   }
 }

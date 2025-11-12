@@ -1,0 +1,10 @@
+/* faq-inline.component.scss */
+.faq-inline { margin-block: 2rem; }
+.faq-title { font-size: clamp(1.25rem, 2vw, 1.5rem); margin: 0 0 1rem; }
+.faq-list  { list-style: none; margin: 0; padding: 0; }
+.faq-item  { border-top: 1px solid #e6e6e9; }
+.faq-item:last-child { border-bottom: 1px solid #e6e6e9; }
+details    { padding: .75rem 0; }
+summary.faq-q { cursor: pointer; font-weight: 600; outline: none; }
+summary.faq-q:focus { outline: 2px solid rgba(0,0,0,.25); outline-offset: 2px; }
+.faq-a { margin-top: .5rem; font-size: .95rem; opacity: .95; }

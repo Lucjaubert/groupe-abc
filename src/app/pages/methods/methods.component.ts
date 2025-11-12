@@ -12,7 +12,7 @@ import { FaqService, FaqItem } from '../../services/faq.service';
 import { environment } from '../../../environments/environment';
 import { Router } from '@angular/router';
 
-/* ===== Types (résolution d’IDs → URLs en TS) ===== */
+/* ===== Types ===== */
 type Hero = { title: string; subtitle?: string; html?: SafeHtml | string };
 type DomainItem = { kind: 'text' | 'group'; text?: string; title?: string; sub?: string[] };
 type Domain = { title: string; icon?: string | number; iconUrl?: string; items: DomainItem[] };
@@ -39,7 +39,9 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   private router = inject(Router);
   private gsap: any | null = null;
   private ScrollTrigger: any | null = null;
+
   private isBrowser(): boolean { return isPlatformBrowser(this.platformId); }
+
   private async setupGsap(): Promise<void> {
     if (!this.isBrowser() || this.gsap) return;
     const { gsap } = await import('gsap');
@@ -98,35 +100,35 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ===================== FAQ – page Méthodes ===================== */
   private readonly METHODS_FAQ_FR: FaqItem[] = [
     {
-      q: 'Quand utilise-t-on la méthode par comparaison ?',
-      a: 'La comparaison s’emploie lorsque l’on dispose d’un marché actif avec des références récentes et homogènes. Les transactions retenues sont ajustées (localisation, caractéristiques, état, conditions de vente) pour déterminer une valeur vénale objective.'
+      q: 'Quelles sont les principales méthodes utilisées pour évaluer un bien immobilier ?',
+      a: 'L’expert applique plusieurs approches reconnues selon la nature du bien et le contexte : comparaison directe, capitalisation du revenu (rendement locatif), coût de remplacement net, Discounted Cash Flow (DCF) et bilan promoteur. Chaque méthode est justifiée et pondérée dans le rapport final.'
     },
     {
-      q: 'À quoi sert la méthode par capitalisation (rendement) ?',
-      a: 'Elle valorise un bien à partir de ses revenus (loyers) actualisés par un taux reflétant le risque, la vacance et la liquidité du marché. Elle est privilégiée pour les actifs tertiaires et commerciaux générateurs de cash-flow.'
+      q: 'Quelle méthode privilégier selon le type de bien ?',
+      a: 'Pour un bien résidentiel, la comparaison est privilégiée. Pour un immeuble de rapport ou un local commercial, les méthodes par rendement ou DCF sont adaptées. Pour les terrains ou biens atypiques, les approches Sol + Construction ou bilan promoteur sont souvent retenues.'
     },
     {
-      q: 'Dans quels cas appliquer un DCF (Discounted Cash Flow) ?',
-      a: 'Le DCF projette des flux de trésorerie sur un horizon pluriannuel (loyers, CAPEX, vacance) et les actualise. Il est pertinent pour des actifs à baux complexes, des restructurations ou des opérations d’investissement nécessitant une approche dynamique.'
+      q: 'Comment l’expert garantit-il la fiabilité de la valeur calculée ?',
+      a: 'La fiabilité repose sur la qualité des données (références de marché, indices, ratios) et la cohérence entre les approches retenues. Le rapport est documenté, argumenté et conforme à la Charte de l’expertise et aux standards RICS / TEGoVA.'
     },
     {
-      q: 'Qu’est-ce que le coût de remplacement net ?',
-      a: 'On estime la valeur du foncier puis le coût de reconstruction du bâti auquel on applique vétusté et obsolescence. Cette approche s’emploie pour des biens spécifiques ou faiblement échangés (actifs industriels, équipements techniques).'
+      q: 'Quelle est la différence entre valeur vénale et valeur d’investissement ?',
+      a: 'La valeur vénale correspond au prix estimé de vente dans des conditions normales de marché. La valeur d’investissement dépend, elle, du rendement attendu par un investisseur donné et de son profil de risque. Elles peuvent être calculées conjointement.'
     },
     {
-      q: 'Quelles normes et référentiels suivez-vous ?',
-      a: 'Les rapports sont conduits selon la Charte de l’expertise en évaluation immobilière, les standards RICS (RICS Valuation – Global Standards) et, le cas échéant, les pratiques sectorielles reconnues.'
+      q: 'Les méthodes d’évaluation sont-elles normalisées ?',
+      a: 'Oui. Elles reposent sur des normes reconnues : Charte de l’expertise en évaluation immobilière (édition 2024), RICS Red Book et EVS/TEGoVA. Ces référentiels garantissent transparence et comparabilité.'
     },
     {
-      q: 'Que contient un rapport d’expertise ?',
-      a: 'Le rapport détaille la mission, les pièces analysées, les constats, les hypothèses, la méthodologie, les calculs et conclut sur la valeur (vénale/locative). Il est daté, signé et opposable.'
+      q: 'Pourquoi faire appel à un expert agréé pour une évaluation complexe ?',
+      a: 'Un expert agréé maîtrise les modèles de valorisation avancés (DCF, bilans promoteurs, ratios) et engage sa responsabilité sur la valeur produite. Il est particulièrement recommandé pour les actifs complexes ou à forte valeur.'
     }
   ];
   private readonly METHODS_FAQ_EN: FaqItem[] | undefined = undefined;
 
   /* ===== Init ===== */
   ngOnInit(): void {
-    // Publier la FAQ de la page dans le service dédié (pour l’affichage + JSON-LD)
+    // FAQ de la page
     this.faq.set(this.METHODS_FAQ_FR, this.METHODS_FAQ_EN);
 
     this.wp.getMethodsData().subscribe(async (payload: any) => {
@@ -140,7 +142,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         html    : this.safe(acf?.hero?.intro_body || '')
       };
 
-      /* ---------- DOMAINES (résolution icons) ---------- */
+      /* ---------- DOMAINES ---------- */
       const ad = acf?.asset_domains ?? {};
       const list: any[] = [ad?.domain_1, ad?.domain_2, ad?.domain_3].filter(Boolean);
 
@@ -149,7 +151,9 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           const items: DomainItem[] = [];
           for (let i = 1; i <= 4; i++) {
             const v = d?.[`item_${i}`];
-            if (typeof v === 'string' && v.trim()) items.push({ kind: 'text', text: v.trim() });
+            if (typeof v === 'string' && v.trim()) {
+              items.push({ kind: 'text', text: v.trim() });
+            }
           }
           const it5 = d?.item_5;
           if (it5 && (it5.item_5_title || it5.item_5_subtitle_1 || it5.item_5_subtitle_2 || it5.item_5_subtitle_3)) {
@@ -165,16 +169,11 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           const iconToken = d?.icon ?? d?.icon_1 ?? d?.icon_2 ?? '';
           const iconUrl   = (await this.resolveMedia(iconToken)) || this.defaultDomainIcon;
 
-          return {
-            title  : d?.title || '',
-            icon   : iconToken,
-            iconUrl,
-            items
-          } as Domain;
+          return { title: d?.title || '', icon: iconToken, iconUrl, items } as Domain;
         })
       );
 
-      /* ---------- VALEURS (wheel) ---------- */
+      /* ---------- WHEEL ---------- */
       const vw = acf?.values_wheel ?? {};
       const wimg = vw?.wheel_image;
       const wheelToken =
@@ -190,7 +189,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         centerAlt: (vw?.center_label || '').toString()
       };
 
-      /* ---------- MÉTHODES (résolution icons) ---------- */
+      /* ---------- MÉTHODES ---------- */
       const mroot = acf?.methods ?? {};
       this.evalTitleText = mroot?.section_title || 'Nos méthodes d’évaluation';
 
@@ -203,16 +202,16 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           .map(async (m: any) => {
             const iconUrl = (await this.resolveMedia(m?.icon ?? '')) || this.defaultEvalIcon;
             return {
-              icon   : m?.icon ?? '',
+              icon: m?.icon ?? '',
               iconUrl,
-              title  : m?.title || '',
-              html   : this.safe(m?.description || '')
+              title: m?.title || '',
+              html: this.safe(m?.description || '')
             } as EvalMethod;
           })
       );
       this.evalOpen = new Array(this.methods.length).fill(false);
 
-      /* ---------- PILOTAGE (résolution flows) ---------- */
+      /* ---------- PILOTAGE ---------- */
       const pil = acf?.mission_piloting ?? {};
       this.pilotingTitle = pil?.section_title || 'Pilotage des missions';
 
@@ -221,25 +220,27 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (pil?.flow_2) flowsSrcs.push({ src: pil.flow_2 });
 
       const flowsWithUrl = await Promise.all(
-        flowsSrcs.map(async f => ({ ...f, url: (await this.resolveMedia(f.src)) || this.defaultPilotImg }))
+        flowsSrcs.map(async f => ({
+          ...f,
+          url: (await this.resolveMedia(f.src)) || this.defaultPilotImg
+        }))
       );
 
       this.piloting = {
-        html : this.safe(pil?.intro_body || ''),
+        html: this.safe(pil?.intro_body || ''),
         flows: flowsWithUrl
       };
 
-      /* ---------- SEO (canonical/hreflang/JSON-LD + FAQ) ---------- */
-      const isEN     = this.currentPath().startsWith('/en/');
-      const siteUrl  = (environment.siteUrl || '').replace(/\/+$/,'') || 'https://groupe-abc.fr';
+      /* ---------- SEO (conforme au brief) ---------- */
+      const isEN    = this.currentPath().startsWith('/en/');
+      const siteUrl = (environment.siteUrl || '').replace(/\/+$/,'') || 'https://groupe-abc.fr';
 
-      const pathFR   = '/biens-et-methodes';
-      const pathEN   = '/en/assets-methods';
-      const canonRel = isEN ? pathEN : pathFR;
-      const canonical = `${siteUrl}${canonRel}`;
+      const pathFR  = '/methodes-evaluation-immobiliere';
+      const pathEN  = '/en/methods-real-estate-valuation'; // slug EN propre, à aligner avec le routage réel
+      const canonical = `${siteUrl}${isEN ? pathEN : pathFR}`;
 
-      const lang = isEN ? 'en' : 'fr';
-      const locale = isEN ? 'en_US' : 'fr_FR';
+      const lang      = isEN ? 'en'    : 'fr';
+      const locale    = isEN ? 'en_US' : 'fr_FR';
       const localeAlt = isEN ? ['fr_FR'] : ['en_US'];
 
       const alternates = [
@@ -248,14 +249,15 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         { lang: 'x-default', href: `${siteUrl}${pathFR}` }
       ];
 
-      const introForDesc = (acf?.hero?.intro_body || '').toString();
-      const baseDesc = this.strip(introForDesc, 140);
-      const descFR   = (baseDesc + ' Méthodes : comparaison, rendement, DCF, coût de remplacement net. Référentiels RICS & Charte de l’expertise.').trim();
-      const descEN   = (baseDesc + ' Methods: comparison, yield, DCF, replacement cost. RICS & French valuation charter.').trim();
+      // Textes SEO (FR = brief Matthieu)
+      const titleFR = 'Méthodes d’évaluation immobilière – Approches et calculs de valeur';
+      const descFR  = 'Découvrez les principales méthodes d’évaluation : comparaison, rendement, coût de remplacement, DCF et bilan promoteur. Des analyses rigoureuses pour une expertise fiable.';
 
-      const titleFR  = 'Biens & méthodes d’expertise immobilière – Approches (comparaison, rendement, DCF)';
-      const titleEN  = 'Assets & valuation methods – Approaches (comparison, yield, DCF)';
-      const pageTitle = isEN ? titleEN : titleFR;
+      const titleEN = 'Real-estate valuation methods – Approaches and value calculations';
+      const descEN  = 'Discover key valuation methods: comparison, yield, replacement cost, DCF and development appraisals. Robust analyses for reliable, compliant appraisals.';
+
+      const pageTitle   = isEN ? titleEN : titleFR;
+      const description = (isEN ? descEN : descFR).slice(0, 160);
 
       const ogCandidate = (typeof this.wheel.imageUrl === 'string' && this.wheel.imageUrl.trim())
         ? (this.wheel.imageUrl as string)
@@ -263,72 +265,85 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
       const ogAbs = this.absUrl(ogCandidate, siteUrl);
       const ogIsDefault = ogAbs.endsWith('/assets/og/og-default.jpg');
 
-      // JSON-LD FAQ (basé sur le service)
-      const faqSource = (this.METHODS_FAQ_EN && isEN ? this.METHODS_FAQ_EN : this.METHODS_FAQ_FR) || [];
-      const faqGraph = faqSource.length ? {
-        '@type': 'FAQPage',
-        mainEntity: faqSource.map(q => ({
-          '@type': 'Question',
-          name: q.q,
-          acceptedAnswer: { '@type': 'Answer', text: q.a }
-        }))
-      } : undefined;
+      // IDs cohérents avec setSitewideJsonLd (app.component)
+      const siteId = `${siteUrl}#website`;
+      const orgId  = `${siteUrl}#org`;
+
+      const webPage = {
+        '@type': 'WebPage',
+        '@id': `${canonical}#webpage`,
+        url: canonical,
+        name: pageTitle,
+        description,
+        inLanguage: isEN ? 'en-US' : 'fr-FR',
+        isPartOf: { '@id': siteId },
+        about: { '@id': orgId },
+        primaryImageOfPage: ogAbs
+      };
+
+      const breadcrumb = {
+        '@type': 'BreadcrumbList',
+        '@id': `${canonical}#breadcrumb`,
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: isEN ? 'Home' : 'Accueil',
+            item: siteUrl + '/'
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: isEN ? 'Methods' : 'Méthodes d’évaluation immobilière',
+            item: canonical
+          }
+        ]
+      };
+
+      // FAQPage JSON-LD uniquement si FAQ dispo dans la langue
+      let faqSource: FaqItem[] = [];
+      if (isEN) {
+        faqSource = this.METHODS_FAQ_EN ?? [];
+      } else {
+        faqSource = this.METHODS_FAQ_FR ?? [];
+      }
+
+      const faqLd = faqSource.length
+        ? {
+            '@type': 'FAQPage',
+            '@id': `${canonical}#faq`,
+            mainEntity: faqSource.map(q => ({
+              '@type': 'Question',
+              name: q.q,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: q.a
+              }
+            }))
+          }
+        : null;
+
+      const graph: any[] = [webPage, breadcrumb];
+      if (faqLd) graph.push(faqLd);
 
       this.seo.update({
         title: pageTitle,
-        description: isEN ? descEN : descFR,
+        description,
         lang,
         locale,
         localeAlt,
-        canonical,                 // absolu
+        canonical,
         robots: 'index,follow',
         image: ogAbs,
-        imageAlt: isEN ? 'Assets & valuation methods – Groupe ABC' : 'Biens & méthodes – Groupe ABC',
+        imageAlt: isEN
+          ? 'Real-estate valuation methods – Groupe ABC'
+          : 'Méthodes d’évaluation immobilière – Groupe ABC',
         ...(ogIsDefault ? { imageWidth: 1200, imageHeight: 630 } : {}),
         type: 'website',
         alternates,
         jsonLd: {
           '@context': 'https://schema.org',
-          '@graph': [
-            {
-              '@type': 'WebSite',
-              '@id': `${siteUrl}/#website`,
-              url: siteUrl,
-              name: 'Groupe ABC',
-              inLanguage: isEN ? 'en-US' : 'fr-FR',
-              potentialAction: {
-                '@type': 'SearchAction',
-                target: `${siteUrl}/?s={search_term_string}`,
-                'query-input': 'required name=search_term_string'
-              }
-            },
-            {
-              '@type': 'Organization',
-              '@id': `${siteUrl}/#organization`,
-              name: 'Groupe ABC',
-              url: siteUrl,
-              logo: { '@type': 'ImageObject', url: `${siteUrl}/assets/favicons/android-chrome-512x512.png`, width: 512, height: 512 },
-              sameAs: ['https://www.linkedin.com/company/groupe-abc']
-            },
-            {
-              '@type': 'WebPage',
-              '@id': `${canonical}#webpage`,
-              url: canonical,
-              name: pageTitle,
-              description: isEN ? descEN : descFR,
-              inLanguage: isEN ? 'en-US' : 'fr-FR',
-              isPartOf: { '@id': `${siteUrl}/#website` },
-              primaryImageOfPage: { '@type': 'ImageObject', url: ogAbs }
-            },
-            {
-              '@type': 'BreadcrumbList',
-              itemListElement: [
-                { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl + '/' },
-                { '@type': 'ListItem', position: 2, name: isEN ? 'Assets & Methods' : 'Biens & Méthodes', item: canonical }
-              ]
-            },
-            ...(faqGraph ? [faqGraph] as any : [])
-          ]
+          '@graph': graph
         }
       });
 
@@ -339,7 +354,9 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   /* ===== Accordéon ===== */
   toggleEval(i: number){ this.setSingleOpen(this.evalOpen, i); }
   private setSingleOpen(arr: boolean[], i: number){
-    const willOpen = !arr[i]; arr.fill(false); if (willOpen) arr[i] = true;
+    const willOpen = !arr[i];
+    arr.fill(false);
+    if (willOpen) arr[i] = true;
   }
 
   /* ===== Img fallbacks ===== */
@@ -356,13 +373,13 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
   }
 
-  /* === Helpers SEO === */
   private currentPath(): string {
     if (this.isBrowser()) {
-      try { return (window?.location?.pathname || '/'); } catch { return this.router?.url || '/'; }
+      try { return window?.location?.pathname || '/'; } catch { return this.router?.url || '/'; }
     }
     return this.router?.url || '/';
   }
+
   private absUrl(url: string, origin: string): string {
     if (!url) return '';
     try {
@@ -370,10 +387,12 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (/^\/\//.test(url)) return 'https:' + url;
       const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
       return url.startsWith('/') ? o + url : `${o}/${url}`;
-    } catch { return url; }
+    } catch {
+      return url;
+    }
   }
 
-  /** Résout ID WP / objet / string → URL utilisable */
+  /** Résout ID WP / objet / string → URL */
   private async resolveMedia(token: any): Promise<string> {
     if (!token) return '';
     if (typeof token === 'object') {
@@ -414,10 +433,12 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser() || !this.gsap) return;
     if (this.bindScheduled) return;
     this.bindScheduled = true;
-    queueMicrotask(() => requestAnimationFrame(() => {
-      this.bindScheduled = false;
-      this.bindAnimations();
-    }));
+    queueMicrotask(() =>
+      requestAnimationFrame(() => {
+        this.bindScheduled = false;
+        this.bindAnimations();
+      })
+    );
   }
 
   private forceInitialHidden(host: HTMLElement){
@@ -440,7 +461,9 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const EASE = 'power3.out';
     const rmPrehide = (els: Element | Element[]) => {
-      (Array.isArray(els) ? els : [els]).forEach(el => el.classList.remove('prehide','prehide-row'));
+      (Array.isArray(els) ? els : [els]).forEach(el =>
+        el.classList.remove('prehide','prehide-row')
+      );
     };
 
     /* HERO */
@@ -453,30 +476,63 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.heroBound) {
       const tl = gsap.timeline({ defaults: { ease: EASE } });
 
-      if (h1) tl.fromTo(h1, { autoAlpha: 0, y: 20 }, {
-        autoAlpha: 1, y: 0, duration: 0.6,
-        onStart: () => { rmPrehide(h1); },
-        onComplete: () => { gsap.set(h1, { clearProps: 'all' }); }
-      }, 0);
+      if (h1) {
+        tl.fromTo(
+          h1,
+          { autoAlpha: 0, y: 20 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.6,
+            onStart: () => { rmPrehide(h1); },
+            onComplete: () => { gsap.set(h1, { clearProps: 'all' }); }
+          },
+          0
+        );
+      }
 
-      if (h2) tl.fromTo(h2, { autoAlpha: 0, y: 18 }, {
-        autoAlpha: 1, y: 0, duration: 0.5, delay: 0.08,
-        onStart: () => { rmPrehide(h2); },
-        onComplete: () => { gsap.set(h2, { clearProps: 'all' }); }
-      }, 0);
+      if (h2) {
+        tl.fromTo(
+          h2,
+          { autoAlpha: 0, y: 18 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.5,
+            delay: 0.08,
+            onStart: () => { rmPrehide(h2); },
+            onComplete: () => { gsap.set(h2, { clearProps: 'all' }); }
+          },
+          0
+        );
+      }
 
-      if (hi) tl.fromTo(hi, { autoAlpha: 0, y: 18 }, {
-        autoAlpha: 1, y: 0, duration: 0.5, delay: 0.14,
-        onStart: () => { rmPrehide(hi); },
-        onComplete: () => { gsap.set(hi, { clearProps: 'all' }); }
-      }, 0);
+      if (hi) {
+        tl.fromTo(
+          hi,
+          { autoAlpha: 0, y: 18 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.5,
+            delay: 0.14,
+            onStart: () => { rmPrehide(hi); },
+            onComplete: () => { gsap.set(hi, { clearProps: 'all' }); }
+          },
+          0
+        );
+      }
 
       this.heroBound = true;
     } else {
       [h1, h2, hi].forEach(el => {
         if (!el) return;
         rmPrehide(el);
-        gsap.set(el, { autoAlpha: 1, y: 0, clearProps: 'transform,opacity,visibility' });
+        gsap.set(el, {
+          autoAlpha: 1,
+          y: 0,
+          clearProps: 'transform,opacity,visibility'
+        });
       });
     }
 
@@ -500,26 +556,49 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!this.assetsBound) {
         const tl = gsap.timeline({
           defaults: { ease: EASE },
-          scrollTrigger: { id: 'assets-grid', trigger: assetsList, start: 'top 85%', once: true },
+          scrollTrigger: {
+            id: 'assets-grid',
+            trigger: assetsList,
+            start: 'top 85%',
+            once: true
+          },
           onStart: () => { rmPrehide([assetsList, ...cols]); },
           onComplete: () => {
             this.assetsBound = true;
             try {
-              const all = [assetsList, ...cols, ...(heads.filter(Boolean) as HTMLElement[]), ...lists.flat()];
+              const all = [
+                assetsList,
+                ...cols,
+                ...(heads.filter(Boolean) as HTMLElement[]),
+                ...lists.flat()
+              ];
               gsap.set(all, { clearProps: 'all' });
             } catch {}
           }
         });
 
-        tl.fromTo(assetsList, { autoAlpha: 0, y: 12 }, { autoAlpha: 1, y: 0, duration: 0.38, immediateRender: false }, 0);
+        tl.fromTo(
+          assetsList,
+          { autoAlpha: 0, y: 12 },
+          { autoAlpha: 1, y: 0, duration: 0.38, immediateRender: false },
+          0
+        );
 
         cols.forEach((_, i) => {
           const at  = 0.10 + i * 0.12;
           const hd  = heads[i] as HTMLElement | undefined;
           const its = (lists[i] || []) as HTMLElement[];
 
-          if (hd) tl.to(hd, { autoAlpha: 1, y: 0, duration: 0.40 }, at);
-          if (its.length) tl.to(its, { autoAlpha: 1, y: 0, duration: 0.40, stagger: 0.04 }, at + 0.06);
+          if (hd) {
+            tl.to(hd, { autoAlpha: 1, y: 0, duration: 0.40 }, at);
+          }
+          if (its.length) {
+            tl.to(
+              its,
+              { autoAlpha: 1, y: 0, duration: 0.40, stagger: 0.04 },
+              at + 0.06
+            );
+          }
         });
       }
     }
@@ -533,7 +612,10 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         wTitle,
         { autoAlpha: 0, y: 16 },
         {
-          autoAlpha: 1, y: 0, duration: 0.52, ease: EASE,
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.52,
+          ease: EASE,
           scrollTrigger:{ trigger: wTitle, start: 'top 85%', once: true },
           onStart: () => { rmPrehide(wTitle); },
           onComplete: () => { gsap.set(wTitle, { clearProps: 'all' }); }
@@ -545,7 +627,10 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         wWrap,
         { autoAlpha: 0, scale: 0.985 },
         {
-          autoAlpha: 1, scale: 1, duration: 0.52, ease: 'power2.out',
+          autoAlpha: 1,
+          scale: 1,
+          duration: 0.52,
+          ease: 'power2.out',
           scrollTrigger:{ trigger: wWrap, start: 'top 85%', once: true },
           onStart: () => { rmPrehide(wWrap); },
           onComplete: () => { gsap.set(wWrap, { clearProps: 'all' }); }
@@ -563,7 +648,10 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         eTitle,
         { autoAlpha: 0, y: 16 },
         {
-          autoAlpha: 1, y: 0, duration: 0.52, ease: EASE,
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.52,
+          ease: EASE,
           scrollTrigger:{ trigger: eTitle, start: 'top 85%', once: true },
           onStart: () => { rmPrehide(eTitle); },
           onComplete: () => { gsap.set(eTitle, { clearProps: 'all' }); }

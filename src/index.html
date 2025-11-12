@@ -10,7 +10,7 @@
     <!-- Google Search Console -->
     <meta name="google-site-verification" content="vVZ7W-srvDTqDhQh7rH3PMjrkh1oZdbwy0sujaH_C40" />
 
-    <!-- Fallback générique (le SEO service/SSR mettra les balises par page) -->
+    <!-- Fallback générique (SeoService/SSR surchargera par page) -->
     <meta name="description" content="Groupe ABC : réseau national d’experts en évaluation immobilière." />
     <meta name="robots" content="index,follow,max-image-preview:large" />
 
@@ -24,35 +24,61 @@
     <meta name="msapplication-TileColor" content="#444697" />
 
     <!-- Fonts (preload) -->
-    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Regular.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Medium.woff2"  as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/assets/fonts/PlusJakartaSans-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/assets/fonts/PlusJakartaSans-Bold.woff2" as="font" type="font/woff2" crossorigin />
+    <link
+      rel="preload"
+      href="/assets/fonts/PlusJakartaSans-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/assets/fonts/PlusJakartaSans-Medium.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/assets/fonts/PlusJakartaSans-SemiBold.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/assets/fonts/PlusJakartaSans-Bold.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
 
     <!-- Resource hints -->
     <link rel="preconnect" href="https://cdn.weglot.com" crossorigin />
-    <!-- (dns-prefetch sur ton propre domaine non nécessaire) -->
 
-    <!-- Open Graph (sitewide) -->
+    <!-- Open Graph (fallback global) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Groupe ABC" />
     <meta property="og:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
 
-    <!-- Twitter -->
+    <!-- Twitter (fallback global) -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
 
-    <!-- Pas de canonical/hreflang ici : gérés par le SSR/SeoService -->
+    <!-- Pas de canonical/hreflang ici : gérés dynamiquement par SeoService/SSR -->
 
-    <!-- JSON-LD Organization -->
+    <!-- JSON-LD Organization sitewide -->
     <script type="application/ld+json" id="ld-sitewide">
     {
       "@context": "https://schema.org",
       "@type": "Organization",
+      "@id": "https://groupe-abc.fr/#organization",
       "name": "Groupe ABC",
       "url": "https://groupe-abc.fr/",
-      "logo": "https://groupe-abc.fr/assets/og/og-default.jpg",
-      "sameAs": ["https://www.linkedin.com/company/groupeabc/"]
+      "logo": "https://groupe-abc.fr/assets/favicons/android-chrome-512x512.png",
+      "sameAs": [
+        "https://www.linkedin.com/company/groupe-abc"
+      ]
     }
     </script>
   </head>
@@ -61,7 +87,7 @@
     <app-root></app-root>
     <noscript>Activez JavaScript pour utiliser le changeur de langue.</noscript>
 
-    <!-- Weglot (chargé après load pour ne pas bloquer le SSR/SEO) -->
+    <!-- Weglot (chargé après load pour ne pas bloquer SSR/SEO) -->
     <script>
       (function () {
         window.addEventListener('load', function () {
@@ -75,10 +101,9 @@
                 originalLanguage: 'fr',
                 destinationLanguages: ['en'],
                 dynamic: true,
-                translateMeta: false,   // SEO géré par SSR
-                hrefLang: false,        // SEO géré par SSR
-                // évite les changements d'URL/auto-redirects si tu gères /en/ côté Angular
-                redirect: false,
+                translateMeta: false,   // balises gérées par SSR/SeoService
+                hrefLang: false,        // hreflang géré par SSR/SeoService
+                redirect: false,        // pas de redirection auto : URLs / et /en/ gérées par Angular
                 translateAttributes: ['alt','title','placeholder','aria-label'],
                 excludedPaths: [
                   '/wordpress/wp-json*','/wp-json*',
@@ -86,13 +111,16 @@
                   '?rest_route='
                 ]
               });
-            } catch (e) { console.error('[Weglot] init error', e); }
+            } catch (e) {
+              console.error('[Weglot] init error', e);
+            }
           };
-          s.onerror = function (e) { console.error('[Weglot] script load error', e); };
+          s.onerror = function (e) {
+            console.error('[Weglot] script load error', e);
+          };
           document.body.appendChild(s);
         });
       })();
     </script>
-
   </body>
 </html>

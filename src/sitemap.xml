@@ -1,16 +1,128 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
 
   <!-- Accueil -->
-  <url><loc>https://groupe-abc.fr/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url>
+    <loc>https://groupe-abc.fr/</loc>
+    <changefreq>weekly</changefreq><priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/"/>
+  </url>
 
-  <!-- Pages Angular réelles -->
-  <url><loc>https://groupe-abc.fr/qui-sommes-nous</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://groupe-abc.fr/nos-services</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://groupe-abc.fr/biens-et-methodes</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://groupe-abc.fr/nos-equipes</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://groupe-abc.fr/actualites</loc><changefreq>weekly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://groupe-abc.fr/contact</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://groupe-abc.fr/mentions-legales</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
+  <!-- FR canoniques -->
+  <url>
+    <loc>https://groupe-abc.fr/expert-immobilier-reseau-national</loc>
+    <changefreq>monthly</changefreq><priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/expert-immobilier-reseau-national"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/expert-network-chartered-valuers"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/expert-immobilier-reseau-national"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/expertise-immobiliere-services</loc>
+    <changefreq>monthly</changefreq><priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/expertise-immobiliere-services"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-services"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/expertise-immobiliere-services"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/methodes-evaluation-immobiliere</loc>
+    <changefreq>monthly</changefreq><priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/methodes-evaluation-immobiliere"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/assets-methods"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/methodes-evaluation-immobiliere"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/experts-immobiliers-agrees</loc>
+    <changefreq>monthly</changefreq><priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/experts-immobiliers-agrees"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/chartered-valuation-experts"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/experts-immobiliers-agrees"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere</loc>
+    <changefreq>weekly</changefreq><priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/news"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/contact-expert-immobilier</loc>
+    <changefreq>monthly</changefreq><priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/contact-expert-immobilier"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/contact"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/contact-expert-immobilier"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/mentions-legales</loc>
+    <changefreq>yearly</changefreq><priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/mentions-legales"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/mentions-legales"/>
+  </url>
+
+  <!-- EN canoniques -->
+  <url>
+    <loc>https://groupe-abc.fr/en</loc>
+    <changefreq>weekly</changefreq><priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/expert-network-chartered-valuers</loc>
+    <changefreq>monthly</changefreq><priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/expert-immobilier-reseau-national"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/expert-network-chartered-valuers"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/expert-immobilier-reseau-national"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-services</loc>
+    <changefreq>monthly</changefreq><priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/expertise-immobiliere-services"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-services"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/expertise-immobiliere-services"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/assets-methods</loc>
+    <changefreq>monthly</changefreq><priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/methodes-evaluation-immobiliere"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/assets-methods"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/methodes-evaluation-immobiliere"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/chartered-valuation-experts</loc>
+    <changefreq>monthly</changefreq><priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/experts-immobiliers-agrees"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/chartered-valuation-experts"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/experts-immobiliers-agrees"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/news</loc>
+    <changefreq>weekly</changefreq><priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/news"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/contact</loc>
+    <changefreq>monthly</changefreq><priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/contact-expert-immobilier"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/contact"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/contact-expert-immobilier"/>
+  </url>
 
 </urlset>

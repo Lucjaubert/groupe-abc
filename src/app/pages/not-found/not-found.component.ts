@@ -12,6 +12,14 @@ import { environment } from '../../../environments/environment';
   styleUrls: ['./not-found.component.scss'],
 })
 export class NotFoundComponent implements OnInit, AfterViewInit {
+  /** Textes i18n dynamiques dans le template */
+  titleText   = '404 – Page introuvable';
+  subtitleText = 'Oups, la page que vous cherchez n’existe pas (ou plus).';
+  leadText    = 'Vérifiez l’URL saisie ou retournez à l’accueil pour poursuivre votre visite.';
+  backLabel   = 'Retour à l’accueil';
+
+  private isEN = false;
+
   constructor(
     private router: Router,
     private seo: SeoService,
@@ -24,7 +32,15 @@ export class NotFoundComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     const siteUrl = (environment.siteUrl || '').replace(/\/+$/,'') || 'https://groupe-abc.fr';
     const path    = this.safePath();
-    const isEN    = path.startsWith('/en/');
+    this.isEN     = path.startsWith('/en/');
+
+    // ——— i18n des libellés
+    if (this.isEN) {
+      this.titleText    = '404 – Page not found';
+      this.subtitleText = `Oops, the page you're looking for doesn't exist (or doesn't exist anymore).`;
+      this.leadText     = 'Check the entered URL or return to the home page to continue your visit.';
+      this.backLabel    = 'Back to home page';
+    }
 
     const titleFR = '404 – Page introuvable | Groupe ABC';
     const titleEN = '404 – Page not found | Groupe ABC';
@@ -33,11 +49,11 @@ export class NotFoundComponent implements OnInit, AfterViewInit {
 
     // 🔒 Pas de canonical/hreflang sur une 404 ; on force noindex/nofollow
     this.seo.update({
-      title: isEN ? titleEN : titleFR,
-      description: isEN ? descEN : descFR,
-      lang: isEN ? 'en' : 'fr',
-      locale: isEN ? 'en_US' : 'fr_FR',
-      localeAlt: isEN ? ['fr_FR'] : ['en_US'],
+      title: this.isEN ? titleEN : titleFR,
+      description: this.isEN ? descEN : descFR,
+      lang: this.isEN ? 'en' : 'fr',
+      locale: this.isEN ? 'en_US' : 'fr_FR',
+      localeAlt: this.isEN ? ['fr_FR'] : ['en_US'],
       robots: 'noindex,nofollow',
       // NOTE: on n’envoie PAS de canonical/alternates pour 404
       jsonLd: {
@@ -48,15 +64,15 @@ export class NotFoundComponent implements OnInit, AfterViewInit {
             '@id': `${siteUrl}/#website`,
             url: siteUrl,
             name: 'Groupe ABC',
-            inLanguage: isEN ? 'en-US' : 'fr-FR'
+            inLanguage: this.isEN ? 'en-US' : 'fr-FR'
           },
           {
             '@type': 'WebPage',
             '@id': `${siteUrl}${path}#webpage`,
             url: `${siteUrl}${path}`,
-            name: isEN ? titleEN : titleFR,
-            description: isEN ? descEN : descFR,
-            inLanguage: isEN ? 'en-US' : 'fr-FR',
+            name: this.isEN ? titleEN : titleFR,
+            description: this.isEN ? descEN : descFR,
+            inLanguage: this.isEN ? 'en-US' : 'fr-FR',
             isPartOf: { '@id': `${siteUrl}/#website` }
           }
         ]
@@ -82,7 +98,7 @@ export class NotFoundComponent implements OnInit, AfterViewInit {
         Array.from(head.querySelectorAll('link[rel="canonical"]')).forEach(el => el.remove());
         // Supprime <link rel="alternate" hreflang="...">
         Array.from(head.querySelectorAll('link[rel="alternate"][hreflang]')).forEach(el => el.remove());
-        // Optionnel: empêcher l’indexation via meta si besoin
+        // Force meta robots noindex
         let robots = head.querySelector('meta[name="robots"]');
         if (!robots) {
           robots = this.doc.createElement('meta');
@@ -95,7 +111,9 @@ export class NotFoundComponent implements OnInit, AfterViewInit {
   }
 
   goToHomePage(): void {
-    this.router.navigate(['/']);
+    // Redirection cohérente avec la langue actuelle
+    const target = this.isEN ? '/en' : '/';
+    this.router.navigateByUrl(target);
   }
 
   /* ===== Helpers ===== */

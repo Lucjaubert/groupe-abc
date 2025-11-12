@@ -1,32 +1,53 @@
 <div class="about-wrapper">
+  <!-- ========================= CORE (intro + partenaire) ========================= -->
   <section class="section core" *ngIf="core.length">
     <div class="section-inner px-0">
-      <h1 #coreTitle class="block-title prehide" *ngIf="core[0]?.title">{{ core[0].title }}</h1>
+      <h1 #coreTitle class="block-title prehide" *ngIf="core[0]?.title">
+        {{ core[0].title }}
+      </h1>
+
       <div #coreGrid class="core-grid px-0" [class.prehide]="!coreReady">
+        <!-- Colonne gauche : texte intro -->
         <article #coreLeft class="core-block core-left">
           <div class="block-html" [innerHTML]="core[0].html"></div>
         </article>
+
+        <!-- Colonne droite : partenaire (carrousel) -->
         <aside
           #coreRight
           class="core-block core-right partners"
           [class.is-empty]="!activePartner"
-          (mouseenter)="stopAutoRotate()"
-          (mouseleave)="startAutoRotate()">
+        >
           <article class="member-card p-0">
             <div class="photo-tile">
               <img
                 [attr.src]="currentPhotoUrl || defaultPortrait"
                 [attr.alt]="'Portrait de ' + (activePartner?.nameFirst || '') + ' ' + (activePartner?.nameLast || '')"
-                loading="eager" fetchpriority="high" decoding="async"
-                (error)="onImgError($event)">
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+                (error)="onImgError($event)"
+              />
             </div>
+
             <div class="member-text pt-3">
-              <div class="member-area">{{ activePartner?.area || ' ' }}</div>
-              <div class="member-name">
-                <div class="first">{{ activePartner?.nameFirst || ' ' }}</div>
-                <div class="last">{{ activePartner?.nameLast || ' ' }}</div>
+              <div class="member-area">
+                {{ activePartner?.area || ' ' }}
               </div>
-              <div class="member-job" [innerHTML]="activePartner?.jobHtml || ''"></div>
+
+              <div class="member-name">
+                <div class="first">
+                  {{ activePartner?.nameFirst || ' ' }}
+                </div>
+                <div class="last">
+                  {{ activePartner?.nameLast || ' ' }}
+                </div>
+              </div>
+
+              <div
+                class="member-job"
+                [innerHTML]="activePartner?.jobHtml || ''">
+              </div>
             </div>
           </article>
         </aside>
@@ -34,30 +55,67 @@
     </div>
   </section>
 
-  <section class="section mesh" *ngIf="mesh?.title || mesh?.image || mesh?.levels?.length">
-    <div class="section-inner px-0">
-      <h2 #meshTitleEl class="mesh-title mb-5 prehide" *ngIf="mesh?.title">{{ mesh?.title }}</h2>
-      <div #meshSkylineEl class="mesh-skyline mt-5 prehide" *ngIf="mesh?.image">
-        <img [appImgFast]="mesh?.image || ''"
-             [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
-             loading="lazy" decoding="async" alt="" aria-hidden="true" />
-      </div>
-      <ul #meshLevelsEl class="mesh-levels" *ngIf="mesh?.levels?.length">
-        <li #meshLevelEl class="prehide" *ngFor="let l of mesh?.levels; trackBy: trackByIndex">{{ l }}</li>
-      </ul>
-    </div>
-  </section>
+  <!-- ========================= MESH (maillage) ========================= -->
+<section class="section mesh" *ngIf="mesh as ms">
+  <div class="section-inner px-0">
+    <h2
+      #meshTitleEl
+      class="mesh-title mb-5 prehide"
+      *ngIf="ms.title">
+      {{ ms.title }}
+    </h2>
 
+    <div
+      #meshSkylineEl
+      class="mesh-skyline mt-5 prehide"
+      *ngIf="ms.image">
+      <img
+        [appImgFast]="ms.image || ''"
+        [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+        loading="lazy"
+        decoding="async"
+        alt=""
+        aria-hidden="true"
+      />
+    </div>
+
+    <ul
+      #meshLevelsEl
+      class="mesh-levels prehide"
+      *ngIf="ms.levels?.length">
+      <li
+        #meshLevelEl
+        class="prehide"
+        *ngFor="let l of ms.levels; trackBy: trackByIndex">
+        {{ l }}
+      </li>
+    </ul>
+  </div>
+</section>
+
+
+  <!-- ========================= MAP (Où ?) ========================= -->
   <section class="section map-section" *ngIf="mapSection as ms">
     <div class="section-inner px-0">
       <div class="map-grid">
-        <div #mapImageEl class="map-image prehide">
-          <img [appImgFast]="ms.image || ''"
-               [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
-               loading="lazy" decoding="async" alt="Carte du Groupe ABC" />
+        <div #mapImageEl class="map-image prehide" *ngIf="ms.image">
+          <img
+            [appImgFast]="ms.image || ''"
+            [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+            loading="lazy"
+            decoding="async"
+            alt="Carte du Groupe ABC"
+          />
         </div>
+
         <div class="map-list ps-lg-0 ps-5">
-          <h2 #mapTitleEl class="map-title prehide" *ngIf="ms.title">{{ ms.title }}</h2>
+          <h2
+            #mapTitleEl
+            class="map-title prehide"
+            *ngIf="ms.title">
+            {{ ms.title }}
+          </h2>
+
           <ul *ngIf="ms.items?.length">
             <li
               #mapItem
@@ -68,7 +126,8 @@
               (click)="openRegion(item)"
               (keydown.enter)="openRegion(item)"
               (keydown.space)="openRegion(item)"
-              [attr.aria-label]="'Voir l’\u00A0équipe région ' + item">
+              [attr.aria-label]="'Voir l’équipe région ' + item"
+            >
               {{ item }}
             </li>
           </ul>
@@ -77,128 +136,254 @@
     </div>
   </section>
 
+  <!-- ========================= VALEURS ========================= -->
   <section class="section values" *ngIf="coreValues?.length">
     <div class="values-bg">
       <div class="values-layer active"></div>
     </div>
     <div class="section-inner">
-      <h2 #valuesTitleEl class="values-title prehide" *ngIf="coreValuesTitle">{{ coreValuesTitle }}</h2>
+      <h2
+        #valuesTitleEl
+        class="values-title prehide"
+        *ngIf="coreValuesTitle">
+        {{ coreValuesTitle }}
+      </h2>
+
       <ul class="values-grid" role="list">
-        <li #valueItemEl class="value-item prehide" *ngFor="let v of coreValues; index as i; trackBy: trackByIndex">
+        <li
+          #valueItemEl
+          class="value-item prehide"
+          *ngFor="let v of coreValues; index as i; trackBy: trackByIndex">
           <div class="icon-wrap">
-            <img [appImgFast]="v.iconUrl || ''"
-                 [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
-                 loading="lazy" decoding="async" alt="" aria-hidden="true" />
+            <img
+              [appImgFast]="v.iconUrl || ''"
+              [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+              loading="lazy"
+              decoding="async"
+              alt=""
+              aria-hidden="true"
+            />
           </div>
-          <h3 class="value-name" *ngIf="v.title">{{ v.title }}</h3>
-          <div class="value-desc" *ngIf="v.html" [innerHTML]="v.html"></div>
-          <span class="divider" *ngIf="i < coreValues.length - 1"></span>
+
+          <h3 class="value-name" *ngIf="v.title">
+            {{ v.title }}
+          </h3>
+
+          <div
+            class="value-desc"
+            *ngIf="v.html"
+            [innerHTML]="v.html">
+          </div>
+
+          <span
+            class="divider"
+            *ngIf="i < coreValues.length - 1">
+          </span>
         </li>
       </ul>
     </div>
   </section>
 
+  <!-- ========================= AFFILIATIONS ========================= -->
   <section class="section affiliations" *ngIf="affiliations?.length">
     <div class="section-inner px-0">
-      <h2 #affTitleEl class="aff-title prehide" *ngIf="affTitle">{{ affTitle }}</h2>
+      <h2
+        #affTitleEl
+        class="aff-title prehide"
+        *ngIf="affTitle">
+        {{ affTitle }}
+      </h2>
+
       <ul class="aff-list" role="list">
         <li
           #affRowEl
           class="aff-row prehide-row py-2"
           *ngFor="let a of affiliations; let i = index; trackBy: trackByIndex"
-          [class.open]="affOpen[i]">
-          <div class="aff-line">
-            <img class="aff-logo" *ngIf="a.logo" [src]="a.logo || ''" alt="" loading="lazy" decoding="async" />
-            <div class="aff-name" *ngIf="a.excerpt as n">
-              <span class="aff-abbr">{{ splitAffName(n).abbr }} : </span>
-              <span class="aff-label">{{ splitAffName(n).label }}</span>
-            </div>
-            <button class="aff-toggle" type="button" [attr.aria-expanded]="affOpen[i] ? 'true':'false'" (click)="toggleAff(i)">
-              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              <span class="sr-only">{{ affOpen[i] ? 'Réduire' : 'Déployer' }}</span>
-            </button>
-          </div>
-          <div class="aff-desc" *ngIf="a.content && affOpen[i]">
-            <div class="aff-desc-inner" [innerHTML]="a.content"></div>
-          </div>
-        </li>
-      </ul>
-    </div>
-  </section>
-
-  <section class="section deon" *ngIf="deontology?.length">
-    <div class="section-inner px-0">
-      <h2 #deonTitleEl class="deon-title prehide" *ngIf="deonTitle">{{ deonTitle }}</h2>
-
-      <ul class="deon-list" role="list">
-        <li
-          #deonRowEl
-          class="deon-row prehide-row"
-          *ngFor="let d of deontology; let i = index; trackBy: trackByIndex"
-          [class.open]="deonOpen[i]"
+          [class.open]="affOpen[i]"
         >
-          <div class="deon-line">
-            <div class="deon-name">{{ d.title }}</div>
+          <div class="aff-line">
+            <img
+              class="aff-logo"
+              *ngIf="a.logo"
+              [src]="a.logo || ''"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+
+            <div class="aff-name" *ngIf="a.excerpt as n">
+              <span class="aff-abbr">
+                {{ splitAffName(n).abbr }} :
+              </span>
+              <span class="aff-label">
+                {{ splitAffName(n).label }}
+              </span>
+            </div>
 
             <button
-              class="deon-toggle"
+              class="aff-toggle"
               type="button"
-              [attr.aria-expanded]="deonOpen[i] ? 'true' : 'false'"
-              (click)="toggleDeon(i)"
-            >
+              [attr.aria-expanded]="affOpen[i] ? 'true':'false'"
+              (click)="toggleAff(i)">
               <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path
+                  d="M6 9l6 6 6-6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round" />
               </svg>
+              <span class="sr-only">
+                {{ affOpen[i] ? 'Réduire' : 'Déployer' }}
+              </span>
             </button>
           </div>
 
-          <div class="deon-desc" *ngIf="d.html && deonOpen[i]">
-            <div class="deon-desc-inner pe-5" [innerHTML]="d.html"></div>
-            <!-- Icône de téléchargement (si fichier présent) -->
-            <a
-              *ngIf="d.file"
-              class="deon-dl"
-              [attr.href]="d.file"
-              [attr.download]="isSameOrigin(d.file) ? safeDownloadName(d.file) : null"
-              [attr.target]="!isSameOrigin(d.file) ? '_blank' : null"
-              [attr.rel]="!isSameOrigin(d.file) ? 'noopener' : null"
-              [attr.aria-label]="(isEnglish() ? 'Download the document: ' : 'Télécharger le document : ') + d.title"
-            >
-              <img
-                class="dl-icon-img"
-                src="assets/icons/download.webp"
-                alt=""
-                width="48" height="56" loading="lazy"
-              />
-              <span class="dl-label">
-                {{ isEnglish() ? 'Download documentation' : 'Télécharger la documentation' }}
-              </span>
-            </a>
+          <div class="aff-desc" *ngIf="a.content && affOpen[i]">
+            <div
+              class="aff-desc-inner"
+              [innerHTML]="a.content">
+            </div>
           </div>
-
-
         </li>
       </ul>
     </div>
   </section>
 
+  <!-- ========================= DEONTOLOGIE ========================= -->
+  <section class="section deon" *ngIf="deontology?.length">
+  <div class="section-inner px-0">
+    <h2 #deonTitleEl class="deon-title prehide" *ngIf="deonTitle">
+      {{ deonTitle }}
+    </h2>
 
+    <ul class="deon-list" role="list">
+      <li #deonRowEl class="deon-row prehide-row"
+          *ngFor="let d of deontology; let i = index; trackBy: trackByIndex"
+          [class.open]="deonOpen[i]">
+        <div class="deon-line">
+          <div class="deon-name">{{ d.title }}</div>
+
+          <!-- Bouton téléchargement version "inline" (desktop + mobile fermé) -->
+          <a *ngIf="d.file"
+             class="deon-dl deon-dl--inline"
+             [attr.href]="d.file"
+             [attr.download]="isSameOrigin(d.file) ? safeDownloadName(d.file) : null"
+             [attr.target]="!isSameOrigin(d.file) ? '_blank' : null"
+             [attr.rel]="!isSameOrigin(d.file) ? 'noopener' : null"
+             [attr.aria-label]="(isEnglish() ? 'Download the document: ' : 'Télécharger le document : ') + d.title">
+            <img class="dl-icon-img" src="assets/icons/download.webp" alt="" width="35" height="46" loading="lazy" />
+            <span class="dl-label">
+              {{ isEnglish() ? 'Download documentation' : 'Télécharger la charte' }}
+            </span>
+          </a>
+
+          <button class="deon-toggle" type="button"
+                  [attr.aria-expanded]="deonOpen[i] ? 'true' : 'false'"
+                  (click)="toggleDeon(i)">
+            <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span class="sr-only">
+              {{ deonOpen[i] ? 'Réduire le texte de déontologie' : 'Afficher le texte de déontologie' }}
+            </span>
+          </button>
+        </div>
+
+        <div class="deon-desc" *ngIf="d.html && deonOpen[i]">
+          <div class="deon-desc-inner pe-5" [innerHTML]="d.html"></div>
+
+          <!-- Bouton téléchargement version "below" (mobile + ouvert) -->
+          <a *ngIf="d.file"
+             class="deon-dl deon-dl--below"
+             [attr.href]="d.file"
+             [attr.download]="isSameOrigin(d.file) ? safeDownloadName(d.file) : null"
+             [attr.target]="!isSameOrigin(d.file) ? '_blank' : null"
+             [attr.rel]="!isSameOrigin(d.file) ? 'noopener' : null"
+             [attr.aria-label]="(isEnglish() ? 'Download the document: ' : 'Télécharger le document : ') + d.title">
+            <img class="dl-icon-img" src="assets/icons/download.webp" alt="" width="35" height="46" loading="lazy" />
+            <span class="dl-label">
+              {{ isEnglish() ? 'Download documentation' : 'Télécharger la documentation' }}
+            </span>
+          </a>
+        </div>
+      </li>
+    </ul>
+  </div>
+</section>
+
+
+  <!-- ========================= TIMELINE ========================= -->
   <section class="section timeline" *ngIf="timeline.length">
-    <div class="timeline-bg"><div class="timeline-layer"></div></div>
+    <div class="timeline-bg">
+      <div class="timeline-layer"></div>
+    </div>
+
     <div class="section-inner px-0">
       <div class="tl-grid">
-        <span #tlRail class="tl-rail" aria-hidden="true"></span>
-        <h2 #tlTitleEl class="timeline-title prehide">{{ timelineTitle }}</h2>
+        <span
+          #tlRail
+          class="tl-rail"
+          aria-hidden="true">
+        </span>
+
+        <h2
+          #tlTitleEl
+          class="timeline-title prehide">
+          {{ timelineTitle }}
+        </h2>
+
         <ng-container *ngFor="let s of timeline; trackBy: trackByIndex">
-          <div #tlYearEl class="tl-year prehide">{{ s.year }}</div>
-          <div #tlBodyEl class="tl-body prehide">
-            <h2 class="tl-item-title" *ngIf="s.title">{{ s.title }}</h2>
-            <div class="tl-desc" *ngIf="s.html" [innerHTML]="s.html"></div>
+          <div
+            #tlYearEl
+            class="tl-year prehide">
+            {{ s.year }}
+          </div>
+
+          <div
+            #tlBodyEl
+            class="tl-body prehide">
+            <h2
+              class="tl-item-title"
+              *ngIf="s.title">
+              {{ s.title }}
+            </h2>
+
+            <div
+              class="tl-desc"
+              *ngIf="s.html"
+              [innerHTML]="s.html">
+            </div>
           </div>
         </ng-container>
       </div>
+    </div>
+  </section>
+
+  <!-- ========================= FAQ SEO-ONLY =========================
+       - Contenu rendu SSR dans le HTML initial
+       - Masqué visuellement via CSS (pas display:none)
+       - Sert de base au JSON-LD FAQPage dans applySeo()
+  ================================================================== -->
+  <section class="faq-seo" *ngIf="faqItems?.length">
+    <h2 class="faq-seo-title">
+      {{ isEnglish()
+        ? 'Frequently asked questions about ABC Group'
+        : 'Questions fréquentes sur le Groupe ABC'
+      }}
+    </h2>
+
+    <div class="faq-seo-list">
+      <article
+        class="faq-seo-item"
+        *ngFor="let f of faqItems; index as i">
+        <h3 class="faq-seo-question">
+          {{ f.q }}
+        </h3>
+        <p class="faq-seo-answer">
+          {{ f.a }}
+        </p>
+      </article>
     </div>
   </section>
 </div>

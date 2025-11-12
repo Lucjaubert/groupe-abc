@@ -25,11 +25,12 @@
 
           <article class="download" aria-label="Fiche des contacts du Groupe ABC">
             <a class="dl-link d-flex flex-nowrap align-items-end justify-content-lg-center gap-3 text-decoration-none prehide"
-              [class.disabled]="!contactsSheet.file"
-              [attr.href]="contactsSheet.file || null"
-              [attr.tabindex]="contactsSheet.file ? null : '-1'"
-              [attr.aria-disabled]="!contactsSheet.file ? 'true' : null"
-              download rel="noopener">
+               [class.disabled]="!contactsSheet.file"
+               [attr.href]="contactsSheet.file || null"
+               [attr.tabindex]="contactsSheet.file ? null : '-1'"
+               [attr.aria-disabled]="!contactsSheet.file ? 'true' : null"
+               download
+               rel="noopener">
               <div class="dl-text">
                 <div class="dl-line dl-line--hard">
                   Télécharger<br>
@@ -37,9 +38,13 @@
                   du <span class="dl-accent">Groupe ABC</span>
                 </div>
               </div>
-              <img class="dl-icon-img ms-3 flex-shrink-0"
-                  src="assets/icons/download.webp"
-                  alt="Télécharger" width="48" height="56" loading="lazy">
+              <img
+                class="dl-icon-img ms-3 flex-shrink-0"
+                src="assets/icons/download.webp"
+                alt="Télécharger"
+                width="48"
+                height="56"
+                loading="lazy">
             </a>
           </article>
         </div>
@@ -62,8 +67,7 @@
                 loading="lazy"
                 decoding="async"
                 alt=""
-                aria-hidden="true"
-              />
+                aria-hidden="true" />
             </div>
 
             <div class="fr-name">{{ f.name }}</div>
@@ -93,7 +97,9 @@
                 [attr.src]="f._partnerImgUrl || defaultPortrait"
                 (error)="onFirmImgError($event)"
                 alt=""
-                aria-hidden="true" />
+                aria-hidden="true"
+                loading="lazy"
+                decoding="async" />
 
               <div class="ff-person mt-4" *ngIf="f.partnerLastname || f.partnerFamilyname">
                 <div class="ff-person-name" *ngIf="f.partnerLastname">{{ f.partnerLastname }}</div>
@@ -105,15 +111,16 @@
                     *ngIf="f.organismLogoUrl"
                     [attr.src]="f.organismLogoUrl ? ('' + f.organismLogoUrl) : '/assets/fallbacks/image-placeholder.svg'"
                     alt=""
-                    aria-hidden="true" />
+                    aria-hidden="true"
+                    loading="lazy"
+                    decoding="async" />
                 </div>
 
                 <div class="ff-titles my-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>
-
               </div>
             </div>
 
-            <div class="fr-cta">
+            <div class="fr-cta" *ngIf="f.contactEmail || f.partnerLinkedin">
               <a class="btn-contact" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
                 <span>Contact</span>
                 <span class="ico-mail" aria-hidden="true">
@@ -135,7 +142,10 @@
               </a>
 
               <a class="lk" *ngIf="f.partnerLinkedin" [href]="f.partnerLinkedin" target="_blank" rel="noopener" aria-label="LinkedIn">
-                <!-- svg -->
+                <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+                  <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5h24.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
+                  <path d="M7 14.5833H12.4167V33H7V14.5833ZM9.692 12.417H9.662C8.045 12.417 7 11.212 7 9.707 7 8.17 8.078 7 9.724 7 11.371 7 12.386 8.17 12.417 9.707c0 1.504-1.046 2.71-2.725 2.71ZM33 33h-5.417V23.143c0-2.381-1.327-4.006-3.458-4.006-1.626 0-2.506 1.096-2.933 2.155-.156.38-.109 1.428-.109 1.959V33H15.667V14.583h5.416v2.834c.781-1.209 2.004-2.834 5.133-2.834 3.876 0 6.783 2.438 6.783 7.88V33Z" fill="#fff"/>
+                </svg>
               </a>
             </div>
           </div>
@@ -150,12 +160,18 @@
     <div class="section-teaching mt-lg-5">
       <h2 #teachingTitleEl class="teach-title prehide">{{ teachingTitle }}</h2>
 
-      <div #teachingIntroEl class="teach-intro prehide mt-5"
-           *ngIf="teachingIntroHtml" [innerHTML]="teachingIntroHtml"></div>
+      <div
+        #teachingIntroEl
+        class="teach-intro prehide mt-5"
+        *ngIf="teachingIntroHtml"
+        [innerHTML]="teachingIntroHtml">
+      </div>
 
       <ul class="teach-list" role="list">
-        <li #teachingRowEl class="teach-row prehide-row"
-            *ngFor="let c of teachingCourses; trackBy: trackByIndex">
+        <li
+          #teachingRowEl
+          class="teach-row prehide-row"
+          *ngFor="let c of teachingCourses; trackBy: trackByIndex">
 
           <!-- Colonne gauche -->
           <div class="teach-left">
@@ -165,15 +181,15 @@
                 [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
                 loading="lazy"
                 decoding="async"
-                alt=""
-              />
+                alt="" />
             </div>
 
             <div class="teach-school">
               <div class="ts-school-name">{{ c.schoolName }}</div>
               <div class="ts-level" *ngIf="c.programLevel">{{ c.programLevel }}</div>
-              <a class="ts-link" *ngIf="c.schoolUrl" [href]="c.schoolUrl"
-                 target="_blank" rel="noopener">Visiter le site</a>
+              <a class="ts-link" *ngIf="c.schoolUrl" [href]="c.schoolUrl" target="_blank" rel="noopener">
+                Visiter le site
+              </a>
             </div>
           </div>
 
@@ -183,13 +199,14 @@
               class="ts-photo"
               [attr.src]="c._speakerImgUrl || defaultPortrait"
               (error)="onTeachImgError($event)"
-              [alt]="c.speakerName || ''">
+              [alt]="c.speakerName || ''"
+              loading="lazy"
+              decoding="async">
 
             <div class="ts-person py-2">
               <div class="ts-name" *ngIf="c.speakerName">{{ c.speakerName }}</div>
 
-              <a class="lk" *ngIf="c.speakerLinkedin" [href]="c.speakerLinkedin"
-                 target="_blank" rel="noopener" aria-label="LinkedIn">
+              <a class="lk" *ngIf="c.speakerLinkedin" [href]="c.speakerLinkedin" target="_blank" rel="noopener" aria-label="LinkedIn">
                 <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
                   <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5h24.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
                   <path d="M7 14.5833H12.4167V33H7V14.5833ZM9.692 12.417H9.662C8.045 12.417 7 11.212 7 9.707 7 8.17 8.078 7 9.724 7 11.371 7 12.386 8.17 12.417 9.707c0 1.504-1.046 2.71-2.725 2.71ZM33 33h-5.417V23.143c0-2.381-1.327-4.006-3.458-4.006-1.626 0-2.506 1.096-2.933 2.155-.156.38-.109 1.428-.109 1.959V33H15.667V14.583h5.416v2.834c.781-1.209 2.004-2.834 5.133-2.834 3.876 0 6.783 2.438 6.783 7.88V33Z" fill="#fff"/>

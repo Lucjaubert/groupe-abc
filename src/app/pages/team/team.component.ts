@@ -45,6 +45,8 @@ type TeachingCourse = {
   _speakerImgUrl?: string;
 };
 
+type FaqItem = { q: string; a: string };
+
 @Component({
   selector: 'app-team',
   standalone: true,
@@ -53,8 +55,8 @@ type TeachingCourse = {
   styleUrls: ['./team.component.scss']
 })
 export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
-  private wp  = inject(WordpressService);
-  private seo = inject(SeoService);
+  private wp    = inject(WordpressService);
+  private seo   = inject(SeoService);
   private sanitizer = inject(DomSanitizer);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
@@ -78,8 +80,13 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   teachingIntroHtml: SafeHtml | '' = '';
   teachingCourses: TeachingCourse[] = [];
 
+  /* FAQ inline + langue */
+  faqItems: FaqItem[] = [];
+  faqOpen: boolean[] = [];
+  isEN = false;
+
   defaultPortrait = 'assets/fallbacks/portrait-placeholder.svg';
-  private defaultMap = 'assets/fallbacks/image-placeholder.svg';
+  defaultMap = 'assets/fallbacks/image-placeholder.svg';
 
   /* ===== Refs anims ===== */
   @ViewChild('heroTitleEl') heroTitleEl!: ElementRef<HTMLElement>;
@@ -112,6 +119,32 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private TEACHING_RANDOMIZE = true;
   private TEACHING_MAX_TRIES = 200;
+
+  /* ======= Préchargement borné (anti-OOM) ======= */
+  private MAX_PARALLEL_PRELOAD = 2;
+  private preloadQueue: string[] = [];
+  private preloadInFlight = 0;
+
+  private defer(fn: () => void) {
+    const ric = (window as any)?.requestIdleCallback as ((cb: () => void, opts?: any) => void) | undefined;
+    if (ric) ric(() => fn(), { timeout: 1500 });
+    else setTimeout(fn, 0);
+  }
+  private enqueuePreload(src: string) {
+    if (!src) return;
+    this.preloadQueue.push(src);
+    this.kickQueue();
+  }
+  private kickQueue() {
+    while (this.preloadInFlight < this.MAX_PARALLEL_PRELOAD && this.preloadQueue.length) {
+      const src = this.preloadQueue.shift()!;
+      this.preloadInFlight++;
+      this.preload(src).finally(() => {
+        this.preloadInFlight = Math.max(0, this.preloadInFlight - 1);
+        if (this.preloadQueue.length) this.kickQueue();
+      });
+    }
+  }
 
   /* ===== Helpers fail-safe ===== */
   private revealAllFailSafe(host?: HTMLElement){
@@ -193,6 +226,23 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /* ===== Init ===== */
   ngOnInit(): void {
+    // Détecte la langue pour FAQ + titres par défaut
+    this.isEN = this.currentPath().startsWith('/en/');
+
+    // FAQ courte (alignée JSON-LD)
+    const FAQ_FR: FaqItem[] = [
+      { q: 'Comment contacter l’expert de ma région ?', a: 'Utilisez la liste “Où ?” pour sélectionner votre région, puis ouvrez la fiche cabinet : un bouton “Contact” mail est disponible. Nous vous répondons sous 24–48 h.' },
+      { q: 'Intervenez-vous sur tout le territoire ?', a: 'Oui, métropole et Outre-mer. Nous mandatons l’expert le plus proche du dossier lorsque la connaissance du marché local est déterminante.' },
+      { q: 'Vos experts sont-ils certifiés ?', a: 'Les membres du Groupe ABC sont des experts indépendants, membres de réseaux professionnels (RICS, IFEI, CNEJI) et rompus aux missions amiables et judiciaires.' }
+    ];
+    const FAQ_EN: FaqItem[] = [
+      { q: 'How do I contact the expert in my area?', a: 'Use the “Where?” list to pick your region, open the firm row, then click the “Contact” email button. We reply within 24–48h.' },
+      { q: 'Do you operate nationwide?', a: 'Yes, across mainland France and Overseas territories. We assign the closest expert when deep local knowledge is required.' },
+      { q: 'Are your experts certified?', a: 'Groupe ABC experts are independent members of professional bodies (RICS, IFEI, CNEJI) with strong experience in amicable and judicial contexts.' }
+    ];
+    this.faqItems = this.isEN ? FAQ_EN : FAQ_FR;
+    this.faqOpen  = new Array(this.faqItems.length).fill(false);
+
     this.wp.getTeamData().subscribe({
       next: (root: any) => {
         (async () => {
@@ -200,7 +250,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             const acf = root?.acf ?? {};
 
             /* HERO */
-            this.heroTitle = acf?.hero?.section_title || 'Équipes';
+            this.heroTitle = acf?.hero?.section_title || (this.isEN ? 'Team' : 'Équipes');
             this.heroIntroHtml = this.sanitizeTrimParagraphs(acf?.hero?.intro_body || '');
 
             /* MAP (liste des régions) */
@@ -211,11 +261,15 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             ]
               .filter((s: any) => (s || '').toString().trim())
               .map((s: string) => s.trim());
-            this.mapSection = { title: ms?.section_title || 'Où ?', image: ms?.map_image || '', items };
+            this.mapSection = {
+              title: ms?.section_title || (this.isEN ? 'Where?' : 'Où ?'),
+              image: ms?.map_image || '',
+              items
+            };
 
             /* FIRMS */
             const fr = acf?.firms ?? {};
-            this.firmsTitle = fr?.section_title || 'Les membres du Groupe ABC';
+            this.firmsTitle = fr?.section_title || (this.isEN ? 'Groupe ABC members' : 'Les membres du Groupe ABC');
 
             // PDF contacts
             try {
@@ -260,7 +314,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
             /* TEACHING */
             const teaching = acf?.teaching ?? {};
-            this.teachingTitle = teaching?.section_title || 'Enseignement & formation';
+            this.teachingTitle = teaching?.section_title || (this.isEN ? 'Teaching & training' : 'Enseignement & formation');
             this.teachingIntroHtml = this.sanitizeTrimParagraphs(teaching?.intro_body || '');
 
             const toCourse = (ci: any): TeachingCourse | null => {
@@ -274,7 +328,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
                 speakerName     : (ci.speaker_name || '').trim(),
                 speakerPhotoUrl : ci.speaker_photo,
                 speakerLinkedin : (ci.speaker_linkedin_url || '').trim(),
-                schoolUrl       : (ci.school_url || '').trim(),
+                schoolUrl       : (ci.school_url || '').trim()
               };
               return (c.schoolName || c.courseTitle) ? c : null;
             };
@@ -286,13 +340,15 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
               if (mapped) courses.push(mapped);
             }
 
-            // backfill des photos intervenant depuis firms si mêmes noms
+            // backfill photos intervenant depuis firms
             if (courses.length && this.firms.length){
               const norm = (s: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
               courses.forEach(c => {
                 if (!c.speakerPhotoUrl && c.speakerName){
                   const needle = norm(`${c.speakerName}`);
-                  const match = this.firms.find(f => norm(`${f.partnerLastname || ''} ${f.partnerFamilyname || ''}`) === needle);
+                  const match = this.firms.find(f =>
+                    norm(`${f.partnerLastname || ''} ${f.partnerFamilyname || ''}`) === needle
+                  );
                   if (match?.partnerImageUrl) c.speakerPhotoUrl = match.partnerImageUrl;
                 }
               });
@@ -307,11 +363,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             /* Images */
             await this.hydrateImages();
 
-            /* SEO */
+            /* SEO (+ FAQ JSON-LD) */
             const introText = (acf?.hero?.intro_body || '').toString();
             this.applySeo(introText);
 
-            // Ouverture auto si ?region=xxx
+            // ?region=xxx
             this.applyRegionFromUrl();
 
             this.scheduleBind();
@@ -337,7 +393,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     return hdr ? Math.ceil(hdr.getBoundingClientRect().height) : 0;
   }
 
-  /** Fait défiler la page pour amener la ligne i en haut de la fenêtre */
   private scrollFirmRowIntoView(i: number): void {
     const rows = this.firmRowEls?.toArray() ?? [];
     const row = rows[i]?.nativeElement;
@@ -353,7 +408,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /** Enchaîne ouverture + (option) remontée en tête + scroll */
   private openAndScrollTo(i: number): void {
     this.moveFirmToTop(i);
     this.openFirmIndex = 0;
@@ -363,8 +417,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /* ===== Accordéon ===== */
   private firmHasDetails(f: Firm): boolean {
-    return !!(f.partnerDescHtml || f.partnerImageUrl || f.partnerLastname || f.partnerFamilyname ||
-              f.titlesHtml || f.contactEmail || f.partnerLinkedin || f.organismLogoUrl);
+    return !!(
+      f.partnerDescHtml || f.partnerImageUrl || f.partnerLastname || f.partnerFamilyname ||
+      f.titlesHtml || f.contactEmail || f.partnerLinkedin || f.organismLogoUrl
+    );
   }
 
   toggleFirm(i: number){
@@ -384,10 +440,24 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.openAndScrollTo(i);
+
+    const nf = this.firms[0];
+    if (nf) {
+      if (nf._partnerImgUrl) this.defer(() => this.enqueuePreload(nf._partnerImgUrl!));
+      if (nf.logoUrl) this.defer(() => this.enqueuePreload(nf.logoUrl as string));
+      if (nf.organismLogoUrl) this.defer(() => this.enqueuePreload(nf.organismLogoUrl as string));
+    }
   }
 
   isOpen(i: number){ return this.openFirmIndex === i; }
   chevronAriaExpanded(i: number){ return this.isOpen(i) ? 'true' : 'false'; }
+
+  /* ===== FAQ ===== */
+  toggleFaq(i: number){
+    const willOpen = !this.faqOpen[i];
+    this.faqOpen.fill(false);
+    if (willOpen) this.faqOpen[i] = true;
+  }
 
   /* ===== Utils ===== */
   trackByIndex(i: number){ return i; }
@@ -466,7 +536,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     return null;
   }
 
-  /* ======= Média : résolution + préchargement ======= */
+  /* ======= Média : résolution + préchargement borné ======= */
   private async resolveMedia(idOrUrl: any): Promise<string> {
     if (!idOrUrl) return '';
 
@@ -508,37 +578,42 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.mapSection?.image) {
       const u = await this.resolveMedia(this.mapSection.image);
       this.mapSection.image = u || this.defaultMap;
+      this.defer(() => this.enqueuePreload(this.mapSection!.image as string));
     }
 
     // FIRMS
-    await Promise.all(this.firms.map(async f => {
-      const partner = await this.resolveMedia(f.partnerImageUrl);
-      const finalPartner = partner || this.defaultPortrait;
-      await this.preload(finalPartner);
-      (f as any)._partnerImgUrl = finalPartner;
+    for (const f of this.firms) {
+      if (f.partnerImageUrl) {
+        const partner = await this.resolveMedia(f.partnerImageUrl);
+        (f as any)._partnerImgUrl = partner || this.defaultPortrait;
+      } else {
+        (f as any)._partnerImgUrl = this.defaultPortrait;
+      }
 
-      if (f.logoUrl) {
-        const logo = await this.resolveMedia(f.logoUrl);
-        f.logoUrl = logo || f.logoUrl || '';
-      }
-      if (f.organismLogoUrl) {
-        const org = await this.resolveMedia(f.organismLogoUrl);
-        f.organismLogoUrl = org || f.organismLogoUrl || '';
-      }
-    }));
+      if (f.logoUrl)         f.logoUrl         = await this.resolveMedia(f.logoUrl)         || f.logoUrl         || '';
+      if (f.organismLogoUrl) f.organismLogoUrl = await this.resolveMedia(f.organismLogoUrl) || f.organismLogoUrl || '';
+    }
 
     // TEACHING
-    await Promise.all(this.teachingCourses.map(async c => {
+    for (let i = 0; i < this.teachingCourses.length; i++) {
+      const c = this.teachingCourses[i];
       const sp = await this.resolveMedia(c.speakerPhotoUrl);
-      const finalSpeaker = sp || this.defaultPortrait;
-      await this.preload(finalSpeaker);
-      (c as any)._speakerImgUrl = finalSpeaker;
+      (c as any)._speakerImgUrl = sp || this.defaultPortrait;
 
-      if (c.schoolLogoUrl) {
-        const sl = await this.resolveMedia(c.schoolLogoUrl);
-        c.schoolLogoUrl = sl || c.schoolLogoUrl || '';
+      if (c.schoolLogoUrl) c.schoolLogoUrl = await this.resolveMedia(c.schoolLogoUrl) || c.schoolLogoUrl || '';
+
+      if (i < 2 && (c as any)._speakerImgUrl) {
+        this.defer(() => this.enqueuePreload((c as any)._speakerImgUrl as string));
       }
-    }));
+    }
+
+    // précharge row ouverte
+    if (this.openFirmIndex != null && this.firms[this.openFirmIndex]) {
+      const f = this.firms[this.openFirmIndex];
+      if (f._partnerImgUrl)   this.defer(() => this.enqueuePreload(f._partnerImgUrl!));
+      if (f.logoUrl)          this.defer(() => this.enqueuePreload(f.logoUrl as string));
+      if (f.organismLogoUrl)  this.defer(() => this.enqueuePreload(f.organismLogoUrl as string));
+    }
   }
 
   /* ================= Animations ================= */
@@ -569,7 +644,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private bindAnimations(): void {
     const host = (document.querySelector('.team-wrapper') as HTMLElement) || document.body;
     this.forceInitialHidden(host);
-    try { ScrollTrigger.getAll().forEach(t => t.kill()); } catch {}
 
     const EASE = 'power3.out';
     const rmPrehide = (els: Element | Element[] | null | undefined) => {
@@ -577,11 +651,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       (Array.isArray(els) ? els : [els]).forEach(el => el?.classList?.remove('prehide','prehide-row'));
     };
 
-    /* ---------- HERO ---------- */
+    /* HERO */
     const h1 = this.heroTitleEl?.nativeElement || null;
     const hi = this.heroIntroEl?.nativeElement || null;
 
-    /* ---------- FIRMS ---------- */
+    /* FIRMS */
     const bar  = this.firmsBarEl?.nativeElement as HTMLElement | null;
     const h2   = this.firmsTitleEl?.nativeElement as HTMLElement | null;
     const link = bar?.querySelector('.dl-link') as HTMLElement | null;
@@ -589,19 +663,18 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const rows = (this.firmRowEls?.toArray() || []).map(r => r.nativeElement);
     const listWrap = rows[0]?.closest('.firm-list') as HTMLElement | null;
 
-    /* ---------- TEACHING ---------- */
+    /* TEACHING */
     const tt = this.teachingTitleEl?.nativeElement || null;
     const ti = this.teachingIntroEl?.nativeElement || null;
     const trows = (this.teachingRowEls?.toArray() || []).map(r => r.nativeElement);
     const tlist = (trows.length ? trows[0].closest('.teach-list') : null) as HTMLElement | null;
 
-    /* ---------- MAP ---------- */
+    /* MAP */
     const mt = this.mapTitleEl?.nativeElement || null;
     const mi = this.mapImageEl?.nativeElement || null;
     const mapListEl = document.querySelector('.where-panel') as HTMLElement | null;
     const mapItems = Array.from(mapListEl?.querySelectorAll<HTMLElement>('a.where-link') || []);
 
-    // ---------- FONCTIONS UTILITAIRES ----------
     const playFirmList = () => {
       if (!listWrap || !rows.length) return;
       gsap.set(rows, { autoAlpha: 0, y: 12 });
@@ -616,13 +689,15 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const playTeaching = () => {
       if (tt) {
         rmPrehide(tt);
-        gsap.fromTo(tt, { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: .5, ease: EASE,
+        gsap.fromTo(tt, { autoAlpha: 0, y: 16 }, {
+          autoAlpha: 1, y: 0, duration: .5, ease: EASE,
           onComplete: () => { gsap.set(tt, { clearProps: 'all' }); }
         });
       }
       if (ti) {
         rmPrehide(ti);
-        gsap.fromTo(ti, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .5, ease: EASE,
+        gsap.fromTo(ti, { autoAlpha: 0, y: 14 }, {
+          autoAlpha: 1, y: 0, duration: .5, ease: EASE,
           onComplete: () => { gsap.set(ti, { clearProps: 'all' }); }
         });
       }
@@ -640,13 +715,15 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const playMap = () => {
       if (mi) {
         rmPrehide(mi);
-        gsap.fromTo(mi, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .5, ease: EASE,
+        gsap.fromTo(mi, { autoAlpha: 0, y: 14 }, {
+          autoAlpha: 1, y: 0, duration: .5, ease: EASE,
           onComplete: () => { gsap.set(mi, { clearProps: 'all' }); }
         });
       }
       if (mt) {
         rmPrehide(mt);
-        gsap.fromTo(mt, { autoAlpha: 0, y: 16 }, { autoAlpha: 1, y: 0, duration: .5, ease: EASE,
+        gsap.fromTo(mt, { autoAlpha: 0, y: 16 }, {
+          autoAlpha: 1, y: 0, duration: .5, ease: EASE,
           onComplete: () => { gsap.set(mt, { clearProps: 'all' }); }
         });
       }
@@ -662,10 +739,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     };
 
-    // ---------- TIMELINE PRINCIPALE ----------
     const tl = gsap.timeline({ defaults: { ease: EASE } });
 
-    // 1) HERO H1
+    // HERO
     if (h1 && !this.heroPlayed) {
       rmPrehide(h1);
       tl.fromTo(h1, { autoAlpha: 0, y: 16 }, {
@@ -674,7 +750,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    // 2) HERO intro
     if (hi) {
       rmPrehide(hi);
       tl.fromTo(hi, { autoAlpha: 0, y: 14 }, {
@@ -682,7 +757,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       }, '>-0.10').add(() => { gsap.set(hi, { clearProps: 'all' }); }, '>');
     }
 
-    // 3) Titlebar des firms
+    // Titlebar firms
     if (bar) {
       if (!this.firmsTitlebarPlayed) {
         if (h2) rmPrehide(h2);
@@ -698,7 +773,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    // 4) Liste des firms
+    // Liste firms
     if (listWrap && rows.length && !this.firmListPlayed) {
       const isNearView = listWrap.getBoundingClientRect().top < (window.innerHeight * 0.95);
       const playOnce = () => { playFirmList(); this.firmListPlayed = true; };
@@ -719,7 +794,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       gsap.set(rows, { autoAlpha: 1, y: 0, clearProps: 'transform,opacity' });
     }
 
-    // 5) TEACHING
+    // Teaching
     if (tt || ti || (tlist && trows.length)) {
       const triggerEl = tlist || tt || ti;
       if (triggerEl) {
@@ -732,7 +807,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    // 6) MAP
+    // Map
     if (mi || mt || (mapListEl && mapItems.length)) {
       const triggerEl = mi || mt || mapListEl;
       if (triggerEl) {
@@ -745,7 +820,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    // 7) Détails de la row ouverte
+    // Détail row ouverte
     const openDetail = document.querySelector('.firm-row.open .fr-details') as HTMLElement | null;
     if (openDetail){
       const left  = openDetail.querySelector('.ff-left') as HTMLElement | null;
@@ -755,8 +830,12 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       if (parts.length) {
         if (this.animateDetailOnFirstLoad && !this.skipDetailAnimNextBind) {
           rmPrehide(parts);
-          tl.fromTo(left,  { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .45, immediateRender: false }, '>-0.10')
-            .fromTo(right, { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: .45, immediateRender: false }, '>-0.36');
+          tl.fromTo(left,  { autoAlpha: 0, y: 14 }, {
+            autoAlpha: 1, y: 0, duration: .45, immediateRender: false
+          }, '>-0.10')
+            .fromTo(right, { autoAlpha: 0, y: 14 }, {
+              autoAlpha: 1, y: 0, duration: .45, immediateRender: false
+            }, '>-0.36');
           this.animateDetailOnFirstLoad = false;
         } else {
           rmPrehide(parts);
@@ -774,9 +853,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const path = this.currentPath();
     const isEN = path.startsWith('/en/');
 
-    const siteUrl = (environment.siteUrl || '').replace(/\/+$/,'') || 'https://groupe-abc.fr';
-    const pathFR = '/equipes';
-    const pathEN = '/en/team';
+    const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/,'');
+    const pathFR  = '/equipes';
+    const pathEN  = '/en/team';
     const canonPath = isEN ? pathEN : pathFR;
     const canonicalAbs = this.normalizeUrl(siteUrl, canonPath);
 
@@ -788,8 +867,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const orgName = 'Groupe ABC';
 
-    const orgBlurbFR = 'Le Groupe ABC est un groupement d’Experts immobiliers indépendants présent à Paris, en Régions et DOM-TOM (6 cabinets, 20+ collaborateurs), intervenant en amiable et judiciaire pour tous types de biens : résidentiel, commercial, tertiaire, industriel, hôtellerie, loisirs, santé, charges foncières et terrains. Les experts sont membres RICS, IFEI et CNEJI.';
-    const orgBlurbEN = 'Groupe ABC is a network of independent real-estate valuation experts across Paris, Regions and Overseas (6 firms, 20+ professionals), acting in amicable and judicial contexts for residential, commercial, office, industrial, hospitality, leisure & healthcare assets, land and development rights. Members of RICS, IFEI and CNEJI.';
+    const orgBlurbFR =
+      'Le Groupe ABC est un groupement d’Experts immobiliers indépendants présent à Paris, en Régions et DOM-TOM, intervenant en amiable et judiciaire pour tous types de biens.';
+    const orgBlurbEN =
+      'Groupe ABC is a network of independent real-estate valuation experts across Paris, Regions and Overseas, acting in amicable and judicial contexts for all asset classes.';
 
     const introShort = this.strip(rawIntro, 110);
     const title = isEN ? `Our team – ${orgName}` : `Équipes – ${orgName}`;
@@ -800,57 +881,52 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const ogImage = '/assets/og/og-default.jpg';
     const ogAbs   = this.absUrl(ogImage, siteUrl);
-    const isDefaultOg = ogImage.endsWith('/og-default.jpg');
+    const isDefaultOg = ogAbs.endsWith('/og-default.jpg');
 
-    const siteId = siteUrl + '#website';
-    const orgId  = siteUrl + '#organization';
+    const siteId = `${siteUrl}#website`;
+    const orgId  = `${siteUrl}#org`;
 
-    const organization = {
-      '@type': 'Organization',
-      '@id': orgId,
-      name: orgName,
-      url: siteUrl,
-      logo: `${siteUrl}/assets/favicons/android-chrome-512x512.png`,
-      sameAs: ['https://www.linkedin.com/company/groupe-abc']
-    };
-
-    const website = {
-      '@type': 'WebSite',
-      '@id': siteId,
-      url: siteUrl,
-      name: orgName,
-      inLanguage: isEN ? 'en-US' : 'fr-FR',
-      publisher: { '@id': orgId },
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: `${siteUrl}/?s={search_term_string}`,
-        'query-input': 'required name=search_term_string'
-      }
-    };
-
+    // Page "Équipes" en CollectionPage
     const collectionPage = {
       '@type': 'CollectionPage',
+      '@id': `${canonicalAbs}#webpage`,
+      url: canonicalAbs,
       name: title,
       description,
-      url: canonicalAbs,
       inLanguage: isEN ? 'en-US' : 'fr-FR',
       isPartOf: { '@id': siteId },
       about: { '@id': orgId },
-      primaryImageOfPage: ogAbs
+      primaryImageOfPage: {
+        '@type': 'ImageObject',
+        url: ogAbs
+      }
     };
 
     const breadcrumb = {
       '@type': 'BreadcrumbList',
+      '@id': `${canonicalAbs}#breadcrumb`,
       itemListElement: [
-        { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: siteUrl },
+        { '@type': 'ListItem', position: 1, name: isEN ? 'Home' : 'Accueil', item: `${siteUrl}/` },
         { '@type': 'ListItem', position: 2, name: isEN ? 'Team' : 'Équipes', item: canonicalAbs }
       ]
+    };
+
+    // FAQ JSON-LD basée sur faqItems
+    const faq = {
+      '@type': 'FAQPage',
+      '@id': `${canonicalAbs}#faq`,
+      mainEntity: this.faqItems.map(f => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a }
+      }))
     };
 
     this.seo.update({
       title,
       description,
-      canonical: canonicalAbs,            // absolu
+      canonical: canonicalAbs,
+      robots: 'index,follow',
       image: ogAbs,
       imageAlt: isEN ? `${orgName} – Team` : `${orgName} – Équipes`,
       ...(isDefaultOg ? { imageWidth: 1200, imageHeight: 630 } : {}),
@@ -859,7 +935,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       alternates,
       jsonLd: {
         '@context': 'https://schema.org',
-        '@graph': [website, organization, collectionPage, breadcrumb]
+        '@graph': [
+          collectionPage,
+          breadcrumb,
+          faq
+        ]
       }
     });
   }
@@ -882,7 +962,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     try { return window?.location?.pathname || '/'; } catch { return '/'; }
   }
 
-  /* ========= NEW: shuffle Teaching avec contrainte no-adjacent ========= */
+  /* ========= Teaching shuffle helper ========= */
   private speakerKey(c?: TeachingCourse | null): string {
     const n = this.norm((c?.speakerName || '').toString());
     return n;
