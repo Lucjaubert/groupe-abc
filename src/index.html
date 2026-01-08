@@ -2,7 +2,7 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <title>Groupe ABC</title>
+    <title>Expertise immobilière nationale – Valeur vénale & locative certifiée</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#444697" />
@@ -10,8 +10,11 @@
     <!-- Google Search Console -->
     <meta name="google-site-verification" content="vVZ7W-srvDTqDhQh7rH3PMjrkh1oZdbwy0sujaH_C40" />
 
-    <!-- Fallback générique (SeoService/SSR surchargera par page) -->
-    <meta name="description" content="Groupe ABC : réseau national d’experts en évaluation immobilière." />
+    <!-- Fallback générique (SSR/SeoService surchargera par page) -->
+    <meta
+      name="description"
+      content="Experts agréés en évaluation immobilière sur tout le territoire. Rapports conformes à la Charte de l’expertise et aux standards RICS."
+    />
     <meta name="robots" content="index,follow,max-image-preview:large" />
 
     <!-- Favicons -->
@@ -59,13 +62,29 @@
     <!-- Open Graph (fallback global) -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Groupe ABC" />
+    <meta
+      property="og:title"
+      content="Expertise immobilière nationale – Valeur vénale & locative certifiée"
+    />
+    <meta
+      property="og:description"
+      content="Experts agréés en évaluation immobilière sur tout le territoire. Rapports conformes à la Charte de l’expertise et aux standards RICS."
+    />
     <meta property="og:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
 
     <!-- Twitter (fallback global) -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Expertise immobilière nationale – Valeur vénale & locative certifiée"
+    />
+    <meta
+      name="twitter:description"
+      content="Experts agréés en évaluation immobilière sur tout le territoire. Rapports conformes à la Charte de l’expertise et aux standards RICS."
+    />
     <meta name="twitter:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
 
-    <!-- Pas de canonical/hreflang ici : gérés dynamiquement par SeoService/SSR -->
+    <!-- Pas de canonical/hreflang ici : gérés dynamiquement par SSR/SeoService -->
 
     <!-- JSON-LD Organization sitewide -->
     <script type="application/ld+json" id="ld-sitewide">
@@ -101,9 +120,9 @@
                 originalLanguage: 'fr',
                 destinationLanguages: ['en'],
                 dynamic: true,
-                translateMeta: false,   // balises gérées par SSR/SeoService
-                hrefLang: false,        // hreflang géré par SSR/SeoService
-                redirect: false,        // pas de redirection auto : URLs / et /en/ gérées par Angular
+                translateMeta: false,
+                hrefLang: false,
+                redirect: false,
                 translateAttributes: ['alt','title','placeholder','aria-label'],
                 excludedPaths: [
                   '/wordpress/wp-json*','/wp-json*',

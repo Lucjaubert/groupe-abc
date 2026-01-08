@@ -1,8 +1,9 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { Component, OnInit, inject, PLATFORM_ID } from '@angular/core';
 import { Router, RouterModule } from '@angular/router';
+
 import { SeoService } from '../../services/seo.service';
-import { environment } from '../../../environments/environment';
+import { getSeoForRoute } from '../../config/seo.routes';
 
 @Component({
   selector: 'app-mentions-legales',
@@ -12,9 +13,9 @@ import { environment } from '../../../environments/environment';
   styleUrls: ['./mentions-legales.component.scss'],
 })
 export class MentionsLegalesComponent implements OnInit {
-  private seo        = inject(SeoService);
   private router     = inject(Router);
   private platformId = inject(PLATFORM_ID);
+  private seo        = inject(SeoService);
 
   // Titres SSR-ready (FR/EN)
   pageTitle    = 'Mentions légales';
@@ -34,89 +35,8 @@ export class MentionsLegalesComponent implements OnInit {
       this.pageSubtitle = 'Informations légales du Groupe ABC';
     }
 
-    const siteUrl = (environment.siteUrl || '').replace(/\/+$/, '') || 'https://groupe-abc.fr';
-    const pathFR  = '/mentions-legales';
-    const pathEN  = '/en/legal-notice';
-
-    const canonicalAbs = this.isEN ? `${siteUrl}${pathEN}` : `${siteUrl}${pathFR}`;
-    const lang         = this.isEN ? 'en'    : 'fr';
-    const locale       = this.isEN ? 'en_US' : 'fr_FR';
-    const localeAlt    = this.isEN ? ['fr_FR'] : ['en_US'];
-
-    const alternates = [
-      { lang: 'fr',        href: `${siteUrl}${pathFR}` },
-      { lang: 'en',        href: `${siteUrl}${pathEN}` },
-      { lang: 'x-default', href: `${siteUrl}${pathFR}` },
-    ];
-
-    const titleFR = 'Mentions légales – Groupe ABC';
-    const titleEN = 'Legal notice – Groupe ABC';
-    const descFR  =
-      'Informations et mentions légales du site groupe-abc.fr (éditeur, hébergement, médiation, propriété intellectuelle, cookies, données personnelles).';
-    const descEN  =
-      'Legal information for groupe-abc.fr (publisher, hosting, mediation, intellectual property, cookies, personal data).';
-
-    const title = this.isEN ? titleEN : titleFR;
-    const description = this.isEN ? descEN : descFR;
-
-    const ogAbs = `${siteUrl}/assets/og/og-default.jpg`;
-
-    // IDs alignés sur le setSitewideJsonLd global (app.component)
-    const siteId = `${siteUrl}#website`;
-    const orgId  = `${siteUrl}#org`;
-
-    const webPage = {
-      '@type': 'WebPage',
-      '@id': `${canonicalAbs}#webpage`,
-      url: canonicalAbs,
-      name: title,
-      description,
-      inLanguage: this.isEN ? 'en-US' : 'fr-FR',
-      isPartOf: { '@id': siteId },
-      about: { '@id': orgId },
-      primaryImageOfPage: ogAbs,
-    };
-
-    const breadcrumb = {
-      '@type': 'BreadcrumbList',
-      '@id': `${canonicalAbs}#breadcrumb`,
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: this.isEN ? 'Home' : 'Accueil',
-          item: siteUrl + '/',
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: this.isEN ? 'Legal notice' : 'Mentions légales',
-          item: canonicalAbs,
-        },
-      ],
-    };
-
-    this.seo.update({
-      title,
-      description,
-      lang,
-      locale,
-      localeAlt,
-      canonical: canonicalAbs,
-      robots: 'index,follow',
-      image: ogAbs,
-      imageAlt: this.isEN
-        ? 'Groupe ABC – Legal notice'
-        : 'Groupe ABC – Mentions légales',
-      imageWidth: 1200,
-      imageHeight: 630,
-      type: 'website',
-      alternates,
-      jsonLd: {
-        '@context': 'https://schema.org',
-        '@graph': [webPage, breadcrumb],
-      },
-    });
+    // SEO centralisé
+    this.applySeoFromConfig();
   }
 
   private currentPath(): string {
@@ -132,5 +52,85 @@ export class MentionsLegalesComponent implements OnInit {
       }
     }
     return this.router?.url || '/';
+  }
+
+  /* ========================= SEO centralisé ========================= */
+
+  private applySeoFromConfig(): void {
+    const lang: 'fr' | 'en' = this.isEN ? 'en' : 'fr';
+
+    // ⚠️ Adapte 'legal' au key réel dans ton seo.routes si besoin
+    const baseSeo = getSeoForRoute('legal', lang);
+
+    const canonical = (baseSeo.canonical || '').replace(/\/+$/, '');
+    let origin = 'https://groupe-abc.fr';
+
+    try {
+      if (canonical) {
+        const u = new URL(canonical);
+        origin = `${u.protocol}//${u.host}`;
+      }
+    } catch {
+      // fallback sur domaine par défaut
+    }
+
+    const website = {
+      '@type': 'WebSite',
+      '@id': `${origin}#website`,
+      url: origin,
+      name: 'Groupe ABC',
+      inLanguage: lang === 'en' ? 'en-US' : 'fr-FR',
+    };
+
+    const organization = {
+      '@type': 'Organization',
+      '@id': `${origin}#organization`,
+      name: 'Groupe ABC',
+      url: origin,
+      sameAs: [
+        'https://www.linkedin.com/company/groupe-abc-experts/',
+      ],
+    };
+
+    const webpage = {
+      '@type': 'WebPage',
+      '@id': `${canonical || origin}#webpage`,
+      url: canonical || origin,
+      name: baseSeo.title,
+      description: baseSeo.description,
+      inLanguage: lang === 'en' ? 'en-US' : 'fr-FR',
+      isPartOf: { '@id': `${origin}#website` },
+    };
+
+    const breadcrumb = {
+      '@type': 'BreadcrumbList',
+      '@id': `${canonical || origin}#breadcrumb`,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: lang === 'en' ? 'Home' : 'Accueil',
+          item: origin,
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: lang === 'en' ? 'Legal notice' : 'Mentions légales',
+          item:
+            canonical ||
+            `${origin}${
+              lang === 'en' ? '/en/legal-notice' : '/mentions-legales'
+            }`,
+        },
+      ],
+    };
+
+    this.seo.update({
+      ...baseSeo,
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@graph': [website, organization, webpage, breadcrumb],
+      },
+    });
   }
 }

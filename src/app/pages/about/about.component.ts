@@ -1,4 +1,3 @@
-// src/app/pages/about/about.component.ts
 import {
   Component,
   OnInit,
@@ -16,11 +15,13 @@ import { RouterModule, Router } from '@angular/router';
 import { forkJoin, firstValueFrom } from 'rxjs';
 import { WordpressService, PartnerCard } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
+import { getSeoForRoute } from '../../config/seo.routes';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
+import { FaqService } from '../../services/faq.service';
+import { getFaqForRoute, FaqItem } from '../../config/faq.routes';
 
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { environment } from '../../../environments/environment';
 
 /* =========================
  * Types locaux
@@ -35,35 +36,6 @@ type DeonItem = { title?: string; html?: string; file?: string | null };
 type Mesh = { title?: string; image?: string; levels: string[] };
 type MapSection = { title?: string; image?: string; items: string[] };
 type ValueItem = { title: string; html: string; iconUrl: string };
-
-/** FAQ inline dédiée à la page (SSR + visible dans le HTML source, masquée en front via CSS) */
-type FaqItem = { q: string; a: string };
-
-/* =========================
- * SEO statique (FR/EN)
- * ========================= */
-
-const ABOUT_SEO = {
-  fr: {
-    // Matthieu
-    title: 'Réseau national d’experts immobiliers agréés',
-    descFallback:
-      'Réseau d’experts immobiliers certifiés en France et Outre-mer. Indépendance, rigueur et conformité aux normes RICS et à la Charte de l’expertise.',
-    canonicalPath: '/expert-immobilier-reseau-national',
-    locale: 'fr_FR',
-    imageAlt: 'Groupe ABC – Réseau national d’experts immobiliers agréés',
-  },
-  en: {
-    // Variante EN cohérente
-    title: 'National network of chartered real-estate valuation experts',
-    descFallback:
-      'Accredited real-estate valuation experts network in France and Overseas. Independence, rigor and compliance with RICS and valuation standards.',
-    canonicalPath: '/en/expert-network-chartered-valuers',
-    locale: 'en_US',
-    imageAlt: 'ABC Group – National network of valuation experts',
-  },
-} as const;
-
 
 @Component({
   selector: 'app-about',
@@ -80,6 +52,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   private seo = inject(SeoService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
+  private faq = inject(FaqService);
 
   /* =========================
    * State principal
@@ -108,7 +81,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   timeline: TimelineStep[] = [];
   timelineTitle = '';
 
-  /** FAQ SEO-only spécifique à cette page */
+  /** FAQ SEO-only spécifique à cette page (injectée via faq.routes.ts) */
   faqItems: FaqItem[] = [];
 
   /** Partenaires (carrousel) */
@@ -123,8 +96,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /** Divers */
   defaultPortrait = '/assets/fallbacks/portrait-placeholder.svg';
-  socialImage = '/assets/og/og-default.jpg';
-  orgName = 'Groupe ABC';
 
   get hasMultiplePartners(): boolean {
     return this.allPartners.length > 1;
@@ -171,8 +142,8 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
    * Routes équipe
    * ========================= */
 
-  private TEAM_ROUTE_FR = '/equipes';
-  private TEAM_ROUTE_EN = '/en/team';
+  private TEAM_ROUTE_FR = '/experts-immobiliers-agrees';
+  private TEAM_ROUTE_EN = '/en/chartered-valuers-team';
 
   /* =========================
    * Lifecycle
@@ -202,9 +173,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         content: introBody,
       };
 
-      this.core = [
-        { title: this.intro.title, html: this.intro.content },
-      ];
+      this.core = [{ title: this.intro.title, html: this.intro.content }];
 
       /* -------- Map (Où ?) -------- */
       const mapSecRaw = about?.map_section ?? {};
@@ -263,9 +232,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           iconUrl,
         });
       }
-      this.coreValues = resolvedValues.filter(
-        (v) => v.title || v.html || v.iconUrl
-      );
+      this.coreValues = resolvedValues.filter((v) => v.title || v.html || v.iconUrl);
 
       /* -------- Affiliations -------- */
       const a = about?.affiliations ?? {};
@@ -281,9 +248,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           content: it.description || '',
         });
       }
-      this.affiliations = rawAffs.filter(
-        (x) => x.logo || x.excerpt || x.content
-      );
+      this.affiliations = rawAffs.filter((x) => x.logo || x.excerpt || x.content);
       this.affOpen = new Array(this.affiliations.length).fill(false);
 
       /* -------- Déontologie -------- */
@@ -314,8 +279,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
       /* -------- Timeline -------- */
       const tlRaw = about?.timeline ?? {};
-      this.timelineTitle =
-        tlRaw.section_title || 'Timeline du Groupe ABC';
+      this.timelineTitle = tlRaw.section_title || 'Timeline du Groupe ABC';
 
       const events: TimelineStep[] = [];
       for (let i = 1; i <= 12; i++) {
@@ -333,21 +297,32 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       this.timeline = events;
 
       /* -------- Partenaires (carrousel) -------- */
-      this.allPartners = Array.isArray(teamPartners)
-        ? this.shuffle(teamPartners)
-        : [];
-      const startOn = Math.floor(
-        Math.random() * Math.max(1, this.allPartners.length)
-      );
+      this.allPartners = Array.isArray(teamPartners) ? this.shuffle(teamPartners) : [];
+      const startOn = Math.floor(Math.random() * Math.max(1, this.allPartners.length));
       this.setActivePartnerInstant(startOn);
       this.primeAllPartnerPhotos();
       this.startAutoRotate();
 
-      /* -------- FAQ SEO-only -------- */
-      this.faqItems = this.buildAboutFaqItems(about);
+      /* -------- FAQ SEO-only (en dur via faq.routes.ts) -------- */
+      const lang = this.isEnglish() ? ('en' as const) : ('fr' as const);
+      this.faqItems = getFaqForRoute('about', lang);
 
-      /* -------- SEO complet (inclut FAQPage JSON-LD si FAQ dispo) -------- */
-      this.applySeo();
+      // ---- Alimentation de la bulle FAQ via FaqService ----
+      if (this.faqItems && this.faqItems.length) {
+        if (lang === 'en') {
+          // FAQ prioritaire en EN (ou fallback EN)
+          this.faq.set([], this.faqItems);
+        } else {
+          // FAQ prioritaire en FR
+          this.faq.set(this.faqItems, []);
+        }
+      } else {
+        // Pas de FAQ pour cette page → on vide le service
+        this.faq.clear();
+      }
+
+      /* -------- SEO complet (dynamique à partir de la config centrale) -------- */
+      this.applySeoFromConfig();
 
       /* -------- Animations -------- */
       this.coreReady = true;
@@ -374,6 +349,9 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    // On nettoie la FAQ globale pour éviter de polluer la page suivante
+    this.faq.clear();
+
     this.killAllScrollTriggers();
     this.clearHoverBindings();
     this.stopAutoRotate();
@@ -423,9 +401,17 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     if (n.includes('paris') || n.includes('ile-de-france') || n.includes('ile de france')) return 'idf';
     if (n.includes('grand ouest')) return 'grand-ouest';
     if (n.includes('rhone') || n.includes('auvergne')) return 'rhone-alpes';
-    if (n.includes('cote d\'azur') || n.includes('cote d azur') || n.includes('cote-d-azur') || n.includes('sud-est')) return 'cote-azur';
+    if (n.includes("cote d'azur") || n.includes('cote d azur') || n.includes('cote-d-azur') || n.includes('sud-est'))
+      return 'cote-azur';
     if (n.includes('sud-ouest') || n.includes('sud ouest')) return 'sud-ouest';
-    if (n.includes('grand est') || n.includes('nord & est') || n.includes('nord et est') || n.includes('nord-est') || n.includes('nord est')) return 'grand-est';
+    if (
+      n.includes('grand est') ||
+      n.includes('nord & est') ||
+      n.includes('nord et est') ||
+      n.includes('nord-est') ||
+      n.includes('nord est')
+    )
+      return 'grand-est';
     if (n.includes('antilles') || n.includes('guyane')) return 'antilles-guyane';
     if (n.includes('reunion') || n.includes('mayotte')) return 'reunion-mayotte';
 
@@ -433,7 +419,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   isEnglish(): boolean {
-    // SSR-safe : on utilise l’URL Angular plutôt que window.location
     try {
       const url = this.router.url || '';
       return url.startsWith('/en');
@@ -598,8 +583,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.partnerIndex =
-      (i + this.allPartners.length) % this.allPartners.length;
+    this.partnerIndex = (i + this.allPartners.length) % this.allPartners.length;
 
     const next = this.allPartners[this.partnerIndex];
     this.activePartner = next;
@@ -631,10 +615,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     this.stopAutoRotate();
     if (this.allPartners.length <= 1) return;
 
-    this.autoTimer = setInterval(
-      () => this.nextPartner(),
-      this.autoMs
-    );
+    this.autoTimer = setInterval(() => this.nextPartner(), this.autoMs);
   }
 
   stopAutoRotate(): void {
@@ -652,7 +633,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* =========================
-   * FAQ SEO-only
+   * Helpers texte (SEO / FAQ)
    * ========================= */
 
   private stripHtml(raw: string): string {
@@ -660,62 +641,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       .replace(/<[^>]*>/g, ' ')
       .replace(/\s+/g, ' ')
       .trim();
-  }
-
-  /** Construit la FAQ spécifique à la page About à partir de différentes structures WP possibles. */
-  private buildAboutFaqItems(about: any): FaqItem[] {
-    if (!about) return [];
-
-    const out: FaqItem[] = [];
-    const sanitize = (v: any) => this.stripHtml((v || '').toString());
-
-    const faqSection = (about.faq_section ||
-      about.faq ||
-      about.faqs) as any;
-
-    // Format 1 : about.faq_section.items[]
-    if (faqSection && Array.isArray(faqSection.items)) {
-      faqSection.items.forEach((it: any) => {
-        const q = sanitize(it.question || it.q);
-        const a = sanitize(it.answer || it.a);
-        if (q && a) out.push({ q, a });
-      });
-    }
-    // Format 2 : about.faq = [ {question, answer}, ... ]
-    else if (Array.isArray(faqSection)) {
-      faqSection.forEach((it: any) => {
-        const q = sanitize(it.question || it.q);
-        const a = sanitize(it.answer || it.a);
-        if (q && a) out.push({ q, a });
-      });
-    }
-    // Format 3 : champs individuels faq_1..faq_10
-    else {
-      for (let i = 1; i <= 10; i++) {
-        const it =
-          (about as any)[`faq_${i}`] ||
-          (about as any)[`faq_item_${i}`] ||
-          ((about.faq_block || about.faqs_block || {})[`item_${i}`]);
-
-        if (!it) continue;
-        const q = sanitize(it.question || it.q);
-        const a = sanitize(it.answer || it.a);
-        if (q && a) out.push({ q, a });
-      }
-    }
-
-    // Unicité
-    const uniq: FaqItem[] = [];
-    const seen = new Set<string>();
-    for (const it of out) {
-      const k = (it.q + '|' + it.a).toLowerCase();
-      if (!seen.has(k)) {
-        seen.add(k);
-        uniq.push(it);
-      }
-    }
-
-    return uniq;
   }
 
   /** Construit le JSON-LD FAQPage pour intégration dans le @graph. */
@@ -737,54 +662,43 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* =========================
-   * SEO complet (SSR-friendly)
+   * SEO complet (à partir de seo-pages.config.ts)
    * ========================= */
 
-  private absUrl(url: string, origin: string): string {
-    if (!url) return '';
-    try {
-      if (/^https?:\/\//i.test(url)) return url;
-      if (/^\/\//.test(url)) return 'https:' + url;
-      const o = origin.replace(/\/+$/, '');
-      return url.startsWith('/') ? o + url : `${o}/${url}`;
-    } catch {
-      return url;
-    }
-  }
+  private applySeoFromConfig(): void {
+    const lang = this.isEnglish() ? ('en' as const) : ('fr' as const);
+    const baseSeo = getSeoForRoute('about', lang);
 
-  private applySeo(): void {
-    const isEN = this.isEnglish();
-    const M = isEN ? ABOUT_SEO.en : ABOUT_SEO.fr;
+    // Title dynamique : on priorise le titre WP, sinon on garde le title de base
+    const title = (this.intro?.title?.trim() || baseSeo.title).trim();
 
-    const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
-    const canonical = `${siteUrl}${M.canonicalPath}`;
-    const lang = isEN ? 'en' : 'fr';
-    const locale = M.locale;
-
-    const altFR = `${siteUrl}${ABOUT_SEO.fr.canonicalPath}`;
-    const altEN = `${siteUrl}${ABOUT_SEO.en.canonicalPath}`;
-
-    // Title = H1 WP si propre, sinon fallback Matthieu
-    const title = (this.intro?.title?.trim() || M.title).trim();
-
-    // Meta description = contenu intro nettoyé, sinon descFallback Matthieu
+    // Description dynamique : on part du corps WP, sinon fallback sur la description de base
     const descRaw = this.stripHtml(this.intro?.content || '');
-    const description = (descRaw || M.descFallback).slice(0, 160);
+    const description = (descRaw || baseSeo.description || '').slice(0, 160);
 
-    const ogImgAbs = this.absUrl(this.socialImage, siteUrl);
+    const canonical = (baseSeo.canonical || '').replace(/\/+$/, '');
+    const inLanguage = lang === 'en' ? 'en-US' : 'fr-FR';
 
-    // IDs globaux définis dans AppComponent
-    const siteId = `${siteUrl}#website`;
-    const orgId = `${siteUrl}#organization`;
+    // On reconstruit les @id "sitewide" à partir de la canonical (pour AboutPage)
+    let siteId = '';
+    let orgId = '';
+    try {
+      const u = new URL(canonical || baseSeo.canonical || 'https://groupe-abc.fr/');
+      const origin = `${u.protocol}//${u.host}`;
+      siteId = `${origin}#website`;
+      orgId = `${origin}#organization`;
+    } catch {
+      siteId = 'https://groupe-abc.fr/#website';
+      orgId = 'https://groupe-abc.fr/#organization';
+    }
 
-    // AboutPage spécifique
     const aboutPage = {
       '@type': 'AboutPage',
       '@id': `${canonical}#about`,
       url: canonical,
       name: title,
       description,
-      inLanguage: isEN ? 'en-US' : 'fr-FR',
+      inLanguage,
       isPartOf: { '@id': siteId },
       about: {
         '@type': 'Service',
@@ -794,10 +708,9 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         },
         areaServed: 'France métropolitaine et Outre-mer',
       },
-      primaryImageOfPage: ogImgAbs || undefined,
+      primaryImageOfPage: baseSeo.image || undefined,
     };
 
-    // Fil d’Ariane
     const breadcrumb = {
       '@type': 'BreadcrumbList',
       '@id': `${canonical}#breadcrumb`,
@@ -805,47 +718,36 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         {
           '@type': 'ListItem',
           position: 1,
-          name: isEN ? 'Home' : 'Accueil',
-          item: `${siteUrl}/`,
+          name: lang === 'en' ? 'Home' : 'Accueil',
+          item: canonical.replace(/(\/en)?\/expert-network-chartered-valuers$/, '/'),
         },
         {
           '@type': 'ListItem',
           position: 2,
-          name: isEN ? 'About the network' : 'Réseau national d’experts immobiliers agréés',
+          name:
+            lang === 'en'
+              ? 'About the network'
+              : 'Réseau national d’experts immobiliers agréés',
           item: canonical,
         },
       ],
     };
 
-    // FAQ locale -> FAQPage JSON-LD si dispo
     const faqLd = this.buildFaqJsonLd(this.faqItems, canonical);
 
     const graph: any[] = [aboutPage, breadcrumb];
     if (faqLd) graph.push(faqLd);
 
     this.seo.update({
+      ...baseSeo,
       title,
       description,
-      lang,
-      locale,
-      localeAlt: isEN ? [ABOUT_SEO.fr.locale] : [ABOUT_SEO.en.locale],
-      canonical,
-      robots: 'index,follow',
-      image: ogImgAbs,
-      imageAlt: M.imageAlt,
-      type: 'website',
-      alternates: [
-        { lang: 'fr', href: altFR },
-        { lang: 'en', href: altEN },
-        { lang: 'x-default', href: altFR },
-      ],
       jsonLd: {
         '@context': 'https://schema.org',
         '@graph': graph,
       },
     });
   }
-
 
   /* =========================
    * Animations GSAP (SSR safe)
@@ -864,601 +766,547 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private bindAnimations(): void {
-  if (!this.isBrowser()) return;
+    if (!this.isBrowser()) return;
 
-  const EASE = 'power3.out';
-  const rm = (el?: Element | null, cls = 'prehide') =>
-    el && (el as HTMLElement).classList.remove(cls);
+    const EASE = 'power3.out';
+    const rm = (el?: Element | null, cls = 'prehide') =>
+      el && (el as HTMLElement).classList.remove(cls);
 
-  /* ----- CORE ----- */
-  const coreTitleEl = this.coreTitle?.nativeElement;
-  const coreGridEl = this.coreGrid?.nativeElement;
+    /* ----- CORE ----- */
+    const coreTitleEl = this.coreTitle?.nativeElement;
+    const coreGridEl = this.coreGrid?.nativeElement;
 
-  if (coreTitleEl && coreGridEl && !this.revealed.has(coreTitleEl)) {
-    const tlCore = gsap.timeline({
-      defaults: { ease: EASE },
-      scrollTrigger: {
-        trigger: coreTitleEl,
-        start: 'top 85%',
-        once: true,
-      },
-    });
-
-    tlCore.add(() => rm(coreTitleEl), 0);
-
-    tlCore.fromTo(
-      coreTitleEl,
-      { autoAlpha: 0, y: 20 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.45,
-        onComplete: () => {
-          this.revealed.add(coreTitleEl);
-        },
-      }
-    );
-
-    tlCore.add(
-      () => {
-        rm(coreGridEl);
-        gsap.fromTo(
-          coreGridEl,
-          { autoAlpha: 0, y: 20 },
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.5,
-            ease: EASE,
-            onComplete: () => {
-              this.revealed.add(coreGridEl);
-              gsap.set(coreGridEl, {
-                clearProps:
-                  'transform,opacity,visibility,willChange',
-              });
-            },
-          }
-        );
-      },
-      '+=0.9'
-    );
-  }
-
-  /* ----- MESH ----- */
-  const meshTitle = this.meshTitleEl?.nativeElement;
-  const skyline = this.meshSkylineEl?.nativeElement;
-  const meshLevels = this.meshLevelsEl?.nativeElement;
-  const meshLevelItems =
-    this.meshLevelEls?.toArray().map((r) => r.nativeElement) || [];
-
-  if (meshTitle) {
-    gsap.fromTo(
-      meshTitle,
-      { autoAlpha: 0, y: 18 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.55,
-        ease: EASE,
+    if (coreTitleEl && coreGridEl && !this.revealed.has(coreTitleEl)) {
+      const tlCore = gsap.timeline({
+        defaults: { ease: EASE },
         scrollTrigger: {
-          trigger: meshTitle,
+          trigger: coreTitleEl,
           start: 'top 85%',
           once: true,
         },
-        onStart: () => rm(meshTitle),
-      }
-    );
-  }
+      });
 
-  if (skyline) {
-    gsap.fromTo(
-      skyline,
-      { autoAlpha: 0, y: 18 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.55,
-        ease: EASE,
+      tlCore.add(() => rm(coreTitleEl), 0);
+
+      tlCore.fromTo(
+        coreTitleEl,
+        { autoAlpha: 0, y: 20 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.45,
+          onComplete: () => {
+            this.revealed.add(coreTitleEl);
+          },
+        }
+      );
+
+      tlCore.add(
+        () => {
+          rm(coreGridEl);
+          gsap.fromTo(
+            coreGridEl,
+            { autoAlpha: 0, y: 20 },
+            {
+              autoAlpha: 1,
+              y: 0,
+              duration: 0.5,
+              ease: EASE,
+              onComplete: () => {
+                this.revealed.add(coreGridEl);
+                gsap.set(coreGridEl, {
+                  clearProps: 'transform,opacity,visibility,willChange',
+                });
+              },
+            }
+          );
+        },
+        '+=0.9'
+      );
+    }
+
+    /* ----- MESH ----- */
+    const meshTitle = this.meshTitleEl?.nativeElement;
+    const skyline = this.meshSkylineEl?.nativeElement;
+    const meshLevels = this.meshLevelsEl?.nativeElement;
+    const meshLevelItems =
+      this.meshLevelEls?.toArray().map((r) => r.nativeElement) || [];
+
+    if (meshTitle) {
+      gsap.fromTo(
+        meshTitle,
+        { autoAlpha: 0, y: 18 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.55,
+          ease: EASE,
+          scrollTrigger: {
+            trigger: meshTitle,
+            start: 'top 85%',
+            once: true,
+          },
+          onStart: () => rm(meshTitle),
+        }
+      );
+    }
+
+    if (skyline) {
+      gsap.fromTo(
+        skyline,
+        { autoAlpha: 0, y: 18 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.55,
+          ease: EASE,
+          scrollTrigger: {
+            trigger: skyline,
+            start: 'top 80%',
+            once: true,
+          },
+          onStart: () => rm(skyline),
+        }
+      );
+    }
+
+    if (meshLevels && meshLevelItems.length) {
+      gsap.set(meshLevels, { '--lineW': '0%' } as any);
+      gsap.set(meshLevelItems, { autoAlpha: 0, y: 10 });
+
+      const tl = gsap.timeline({
+        defaults: { ease: 'power2.out' },
         scrollTrigger: {
-          trigger: skyline,
-          start: 'top 80%',
+          trigger: meshLevels,
+          start: 'top 85%',
           once: true,
         },
-        onStart: () => rm(skyline),
-      }
-    );
-  }
+        onStart: () => {
+          rm(meshLevels);
+          meshLevelItems.forEach((el) => rm(el));
+        },
+      });
 
-  if (meshLevels && meshLevelItems.length) {
-    gsap.set(meshLevels, { '--lineW': '0%' } as any);
-    gsap.set(meshLevelItems, { autoAlpha: 0, y: 10 });
+      tl.to(meshLevels, {
+        duration: 1.6,
+        '--lineW': '100%',
+      } as any);
 
-    const tl = gsap.timeline({
-      defaults: { ease: 'power2.out' },
-      scrollTrigger: {
-        trigger: meshLevels,
-        start: 'top 85%',
-        once: true,
-      },
-      onStart: () => {
-        rm(meshLevels);
-        meshLevelItems.forEach((el) => rm(el));
-      },
-    });
+      const steps = [0.15, 0.85, 1.55];
+      meshLevelItems.forEach((el, i) => {
+        tl.to(
+          el,
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.45,
+            ease: EASE,
+          },
+          steps[Math.min(i, steps.length - 1)]
+        );
+      });
+    }
 
-    tl.to(meshLevels, {
-      duration: 1.6,
-      '--lineW': '100%',
-    } as any);
+    /* ----- MAP ----- */
+    const mapImgWrap = this.mapImageEl?.nativeElement;
+    const mapTitle = this.mapTitleEl?.nativeElement;
+    const mapItemEls = this.mapItems?.toArray().map((r) => r.nativeElement) || [];
+    const mapList = (mapItemEls[0]?.parentElement as HTMLElement) || null;
 
-    const steps = [0.15, 0.85, 1.55];
-    meshLevelItems.forEach((el, i) => {
-      tl.to(
-        el,
+    if (mapImgWrap) {
+      gsap.fromTo(
+        mapImgWrap,
+        { autoAlpha: 0, y: 18 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.55,
+          ease: EASE,
+          scrollTrigger: {
+            trigger: mapImgWrap,
+            start: 'top 85%',
+            once: true,
+          },
+          onStart: () => rm(mapImgWrap),
+        }
+      );
+    }
+
+    if (mapTitle) {
+      gsap.fromTo(
+        mapTitle,
+        { autoAlpha: 0, y: 16 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.5,
+          ease: EASE,
+          scrollTrigger: {
+            trigger: mapTitle,
+            start: 'top 85%',
+            once: true,
+          },
+          onStart: () => rm(mapTitle),
+        }
+      );
+    }
+
+    if (mapList && mapItemEls.length) {
+      gsap.fromTo(
+        mapItemEls,
+        { autoAlpha: 0, y: 14 },
         {
           autoAlpha: 1,
           y: 0,
           duration: 0.45,
           ease: EASE,
-        },
-        steps[Math.min(i, steps.length - 1)]
-      );
-    });
-  }
-
-  /* ----- MAP ----- */
-  const mapImgWrap = this.mapImageEl?.nativeElement;
-  const mapTitle = this.mapTitleEl?.nativeElement;
-  const mapItemEls =
-    this.mapItems?.toArray().map((r) => r.nativeElement) || [];
-  const mapList =
-    (mapItemEls[0]?.parentElement as HTMLElement) || null;
-
-  if (mapImgWrap) {
-    gsap.fromTo(
-      mapImgWrap,
-      { autoAlpha: 0, y: 18 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.55,
-        ease: EASE,
-        scrollTrigger: {
-          trigger: mapImgWrap,
-          start: 'top 85%',
-          once: true,
-        },
-        onStart: () => rm(mapImgWrap),
-      }
-    );
-  }
-
-  if (mapTitle) {
-    gsap.fromTo(
-      mapTitle,
-      { autoAlpha: 0, y: 16 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.5,
-        ease: EASE,
-        scrollTrigger: {
-          trigger: mapTitle,
-          start: 'top 85%',
-          once: true,
-        },
-        onStart: () => rm(mapTitle),
-      }
-    );
-  }
-
-  if (mapList && mapItemEls.length) {
-    gsap.fromTo(
-      mapItemEls,
-      { autoAlpha: 0, y: 14 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.45,
-        ease: EASE,
-        stagger: 0.08,
-        scrollTrigger: {
-          trigger: mapList,
-          start: 'top 90%',
-          once: true,
-        },
-        onStart: () =>
-          mapItemEls.forEach((el) =>
-            el.classList.remove('prehide-row')
-          ),
-      }
-    );
-  }
-
-  /* ----- VALUES ----- */
-  const valuesTitle = this.valuesTitleEl?.nativeElement;
-  const valueItems =
-    this.valueItemEls?.toArray().map((r) => r.nativeElement) ||
-    [];
-  const valuesGrid =
-    (valueItems[0]?.parentElement as HTMLElement) || null;
-
-  if (valuesTitle) {
-    gsap.fromTo(
-      valuesTitle,
-      { autoAlpha: 0, y: 16 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.5,
-        ease: EASE,
-        scrollTrigger: {
-          trigger: valuesTitle,
-          start: 'top 85%',
-          once: true,
-        },
-        onStart: () => rm(valuesTitle),
-      }
-    );
-  }
-
-  if (valuesGrid && valueItems.length) {
-    const icons: HTMLElement[] = [];
-    const titles: HTMLElement[] = [];
-    const descs: HTMLElement[] = [];
-    const dividers: HTMLElement[] = [];
-
-    valueItems.forEach((li) => {
-      li.classList.remove('prehide');
-      gsap.set(li, {
-        autoAlpha: 1,
-        clearProps: 'visibility',
-      });
-
-      const icon = li.querySelector(
-        '.icon-wrap img'
-      ) as HTMLElement | null;
-      const title = li.querySelector(
-        '.value-name'
-      ) as HTMLElement | null;
-      const desc = li.querySelector(
-        '.value-desc'
-      ) as HTMLElement | null;
-      const divider = li.querySelector(
-        '.divider'
-      ) as HTMLElement | null;
-
-      if (icon) {
-        icons.push(icon);
-        gsap.set(icon, {
-          autoAlpha: 0,
-          y: 8,
-          scale: 0.98,
-          willChange: 'transform,opacity',
-        });
-      }
-      if (title) {
-        titles.push(title);
-        gsap.set(title, {
-          autoAlpha: 0,
-          y: 14,
-          willChange: 'transform,opacity',
-        });
-      }
-      if (desc) {
-        descs.push(desc);
-        gsap.set(desc, {
-          autoAlpha: 0,
-          y: 14,
-          willChange: 'transform,opacity',
-        });
-      }
-      if (divider) {
-        dividers.push(divider);
-        gsap.set(divider, {
-          scaleX: 0,
-          transformOrigin: '50% 50%',
-        });
-      }
-    });
-
-    const D = 0.7;
-
-    const tl = gsap.timeline({
-      defaults: { ease: EASE },
-      scrollTrigger: {
-        trigger: valuesGrid,
-        start: 'top 85%',
-        once: true,
-      },
-    });
-
-    tl.add('phase1')
-      .to(
-        icons,
-        { autoAlpha: 1, y: 0, scale: 1, duration: D },
-        'phase1'
-      )
-      .to(
-        dividers,
-        { scaleX: 1, duration: D },
-        'phase1'
-      );
-
-    tl.add('phase2').to(
-      titles,
-      { autoAlpha: 1, y: 0, duration: D },
-      'phase2'
-    );
-
-    tl.add('phase3').to(
-      descs,
-      { autoAlpha: 1, y: 0, duration: D },
-      'phase3'
-    );
-
-    tl.add(() => {
-      const toClear = [...icons, ...titles, ...descs];
-      gsap.set(toClear, {
-        clearProps: 'transform,opacity,willChange',
-      });
-      gsap.set(dividers, { clearProps: 'transform' });
-    });
-  }
-
-  /* ----- AFFILIATIONS ----- */
-  {
-    const affTitle = this.affTitleEl?.nativeElement;
-    const affRows =
-      this.affRowEls?.toArray().map((r) => r.nativeElement) ||
-      [];
-    const affSection = affTitle
-      ? (affTitle.closest(
-          '.affiliations'
-        ) as HTMLElement | null)
-      : null;
-
-    if (affSection && affTitle && affRows.length) {
-      gsap
-        .timeline({
-          defaults: { ease: EASE },
+          stagger: 0.08,
           scrollTrigger: {
-            trigger: affSection,
-            start: 'top 85%',
+            trigger: mapList,
+            start: 'top 90%',
             once: true,
           },
-          onStart: () => {
-            rm(affTitle);
-            affRows.forEach((el) =>
-              el.classList.remove('prehide-row')
-            );
-          },
-        })
-        .to(affTitle, {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.65,
-        })
-        .to(affRows, {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.65,
-          stagger: 0.06,
-        });
-    }
-  }
-
-  /* ----- DEONTOLOGIE ----- */
-  {
-    const deonTitle = this.deonTitleEl?.nativeElement;
-    const deonRows =
-      this.deonRowEls?.toArray().map((r) => r.nativeElement) ||
-      [];
-    const deonSection = deonTitle
-      ? (deonTitle.closest('.deon') as HTMLElement | null)
-      : null;
-
-    if (deonSection && deonTitle && deonRows.length) {
-      gsap
-        .timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: {
-            trigger: deonSection,
-            start: 'top 85%',
-            once: true,
-          },
-          onStart: () => {
-            rm(deonTitle);
-            deonRows.forEach((el) =>
-              el.classList.remove('prehide-row')
-            );
-          },
-        })
-        .to(deonTitle, {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.65,
-        })
-        .to(deonRows, {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.65,
-          stagger: 0.06,
-        });
-    }
-  }
-
-  /* ----- TIMELINE ----- */
-  const tlTitleEl = this.tlTitleEl?.nativeElement;
-  const tlRailEl = this.tlRail?.nativeElement;
-  const tlYears =
-    this.tlYearEls?.toArray().map((r) => r.nativeElement) ||
-    [];
-  const tlBodies =
-    this.tlBodyEls?.toArray().map((r) => r.nativeElement) ||
-    [];
-
-  if (tlTitleEl) {
-    gsap.fromTo(
-      tlTitleEl,
-      { autoAlpha: 0, y: 16 },
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.5,
-        ease: EASE,
-        scrollTrigger: {
-          trigger: tlTitleEl,
-          start: 'top 85%',
-          once: true,
-        },
-        onStart: () => rm(tlTitleEl),
-      }
-    );
-  }
-
-  if (tlRailEl && tlYears.length && tlBodies.length) {
-    const timelineSection = tlRailEl.closest(
-      '.timeline'
-    ) as HTMLElement | null;
-    const tlGrid = tlRailEl.closest(
-      '.tl-grid'
-    ) as HTMLElement | null;
-
-    tlYears.forEach((y) => {
-      (y as any).__revealed = false;
-      gsap.set(y, { autoAlpha: 0, y: 10 });
-      (y as HTMLElement).style.setProperty(
-        '--dashNow',
-        '0px'
-      );
-    });
-    tlBodies.forEach((b) =>
-      gsap.set(b, { autoAlpha: 0, y: 10 })
-    );
-    gsap.set(tlRailEl, {
-      scaleY: 0,
-      transformOrigin: 'top',
-    });
-
-    let railHeight = 0;
-    let checkpoints: number[] = [];
-
-    const computeLayout = () => {
-      const railBox = tlRailEl.getBoundingClientRect();
-      railHeight = railBox.height;
-      checkpoints = tlYears.map((yEl) => {
-        const yBox = yEl.getBoundingClientRect();
-        const fs =
-          parseFloat(
-            getComputedStyle(yEl).fontSize
-          ) || 16;
-        const dashOffset = 0.6 * fs;
-        const cutYAbs = yBox.top + dashOffset;
-        const cutYRel = cutYAbs - railBox.top;
-        return Math.max(
-          0,
-          Math.min(railHeight, cutYRel)
-        );
-      });
-    };
-
-    computeLayout();
-
-    ScrollTrigger.create({
-      trigger: timelineSection || tlGrid || tlRailEl,
-      start: 'top 90%',
-      end: 'bottom 75%',
-      scrub: 0.6,
-      onEnter: () => {
-        tlYears.forEach((el) => rm(el));
-        tlBodies.forEach((el) => rm(el));
-      },
-      onUpdate: (self) => {
-        const p = self.progress;
-        const drawPx = railHeight * p;
-        gsap.set(tlRailEl, {
-          scaleY: p,
-          transformOrigin: 'top',
-        });
-
-        for (let i = 0; i < tlYears.length; i++) {
-          const yEl = tlYears[i] as any;
-          const bEl = tlBodies[i];
-          if (yEl.__revealed) continue;
-          if (drawPx >= (checkpoints[i] || 0)) {
-            yEl.__revealed = true;
-            gsap.to(yEl, {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.45,
-              ease: EASE,
-              onStart: () =>
-                (yEl as HTMLElement).style.setProperty(
-                  '--dashNow',
-                  'var(--dash-w)'
-                ),
-            });
-            gsap.to(bEl, {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.45,
-              ease: EASE,
-              delay: 0.08,
-            });
-          }
+          onStart: () =>
+            mapItemEls.forEach((el) => el.classList.remove('prehide-row')),
         }
-      },
-      onRefreshInit: () => {
-        computeLayout();
-        gsap.set(tlRailEl, {
-          scaleY: 0,
-          transformOrigin: 'top',
-        });
-        tlYears.forEach((y: any) => {
-          y.__revealed = false;
-          gsap.set(y, {
-            autoAlpha: 0,
-            y: 10,
-          });
-          (y as HTMLElement).style.setProperty(
-            '--dashNow',
-            '0px'
-          );
-        });
-        tlBodies.forEach((b) =>
-          gsap.set(b, {
-            autoAlpha: 0,
-            y: 10,
-          })
-        );
-      },
-    });
-
-    const ro = this.getResizeObserver(() => {
-      computeLayout();
-      try {
-        ScrollTrigger.refresh();
-      } catch {}
-    });
-    if (ro && (tlGrid || tlRailEl)) {
-      ro.observe(tlGrid || tlRailEl);
+      );
     }
+
+    /* ----- VALUES ----- */
+    const valuesTitle = this.valuesTitleEl?.nativeElement;
+    const valueItems = this.valueItemEls?.toArray().map((r) => r.nativeElement) || [];
+    const valuesGrid = (valueItems[0]?.parentElement as HTMLElement) || null;
+
+    if (valuesTitle) {
+      gsap.fromTo(
+        valuesTitle,
+        { autoAlpha: 0, y: 16 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.5,
+          ease: EASE,
+          scrollTrigger: {
+            trigger: valuesTitle,
+            start: 'top 85%',
+            once: true,
+          },
+          onStart: () => rm(valuesTitle),
+        }
+      );
+    }
+
+    if (valuesGrid && valueItems.length) {
+      const icons: HTMLElement[] = [];
+      const titles: HTMLElement[] = [];
+      const descs: HTMLElement[] = [];
+      const dividers: HTMLElement[] = [];
+
+      valueItems.forEach((li) => {
+        li.classList.remove('prehide');
+        gsap.set(li, {
+          autoAlpha: 1,
+          clearProps: 'visibility',
+        });
+
+        const icon = li.querySelector('.icon-wrap img') as HTMLElement | null;
+        const title = li.querySelector('.value-name') as HTMLElement | null;
+        const desc = li.querySelector('.value-desc') as HTMLElement | null;
+        const divider = li.querySelector('.divider') as HTMLElement | null;
+
+        if (icon) {
+          icons.push(icon);
+          gsap.set(icon, {
+            autoAlpha: 0,
+            y: 8,
+            scale: 0.98,
+            willChange: 'transform,opacity',
+          });
+        }
+        if (title) {
+          titles.push(title);
+          gsap.set(title, {
+            autoAlpha: 0,
+            y: 14,
+            willChange: 'transform,opacity',
+          });
+        }
+        if (desc) {
+          descs.push(desc);
+          gsap.set(desc, {
+            autoAlpha: 0,
+            y: 14,
+            willChange: 'transform,opacity',
+          });
+        }
+        if (divider) {
+          dividers.push(divider);
+          gsap.set(divider, {
+            scaleX: 0,
+            transformOrigin: '50% 50%',
+          });
+        }
+      });
+
+      const D = 0.7;
+
+      const tl = gsap.timeline({
+        defaults: { ease: EASE },
+        scrollTrigger: {
+          trigger: valuesGrid,
+          start: 'top 85%',
+          once: true,
+        },
+      });
+
+      tl.add('phase1')
+        .to(
+          icons,
+          { autoAlpha: 1, y: 0, scale: 1, duration: D },
+          'phase1'
+        )
+        .to(
+          dividers,
+          { scaleX: 1, duration: D },
+          'phase1'
+        );
+
+      tl.add('phase2').to(
+        titles,
+        { autoAlpha: 1, y: 0, duration: D },
+        'phase2'
+      );
+
+      tl.add('phase3').to(
+        descs,
+        { autoAlpha: 1, y: 0, duration: D },
+        'phase3'
+      );
+
+      tl.add(() => {
+        const toClear = [...icons, ...titles, ...descs];
+        gsap.set(toClear, {
+          clearProps: 'transform,opacity,willChange',
+        });
+        gsap.set(dividers, { clearProps: 'transform' });
+      });
+    }
+
+    /* ----- AFFILIATIONS ----- */
+    {
+      const affTitle = this.affTitleEl?.nativeElement;
+      const affRows = this.affRowEls?.toArray().map((r) => r.nativeElement) || [];
+      const affSection = affTitle
+        ? (affTitle.closest('.affiliations') as HTMLElement | null)
+        : null;
+
+      if (affSection && affTitle && affRows.length) {
+        gsap
+          .timeline({
+            defaults: { ease: EASE },
+            scrollTrigger: {
+              trigger: affSection,
+              start: 'top 85%',
+              once: true,
+            },
+            onStart: () => {
+              rm(affTitle);
+              affRows.forEach((el) => el.classList.remove('prehide-row'));
+            },
+          })
+          .to(affTitle, {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.65,
+          })
+          .to(affRows, {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.65,
+            stagger: 0.06,
+          });
+      }
+    }
+
+    /* ----- DEONTOLOGIE ----- */
+    {
+      const deonTitle = this.deonTitleEl?.nativeElement;
+      const deonRows = this.deonRowEls?.toArray().map((r) => r.nativeElement) || [];
+      const deonSection = deonTitle
+        ? (deonTitle.closest('.deon') as HTMLElement | null)
+        : null;
+
+      if (deonSection && deonTitle && deonRows.length) {
+        gsap
+          .timeline({
+            defaults: { ease: EASE },
+            scrollTrigger: {
+              trigger: deonSection,
+              start: 'top 85%',
+              once: true,
+            },
+            onStart: () => {
+              rm(deonTitle);
+              deonRows.forEach((el) => el.classList.remove('prehide-row'));
+            },
+          })
+          .to(deonTitle, {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.65,
+          })
+          .to(deonRows, {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.65,
+            stagger: 0.06,
+          });
+      }
+    }
+
+    /* ----- TIMELINE ----- */
+    const tlTitleEl = this.tlTitleEl?.nativeElement;
+    const tlRailEl = this.tlRail?.nativeElement;
+    const tlYears = this.tlYearEls?.toArray().map((r) => r.nativeElement) || [];
+    const tlBodies = this.tlBodyEls?.toArray().map((r) => r.nativeElement) || [];
+
+    if (tlTitleEl) {
+      gsap.fromTo(
+        tlTitleEl,
+        { autoAlpha: 0, y: 16 },
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.5,
+          ease: EASE,
+          scrollTrigger: {
+            trigger: tlTitleEl,
+            start: 'top 85%',
+            once: true,
+          },
+          onStart: () => rm(tlTitleEl),
+        }
+      );
+    }
+
+    if (tlRailEl && tlYears.length && tlBodies.length) {
+      const timelineSection = tlRailEl.closest('.timeline') as HTMLElement | null;
+      const tlGrid = tlRailEl.closest('.tl-grid') as HTMLElement | null;
+
+      tlYears.forEach((y) => {
+        (y as any).__revealed = false;
+        gsap.set(y, { autoAlpha: 0, y: 10 });
+        (y as HTMLElement).style.setProperty('--dashNow', '0px');
+      });
+      tlBodies.forEach((b) => gsap.set(b, { autoAlpha: 0, y: 10 }));
+      gsap.set(tlRailEl, {
+        scaleY: 0,
+        transformOrigin: 'top',
+      });
+
+      let railHeight = 0;
+      let checkpoints: number[] = [];
+
+      const computeLayout = () => {
+        const railBox = tlRailEl.getBoundingClientRect();
+        railHeight = railBox.height;
+        checkpoints = tlYears.map((yEl) => {
+          const yBox = yEl.getBoundingClientRect();
+          const fs = parseFloat(getComputedStyle(yEl).fontSize) || 16;
+          const dashOffset = 0.6 * fs;
+          const cutYAbs = yBox.top + dashOffset;
+          const cutYRel = cutYAbs - railBox.top;
+          return Math.max(0, Math.min(railHeight, cutYRel));
+        });
+      };
+
+      computeLayout();
+
+      ScrollTrigger.create({
+        trigger: timelineSection || tlGrid || tlRailEl,
+        start: 'top 90%',
+        end: 'bottom 75%',
+        scrub: 0.6,
+        onEnter: () => {
+          tlYears.forEach((el) => rm(el));
+          tlBodies.forEach((el) => rm(el));
+        },
+        onUpdate: (self) => {
+          const p = self.progress;
+          const drawPx = railHeight * p;
+          gsap.set(tlRailEl, {
+            scaleY: p,
+            transformOrigin: 'top',
+          });
+
+          for (let i = 0; i < tlYears.length; i++) {
+            const yEl = tlYears[i] as any;
+            const bEl = tlBodies[i];
+            if (yEl.__revealed) continue;
+            if (drawPx >= (checkpoints[i] || 0)) {
+              yEl.__revealed = true;
+              gsap.to(yEl, {
+                autoAlpha: 1,
+                y: 0,
+                duration: 0.45,
+                ease: EASE,
+                onStart: () =>
+                  (yEl as HTMLElement).style.setProperty('--dashNow', 'var(--dash-w)'),
+              });
+              gsap.to(bEl, {
+                autoAlpha: 1,
+                y: 0,
+                duration: 0.45,
+                ease: EASE,
+                delay: 0.08,
+              });
+            }
+          }
+        },
+        onRefreshInit: () => {
+          computeLayout();
+          gsap.set(tlRailEl, {
+            scaleY: 0,
+            transformOrigin: 'top',
+          });
+          tlYears.forEach((y: any) => {
+            y.__revealed = false;
+            gsap.set(y, {
+              autoAlpha: 0,
+              y: 10,
+            });
+            (y as HTMLElement).style.setProperty('--dashNow', '0px');
+          });
+          tlBodies.forEach((b) =>
+            gsap.set(b, {
+              autoAlpha: 0,
+              y: 10,
+            })
+          );
+        },
+      });
+
+      const ro = this.getResizeObserver(() => {
+        computeLayout();
+        try {
+          ScrollTrigger.refresh();
+        } catch {}
+      });
+      if (ro && (tlGrid || tlRailEl)) {
+        ro.observe(tlGrid || tlRailEl);
+      }
+    }
+
+    /* ----- Hover zoom MAP items ----- */
+    this.clearHoverBindings();
+    this.attachHoverZoom(mapItemEls, true, 1.045);
+
+    try {
+      ScrollTrigger.refresh();
+    } catch {}
   }
 
-  /* ----- Hover zoom MAP items ----- */
-  this.clearHoverBindings();
-  this.attachHoverZoom(mapItemEls, true, 1.045);
-
-  try {
-    ScrollTrigger.refresh();
-  } catch {}
-}
-
-
-  private getResizeObserver(
-    cb: ResizeObserverCallback
-  ): ResizeObserver | null {
+  private getResizeObserver(cb: ResizeObserverCallback): ResizeObserver | null {
     if (!this.isBrowser() || !('ResizeObserver' in window)) {
       return null;
     }
@@ -1484,19 +1332,13 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     originLeft = true,
     scale = 1.045
   ): void {
-    if (
-      !this.isBrowser() ||
-      !elements ||
-      !elements.length
-    ) {
+    if (!this.isBrowser() || !elements || !elements.length) {
       return;
     }
 
     elements.forEach((el) => {
       if (!el) return;
-      el.style.transformOrigin = originLeft
-        ? 'left center'
-        : 'center center';
+      el.style.transformOrigin = originLeft ? 'left center' : 'center center';
       el.style.willChange = 'transform';
 
       const enter = () =>

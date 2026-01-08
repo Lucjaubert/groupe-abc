@@ -26,7 +26,6 @@ const frRoutes: Routes = [
     title: 'Méthodes d’évaluation immobilière – Approches et calculs de valeur',
   },
   {
-    /* ✅ Canonique FR selon SEO */
     path: 'experts-immobiliers-agrees',
     loadComponent: () => import('./pages/team/team.component').then(m => m.TeamComponent),
     title: 'Équipe d’experts immobiliers agréés – Compétences et déontologie',
@@ -35,6 +34,12 @@ const frRoutes: Routes = [
     path: 'actualites-expertise-immobiliere',
     loadComponent: () => import('./pages/news/news.component').then(m => m.NewsComponent),
     title: 'Actualités de l’expertise immobilière – Marché, valeur vénale et réglementation',
+  },
+  {
+    path: 'actualites-expertise-immobiliere/:slug',
+    loadComponent: () => import('./pages/news-detail/news-detail.component').then(m => m.NewsDetailComponent),
+    // Le titre sera surchargé dynamiquement par le SeoService dans NewsDetailComponent
+    title: 'Actualité immobilière – Groupe ABC',
   },
   {
     path: 'contact-expert-immobilier',
@@ -52,29 +57,43 @@ const frRoutes: Routes = [
    FR — redirections historiques (client-side)
    =========================================== */
 const frLegacyRedirects: Routes = [
-  { path: 'accueil',                   redirectTo: '',                                   pathMatch: 'full' },
-  { path: 'actualite',                 redirectTo: 'actualites-expertise-immobiliere',   pathMatch: 'full' },
-  { path: 'biens-et-methodes',         redirectTo: 'methodes-evaluation-immobiliere',    pathMatch: 'full' },
-  { path: 'contact',                   redirectTo: 'contact-expert-immobilier',          pathMatch: 'full' },
-  { path: 'equipe',                    redirectTo: 'experts-immobiliers-agrees',         pathMatch: 'full' },
-  { path: 'equipes',                   redirectTo: 'experts-immobiliers-agrees',         pathMatch: 'full' }, // si ancien essai
-  { path: 'qui-sommes-nous',           redirectTo: 'expert-immobilier-reseau-national',  pathMatch: 'full' },
-  { path: 'services',                  redirectTo: 'expertise-immobiliere-services',     pathMatch: 'full' },
+  { path: 'accueil',                   redirectTo: '',                                        pathMatch: 'full' },
+  { path: 'actualite',                 redirectTo: 'actualites-expertise-immobiliere',        pathMatch: 'full' },
+  { path: 'biens-et-methodes',         redirectTo: 'methodes-evaluation-immobiliere',         pathMatch: 'full' },
+  { path: 'contact',                   redirectTo: 'contact-expert-immobilier',               pathMatch: 'full' },
+  { path: 'equipe',                    redirectTo: 'experts-immobiliers-agrees',              pathMatch: 'full' },
+  { path: 'equipes',                   redirectTo: 'experts-immobiliers-agrees',              pathMatch: 'full' },
+  { path: 'qui-sommes-nous',           redirectTo: 'expert-immobilier-reseau-national',       pathMatch: 'full' },
+  { path: 'services',                  redirectTo: 'expertise-immobiliere-services',          pathMatch: 'full' },
+
+  // Version courte éventuelle /actualites/:slug  → /actualites-expertise-immobiliere/:slug
+  { path: 'actualites/:slug',          redirectTo: 'actualites-expertise-immobiliere/:slug',  pathMatch: 'full' },
 ];
 
 /* ===========================================
    EN — redirections historiques (placées AVANT)
    =========================================== */
 const enLegacyRedirects: Routes = [
-  { path: 'services',                          redirectTo: 'real-estate-valuation-services', pathMatch: 'full' },
-  { path: 'actualites',                        redirectTo: 'news',                            pathMatch: 'full' },
-  { path: 'actualites-expertise-immobiliere',  redirectTo: 'news',                            pathMatch: 'full' },
-  { path: 'biens-et-methodes',                 redirectTo: 'assets-methods',                  pathMatch: 'full' },
-  { path: 'methodes-evaluation-immobiliere',   redirectTo: 'assets-methods',                  pathMatch: 'full' },
-  { path: 'equipe',                            redirectTo: 'chartered-valuation-experts',     pathMatch: 'full' },
-  { path: 'experts-immobiliers-agrees',        redirectTo: 'chartered-valuation-experts',     pathMatch: 'full' },
-  { path: 'contact-expert-immobilier',         redirectTo: 'contact',                         pathMatch: 'full' },
-  { path: 'expert-immobilier-reseau-national', redirectTo: 'expert-network-chartered-valuers',pathMatch: 'full' },
+  // anciennes URLs EN simples
+  { path: 'news',                        redirectTo: 'real-estate-valuation-news',            pathMatch: 'full' },
+  { path: 'news/:slug',                  redirectTo: 'real-estate-valuation-news/:slug',      pathMatch: 'full' },
+  { path: 'contact',                     redirectTo: 'contact-chartered-valuers',             pathMatch: 'full' },
+  { path: 'services',                    redirectTo: 'real-estate-valuation-services',        pathMatch: 'full' },
+  { path: 'team',                        redirectTo: 'chartered-valuers-team',                pathMatch: 'full' },
+  { path: 'teams',                       redirectTo: 'chartered-valuers-team',                pathMatch: 'full' },
+  { path: 'assets-methods',              redirectTo: 'valuation-methods-assets',              pathMatch: 'full' },
+  { path: 'chartered-valuation-experts', redirectTo: 'chartered-valuers-team',                pathMatch: 'full' },
+  { path: 'contact-real-estate-valuation', redirectTo: 'contact-chartered-valuers',           pathMatch: 'full' },
+
+  // anciennes URLs "FR sous /en"
+  { path: 'actualites',                        redirectTo: 'real-estate-valuation-news',      pathMatch: 'full' },
+  { path: 'actualites-expertise-immobiliere',  redirectTo: 'real-estate-valuation-news',      pathMatch: 'full' },
+  { path: 'biens-et-methodes',                 redirectTo: 'valuation-methods-assets',        pathMatch: 'full' },
+  { path: 'methodes-evaluation-immobiliere',   redirectTo: 'valuation-methods-assets',        pathMatch: 'full' },
+  { path: 'equipe',                            redirectTo: 'chartered-valuers-team',          pathMatch: 'full' },
+  { path: 'experts-immobiliers-agrees',        redirectTo: 'chartered-valuers-team',          pathMatch: 'full' },
+  { path: 'contact-expert-immobilier',         redirectTo: 'contact-chartered-valuers',       pathMatch: 'full' },
+  { path: 'expert-immobilier-reseau-national', redirectTo: 'expert-network-chartered-valuers', pathMatch: 'full' },
   { path: 'expertise-immobiliere-services',    redirectTo: 'real-estate-valuation-services',  pathMatch: 'full' },
 ];
 
@@ -99,26 +118,36 @@ const enRoutes: Routes = [
     title: 'Real estate valuation services — Market & rental value',
   },
   {
-    path: 'assets-methods',
+    path: 'valuation-methods-assets',
     loadComponent: () => import('./pages/methods/methods.component').then(m => m.MethodsComponent),
-    title: 'Valuation methods — Approaches & calculations',
+    title: 'Valuation methods & assets — Approaches & calculations',
   },
   {
-    path: 'chartered-valuation-experts',
+    path: 'chartered-valuers-team',
     loadComponent: () => import('./pages/team/team.component').then(m => m.TeamComponent),
-    title: 'Team of chartered valuation experts — Skills & ethics',
+    title: 'Chartered valuers team — Skills & ethics',
   },
   {
-    path: 'news',
+    path: 'real-estate-valuation-news',
     loadComponent: () => import('./pages/news/news.component').then(m => m.NewsComponent),
     title: 'Real estate valuation news — Market, value & regulation',
   },
   {
-    path: 'contact',
-    loadComponent: () => import('./pages/contact/contact.component').then(m => m.ContactComponent),
-    title: 'Contact — Certified real estate valuation in France & Overseas',
+    path: 'real-estate-valuation-news/:slug',
+    loadComponent: () => import('./pages/news-detail/news-detail.component').then(m => m.NewsDetailComponent),
+    // Le SeoService surchargera aussi le titre ici
+    title: 'Real estate valuation news – Article',
   },
-  // wildcard EN (dernier dans le sous-arbre /en)
+  {
+    path: 'contact-chartered-valuers',
+    loadComponent: () => import('./pages/contact/contact.component').then(m => m.ContactComponent),
+    title: 'Contact chartered valuers — Certified real estate valuation',
+  },
+  {
+    path: 'legal-notice',
+    loadComponent: () => import('./pages/legal-mentions/mentions-legales.component').then(m => m.MentionsLegalesComponent),
+    title: 'Legal notice',
+  },
   {
     path: '**',
     loadComponent: () => import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent),
@@ -130,22 +159,24 @@ const enRoutes: Routes = [
    Routes exportées
    ========================= */
 export const routes: Routes = [
-  // FR
   ...frRoutes,
   ...frLegacyRedirects,
 
-  // EN — redirs d’abord, puis canoniques, puis wildcard
   { path: 'en', children: [ ...enLegacyRedirects, ...enRoutes ] },
 
-  // (optionnel) Garde-fous si quelqu’un tape des slugs FR directement sous /en/ en dehors du child-router
-  { path: 'en/experts-immobiliers-agrees',       redirectTo: 'en/chartered-valuation-experts', pathMatch: 'full' },
-  { path: 'en/equipe',                           redirectTo: 'en/chartered-valuation-experts', pathMatch: 'full' },
-  { path: 'en/biens-et-methodes',                redirectTo: 'en/assets-methods',              pathMatch: 'full' },
-  { path: 'en/methodes-evaluation-immobiliere',  redirectTo: 'en/assets-methods',              pathMatch: 'full' },
-  { path: 'en/actualites',                       redirectTo: 'en/news',                        pathMatch: 'full' },
-  { path: 'en/actualites-expertise-immobiliere', redirectTo: 'en/news',                        pathMatch: 'full' },
+  // (optionnel) garde-fous "directs" sous /en/, même si en pratique le child-router les gère déjà
+  { path: 'en/experts-immobiliers-agrees',       redirectTo: 'en/chartered-valuers-team',           pathMatch: 'full' },
+  { path: 'en/equipe',                           redirectTo: 'en/chartered-valuers-team',           pathMatch: 'full' },
+  { path: 'en/biens-et-methodes',                redirectTo: 'en/valuation-methods-assets',         pathMatch: 'full' },
+  { path: 'en/methodes-evaluation-immobiliere',  redirectTo: 'en/valuation-methods-assets',         pathMatch: 'full' },
+  { path: 'en/actualites',                       redirectTo: 'en/real-estate-valuation-news',       pathMatch: 'full' },
+  { path: 'en/actualites-expertise-immobiliere', redirectTo: 'en/real-estate-valuation-news',       pathMatch: 'full' },
+  { path: 'en/news',                             redirectTo: 'en/real-estate-valuation-news',       pathMatch: 'full' },
+  { path: 'en/contact',                          redirectTo: 'en/contact-chartered-valuers',        pathMatch: 'full' },
+  { path: 'en/assets-methods',                   redirectTo: 'en/valuation-methods-assets',         pathMatch: 'full' },
+  { path: 'en/chartered-valuation-experts',      redirectTo: 'en/chartered-valuers-team',           pathMatch: 'full' },
+  { path: 'en/contact-real-estate-valuation',    redirectTo: 'en/contact-chartered-valuers',        pathMatch: 'full' },
 
-  // 404 global
   {
     path: '404',
     loadComponent: () => import('./pages/not-found/not-found.component').then(m => m.NotFoundComponent),

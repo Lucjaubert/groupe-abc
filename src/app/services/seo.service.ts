@@ -56,15 +56,12 @@ const ALT_MAP: { fr: string; en: string }[] = [
 
   { fr: '/expert-immobilier-reseau-national',  en: '/en/expert-network-chartered-valuers' },
   { fr: '/expertise-immobiliere-services',     en: '/en/real-estate-valuation-services' },
-  { fr: '/methodes-evaluation-immobiliere',    en: '/en/assets-methods' },
-  { fr: '/experts-immobiliers-agrees',         en: '/en/chartered-valuation-experts' },
-  { fr: '/actualites-expertise-immobiliere',   en: '/en/news' },
-  { fr: '/contact-expert-immobilier',          en: '/en/contact' },
+  { fr: '/methodes-evaluation-immobiliere',    en: '/en/valuation-methods-assets' },
+  { fr: '/experts-immobiliers-agrees',         en: '/en/chartered-valuers-team' },
+  { fr: '/actualites-expertise-immobiliere',   en: '/en/real-estate-valuation-news' },
+  { fr: '/contact-expert-immobilier',          en: '/en/contact-chartered-valuers' },
 
-  // Si tu as les routes EN correspondantes, dé-commente :
-  // { fr: '/mentions-legales',                   en: '/en/legal-notice' },
-  // { fr: '/politique-de-confidentialite',       en: '/en/privacy-policy' },
-  // { fr: '/politique-des-cookies',              en: '/en/cookies-policy' },
+  { fr: '/mentions-legales',                   en: '/en/legal-notice' },
 ];
 
 @Injectable({ providedIn: 'root' })

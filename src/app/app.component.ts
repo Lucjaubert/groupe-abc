@@ -89,7 +89,8 @@ export class AppComponent implements OnInit, OnDestroy {
       /\/+$/,
       ''
     );
-    const logoUrl = `${origin}/assets/favicons/android-chrome-512x512.png`;
+    // On utilise le même logo que dans le header
+    const logoUrl = `${origin}/assets/img/header/logo-groupe-abc.webp`;
 
     this.seo.setSitewideJsonLd({
       '@context': 'https://schema.org',

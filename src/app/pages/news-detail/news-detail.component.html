@@ -1,0 +1,65 @@
+<section class="news-detail" *ngIf="!loading && post; else loadingTpl">
+  <div class="news-detail__breadcrumb">
+    <a [routerLink]="['/']">
+      Accueil
+    </a>
+    <span>›</span>
+    <a [routerLink]="backLink()">
+      {{ lang === 'en' ? 'News' : 'Actualités' }}
+    </a>
+    <span>›</span>
+    <span class="news-detail__breadcrumb-current">
+      {{ post.title }}
+    </span>
+  </div>
+
+  <header class="news-detail__header">
+    <div class="news-detail__meta-top">
+      <span class="theme-chip" [ngClass]="themeClass(post.themeKey)">
+        {{ post.theme }}
+      </span>
+
+      <span class="news-detail__firm" *ngIf="post.firmName">
+        {{ post.firmName }}
+      </span>
+    </div>
+
+    <h1 class="news-detail__title">
+      {{ post.title }}
+    </h1>
+
+    <p class="news-detail__meta-bottom" *ngIf="post.author || post.date">
+      <ng-container *ngIf="post.author">
+        {{ post.author }}
+      </ng-container>
+      <ng-container *ngIf="post.author && post.date">
+        ·
+      </ng-container>
+      <ng-container *ngIf="post.date">
+        {{ post.date }}
+      </ng-container>
+    </p>
+  </header>
+
+  <figure class="news-detail__image" *ngIf="post._imageUrl">
+    <img
+      [src]="post._imageUrl"
+      [alt]="post.title || ''"
+      class="news-detail__image-img"
+    />
+  </figure>
+
+  <article class="news-detail__body" [innerHTML]="post.html"></article>
+
+  <div class="news-detail__back">
+    <a [routerLink]="backLink()" class="news-detail__back-link">
+      ← {{ lang === 'en' ? 'Back to news' : 'Retour aux actualités' }}
+    </a>
+  </div>
+</section>
+
+<ng-template #loadingTpl>
+  <section class="news-detail news-detail--loading">
+    <p>Chargement de l’article…</p>
+  </section>
+</ng-template>

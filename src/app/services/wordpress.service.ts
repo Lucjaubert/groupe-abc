@@ -19,7 +19,13 @@ export interface PartnerCard {
  * Helpers URL images/HTML WP
  * =========================== */
 const SITE_ORIGIN = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
-const HOST = (() => { try { return new URL(SITE_ORIGIN).host; } catch { return 'groupe-abc.fr'; } })();
+const HOST = (() => {
+  try {
+    return new URL(SITE_ORIGIN).host;
+  } catch {
+    return 'groupe-abc.fr';
+  }
+})();
 
 /** Normalise une URL d’upload WP vers /wordpress/wp-content/uploads/... */
 function fixWpMediaUrl(url?: string): string {
@@ -31,8 +37,10 @@ function fixWpMediaUrl(url?: string): string {
   if (/^\/\//.test(u)) u = 'https:' + u;
 
   // déjà correct
-  if (new RegExp(`^https?:\/\/${HOST}\/wordpress\/wp-content\/uploads\/`, 'i').test(u) ||
-      /^\/wordpress\/wp-content\/uploads\//i.test(u)) {
+  if (
+    new RegExp(`^https?:\/\/${HOST}\/wordpress\/wp-content\/uploads\/`, 'i').test(u) ||
+    /^\/wordpress\/wp-content\/uploads\//i.test(u)
+  ) {
     return u;
   }
 
@@ -55,11 +63,17 @@ function rewriteUploadsInHtml(html?: string): string {
     // src="/wp-content/uploads/..."
     .replace(/(\ssrc=['"])\s*\/wp-content\/uploads\//gi, '$1/wordpress/wp-content/uploads/')
     // src="https://<any-host>/wp-content/uploads/..."
-    .replace(/(\ssrc=['"])https?:\/\/[^/]+\/wp-content\/uploads\//gi, `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`)
+    .replace(
+      /(\ssrc=['"])https?:\/\/[^/]+\/wp-content\/uploads\//gi,
+      `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`
+    )
     // url('/wp-content/uploads/...')
     .replace(/(url\(\s*['"]?)\/wp-content\/uploads\//gi, '$1/wordpress/wp-content/uploads/')
     // url('https://<any-host>/wp-content/uploads/...')
-    .replace(/(url\(\s*['"]?)https?:\/\/[^/]+\/wp-content\/uploads\//gi, `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`);
+    .replace(
+      /(url\(\s*['"]?)https?:\/\/[^/]+\/wp-content\/uploads\//gi,
+      `$1${SITE_ORIGIN}/wordpress/wp-content/uploads/`
+    );
 }
 
 @Injectable({ providedIn: 'root' })
@@ -70,9 +84,14 @@ export class WordpressService {
    * Bases d’API :
    * - primaire : environment.apiWpV2 (dans ton prod = .../wordpress/wp-json/wp/v2)
    * - fallback : version sans /wordpress (ou l’inverse si primaire sans /wordpress)
+   * - si env vide → fallback par défaut sur groupe-abc.fr/wordpress/wp-json/wp/v2
    */
   private bases: string[] = (() => {
-    const primary = (environment.apiWpV2 || '').replace(/\/+$/, '');
+    const fromEnv = (environment.apiWpV2 || '').trim();
+
+    // Si env vide ou mal renseigné → fallback par défaut
+    const primaryRaw = fromEnv || 'https://groupe-abc.fr/wordpress/wp-json/wp/v2';
+    const primary = primaryRaw.replace(/\/+$/, '');
     let alt = primary;
 
     if (/\/wordpress\/wp-json\/wp\/v2$/i.test(primary)) {
@@ -99,17 +118,34 @@ export class WordpressService {
       if (idx >= this.bases.length) {
         return throwError(() => new Error(`All API bases failed for ${endpoint}`));
       }
-      return this.http.get<T>(this.urlJoin(this.bases[idx], endpoint), { params }).pipe(
+
+      const base = this.bases[idx];
+      const url = this.urlJoin(base, endpoint);
+
+      // Logs côté SSR uniquement
+      if (typeof window === 'undefined') {
+        console.log('[WP][SSR] GET', url);
+      }
+
+      return this.http.get<T>(url, { params }).pipe(
         catchError(err => {
           const status = err?.status ?? 0;
+          const message = err?.message;
+
+          if (typeof window === 'undefined') {
+            console.error('[WP][SSR] ERROR', { url, status, message });
+          }
+
           // Fallback si réseau/404/5xx
           if ([0, 404, 500, 502, 503, 504].includes(status)) {
             return tryBase(idx + 1);
           }
+
           return throwError(() => err);
         })
       );
     };
+
     return tryBase(0);
   }
 
@@ -132,6 +168,11 @@ export class WordpressService {
           acf.identity_section.who_text = rewriteUploadsInHtml(acf.identity_section.who_text);
         }
         return acf;
+      }),
+      catchError(err => {
+        console.error('[WP] getHomepageData error:', err);
+        // En SSR, on renvoie un ACF vide plutôt que de faire planter tout le rendu
+        return of({});
       })
     );
   }
@@ -157,18 +198,20 @@ export class WordpressService {
 
         return this.getJson<any[]>('news', p);
       }),
-      map(posts => posts.map(p => {
-        const post = p?.acf?.post ?? {};
-        return {
-          link: p?.link || '',
-          title: post.post_title || p?.title?.rendered || '',
-          html: rewriteUploadsInHtml(post.post_content || p?.excerpt?.rendered || ''),
-          logo: fixWpMediaUrl(post.logo_firm || ''),
-          firm: post.nam_firm || '',
-          theme: post.theme || '',
-          authorDate: [post.author, post.date].filter(Boolean).join(' – ')
-        };
-      })),
+      map(posts =>
+        posts.map(p => {
+          const post = p?.acf?.post ?? {};
+          return {
+            link: p?.link || '',
+            title: post.post_title || p?.title?.rendered || '',
+            html: rewriteUploadsInHtml(post.post_content || p?.excerpt?.rendered || ''),
+            logo: fixWpMediaUrl(post.logo_firm || ''),
+            firm: post.nam_firm || '',
+            theme: post.theme || '',
+            authorDate: [post.author, post.date].filter(Boolean).join(' – ')
+          };
+        })
+      ),
       catchError(() => of([]))
     );
   }
@@ -180,9 +223,19 @@ export class WordpressService {
         const acf = list?.[0]?.acf ?? {};
         const id = acf?.identity_section ?? {};
         return [
-          id.where_item_1, id.where_item_2, id.where_item_3, id.where_item_4,
-          id.where_item_5, id.where_item_6, id.where_item_7, id.where_item_8
+          id.where_item_1,
+          id.where_item_2,
+          id.where_item_3,
+          id.where_item_4,
+          id.where_item_5,
+          id.where_item_6,
+          id.where_item_7,
+          id.where_item_8
         ].filter(Boolean) as string[];
+      }),
+      catchError(err => {
+        console.error('[WP] getHomepageIdentityWhereItems error:', err);
+        return of([]);
       })
     );
   }
@@ -260,7 +313,10 @@ export class WordpressService {
         }
         return item;
       }),
-      catchError(err => { console.error('[WP] getServicesData error:', err); return of({}); })
+      catchError(err => {
+        console.error('[WP] getServicesData error:', err);
+        return of({});
+      })
     );
   }
 
@@ -274,7 +330,10 @@ export class WordpressService {
     const params = new HttpParams().set('per_page', '1');
     return this.getJson<any[]>('methods', params).pipe(
       map(list => list?.[0] ?? {}),
-      catchError(err => { console.error('[WP] getMethodsData error:', err); return of({}); })
+      catchError(err => {
+        console.error('[WP] getMethodsData error:', err);
+        return of({});
+      })
     );
   }
 
@@ -284,7 +343,7 @@ export class WordpressService {
     return this.getJson<any[]>('team', params).pipe(
       map(list => {
         const item = list?.[0] ?? {};
-        const acf  = item?.acf ?? {};
+        const acf = item?.acf ?? {};
 
         // HERO intro
         if (acf?.hero?.intro_body) {
@@ -308,7 +367,7 @@ export class WordpressService {
           }
 
           if (typeof f.partner_image === 'string') f.partner_image = fixWpMediaUrl(f.partner_image);
-          if (typeof f.logo === 'string')          f.logo          = fixWpMediaUrl(f.logo);
+          if (typeof f.logo === 'string') f.logo = fixWpMediaUrl(f.logo);
           if (typeof f.organism_logo === 'string') f.organism_logo = fixWpMediaUrl(f.organism_logo);
         }
 
@@ -319,7 +378,10 @@ export class WordpressService {
 
         return item;
       }),
-      catchError(err => { console.error('[WP] getTeamData error:', err); return of({}); })
+      catchError(err => {
+        console.error('[WP] getTeamData error:', err);
+        return of({});
+      })
     );
   }
 
@@ -331,13 +393,13 @@ export class WordpressService {
       if (!/^firm_\d+$/i.test(key)) return;
       const f = firms[key] || {};
 
-      const area     = (f.region_name ?? '').toString().trim();
-      const first    = (f.partner_lastname ?? '').toString().trim();
-      const last     = (f.partner_familyname ?? '').toString().trim();
-      const jobHtml  = (f.titles_partner_ ?? f.titles_partner ?? '').toString();
-      const photo    = fixWpMediaUrl((f.partner_image ?? '').toString().trim());
+      const area = (f.region_name ?? '').toString().trim();
+      const first = (f.partner_lastname ?? '').toString().trim();
+      const last = (f.partner_familyname ?? '').toString().trim();
+      const jobHtml = (f.titles_partner_ ?? f.titles_partner ?? '').toString();
+      const photo = fixWpMediaUrl((f.partner_image ?? '').toString().trim());
       const linkedin = (f.partner_lk ?? '').toString().trim();
-      const email    = (f.contact_email ?? '').toString().trim();
+      const email = (f.contact_email ?? '').toString().trim();
 
       if ((first || last) && photo) {
         out.push({ photo, area, nameFirst: first, nameLast: last, jobHtml, linkedin, email });
@@ -363,8 +425,9 @@ export class WordpressService {
     if (!q) return of(null);
 
     return this.getTeamPartners().pipe(
-      map((cards: PartnerCard[]) =>
-        cards.find(c => (`${c.nameFirst} ${c.nameLast}`.toLowerCase()).includes(q)) || null
+      map(
+        (cards: PartnerCard[]) =>
+          cards.find(c => `${c.nameFirst} ${c.nameLast}`.toLowerCase().includes(q)) || null
       ),
       catchError(() => of(null))
     );

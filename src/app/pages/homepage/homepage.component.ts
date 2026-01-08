@@ -25,11 +25,12 @@ import { firstValueFrom, filter, Subscription } from 'rxjs';
 
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
-import { FaqService, FaqItem } from '../../services/faq.service';
-import { environment } from '../../../environments/environment';
+import { getSeoForRoute } from '../../config/seo.routes';
 
 import { AlignFirstWordDirective } from '../../shared/directives/align-first-word.directive';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
+import { FaqService } from '../../services/faq.service';
+import { getFaqForRoute, FaqItem } from '../../config/faq.routes';
 
 /* ===== Types ===== */
 type Slide = { title: string; subtitle: string; bg: string | number };
@@ -114,7 +115,7 @@ const HERO_TEXT = {
 type KF = { value: number; fr: string; en: string };
 
 const KEY_FIGURES_STATIC: KF[] = [
-  { value: 7, fr: 'cabinets associés', en: 'associated firms' },
+  { value: 8, fr: 'cabinets associés', en: 'associated firms' },
   { value: 70, fr: 'collaborateurs', en: 'employees' },
   { value: 35, fr: 'experts immobiliers', en: 'real estate experts' },
   {
@@ -151,91 +152,6 @@ const KEY_FIGURES_STATIC: KF[] = [
   { value: 1800, fr: 'expertises/an', en: 'appraisals/year' },
 ];
 
-/* ==========================================================
-   SEO HOMEPAGE (Matthieu)
-   ========================================================== */
-const HOME_SEO = {
-  fr: {
-    title:
-      'Expertise immobilière nationale – Valeur vénale & locative certifiée',
-    description:
-      'Experts agréés en évaluation immobilière sur tout le territoire. Rapports conformes à la Charte de l’expertise et aux standards RICS.',
-    schema: {
-      serviceType: 'Expertise immobilière',
-      provider: 'Experts immobiliers agréés',
-      areaServed: 'France métropolitaine et Outre-mer',
-    },
-    urlCible: '/expertise-immobiliere-nationale',
-  },
-  en: {
-    title:
-      'National real-estate appraisal – Certified market & rental value',
-    description:
-      'Accredited experts providing real-estate appraisal across France. Reports compliant with the French Valuation Charter and RICS standards.',
-    schema: {
-      serviceType: 'Real-estate appraisal',
-      provider: 'Accredited valuation experts',
-      areaServed: 'Metropolitan France and Overseas',
-    },
-    urlCible: '/en/expertise-immobiliere-nationale',
-  },
-} as const;
-
-/* ====== FAQ Accueil ====== */
-const HOME_FAQ_FR: FaqItem[] = [
-  {
-    q: 'Qu’est-ce qu’une expertise immobilière certifiée ?',
-    a: 'Une expertise immobilière certifiée consiste à déterminer la valeur vénale ou locative d’un bien immobilier à partir de méthodes reconnues (comparaison, rendement, coût de remplacement, etc.). Elle est réalisée par un expert agréé selon la Charte de l’expertise et les standards RICS, et a une valeur juridique opposable.',
-  },
-  {
-    q: 'Dans quels cas demander une expertise immobilière ?',
-    a: 'Succession/partage, divorce/donation, financement bancaire/garantie hypothécaire, litige locatif, expropriation, arbitrage patrimonial. Le rapport d’expertise est objectif, documenté et reconnu par banques, notaires, tribunaux et assurances.',
-  },
-  {
-    q: 'Quelle est la différence entre valeur vénale et valeur locative ?',
-    a: 'La valeur vénale est le prix estimé en cas de vente dans des conditions normales de marché. La valeur locative correspond au loyer annuel estimé selon les caractéristiques du bien et le marché local.',
-  },
-  {
-    q: 'Comment se déroule une expertise immobilière ?',
-    a: 'Analyse du bien (surface, état, localisation, contraintes), étude des références de marché, application de méthodes normalisées (comparaison, rendement, DCF, sol & construction) et rédaction d’un rapport détaillant méthodologie et conclusion chiffrée.',
-  },
-  {
-    q: 'Pourquoi faire appel à un expert agréé plutôt qu’à une agence immobilière ?',
-    a: 'L’expert agréé agit en indépendance, engage sa responsabilité professionnelle et produit des rapports opposables (Charte/RICS). Une agence délivre une estimation indicative à visée commerciale.',
-  },
-  {
-    q: 'L’expertise immobilière est-elle reconnue par les banques et les tribunaux ?',
-    a: 'Oui, une expertise réalisée par un expert agréé RICS ou membre de l’IFEI est reconnue par les établissements financiers, juridictions civiles et administrations fiscales.',
-  },
-];
-
-const HOME_FAQ_EN: FaqItem[] = [
-  {
-    q: 'What is a certified real-estate appraisal?',
-    a: 'A certified appraisal determines market or rental value using recognized methods (comparables, income/cap rate, replacement cost, etc.). It is performed by an accredited expert under the French Valuation Charter and RICS standards and has legal standing.',
-  },
-  {
-    q: 'When should I request an appraisal?',
-    a: 'Inheritance/partition, divorce/donation, bank financing/mortgage collateral, rental disputes, expropriation, estate rebalancing. The report is objective, documented and recognized by banks, notaries, courts and insurers.',
-  },
-  {
-    q: 'Market value vs. rental value — what’s the difference?',
-    a: 'Market value is the estimated sale price under normal conditions. Rental value is the estimated annual rent per the asset’s features and local market.',
-  },
-  {
-    q: 'How does an appraisal proceed?',
-    a: 'Asset analysis, market references, application of normalized methods (comparables, yield/DCF, land & building), and a reasoned report detailing methodology and a quantified conclusion.',
-  },
-  {
-    q: 'Why use an accredited expert rather than a broker?',
-    a: 'The accredited expert acts independently, is professionally liable and delivers legally enforceable reports (Charter/RICS). A broker provides indicative, commercial estimates.',
-  },
-  {
-    q: 'Are appraisals recognized by banks and courts?',
-    a: 'Yes. Appraisals by RICS-accredited or IFEI-member experts are recognized by financial institutions, civil courts and tax authorities.',
-  },
-];
-
 /* ========================================================== */
 
 @Component({
@@ -250,21 +166,12 @@ const HOME_FAQ_EN: FaqItem[] = [
   templateUrl: './homepage.component.html',
   styleUrls: ['./homepage.component.scss'],
 })
-export class HomepageComponent
-  implements OnInit, AfterViewInit, OnDestroy
-{
+export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   acf: any = {};
 
   s(v: unknown): string {
     return v == null ? '' : '' + v;
   }
-
-  /* ---------- SEO configurable ---------- */
-  siteUrl = environment.siteUrl;
-  canonicalPath = '/';
-  canonicalPathEn = '/en/';
-  socialImage = '/assets/og/og-default.jpg';
-  orgName = 'Groupe ABC';
 
   /* ---------- Langue ---------- */
   private currentLang: 'fr' | 'en' = 'fr';
@@ -311,8 +218,8 @@ export class HomepageComponent
     this.whereOpen = !this.whereOpen;
   }
 
-  private TEAM_ROUTE_FR = '/equipes';
-  private TEAM_ROUTE_EN = '/en/team';
+  private TEAM_ROUTE_FR = '/experts-immobiliers-agrees';
+  private TEAM_ROUTE_EN = '/en/chartered-valuers-team';
 
   private readonly REGION_LABEL_TO_KEY: Record<string, string> = {
     'Grand Paris': 'idf',
@@ -356,6 +263,9 @@ export class HomepageComponent
   /* ---------- NEWS ---------- */
   news: News | null = null;
 
+  /* ---------- FAQ SEO-only (homepage) ---------- */
+  faqItems: FaqItem[] = [];
+
   get currentSlide(): Slide | undefined {
     return this.heroSlides[this.heroIndex];
   }
@@ -376,13 +286,13 @@ export class HomepageComponent
 
   /* ---------- DI ---------- */
   private wp = inject(WordpressService);
-  private seo = inject(SeoService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
   private navSub?: Subscription;
-  private faq = inject(FaqService);
   private platformId = inject(PLATFORM_ID);
   private doc = inject(DOCUMENT);
+  private seo = inject(SeoService);
+  private faq = inject(FaqService);
 
   // GSAP
   private gsap: any | null = null;
@@ -427,45 +337,23 @@ export class HomepageComponent
   ngOnInit(): void {
     this.currentLang = this.detectInitialLang();
 
+    // FAQ "en dur" pour la home (faq.routes.ts)
+    this.faqItems = getFaqForRoute('home', this.currentLang);
+    if (this.faqItems && this.faqItems.length) {
+      if (this.currentLang === 'en') {
+        this.faq.set([], this.faqItems);
+      } else {
+        this.faq.set(this.faqItems, []);
+      }
+    } else {
+      this.faq.clear();
+    }
+
+    // SEO centralisé (route "home")
+    this.applySeoFromConfig();
+
     this.heroSlides = this.buildDefaultHeroSlides();
     this.heroIndex = 0;
-
-    // Premier set SEO (propre, conforme brief)
-    const isEN0 = this.isEnglish();
-    const canon0 = this.normalizeUrl(
-      this.siteUrl,
-      isEN0 ? this.canonicalPathEn : this.canonicalPath
-    );
-    const M0 = isEN0 ? HOME_SEO.en : HOME_SEO.fr;
-
-    this.seo.update({
-      title: M0.title,
-      description: M0.description,
-      robots: 'index,follow',
-      canonical: canon0,
-      alternates: [
-        {
-          lang: 'fr',
-          href: this.normalizeUrl(this.siteUrl, this.canonicalPath),
-        },
-        {
-          lang: 'en',
-          href: this.normalizeUrl(this.siteUrl, this.canonicalPathEn),
-        },
-        {
-          lang: 'x-default',
-          href: this.normalizeUrl(this.siteUrl, this.canonicalPath),
-        },
-      ],
-      image: this.absUrl(this.socialImage, this.siteUrl),
-      type: 'website',
-      lang: isEN0 ? 'en' : 'fr',
-      locale: isEN0 ? 'en_US' : 'fr_FR',
-      localeAlt: isEN0 ? ['fr_FR'] : ['en_US'],
-    });
-
-    // FAQ globale homepage (visible + JSON-LD ensuite)
-    this.faq.set(HOME_FAQ_FR, HOME_FAQ_EN);
 
     // Données WP
     this.wp.getHomepageData().subscribe(async (acf) => {
@@ -473,7 +361,6 @@ export class HomepageComponent
 
       this.extractHero();
       this.preloadHeroImages();
-      await this.applySeoFromHero(); // enrichit OG image + JSON-LD propre
 
       this.heroDataReady = true;
       this.tryInitHeroIntro();
@@ -498,13 +385,26 @@ export class HomepageComponent
       }
     });
 
-    // NavigationEnd → rafraîchir SEO/lang si besoin
+    // NavigationEnd → rafraîchir langue / hero / key figures si Weglot change l’URL
     this.navSub = this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
-      .subscribe(async () => {
+      .subscribe(() => {
         this.currentLang = this.detectInitialLang();
+
+        // Refresh FAQ + service sur navigation (utile si changement de langue côté URL)
+        this.faqItems = getFaqForRoute('home', this.currentLang);
+        if (this.faqItems && this.faqItems.length) {
+          if (this.currentLang === 'en') {
+            this.faq.set([], this.faqItems);
+          } else {
+            this.faq.set(this.faqItems, []);
+          }
+        } else {
+          this.faq.clear();
+        }
+
+        this.applySeoFromConfig();
         this.extractHero();
-        await this.applySeoFromHero();
         this.extractKeyFigures();
         this.cdr.detectChanges();
       });
@@ -569,6 +469,8 @@ export class HomepageComponent
         this.handleVisibilityChange
       );
     }
+    // Nettoyage FAQ globale
+    this.faq.clear();
     this.weglotOff?.();
     try {
       this.ScrollTrigger?.getAll?.().forEach((t: any) => t.kill());
@@ -616,9 +518,23 @@ export class HomepageComponent
         if (next === this.currentLang) return;
         this.currentLang = next;
 
+        // Recalcule FAQ + service quand la langue change
+        this.faqItems = getFaqForRoute('home', this.currentLang);
+        if (this.faqItems && this.faqItems.length) {
+          if (this.currentLang === 'en') {
+            this.faq.set([], this.faqItems);
+          } else {
+            this.faq.set(this.faqItems, []);
+          }
+        } else {
+          this.faq.clear();
+        }
+
+        // Recalcule le SEO quand la langue change
+        this.applySeoFromConfig();
+
         this.extractHero();
         this.extractKeyFigures();
-        this.applySeoFromHero();
         this.cdr.detectChanges();
         this.wgRefreshTick();
       };
@@ -801,16 +717,24 @@ export class HomepageComponent
         },
       });
 
-      tl.to(titleEl, {
-        autoAlpha: 1,
-        y: 0,
-        duration: DUR_T,
-      }, 0.5)
-        .to(subEl, {
+      tl.to(
+        titleEl,
+        {
           autoAlpha: 1,
           y: 0,
-          duration: DUR_S,
-        }, 0.8)
+          duration: DUR_T,
+        },
+        0.5
+      )
+        .to(
+          subEl,
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: DUR_S,
+          },
+          0.8
+        )
         .to(
           dots,
           {
@@ -1059,141 +983,6 @@ export class HomepageComponent
     this.whereItems = this.identity.whereItems;
   }
 
-  /* ========================= SEO + JSON-LD Homepage ========================= */
-
-  private async applySeoFromHero(): Promise<void> {
-    const isEN = this.isEnglish();
-    const M = isEN ? HOME_SEO.en : HOME_SEO.fr;
-
-    const canonPath = isEN
-      ? this.canonicalPathEn
-      : this.canonicalPath;
-    const canonical = this.normalizeUrl(
-      this.siteUrl,
-      canonPath
-    );
-
-    const lang = isEN ? 'en' : 'fr';
-    const locale = isEN ? 'en_US' : 'fr_FR';
-    const localeAlt = isEN ? ['fr_FR'] : ['en_US'];
-
-    const altFR = this.normalizeUrl(
-      this.siteUrl,
-      this.canonicalPath
-    );
-    const altEN = this.normalizeUrl(
-      this.siteUrl,
-      this.canonicalPathEn
-    );
-    const alternates = [
-      { lang: 'fr', href: altFR },
-      { lang: 'en', href: altEN },
-      { lang: 'x-default', href: altFR },
-    ];
-
-    const title = M.title.trim();
-    const description = M.description.trim();
-
-    const first = this.heroSlides[0];
-    const rawImgPref = first?.bg || this.socialImage;
-    const resolved = await this.resolveMedia(
-      rawImgPref as any
-    );
-    const ogAbs = this.absUrl(
-      resolved || this.socialImage,
-      this.siteUrl
-    );
-
-    const base = this.siteUrl.replace(/\/+$/, '');
-    const siteId = `${base}#website`;
-    const orgId = `${base}#organization`;
-
-    // Service (brief Matthieu)
-    const serviceNode = {
-      '@type': 'Service',
-      '@id': `${canonical}#expertise-immobiliere`,
-      serviceType: M.schema.serviceType,
-      provider: {
-        '@id': orgId,
-        name: M.schema.provider,
-      },
-      areaServed: M.schema.areaServed,
-    };
-
-    // FAQ JSON-LD (FAQPage spécifique homepage)
-    const faqSource = isEN ? HOME_FAQ_EN : HOME_FAQ_FR;
-    const faqLd =
-      faqSource && faqSource.length
-        ? {
-            '@type': 'FAQPage',
-            '@id': `${canonical}#faq`,
-            mainEntity: faqSource.map((x) => ({
-              '@type': 'Question',
-              name: x.q,
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: x.a,
-              },
-            })),
-          }
-        : null;
-
-    // WebPage pour la home (canonical = / ou /en/)
-    const webpage = {
-      '@type': 'WebPage',
-      '@id': `${canonical}#home`,
-      url: canonical,
-      name: title,
-      description,
-      inLanguage: isEN ? 'en-US' : 'fr-FR',
-      isPartOf: { '@id': siteId },
-      ...(ogAbs
-        ? { primaryImageOfPage: ogAbs }
-        : {}),
-    };
-
-    // Breadcrumb minimal
-    const breadcrumb = {
-      '@type': 'BreadcrumbList',
-      '@id': `${canonical}#breadcrumb`,
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: isEN ? 'Home' : 'Accueil',
-          item: canonical,
-        },
-      ],
-    };
-
-    const graph: any[] = [
-      webpage,
-      breadcrumb,
-      serviceNode,
-    ];
-    if (faqLd) graph.push(faqLd);
-
-    this.seo.update({
-      title,
-      description,
-      lang,
-      locale,
-      localeAlt,
-      canonical,
-      robots: 'index,follow',
-      image: ogAbs,
-      imageAlt: `${this.orgName} – ${
-        isEN ? 'Homepage' : 'Accueil'
-      }`,
-      type: 'website',
-      alternates,
-      jsonLd: {
-        '@context': 'https://schema.org',
-        '@graph': graph,
-      },
-    });
-  }
-
   /* ========================= What / How / Download ========================= */
 
   private async extractWhatHowAndPresentation(): Promise<void> {
@@ -1224,10 +1013,6 @@ export class HomepageComponent
     const dl = this.acf?.presentation_download_section || {};
     const rawFile = dl.presentation_file;
     const resolved = await this.resolveMedia(rawFile);
-    const abs = this.absUrl(
-      resolved || '',
-      this.siteUrl
-    );
 
     this.presentation = {
       text1:
@@ -1236,7 +1021,7 @@ export class HomepageComponent
       text2:
         dl.presentation_button_text_2 ||
         'Groupe ABC',
-      file: abs || null,
+      file: resolved || null,
     };
   }
 
@@ -1582,12 +1367,11 @@ export class HomepageComponent
   ): string | undefined {
     if (!link) return undefined;
     try {
-      const u = new URL(
-        link,
+      const origin =
         (this.doc as any)?.defaultView
           ?.location?.origin ||
-          this.siteUrl
-      );
+        'https://groupe-abc.fr';
+      const u = new URL(link, origin);
       const parts = u.pathname
         .split('/')
         .filter(Boolean);
@@ -1600,42 +1384,102 @@ export class HomepageComponent
     }
   }
 
-  private normalizeUrl(
-    base: string,
-    path: string
-  ): string {
-    const b = base.endsWith('/')
-      ? base.slice(0, -1)
-      : base;
-    const p = path.startsWith('/')
-      ? path
-      : `/${path}`;
-    return `${b}${p}`;
-  }
-
-  private absUrl(
-    url: string,
-    origin: string
-  ): string {
-    if (!url) return '';
-    try {
-      if (/^https?:\/\//i.test(url))
-        return url;
-      if (/^\/\//.test(url))
-        return 'https:' + url;
-      const o = origin.endsWith('/')
-        ? origin.slice(0, -1)
-        : origin;
-      return url.startsWith('/')
-        ? o + url
-        : `${o}/${url}`;
-    } catch {
-      return url;
-    }
-  }
-
   trackByIndex(i: number): number {
     return i;
+  }
+
+  /* ========================= FAQ JSON-LD helper ========================= */
+
+  private buildFaqJsonLd(faqItems: FaqItem[], pageUrl: string): any | null {
+    if (!faqItems || !faqItems.length) return null;
+
+    return {
+      '@type': 'FAQPage',
+      '@id': pageUrl.replace(/\/+$/, '') + '#faq',
+      mainEntity: faqItems.map((it) => ({
+        '@type': 'Question',
+        name: it.q,
+        acceptedAnswer: {
+          '@type': 'Answer',
+          text: it.a,
+        },
+      })),
+    };
+  }
+
+  /* ========================= SEO centralisé ========================= */
+
+  private applySeoFromConfig(): void {
+    const lang: 'fr' | 'en' = this.currentLang;
+    const baseSeo = getSeoForRoute('home', lang);
+
+    const canonical = (baseSeo.canonical || '').replace(/\/+$/, '');
+
+    let origin = 'https://groupe-abc.fr';
+    try {
+      if (canonical) {
+        const u = new URL(canonical);
+        origin = `${u.protocol}//${u.host}`;
+      }
+    } catch {
+      // fallback sur domaine par défaut
+    }
+
+    const website = {
+      '@type': 'WebSite',
+      '@id': `${origin}#website`,
+      url: origin,
+      name: 'Groupe ABC',
+      inLanguage: lang === 'en' ? 'en-US' : 'fr-FR',
+    };
+
+    const organization = {
+      '@type': 'Organization',
+      '@id': `${origin}#organization`,
+      name: 'Groupe ABC',
+      url: origin,
+      sameAs: [
+        'https://www.linkedin.com/company/groupe-abc-experts/',
+      ],
+    };
+
+    const pageUrl = canonical || origin;
+
+    const webpage = {
+      '@type': 'WebPage',
+      '@id': `${pageUrl}#webpage`,
+      url: pageUrl,
+      name: baseSeo.title,
+      description: baseSeo.description,
+      inLanguage: lang === 'en' ? 'en-US' : 'fr-FR',
+      isPartOf: { '@id': `${origin}#website` },
+    };
+
+    const breadcrumb = {
+      '@type': 'BreadcrumbList',
+      '@id': `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: lang === 'en' ? 'Home' : 'Accueil',
+          item: pageUrl,
+        },
+      ],
+    };
+
+    const faqLd = this.buildFaqJsonLd(this.faqItems, pageUrl);
+
+    const graph: any[] = [website, organization, webpage, breadcrumb];
+    if (faqLd) graph.push(faqLd);
+
+    this.seo.update({
+      ...baseSeo,
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@graph': graph,
+      },
+    });
   }
 
   /* ========================= Weglot helpers ========================= */

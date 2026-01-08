@@ -1,7 +1,22 @@
 // run-ssr.mjs
+
+// ===== Angular / SSR init =====
+import '@angular/compiler';
+import '@angular/platform-server/init';
+import 'zone.js/node';
+import 'source-map-support/register.js';
+
+// ===== Node / ESM imports =====
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createRequire } from 'node:module';
+
+// Imports ESM
+import express from 'express';
+import compression from 'compression';
+import morgan from 'morgan';
+import { CommonEngine } from '@angular/ssr';
+
 const require = createRequire(import.meta.url);
 
 // ---------- DOM SHIM (Domino) ----------
@@ -19,9 +34,12 @@ globalThis.Event = win.Event;
 globalThis.CSSStyleDeclaration = win.CSSStyleDeclaration;
 
 // getComputedStyle / raf
-globalThis.getComputedStyle = globalThis.getComputedStyle ?? (() => ({}));
-globalThis.requestAnimationFrame = globalThis.requestAnimationFrame ?? (cb => setTimeout(cb, 0));
-globalThis.cancelAnimationFrame = globalThis.cancelAnimationFrame ?? (id => clearTimeout(id));
+globalThis.getComputedStyle =
+  globalThis.getComputedStyle ?? (() => ({}));
+globalThis.requestAnimationFrame =
+  globalThis.requestAnimationFrame ?? (cb => setTimeout(cb, 0));
+globalThis.cancelAnimationFrame =
+  globalThis.cancelAnimationFrame ?? (id => clearTimeout(id));
 globalThis.matchMedia = globalThis.matchMedia ?? (() => ({
   matches:false, media:'', onchange:null,
   addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {}, dispatchEvent() { return false; }
@@ -39,12 +57,12 @@ const makeStore = () => {
     get length() { return s.size; },
   };
 };
-globalThis.localStorage  = globalThis.localStorage  ?? makeStore();
+globalThis.localStorage   = globalThis.localStorage   ?? makeStore();
 globalThis.sessionStorage = globalThis.sessionStorage ?? makeStore();
 
 // ---- PATCH HISTORY : ne pas réassigner l'objet, compléter son prototype
 try {
-  const HistoryCtor = win.History || (win.history && win.history.constructor);
+  const HistoryCtor  = win.History || (win.history && win.history.constructor);
   const HistoryProto = HistoryCtor ? HistoryCtor.prototype : Object.getPrototypeOf(win.history);
   const ensure = (name) => {
     if (typeof HistoryProto[name] !== 'function') {
@@ -115,12 +133,19 @@ try {
     const _set = CSSDecl.setProperty;
     CSSDecl.setProperty = function (prop, value, priority) {
       if (value == null) value = '';
-      return _set ? _set.call(this, String(prop ?? ''), String(value), priority ?? '') : undefined;
+      return _set
+        ? _set.call(this, String(prop ?? ''), String(value), priority ?? '')
+        : undefined;
     };
     const _val = CSSDecl.value;
     if (typeof _val === 'function') {
       CSSDecl.value = function (v) {
-        return _val.call(this, v == null ? '' : v);
+        try {
+          return _val.call(this, v == null ? '' : v);
+        } catch (e) {
+          // On absorbe l'erreur Domino CSS (TokenStream.type undefined)
+          return '';
+        }
       };
     }
   }
@@ -130,37 +155,66 @@ try {
 window.addEventListener = window.addEventListener ?? function(){};
 window.removeEventListener = window.removeEventListener ?? function(){};
 
-// ---------- CHARGEMENT DU BUNDLE SERVEUR ----------
-const mod = require('./server/main.cjs');
-const port = process.env.PORT || 4000;
+// ---------- CHARGEMENT DU BUNDLE SERVEUR + EXPRESS SSR ----------
 
-(async () => {
+// On charge le bundle SSR Angular compilé (CommonJS)
+const serverBundle = require('./server/main.cjs');
+
+// On cherche le "bootstrap token"
+let bootstrapToken = null;
+if (typeof serverBundle.default === 'function') {
+  // Angular 17/18 standalone : export default function bootstrap() { ... }
+  bootstrapToken = serverBundle.default;
+} else if (serverBundle.AppServerModule) {
+  bootstrapToken = serverBundle.AppServerModule;
+} else if (serverBundle.AppComponent) {
+  bootstrapToken = serverBundle.AppComponent;
+}
+
+if (!bootstrapToken) {
+  console.error('❌ Aucun token de bootstrap trouvé dans ./server/main.cjs. Exports =', Object.keys(serverBundle));
+  process.exit(1);
+}
+
+// Express app
+const app = express();
+app.disable('x-powered-by');
+app.use(compression());
+app.use(morgan('tiny'));
+
+// Fichiers statiques Angular (dist/browser)
+app.use(
+  express.static(join(process.cwd(), 'browser'), {
+    maxAge: '1y',
+    index: false,
+  })
+);
+
+// Healthcheck Node
+app.get('/healthz-node', (_req, res) =>
+  res.status(200).type('text/plain').send('ok')
+);
+
+// Angular SSR
+const engine = new CommonEngine();
+
+app.get('*', async (req, res) => {
   try {
-    if (typeof mod.run === 'function') {
-      console.log('[SSR] Using mod.run()');
-      await mod.run();
-      return;
-    }
-    if (typeof mod.app === 'function') {
-      console.log('[SSR] Using mod.app()');
-      const app = await mod.app();
-      app.get?.('/healthz-node', (_req, res) => res.send('ok'));
-      app.listen(port, () => console.log(`[SSR] listening on :${port}`));
-      return;
-    }
-    if (typeof mod.default === 'function') {
-      console.log('[SSR] Using default export');
-      const ret = await mod.default(port);
-      if (ret?.listen) {
-        ret.get?.('/healthz-node', (_req, res) => res.send('ok'));
-        ret.listen(port, () => console.log(`[SSR] listening on :${port}`));
-      }
-      return;
-    }
-    console.error('❌ Entrée serveur non reconnue. Exports =', Object.keys(mod));
-    process.exit(1);
+    const html = await engine.render({
+      bootstrap: bootstrapToken,
+      document : indexHtml,
+      url      : req.originalUrl,
+      providers: [],
+    });
+    res.status(200).set('X-SSR', '1').send(html);
   } catch (err) {
-    console.error('❌ SSR bootstrap failed:', err);
-    process.exit(1);
+    console.error('❌ Erreur SSR, fallback CSR', err?.message || err);
+    res.status(200).set('X-SSR', '0').send(indexHtml);
   }
-})();
+});
+
+// Lancement HTTP sur 4300 (aligné avec Nginx)
+const port = parseInt(process.env.PORT || '4300', 10);
+app.listen(port, () => {
+  console.log(`✅ [SSR] Groupe ABC en écoute sur http://localhost:${port} (bundle: ./server/main.cjs)`);
+});

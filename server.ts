@@ -6,13 +6,20 @@ import { APP_BASE_HREF } from '@angular/common';
 import cors from 'cors';
 import fetch from 'node-fetch';
 
-// ───────────────────────────────────────────────────────────
-// Chemins de build (adaptés à ton VPS)
-const DIST_FOLDER = '/var/www/lucjaubert_c_usr14/data/www/groupe-abc.fr/groupe-abc_angular/browser';
-const SSR_FOLDER  = '/var/www/lucjaubert_c_usr14/data/www/groupe-abc.fr/groupe-abc_angular/server';
+/**
+ * Dossiers de build, RELATIFS au bundle serveur.
+ *
+ * Si ton fichier compilé est : /var/www/.../groupe-abc_angular/server/server.cjs
+ * alors __dirname = /var/www/.../groupe-abc_angular/server
+ *
+ * ➜ BROWSER_DIST = /var/www/.../groupe-abc_angular/browser
+ * ➜ SSR_DIST     = /var/www/.../groupe-abc_angular/server
+ */
+const SSR_DIST = __dirname;
+const BROWSER_DIST = join(__dirname, '..', 'browser');
 
-// ⚠️ On charge le bundle SSR Angular en CommonJS
-const mainServer = require(join(SSR_FOLDER, 'main.cjs')).default;
+// On charge le bundle SSR Angular (dist/groupe-abc/server/main.cjs)
+const mainServer = require(join(SSR_DIST, 'main.cjs')).default;
 
 const app = express();
 
@@ -23,7 +30,7 @@ app.use((req, res, next) => {
 });
 
 // End-point de santé (utile pour tests et monitoring)
-app.get('/healthz', (_req: express.Request, res: express.Response) => {
+app.get('/healthz', (_req, res) => {
   res.status(200).send('ok');
 });
 
@@ -44,40 +51,45 @@ app.use('/wp-json', async (req, res) => {
 });
 
 // Fichiers statiques Angular (assets, *.js, *.css, etc.)
-app.get('*.*', express.static(DIST_FOLDER, { maxAge: '1y', immutable: true }));
+app.get('*.*', express.static(BROWSER_DIST, {
+  maxAge: '1y',
+  immutable: true,
+}));
 
-// ───────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // SSR : on délègue le rendu à Angular Universal
-app.get('*', async (req: express.Request, res: express.Response) => {
+// ─────────────────────────────────────────────
+app.get('*', async (req, res) => {
   try {
     const engine = new CommonEngine();
+
     const html = await engine.render({
       bootstrap: mainServer,
-      // server.cjs est placé dans .../server ; index.html est dans .../browser
-      documentFilePath: join(__dirname, '..', 'browser', 'index.html'),
+      documentFilePath: join(BROWSER_DIST, 'index.html'),
       url: req.originalUrl,
-      publicPath: DIST_FOLDER,
+      publicPath: BROWSER_DIST,
       providers: [
         { provide: APP_BASE_HREF, useValue: req.baseUrl },
-        // Tokens "chaîne" pour exposer req/res à l'app Angular (ex: 404 SSR)
         { provide: 'SSR_REQUEST',  useValue: req },
         { provide: 'SSR_RESPONSE', useValue: res },
       ],
     });
 
-    // Ne pas écraser un statut déjà posé (ex: 404 depuis le composant not-found)
+    // Ne pas écraser un statut déjà posé (ex: 404 depuis ton composant NotFound)
     if (!res.headersSent) {
       res.send(html);
     }
   } catch (err) {
     console.error('❌ Erreur lors du rendu SSR', err);
-    if (!res.headersSent) res.status(500).send('Une erreur est survenue');
+    if (!res.headersSent) {
+      res.status(500).send('Une erreur est survenue');
+    }
   }
 });
 
-// ───────────────────────────────────────────────────────────
 // Port : aligne avec Nginx (proxy_pass -> 127.0.0.1:4300)
 const PORT = parseInt(process.env['PORT'] ?? '4300', 10);
+
 app.listen(PORT, () => {
   console.log(`✅ Serveur Node SSR en cours sur http://localhost:${PORT}`);
 });
