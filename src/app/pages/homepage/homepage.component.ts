@@ -303,7 +303,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   teamTitleLine2 = 'de 8 experts à vos côtés';
 
   /* ====================== Helpers ====================== */
-  private isBrowser(): boolean {
+  // <<< RENDUE PUBLIQUE POUR UTILISATION DANS LE TEMPLATE >>>
+  isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
   }
 
