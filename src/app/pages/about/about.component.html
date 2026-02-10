@@ -213,62 +213,62 @@
       </h2>
 
       <ul class="aff-list" role="list">
-        <li
-          #affRowEl
-          class="aff-row prehide-row py-2"
-          *ngFor="let a of affiliations; let i = index; trackBy: trackByIndex"
-          [class.open]="affOpen[i]"
+  <li
+    #affRowEl
+    class="aff-row prehide-row py-2"
+    *ngFor="let a of affiliations; let i = index; trackBy: trackByIndex"
+    [class.open]="affOpen[i]"
 
-          tabindex="0"
-          role="button"
-          [attr.aria-expanded]="affOpen[i] ? 'true' : 'false'"
-          [attr.aria-controls]="'aff-desc-' + i"
-          [attr.aria-label]="(affOpen[i] ? 'Réduire : ' : 'Déployer : ') + (a.excerpt || 'Appartenance')"
+    tabindex="0"
+    role="button"
+    [attr.aria-expanded]="affOpen[i] ? 'true' : 'false'"
+    [attr.aria-controls]="'aff-desc-' + i"
+    [attr.aria-label]="(affOpen[i] ? 'Réduire : ' : 'Déployer : ') + (a.excerpt || 'Appartenance')"
 
-          (click)="toggleAff(i)"
-          (keydown)="onRowToggleKeydown($event, i, 'aff')"
-        >
-          <div class="aff-line">
-            <img
-              class="aff-logo"
-              *ngIf="a.logo"
-              [src]="a.logo || ''"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
+    (click)="toggleAff(i)"
+    (keydown)="onRowToggleKeydown($event, i, 'aff')"
+  >
+    <div class="aff-line">
+      <img
+        class="aff-logo"
+        *ngIf="a.logo"
+        [src]="a.logo || ''"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
 
-            <div class="aff-name" *ngIf="a.excerpt as n">
-              <span class="aff-abbr">{{ splitAffName(n).abbr }} : </span>
-              <span class="aff-label">{{ splitAffName(n).label }}</span>
-            </div>
+      <div class="aff-name" *ngIf="a.excerpt as n">
+        <span class="aff-abbr">{{ splitAffName(n).abbr }} :</span>
+        <span class="aff-label">{{ splitAffName(n).label }}</span>
+      </div>
 
-            <!-- ✅ Le chevron continue de fonctionner, mais ne déclenche pas le click du <li> -->
-            <button
-              class="aff-toggle"
-              type="button"
-              [attr.aria-expanded]="affOpen[i] ? 'true':'false'"
-              (click)="$event.stopPropagation(); toggleAff(i)"
-            >
-              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-              </svg>
-              <span class="sr-only">{{ affOpen[i] ? 'Réduire' : 'Déployer' }}</span>
-            </button>
-          </div>
+      <!-- ✅ Le chevron continue de fonctionner, mais ne déclenche pas le click du <li> -->
+      <button
+        class="aff-toggle"
+        type="button"
+        [attr.aria-expanded]="affOpen[i] ? 'true':'false'"
+        (click)="$event.stopPropagation(); toggleAff(i)"
+      >
+        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <span class="sr-only">{{ affOpen[i] ? 'Réduire' : 'Déployer' }}</span>
+      </button>
+    </div>
 
-          <div class="aff-desc" *ngIf="a.content && affOpen[i]" [attr.id]="'aff-desc-' + i">
-            <div class="aff-desc-inner" [innerHTML]="a.content"></div>
-          </div>
-        </li>
-      </ul>
+    <div class="aff-desc" *ngIf="a.content && affOpen[i]" [attr.id]="'aff-desc-' + i">
+      <div class="aff-desc-inner" [innerHTML]="a.content"></div>
+    </div>
+  </li>
+</ul>
 
     </div>
   </section>
 
   <!-- ========================= DEONTOLOGIE ========================= -->
   <section class="section deon" *ngIf="deontology.length">
-  <div class="section-inner px-0 pt-0">
+  <div class="section-inner px-0">
     <h2 #deonTitleEl class="deon-title prehide" *ngIf="deonTitle">
       {{ deonTitle }}
     </h2>
@@ -352,57 +352,49 @@
 </section>
 
 
-  <!-- ========================= TIMELINE ========================= -->
-  <section class="section timeline" *ngIf="timeline.length">
-    <div class="timeline-bg">
-      <div class="timeline-layer"></div>
-    </div>
+<!-- ========================= TIMELINE ========================= -->
+<section class="section timeline" *ngIf="timeline.length">
+  <div class="timeline-bg">
+    <div class="timeline-layer"></div>
+  </div>
 
-    <div class="section-inner px-0">
-      <div class="tl-grid">
-        <span
-          #tlRail
-          class="tl-rail"
-          aria-hidden="true">
-        </span>
+  <div class="section-inner px-0">
+    <div class="tl-grid">
+      <span #tlRail class="tl-rail" aria-hidden="true"></span>
 
-        <h2
-          #tlTitleEl
-          class="timeline-title prehide">
-          {{ timelineTitle }}
-        </h2>
+      <h2 #tlTitleEl class="timeline-title prehide">
+        {{ timelineTitle }}
+      </h2>
 
-        <ng-container *ngFor="let s of timeline; trackBy: trackByIndex">
+      <ng-container *ngFor="let s of timeline; trackBy: trackByIndex">
+        <div #tlYearEl class="tl-year prehide">
+          {{ s.year }}
+        </div>
+
+        <div #tlBodyEl class="tl-body prehide">
+          <!-- ✅ title en HTML -->
+          <h2
+            class="tl-item-title"
+            *ngIf="s.title"
+            [innerHTML]="s.title">
+          </h2>
+
           <div
-            #tlYearEl
-            class="tl-year prehide">
-            {{ s.year }}
+            class="tl-desc"
+            *ngIf="s.html"
+            [innerHTML]="s.html">
           </div>
-
-          <div
-            #tlBodyEl
-            class="tl-body prehide">
-            <h2
-              class="tl-item-title"
-              *ngIf="s.title">
-              {{ s.title }}
-            </h2>
-
-            <div
-              class="tl-desc"
-              *ngIf="s.html"
-              [innerHTML]="s.html">
-            </div>
-          </div>
-        </ng-container>
-      </div>
+        </div>
+      </ng-container>
     </div>
-  </section>
+  </div>
+</section>
+
 
 
   <!-- ===== FAQ (visible / crawlable) — FIN DE PAGE ===== -->
 <section class="faq" *ngIf="faqItems.length" aria-labelledby="faq-title">
-  <div class="faq-inner px-0">
+  <div class="faq-inner px-0 pt-lg-8 pb-lg-8 pt-3 pb-lg-5">
     <h2 id="faq-title" class="faq-title">FAQ</h2>
 
     <ul class="faq-list" role="list">

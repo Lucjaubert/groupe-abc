@@ -32,6 +32,8 @@ import {
 } from '../../config/methods-assets.slugs';
 
 /* ===== Types ===== */
+type Lang = 'fr' | 'en';
+
 type Hero = { title: string; subtitle?: string; html?: SafeHtml | string };
 
 type DomainItem = {
@@ -42,7 +44,7 @@ type DomainItem = {
   title?: string;
   sub?: string[];
 
-  /** ✅ Ajouts pour lien (slug canonical WP) */
+  /** ✅ slug canonical WP (pour routerLink) */
   slug?: string;
 };
 
@@ -73,7 +75,6 @@ type Piloting = {
   flows: { src: string | number; url?: string; caption?: string }[];
 };
 
-/** Index des pages "methods_asset" (slug + titres) */
 type MethodsAssetIndexItem = { slug: string; title: string };
 
 @Component({
@@ -91,17 +92,17 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
 
-  /* SSR/browser helpers */
   private platformId = inject(PLATFORM_ID);
   private doc = inject(DOCUMENT);
 
+  private navSub?: Subscription;
+  private weglotOff?: () => void;
+
+  // GSAP lazy (SSR-safe)
   private gsap: any | null = null;
   private ScrollTrigger: any | null = null;
 
-  /** si true -> on est sur une page fille : on masque le listing et on laisse le router-outlet */
-  isDetail = false;
-
-  private navSub?: Subscription;
+  private pendingBind = false;
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -109,17 +110,29 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private async setupGsap(): Promise<void> {
     if (!this.isBrowser() || this.gsap) return;
-    const { gsap } = await import('gsap');
-    const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-    this.gsap = gsap;
-    this.ScrollTrigger = ScrollTrigger;
     try {
-      this.gsap.registerPlugin(this.ScrollTrigger);
-    } catch {}
+      const { gsap } = await import('gsap');
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      this.gsap = gsap;
+      this.ScrollTrigger = ScrollTrigger;
+      try {
+        this.gsap.registerPlugin(this.ScrollTrigger);
+      } catch {}
+    } catch {
+      // keep null
+    }
+
+    if (this.pendingBind && this.gsap) {
+      this.pendingBind = false;
+      this.scheduleBind();
+    }
   }
 
+  /** si true -> on est sur une page fille : on masque le listing et on laisse le router-outlet */
+  isDetail = false;
+
   /* ===== Données ===== */
-  hero: Hero = { title: 'Biens & Méthodes', subtitle: '', html: '' };
+  hero: Hero = { title: 'Biens & méthodes', subtitle: '', html: '' };
 
   domains: Domain[] = [];
 
@@ -129,7 +142,6 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   evalTitleText = 'Nos méthodes d’évaluation';
 
-  /** ✅ FIX : bool d’affichage fiable + html injecté */
   evalIntroHas = false;
   evalIntroHtml: SafeHtml | string = '';
 
@@ -139,9 +151,10 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   pilotingTitle = 'Pilotage des missions';
   piloting: Piloting = { html: '', flows: [] };
 
-  /* ===== FAQ ===== */
+  /* ===== FAQ (visible/crawlable + JSON-LD) ===== */
   faqItems: FaqItem[] = [];
   openFaqIndexes = new Set<number>();
+  private faqPlayed = false;
 
   /* ===== Fallbacks ===== */
   defaultDomainIcon = '/assets/fallbacks/icon-placeholder.svg';
@@ -170,6 +183,16 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('pilotIntro') pilotIntroRef!: ElementRef<HTMLElement>;
   @ViewChild('pilotGrid') pilotGridRef!: ElementRef<HTMLElement>;
 
+  /* ===== FAQ refs (animation) ===== */
+  @ViewChild('faqWrapEl') faqWrapEl!: ElementRef<HTMLElement>;
+  @ViewChild('faqTitleEl') faqTitleEl!: ElementRef<HTMLElement>;
+  @ViewChildren('faqItemEl') faqItemEls!: QueryList<ElementRef<HTMLElement>>;
+
+  // subs
+  private assetColsSub?: Subscription;
+  private evalRowsSub?: Subscription;
+  private faqItemsSub?: Subscription;
+
   /* ===== Flags ===== */
   private heroBound = false;
   private assetsBound = false;
@@ -193,7 +216,10 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private async preloadAssetsIndex(): Promise<void> {
-    if (this.assetsIndexLoaded) return;
+    if (this.assetsIndexLoaded || !this.isBrowser()) {
+      this.assetsIndexLoaded = true;
+      return;
+    }
 
     const url = `${this.getWpRestBase()}/methods_asset?per_page=100`;
     try {
@@ -311,48 +337,24 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     usufruit: 'expertise-usufruit',
   };
 
-  /* ===== Init ===== */
+  /* ===================== Lifecycle ===================== */
   ngOnInit(): void {
-    this.navSub = this.router.events
-      .pipe(filter((e) => e instanceof NavigationEnd))
-      .subscribe(async () => {
-        const wasDetail = this.isDetail;
-        this.isDetail = this.isChildActive();
-
-        if (wasDetail && !this.isDetail) {
-          await this.setupGsap();
-          this.heroBound = false;
-          this.assetsBound = false;
-
-          queueMicrotask(() =>
-            requestAnimationFrame(() => {
-              this.scheduleBind();
-            }),
-          );
-        }
-
-        if (!wasDetail && this.isDetail) {
-          try {
-            this.ScrollTrigger?.getAll?.().forEach((t: any) => t.kill());
-          } catch {}
-        }
-      });
-
     this.isDetail = this.isChildActive();
 
-    const lang = this.getLang();
-    this.faqItems = getFaqForRoute('methods', lang) || [];
-    this.applySeoFromConfig(this.faqItems);
+    // FAQ + SEO (lang)
+    this.refreshLangFaqSeo();
 
+    // préload index WP (browser only)
     this.preloadAssetsIndex().catch(() => {});
 
+    // Data WP page "methods"
     this.wp.getMethodsData().subscribe(async (payload: any) => {
       const root = Array.isArray(payload) ? payload[0] : payload;
       const acf = root?.acf ?? {};
 
       /* ---------- HERO ---------- */
       this.hero = {
-        title: acf?.hero?.section_title || 'Biens & Méthodes',
+        title: acf?.hero?.section_title || 'Biens & méthodes',
         subtitle: acf?.hero?.section_subtitle || '',
         html: this.safe(acf?.hero?.intro_body || ''),
       };
@@ -455,16 +457,14 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         image: wheelToken,
         imageUrl: wheelUrl,
         centerAlt: (vw?.center_label || '').toString(),
-        introHtml: this.wheelIntroHtml, // ok
+        introHtml: this.wheelIntroHtml,
       };
 
       /* ---------- MÉTHODES ---------- */
       const mroot = acf?.methods ?? {};
       this.evalTitleText = mroot?.section_title || 'Nos méthodes d’évaluation';
 
-      // ✅ FIX : détection texte réel (même si HTML vide type <p>&nbsp;</p>)
       const evalIntroRaw = (mroot?.method_intro || '').toString().trim();
-
       const evalIntroStripped = evalIntroRaw
         .replace(/<[^>]*>/g, '')
         .replace(/&nbsp;/g, ' ')
@@ -513,22 +513,100 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         flows: flowsWithUrl,
       };
 
-      // ✅ IMPORTANT : après injection WP, on relance un bind (GSAP + ViewChild qui apparaissent via *ngIf)
-      if (!this.isDetail) {
-        queueMicrotask(() =>
-          requestAnimationFrame(() => {
-            this.scheduleBind();
-          }),
-        );
-      }
+      // Après injection WP, rebind animations (si listing)
+      if (!this.isDetail) this.scheduleBind();
     });
+
+    // NavigationEnd : detail/list + refresh lang/faq/seo
+    this.navSub = this.router.events
+      .pipe(filter((e) => e instanceof NavigationEnd))
+      .subscribe(async () => {
+        const wasDetail = this.isDetail;
+        this.isDetail = this.isChildActive();
+
+        // refresh FAQ/SEO si URL/lang change
+        this.refreshLangFaqSeo();
+
+        if (wasDetail && !this.isDetail) {
+          await this.setupGsap();
+          this.heroBound = false;
+          this.assetsBound = false;
+          this.faqPlayed = false;
+          this.scheduleBind();
+        }
+
+        if (!wasDetail && this.isDetail) {
+          try {
+            this.ScrollTrigger?.getAll?.().forEach((t: any) => t.kill());
+          } catch {}
+        }
+      });
+
+    // Weglot language change (sans navigation)
+    this.bindWeglotLangEvents();
+  }
+
+  async ngAfterViewInit(): Promise<void> {
+    if (!this.isBrowser()) return;
+    await this.setupGsap();
+
+    if (this.isDetail) return;
+
+    this.assetColsSub = this.assetCols?.changes?.subscribe(() => this.scheduleBind());
+    this.evalRowsSub = this.evalRows?.changes?.subscribe(() => this.scheduleBind());
+
+    // FAQ: si la liste change (langue), rebind + reset
+    this.faqItemsSub = this.faqItemEls?.changes?.subscribe(() => this.scheduleBind());
+
+    this.scheduleBind();
+  }
+
+  ngOnDestroy(): void {
+    this.navSub?.unsubscribe();
+    this.weglotOff?.();
+
+    this.assetColsSub?.unsubscribe();
+    this.evalRowsSub?.unsubscribe();
+    this.faqItemsSub?.unsubscribe();
+
+    if (!this.isBrowser()) return;
+    try {
+      this.ScrollTrigger?.getAll?.().forEach((t: any) => t.kill());
+    } catch {}
+    try {
+      this.gsap?.globalTimeline?.clear?.();
+    } catch {}
+  }
+
+  /* ===================== UI handlers ===================== */
+
+  toggleEval(i: number) {
+    const willOpen = !this.evalOpen[i];
+    this.evalOpen.fill(false);
+    if (willOpen) this.evalOpen[i] = true;
+  }
+
+  toggleFaqItem(i: number): void {
+    if (this.openFaqIndexes.has(i)) this.openFaqIndexes.delete(i);
+    else this.openFaqIndexes.add(i);
+  }
+
+  isFaqItemOpen(i: number): boolean {
+    return this.openFaqIndexes.has(i);
+  }
+
+  trackByIndex(i: number) {
+    return i;
+  }
+
+  private safe(html: string): SafeHtml {
+    return this.sanitizer.bypassSecurityTrustHtml(html || '');
   }
 
   /* ==========================================================
-    ✅ Navigation
+    ✅ Navigation (assets)
     ========================================================== */
 
-  // ✅ utilisé par le HTML via [routerLink]="assetLink(it.slug!)"
   assetLink(slug: string): any[] {
     const lang = this.getLang();
     return buildMethodsAssetRoute(lang, slug);
@@ -537,7 +615,6 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   goToAsset(slug: string): void {
     const raw = (slug || '').trim();
     if (!raw) return;
-
     const lang = this.getLang();
     this.router.navigate(buildMethodsAssetRoute(lang, raw)).catch(() => {});
   }
@@ -566,31 +643,133 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     return false;
   }
 
-  /* ===== Accordéon ===== */
-  toggleEval(i: number) {
-    const willOpen = !this.evalOpen[i];
-    this.evalOpen.fill(false);
-    if (willOpen) this.evalOpen[i] = true;
+  /* ===================== Lang / FAQ / SEO ===================== */
+
+  private getLang(): Lang {
+    // 1) Weglot si dispo
+    if (this.isBrowser()) {
+      try {
+        const wg: any = (window as any).Weglot;
+        const l = wg?.getCurrentLang?.();
+        if (l === 'en' || l === 'fr') return l;
+      } catch {}
+    }
+
+    // 2) html lang
+    try {
+      const htmlLang = (this.doc?.documentElement?.lang || '').toLowerCase();
+      if (htmlLang.startsWith('en')) return 'en';
+      if (htmlLang.startsWith('fr')) return 'fr';
+    } catch {}
+
+    // 3) path (/en/...)
+    if (this.isBrowser()) {
+      try {
+        const path = window.location.pathname || '/';
+        if (path.startsWith('/en')) return 'en';
+      } catch {}
+    }
+
+    return 'fr';
   }
 
-  trackByIndex(i: number) {
-    return i;
+  private refreshLangFaqSeo(): void {
+    const lang = this.getLang();
+
+    this.faqItems = getFaqForRoute('methods', lang) || [];
+    this.openFaqIndexes.clear();
+
+    // reset anim FAQ (si changement lang / navigation)
+    this.faqPlayed = false;
+
+    this.applySeoFromConfig(this.faqItems);
+
+    // rebind (si gsap pas prêt => pendingBind)
+    this.scheduleBind();
   }
 
-  private safe(html: string): SafeHtml {
-    return this.sanitizer.bypassSecurityTrustHtml(html || '');
+  private bindWeglotLangEvents(): void {
+    if (!this.isBrowser()) return;
+
+    try {
+      const wg: any = (window as any).Weglot;
+      if (!wg?.on || !wg?.getCurrentLang) return;
+
+      const onChanged = () => {
+        this.refreshLangFaqSeo();
+      };
+
+      wg.on('initialized', onChanged);
+      wg.on('languageChanged', onChanged);
+
+      this.weglotOff = () => {
+        try {
+          wg?.off?.('initialized', onChanged);
+        } catch {}
+        try {
+          wg?.off?.('languageChanged', onChanged);
+        } catch {}
+      };
+    } catch {}
   }
 
-  toggleFaqItem(i: number): void {
-    if (this.openFaqIndexes.has(i)) this.openFaqIndexes.delete(i);
-    else this.openFaqIndexes.add(i);
+  private applySeoFromConfig(faqItems: FaqItem[] = []): void {
+    const lang = this.getLang();
+    const baseSeo = getSeoForRoute('methods', lang);
+
+    const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
+
+    const canonicalAbs =
+      baseSeo.canonical && /^https?:\/\//i.test(baseSeo.canonical)
+        ? baseSeo.canonical
+        : this.normalizeUrl(siteUrl, baseSeo.canonical || METHODS_ASSETS_BASE[lang]);
+
+    const existingJsonLd: any = baseSeo.jsonLd;
+    let baseGraph: any[] = [];
+    let baseContext = 'https://schema.org';
+
+    if (existingJsonLd) {
+      if (Array.isArray(existingJsonLd['@graph'])) baseGraph = existingJsonLd['@graph'];
+      else baseGraph = [existingJsonLd];
+      if (typeof existingJsonLd['@context'] === 'string') baseContext = existingJsonLd['@context'];
+    }
+
+    const faqLd =
+      faqItems && faqItems.length
+        ? {
+            '@type': 'FAQPage',
+            '@id': `${canonicalAbs}#faq`,
+            mainEntity: faqItems.map((q) => ({
+              '@type': 'Question',
+              name: q.q,
+              acceptedAnswer: { '@type': 'Answer', text: q.a },
+            })),
+          }
+        : null;
+
+    const graph: any[] = [...baseGraph];
+    if (faqLd) graph.push(faqLd);
+
+    this.seo.update({
+      ...baseSeo,
+      canonical: canonicalAbs,
+      jsonLd: graph.length
+        ? {
+            '@context': baseContext,
+            '@graph': graph,
+          }
+        : undefined,
+    });
   }
 
-  isFaqItemOpen(i: number): boolean {
-    return this.openFaqIndexes.has(i);
+  private normalizeUrl(base: string, path: string): string {
+    const b = base.endsWith('/') ? base.slice(0, -1) : base;
+    const p = path.startsWith('/') ? path : `/${path}`;
+    return `${b}${p}`;
   }
 
-  /** Résout ID WP / objet / string → URL */
+  /* ===================== Media resolve ===================== */
+
   private async resolveMedia(token: any): Promise<string> {
     if (!token) return '';
 
@@ -627,7 +806,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   /* =================
      ✅ Slug resolution
      ================= */
-  private resolveSlugFromLabel(label: string, lang: 'fr' | 'en'): string {
+  private resolveSlugFromLabel(label: string, lang: Lang): string {
     const key = this.normalizeLabel(label);
 
     const fromIndex = this.assetsIndexByTitle.get(key);
@@ -672,32 +851,15 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ================= Animations ================= */
-  async ngAfterViewInit(): Promise<void> {
-    if (!this.isBrowser()) return;
-    await this.setupGsap();
-
-    if (this.isDetail) return;
-
-    this.assetCols?.changes?.subscribe(() => this.scheduleBind());
-    this.evalRows?.changes?.subscribe(() => this.scheduleBind());
-
-    this.scheduleBind();
-  }
-
-  ngOnDestroy(): void {
-    if (this.navSub) this.navSub.unsubscribe();
-    if (!this.isBrowser()) return;
-
-    try {
-      this.ScrollTrigger?.getAll?.().forEach((t: any) => t.kill());
-    } catch {}
-    try {
-      this.gsap?.globalTimeline?.clear?.();
-    } catch {}
-  }
 
   private scheduleBind() {
-    if (!this.isBrowser() || !this.gsap) return;
+    if (!this.isBrowser()) return;
+
+    if (!this.gsap) {
+      this.pendingBind = true;
+      return;
+    }
+    if (this.isDetail) return;
     if (this.bindScheduled) return;
 
     this.bindScheduled = true;
@@ -710,12 +872,14 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private forceInitialHidden(host: HTMLElement) {
+    if (!this.isBrowser() || !this.gsap) return;
+
     const gsap = this.gsap!;
-    // ⚠️ IMPORTANT : on cache uniquement ce qui est encore prehide/prehide-row
     const pre = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));
     const rows = Array.from(host.querySelectorAll<HTMLElement>('.prehide-row'));
-    if (pre.length) gsap.set(pre, { autoAlpha: 0, y: 20 });
-    if (rows.length) gsap.set(rows, { autoAlpha: 0 });
+
+    if (pre.length) gsap.set(pre, { autoAlpha: 0, y: 20, visibility: 'hidden' });
+    if (rows.length) gsap.set(rows, { autoAlpha: 0, y: 12, visibility: 'hidden' });
   }
 
   private bindAnimations(): void {
@@ -723,7 +887,6 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const gsap = this.gsap!;
     const ScrollTrigger = this.ScrollTrigger!;
-
     const host = this.doc.querySelector('.methods-wrapper') as HTMLElement | null;
     if (host) this.forceInitialHidden(host);
 
@@ -732,10 +895,17 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch {}
 
     const EASE = 'power3.out';
+
     const rmPrehide = (els: Element | Element[]) => {
       (Array.isArray(els) ? els : [els]).forEach((el) =>
         el.classList.remove('prehide', 'prehide-row'),
       );
+    };
+
+    const show = (el?: Element | null) => {
+      if (!el) return;
+      rmPrehide(el);
+      gsap.set(el, { visibility: 'visible' });
     };
 
     /* HERO */
@@ -743,30 +913,32 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     const h2 = this.heroSubRef?.nativeElement;
     const hi = this.heroIntroRef?.nativeElement;
 
+    gsap.killTweensOf([h1, h2, hi].filter(Boolean) as HTMLElement[]);
+
     if (!this.heroBound) {
       const tl = gsap.timeline({ defaults: { ease: EASE } });
 
       if (h1) {
         tl.fromTo(
           h1,
-          { autoAlpha: 0, y: 20 },
-          { autoAlpha: 1, y: 0, duration: 0.6, onStart: () => rmPrehide(h1) },
+          { autoAlpha: 0, y: 20, visibility: 'hidden' },
+          { autoAlpha: 1, y: 0, duration: 0.6, onStart: () => show(h1) },
           0,
         );
       }
       if (h2) {
         tl.fromTo(
           h2,
-          { autoAlpha: 0, y: 18 },
-          { autoAlpha: 1, y: 0, duration: 0.5, onStart: () => rmPrehide(h2) },
+          { autoAlpha: 0, y: 18, visibility: 'hidden' },
+          { autoAlpha: 1, y: 0, duration: 0.5, onStart: () => show(h2) },
           0.06,
         );
       }
       if (hi) {
         tl.fromTo(
           hi,
-          { autoAlpha: 0, y: 18 },
-          { autoAlpha: 1, y: 0, duration: 0.5, onStart: () => rmPrehide(hi) },
+          { autoAlpha: 0, y: 18, visibility: 'hidden' },
+          { autoAlpha: 1, y: 0, duration: 0.5, onStart: () => show(hi) },
           0.12,
         );
       }
@@ -775,7 +947,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     } else {
       [h1, h2, hi].forEach((el) => {
         if (!el) return;
-        rmPrehide(el);
+        show(el);
         gsap.set(el, { autoAlpha: 1, y: 0, clearProps: 'transform,opacity,visibility' });
       });
     }
@@ -839,7 +1011,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           duration: 0.52,
           ease: EASE,
           scrollTrigger: { trigger: wTitle, start: 'top 85%', once: true },
-          onStart: () => rmPrehide(wTitle),
+          onStart: () => show(wTitle),
         },
       );
     }
@@ -854,7 +1026,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           duration: 0.48,
           ease: EASE,
           scrollTrigger: { trigger: wTitle || wIntro, start: 'top 85%', once: true },
-          onStart: () => rmPrehide(wIntro),
+          onStart: () => show(wIntro),
         },
       );
     }
@@ -869,7 +1041,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           duration: 0.52,
           ease: 'power2.out',
           scrollTrigger: { trigger: wWrap, start: 'top 85%', once: true },
-          onStart: () => rmPrehide(wWrap),
+          onStart: () => show(wWrap),
         },
       );
     }
@@ -890,7 +1062,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           duration: 0.52,
           ease: EASE,
           scrollTrigger: { trigger: eTitle, start: 'top 85%', once: true },
-          onStart: () => rmPrehide(eTitle),
+          onStart: () => show(eTitle),
         },
       );
     }
@@ -905,7 +1077,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           duration: 0.48,
           ease: EASE,
           scrollTrigger: { trigger: eTitle || eIntro, start: 'top 85%', once: true },
-          onStart: () => rmPrehide(eIntro),
+          onStart: () => show(eIntro),
         },
       );
     }
@@ -937,7 +1109,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           duration: 0.5,
           ease: EASE,
           scrollTrigger: { trigger: pTitle, start: 'top 85%', once: true },
-          onStart: () => rmPrehide(pTitle),
+          onStart: () => show(pTitle),
         },
       );
     }
@@ -952,7 +1124,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
           duration: 0.5,
           ease: EASE,
           scrollTrigger: { trigger: pIntro, start: 'top 85%', once: true },
-          onStart: () => rmPrehide(pIntro),
+          onStart: () => show(pIntro),
           onComplete: () => gsap.set(pIntro, { clearProps: 'transform,opacity,visibility' }),
         },
       );
@@ -972,111 +1144,73 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
         .to(figures, { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.08 }, 0.06);
     }
 
-    try {
-      ScrollTrigger.refresh();
-    } catch {}
-  }
+    /* FAQ — fin de page (doit être la DERNIÈRE anim) */
+    const faqWrap = this.faqWrapEl?.nativeElement || null;
+    const faqTitle = this.faqTitleEl?.nativeElement || null;
+    const faqItems = (this.faqItemEls?.toArray() || []).map((r) => r.nativeElement);
 
-  /* ==================== Langue & SEO centralisé ==================== */
+    const playFaq = () => {
+      if (!faqWrap) return;
 
-  private getLang(): 'fr' | 'en' {
-    try {
-      const htmlLang = (this.doc?.documentElement?.lang || '').toLowerCase();
-      if (htmlLang.startsWith('en')) return 'en';
-      if (htmlLang.startsWith('fr')) return 'fr';
-    } catch {}
+      // On garde tout caché jusqu’au moment exact
+      rmPrehide(faqWrap);
+      gsap.fromTo(
+        faqWrap,
+        { autoAlpha: 0, y: 14, visibility: 'hidden' },
+        { autoAlpha: 1, y: 0, duration: 0.35, ease: EASE, onStart: () => show(faqWrap) }
+      );
 
-    if (this.isBrowser()) {
-      try {
-        const path = window.location.pathname || '/';
-        if (path.startsWith('/en/')) return 'en';
-      } catch {}
-    }
-
-    return 'fr';
-  }
-
-  private applySeoFromConfig(faqItems: FaqItem[] = []): void {
-    const lang = this.getLang();
-    const baseSeo = getSeoForRoute('methods', lang);
-
-    const canonical = (baseSeo.canonical || '').toString();
-    let origin = 'https://groupe-abc.fr';
-
-    try {
-      if (canonical) {
-        const u = new URL(canonical);
-        origin = `${u.protocol}//${u.host}`;
+      if (faqTitle) {
+        rmPrehide(faqTitle);
+        gsap.fromTo(
+          faqTitle,
+          { autoAlpha: 0, y: 16, visibility: 'hidden' },
+          { autoAlpha: 1, y: 0, duration: 0.45, ease: EASE, onStart: () => show(faqTitle) }
+        );
       }
-    } catch {}
 
-    const website = {
-      '@type': 'WebSite',
-      '@id': `${origin}#website`,
-      url: origin,
-      name: 'Groupe ABC',
-      inLanguage: lang === 'en' ? 'en-US' : 'fr-FR',
+      if (faqItems.length) {
+        rmPrehide(faqItems);
+        gsap.set(faqItems, { autoAlpha: 0, y: 12, visibility: 'hidden' });
+        gsap.to(faqItems, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.34,
+          stagger: 0.08,
+          ease: EASE,
+          onStart: () => faqItems.forEach((el) => show(el)),
+          onComplete: () => gsap.set(faqItems, { clearProps: 'transform,opacity,visibility' }),
+        });
+      }
     };
 
-    const organization = {
-      '@type': 'Organization',
-      '@id': `${origin}#organization`,
-      name: 'Groupe ABC',
-      url: origin,
-      sameAs: ['https://www.linkedin.com/company/groupe-abc-experts/'],
-    };
+    if (faqWrap && (faqTitle || faqItems.length)) {
+      if (!this.faqPlayed) {
+        ScrollTrigger.create({
+          id: 'faq-last',
+          trigger: faqWrap,
 
-    const webpage = {
-      '@type': 'WebPage',
-      '@id': `${(canonical || origin)}#webpage`,
-      url: canonical || origin,
-      name: baseSeo.title,
-      description: baseSeo.description,
-      inLanguage: lang === 'en' ? 'en-US' : 'fr-FR',
-      isPartOf: { '@id': `${origin}#website` },
-    };
+          // ✅ Déclenchement TRÈS tard : quand le haut de la FAQ arrive presque en haut d'écran
+          // => impossible que ça parte “avec le hero” même si page courte
+          start: 'top 25%',
 
-    const breadcrumb = {
-      '@type': 'BreadcrumbList',
-      '@id': `${(canonical || origin)}#breadcrumb`,
-      itemListElement: [
-        {
-          '@type': 'ListItem',
-          position: 1,
-          name: lang === 'en' ? 'Home' : 'Accueil',
-          item: origin,
-        },
-        {
-          '@type': 'ListItem',
-          position: 2,
-          name: lang === 'en' ? 'Assets & Methods' : 'Biens & Méthodes',
-          item: canonical || `${origin}${METHODS_ASSETS_BASE[lang]}`,
-        },
-      ],
-    };
-
-    const faqLd =
-      faqItems && faqItems.length
-        ? {
-            '@type': 'FAQPage',
-            '@id': `${(canonical || origin)}#faq`,
-            mainEntity: faqItems.map((q) => ({
-              '@type': 'Question',
-              name: q.q,
-              acceptedAnswer: { '@type': 'Answer', text: q.a },
-            })),
-          }
-        : null;
-
-    const graph: any[] = [website, organization, webpage, breadcrumb];
-    if (faqLd) graph.push(faqLd);
-
-    this.seo.update({
-      ...baseSeo,
-      jsonLd: {
-        '@context': 'https://schema.org',
-        '@graph': graph,
-      },
-    });
+          once: true,
+          onEnter: () => {
+            // ✅ mini délai pour être sûr que toutes les anims précédentes aient fini leur tick
+            gsap.delayedCall(0.15, () => {
+              playFaq();
+              this.faqPlayed = true;
+            });
+          },
+        });
+      } else {
+        rmPrehide([faqWrap, ...(faqTitle ? [faqTitle] : []), ...faqItems]);
+        gsap.set([faqWrap, ...(faqTitle ? [faqTitle] : []), ...faqItems], {
+          autoAlpha: 1,
+          y: 0,
+          clearProps: 'transform,opacity,visibility',
+        });
+      }
+    }
   }
 }

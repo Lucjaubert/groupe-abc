@@ -1,8 +1,4 @@
-import {
-  CommonModule,
-  DOCUMENT,
-  isPlatformBrowser,
-} from '@angular/common';
+import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import {
   Component,
   Input,
@@ -79,10 +75,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   attachmentFile: File | null = null;
   attachmentName = '';
 
-  // Tu peux élargir/resserrer selon ta politique
-  readonly acceptedAttachmentTypes =
-    '.pdf,.doc,.docx,.png,.jpg,.jpeg,.webp';
-
+  readonly acceptedAttachmentTypes = '.pdf,.doc,.docx,.png,.jpg,.jpeg,.webp';
   private readonly MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10 MB
 
   /* ====== Injections ====== */
@@ -94,11 +87,100 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   // SSR helpers
   private platformId = inject(PLATFORM_ID);
   private doc = inject(DOCUMENT);
+
+  // GSAP (lazy)
   private gsap: any | null = null;
   private ScrollTrigger: any | null = null;
 
   /** Fallback en SSR quand window.location.origin n’est pas disponible */
   private readonly FALLBACK_ORIGIN = 'https://groupe-abc.fr';
+
+  /* =========================
+   * ✅ Profil (particulier / pro)
+   * ========================= */
+  profil: 'pro' | 'part' | '' = '';
+
+  get isPro(): boolean {
+    return this.profil === 'pro';
+  }
+
+  /**
+   * Appelé depuis le HTML (change) sur les radios "profil".
+   * ✅ Comportement final : on masque/affiche (via CSS/HTML), pas de disable.
+   * ⚠️ Requiert dans le HTML :
+   *  - Prénom + Nom : class="... js-person"
+   *  - Société : class="... js-company"
+   */
+  setProfil(val: 'pro' | 'part'): void {
+    if (this.profil === val) return;
+
+    this.profil = val;
+    this.onFormChange();
+    this.cdr.markForCheck();
+
+    // Anim uniquement navigateur
+    if (!this.isBrowser()) return;
+
+    // Si GSAP pas dispo (pas encore chargé), on s'arrête : le CSS fera déjà le job (display none)
+    if (!this.gsap) return;
+
+    requestAnimationFrame(() => {
+      const host =
+        (this.doc.querySelector('.contact-page') as HTMLElement) ||
+        (this.doc.body as HTMLElement);
+
+      const persons = Array.from(
+        host.querySelectorAll<HTMLElement>('.js-person'),
+      );
+      const company = host.querySelector<HTMLElement>('.js-company');
+
+      if (!company || !persons.length) return;
+
+      const show = (el: HTMLElement) => {
+        // remet l'élément "dans le flow" avant mesure
+        el.style.display = '';
+        const h = el.scrollHeight || el.getBoundingClientRect().height || 0;
+
+        this.gsap.set(el, { height: 0, autoAlpha: 0, y: 6 });
+        this.gsap.to(el, {
+          height: h,
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.28,
+          ease: 'power2.out',
+          onComplete: () => {
+            this.gsap.set(el, { height: 'auto', clearProps: 'transform' });
+          },
+        });
+      };
+
+      const hide = (el: HTMLElement) => {
+        const h = el.scrollHeight || el.getBoundingClientRect().height || 0;
+
+        this.gsap.set(el, { height: h, autoAlpha: 1, y: 0 });
+        this.gsap.to(el, {
+          height: 0,
+          autoAlpha: 0,
+          y: -6,
+          duration: 0.22,
+          ease: 'power2.inOut',
+          onComplete: () => {
+            el.style.display = 'none';
+            this.gsap.set(el, { clearProps: 'all' });
+          },
+        });
+      };
+
+      // PRO => cacher persons (2 labels) + montrer company
+      if (this.isPro) {
+        persons.forEach(hide);
+        show(company);
+      } else {
+        hide(company);
+        persons.forEach(show);
+      }
+    });
+  }
 
   private async setupGsap(): Promise<void> {
     if (!this.isBrowser() || this.gsap) return;
@@ -112,7 +194,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ====== ViewChild / ViewChildren pour les anims ====== */
-
   @ViewChild('contactTitle')
   contactTitle!: ElementRef<HTMLElement>;
   @ViewChild('contactLinkedin')
@@ -147,23 +228,19 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   messageError = '';
 
   /* ========================= Lifecycle ========================= */
-
   ngOnInit(): void {
-    // H1 SSR avec fallback selon la langue (logique simple basée sur l’URL)
     const isEN = this.currentPath().startsWith('/en/');
     this.contactH1 = isEN ? 'Contact us' : 'Contactez-nous';
 
-    // SEO à partir de la config centrale
     this.applySeoFromConfig();
 
-    // Hydratation du bloc téléchargement (plaquette)
     if (this.acf?.presentation_download_section) {
-      this.hydratePresentationFrom(this.acf.presentation_download_section);
+      void this.hydratePresentationFrom(this.acf.presentation_download_section);
     } else {
       this.wp.getHomepageData().subscribe({
         next: (acf) => {
           if (acf?.presentation_download_section) {
-            this.hydratePresentationFrom(acf.presentation_download_section);
+            void this.hydratePresentationFrom(acf.presentation_download_section);
             this.cdr.markForCheck();
           }
         },
@@ -199,7 +276,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ========================= Pièce jointe ========================= */
-
   onFileSelected(ev: Event): void {
     const input = ev.target as HTMLInputElement | null;
     const file = input?.files?.[0] || null;
@@ -209,7 +285,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Validation taille
     if (file.size > this.MAX_ATTACHMENT_BYTES) {
       this.clearAttachmentInput(input);
       this.attachmentFile = null;
@@ -220,7 +295,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Validation type (best-effort)
     const allowedExt = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp'];
     const ext = (file.name.split('.').pop() || '').toLowerCase();
     if (ext && !allowedExt.includes(ext)) {
@@ -236,7 +310,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     this.attachmentFile = file;
     this.attachmentName = file.name;
 
-    // reset état message si besoin
     if (this.sendState === 'success' || this.sendState === 'error') {
       this.sendState = 'idle';
       this.messageError = '';
@@ -249,9 +322,10 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     this.attachmentFile = null;
     this.attachmentName = '';
 
-    // clear input file si présent dans le DOM (safe)
     if (this.isBrowser()) {
-      const el = this.doc.querySelector<HTMLInputElement>('input[type="file"][name="attachment"]');
+      const el = this.doc.querySelector<HTMLInputElement>(
+        'input[type="file"][name="attachment"]',
+      );
       if (el) el.value = '';
     }
 
@@ -263,7 +337,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ========================= Hydratation plaquette ========================= */
-
   private async hydratePresentationFrom(dl: any) {
     const t1 =
       dl?.presentation_button_text_1 || 'Télécharger la présentation du';
@@ -273,14 +346,9 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     const resolved = await this.resolveMedia(raw);
     const abs = this.absUrl(resolved || '');
 
-    this.presentation = {
-      text1: t1,
-      text2: t2,
-      file: abs || null,
-    };
+    this.presentation = { text1: t1, text2: t2, file: abs || null };
     this.applySplitForText1(this.presentation.text1);
 
-    // Préchargement image uniquement côté navigateur
     if (
       this.isBrowser() &&
       this.presentation.file &&
@@ -318,7 +386,13 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
           return '';
         }
       }
-      if (/^(https?:)?\/\//.test(s) || s.startsWith('/') || s.startsWith('data:')) return s;
+      if (
+        /^(https?:)?\/\//.test(s) ||
+        s.startsWith('/') ||
+        s.startsWith('data:')
+      ) {
+        return s;
+      }
       return s;
     }
 
@@ -349,7 +423,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ========================= Utils URL / origin ========================= */
-
   private getBrowserOrigin(): string {
     if (this.isBrowser()) {
       try {
@@ -363,14 +436,15 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private absUrl(url: string): string {
     if (!url) return '';
-    // Déjà absolu ou data URL
-    if (/^https?:\/\//i.test(url) || /^\/\//.test(url) || url.startsWith('data:')) {
+    if (
+      /^https?:\/\//i.test(url) ||
+      /^\/\//.test(url) ||
+      url.startsWith('data:')
+    ) {
       return url;
     }
     const origin = this.getBrowserOrigin();
-    if (url.startsWith('/')) {
-      return origin + url;
-    }
+    if (url.startsWith('/')) return origin + url;
     return `${origin}/${url}`;
   }
 
@@ -411,7 +485,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ========================= Download handlers ========================= */
-
   onDlClick(ev: MouseEvent, url: string | null) {
     const a = ev.currentTarget as HTMLAnchorElement | null;
     if (!url) return;
@@ -455,10 +528,9 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ========================= SEO (à partir de seo-pages.config.ts) ========================= */
-
   private applySeoFromConfig(): void {
-    const lang = this.currentPath().startsWith('/en/') ? ('en' as const) : ('fr' as const);
-    const baseSeo = getSeoForRoute('contact', lang);
+    const lang = this.currentPath().startsWith('/en/') ? 'en' : 'fr';
+    const baseSeo = getSeoForRoute('contact', lang as any);
 
     const canonical = (baseSeo.canonical || '').replace(/\/+$/, '');
 
@@ -468,9 +540,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
         const u = new URL(canonical);
         origin = `${u.protocol}//${u.host}`;
       }
-    } catch {
-      // fallback
-    }
+    } catch {}
 
     const homeUrl = lang === 'en' ? `${origin}/en` : `${origin}/`;
 
@@ -528,27 +598,17 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /* ========================= Animations ========================= */
-
+  /* ========================= Animations (scroll) ========================= */
   private forceInitialHidden(host: HTMLElement) {
     if (!this.gsap) return;
     const gsap = this.gsap;
 
-    const pre =
-      Array.from(host.querySelectorAll<HTMLElement>('.prehide')) || [];
+    const pre = Array.from(host.querySelectorAll<HTMLElement>('.prehide')) || [];
     const rows =
       Array.from(host.querySelectorAll<HTMLElement>('.prehide-row')) || [];
-    if (pre.length) {
-      gsap.set(pre, {
-        autoAlpha: 0,
-        y: 20,
-      });
-    }
-    if (rows.length) {
-      gsap.set(rows, {
-        autoAlpha: 0,
-      });
-    }
+
+    if (pre.length) gsap.set(pre, { autoAlpha: 0, y: 20 });
+    if (rows.length) gsap.set(rows, { autoAlpha: 0 });
   }
 
   private scheduleBind() {
@@ -625,43 +685,50 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
 
     {
       const radios = this.radiosEl?.nativeElement;
-      const items = (this.radioItems?.toArray() || []).map((r) => r.nativeElement);
+      const items = (this.radioItems?.toArray() || []).map(
+        (r) => r.nativeElement,
+      );
       if (radios && items.length) {
         gsap.set(items, { autoAlpha: 0, y: 10 });
-        gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: radios, start: 'top 85%', once: true },
-          onStart: () => rm([radios, ...items]),
-        })
-        .to(items, { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.06 }, 0)
-        .add(() => gsap.set(items, { clearProps: 'transform,opacity' }));
+        gsap
+          .timeline({
+            defaults: { ease: EASE },
+            scrollTrigger: { trigger: radios, start: 'top 85%', once: true },
+            onStart: () => rm([radios, ...items]),
+          })
+          .to(items, { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.06 }, 0)
+          .add(() => gsap.set(items, { clearProps: 'transform,opacity' }));
       }
     }
 
     {
       const grid = this.formGridEl?.nativeElement;
-      const labels = (this.fgLabels?.toArray() || []).map((r) => r.nativeElement);
+      const labels = (this.fgLabels?.toArray() || []).map(
+        (r) => r.nativeElement,
+      );
       if (grid && labels.length) {
         gsap.set(labels, { autoAlpha: 0, y: 14 });
 
         const attachRow = this.attachRowEl?.nativeElement;
         if (attachRow) gsap.set(attachRow, { autoAlpha: 0, y: 10 });
 
-        gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: grid, start: 'top 85%', once: true },
-          onStart: () => {
-            const arr: Element[] = [grid, ...labels];
-            if (attachRow) arr.push(attachRow);
-            rm(arr);
-          },
-        })
-        .to(labels, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.07 }, 0)
-        .to(attachRow, { autoAlpha: 1, y: 0, duration: 0.35 }, '-=0.15')
-        .add(() => {
-          gsap.set(labels, { clearProps: 'transform,opacity' });
-          if (attachRow) gsap.set(attachRow, { clearProps: 'transform,opacity' });
-        });
+        gsap
+          .timeline({
+            defaults: { ease: EASE },
+            scrollTrigger: { trigger: grid, start: 'top 85%', once: true },
+            onStart: () => {
+              const arr: Element[] = [grid, ...labels];
+              if (attachRow) arr.push(attachRow);
+              rm(arr);
+            },
+          })
+          .to(labels, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.07 }, 0)
+          .to(attachRow, { autoAlpha: 1, y: 0, duration: 0.35 }, '-=0.15')
+          .add(() => {
+            gsap.set(labels, { clearProps: 'transform,opacity' });
+            if (attachRow)
+              gsap.set(attachRow, { clearProps: 'transform,opacity' });
+          });
       }
     }
 
@@ -687,16 +754,19 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
 
     {
       const wrap = this.bigInfosEl?.nativeElement;
-      const lines = (this.bigLines?.toArray() || []).map((r) => r.nativeElement);
+      const lines = (this.bigLines?.toArray() || []).map(
+        (r) => r.nativeElement,
+      );
       if (wrap && lines.length) {
         gsap.set(lines, { autoAlpha: 0, y: 22 });
-        gsap.timeline({
-          defaults: { ease: EASE },
-          scrollTrigger: { trigger: wrap, start: 'top 85%', once: true },
-          onStart: () => rm([wrap, ...lines]),
-        })
-        .to(lines, { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.08 }, 0)
-        .add(() => gsap.set(lines, { clearProps: 'transform,opacity' }));
+        gsap
+          .timeline({
+            defaults: { ease: EASE },
+            scrollTrigger: { trigger: wrap, start: 'top 85%', once: true },
+            onStart: () => rm([wrap, ...lines]),
+          })
+          .to(lines, { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.08 }, 0)
+          .add(() => gsap.set(lines, { clearProps: 'transform,opacity' }));
       }
     }
 
@@ -706,7 +776,6 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* ========================= Form ========================= */
-
   get isLoading(): boolean {
     return this.sendState === 'loading';
   }
@@ -731,16 +800,21 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     const form = ev.target as HTMLFormElement;
     const fd = new FormData(form);
 
+    // Profil
+    const profil = String(fd.get('profil') ?? '').trim() as 'pro' | 'part' | '';
+
+    // Champs perso / pro
     const firstname = String(fd.get('firstname') ?? '').trim();
     const lastname = String(fd.get('lastname') ?? '').trim();
+    const company = String(fd.get('company') ?? '').trim();
+
+    // Communs
     const email = String(fd.get('email') ?? '').trim();
     const phone = String(fd.get('phone') ?? '').trim();
     const message = String(fd.get('message') ?? '').trim();
     const website = String(fd.get('website') ?? '');
     const civ = String(fd.get('civ') ?? '').trim();
-    const profil = String(fd.get('profil') ?? '').trim();
 
-    const fullName = [firstname, lastname].filter(Boolean).join(' ').trim();
     const lang = this.currentPath().startsWith('/en/') ? 'en' : 'fr';
 
     // Honeypot
@@ -748,19 +822,35 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       this.sendState = 'success';
       form.reset();
       this.clearAttachment();
+      this.profil = '';
       this.cdr.markForCheck();
       return;
     }
 
-    if (!firstname || !lastname || !email || !message) {
-      this.sendState = 'error';
-      this.messageError = 'Merci de renseigner Prénom, Nom, eMail et Message.';
-      this.cdr.markForCheck();
-      return;
+    // ✅ Validation conditionnelle
+    let fullName = '';
+    if (profil === 'pro') {
+      if (!company || !email || !message) {
+        this.sendState = 'error';
+        this.messageError = 'Merci de renseigner Société, eMail et Message.';
+        this.cdr.markForCheck();
+        return;
+      }
+      fullName = company;
+    } else {
+      if (!firstname || !lastname || !email || !message) {
+        this.sendState = 'error';
+        this.messageError =
+          'Merci de renseigner Prénom, Nom, eMail et Message.';
+        this.cdr.markForCheck();
+        return;
+      }
+      fullName = `${firstname} ${lastname}`.trim();
     }
 
     const payload = {
       name: fullName,
+      company: profil === 'pro' ? company : '',
       email,
       phone,
       message,
@@ -776,10 +866,11 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
 
     try {
-      // ✅ Si pièce jointe : envoi multipart (FormData)
       if (this.attachmentFile) {
         const out = new FormData();
-        Object.entries(payload).forEach(([k, v]) => out.append(k, String(v ?? '')));
+        Object.entries(payload).forEach(([k, v]) =>
+          out.append(k, String(v ?? '')),
+        );
         out.append('attachment', this.attachmentFile, this.attachmentFile.name);
 
         await this.contact.send(out as any);
@@ -790,6 +881,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       this.sendState = 'success';
       form.reset();
       this.clearAttachment();
+      this.profil = '';
       this.cdr.markForCheck();
     } catch (e: any) {
       console.error('[Contact] API error', e);

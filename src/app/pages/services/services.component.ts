@@ -62,6 +62,9 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     return isPlatformBrowser(this.platformId);
   }
 
+  // ✅ Fix: si scheduleBind() est appelé avant setupGsap(), on rejoue plus tard
+  private pendingBind = false;
+
   private async setupGsap(): Promise<void> {
     if (!this.isBrowser() || this.gsap) return;
     try {
@@ -72,7 +75,15 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       try {
         this.gsap.registerPlugin(this.ScrollTrigger);
       } catch {}
-    } catch {}
+    } catch {
+      // keep null
+    }
+
+    // ✅ rejoue un bind demandé trop tôt
+    if (this.pendingBind && this.gsap) {
+      this.pendingBind = false;
+      this.scheduleBind();
+    }
   }
 
   /* ===== Données ===== */
@@ -99,8 +110,11 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   faqOpen: boolean[] = [];
   isEN = false;
 
-  /** FAQ */
+  /** FAQ accordéon */
   openFaqIndexes = new Set<number>();
+
+  /* ✅ FAQ heights (pour animation height) */
+  faqHeights: number[] = [];
 
   /* ===== Fallbacks ===== */
   defaultCtxIcon = '/assets/fallbacks/icon-placeholder.svg';
@@ -115,7 +129,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('ctxList') ctxListRef!: ElementRef<HTMLElement>;
 
   @ViewChild('clientsTitleEl') clientsTitleRef!: ElementRef<HTMLElement>;
-  @ViewChild('clientsTextEl') clientsTextRef!: ElementRef<HTMLElement>; // ✅ AJOUT
+  @ViewChild('clientsTextEl') clientsTextRef!: ElementRef<HTMLElement>;
   @ViewChildren('cliRow') cliRows!: QueryList<ElementRef<HTMLElement>>;
   @ViewChild('cliList') cliListRef!: ElementRef<HTMLElement>;
 
@@ -123,12 +137,28 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChildren('refLogo') refLogos!: QueryList<ElementRef<HTMLImageElement>>;
   @ViewChild('refsGrid') refsGridRef!: ElementRef<HTMLElement>;
 
+  /* ===== FAQ refs (anim + mesure) ===== */
+  @ViewChild('faqWrapEl') faqWrapEl!: ElementRef<HTMLElement>;
+  @ViewChild('faqTitleEl') faqTitleEl!: ElementRef<HTMLElement>;
+  @ViewChildren('faqItemEl') faqItemEls!: QueryList<ElementRef<HTMLElement>>;
+  @ViewChildren('faqInner') faqInnerEls!: QueryList<ElementRef<HTMLElement>>;
+
+  // subs pour éviter fuites
+  private ctxRowsSub?: Subscription;
+  private cliRowsSub?: Subscription;
+  private refLogosSub?: Subscription;
+  private faqItemsSub?: Subscription;
+  private faqInnerChangesSub?: Subscription;
+
   /* ===== Flags / Locks ===== */
   private heroPlayed = false;
   private contextsPlayed = false;
   private contextsVisible = false;
   private bindScheduled = false;
   private animLock = false; // verrou pendant la séquence hero→contexts
+
+  // FAQ
+  private faqPlayed = false;
 
   /* ===== Helpers ===== */
   private safe(html: string): SafeHtml {
@@ -149,6 +179,9 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   toggleFaqItem(i: number): void {
     if (this.openFaqIndexes.has(i)) this.openFaqIndexes.delete(i);
     else this.openFaqIndexes.add(i);
+
+    // ✅ re-mesure (utile si polices/images/layout changent)
+    this.scheduleFaqMeasure();
   }
 
   isFaqItemOpen(i: number): boolean {
@@ -207,6 +240,27 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     return a;
   }
 
+  /* ===================== FAQ heights (animation height) ===================== */
+  private measureFaqHeights(): void {
+    if (!this.isBrowser()) return;
+
+    const els = this.faqInnerEls?.toArray?.() || [];
+    if (!els.length) return;
+
+    this.faqHeights = els.map((ref) => {
+      const el = ref?.nativeElement;
+      return el ? Math.ceil(el.scrollHeight) : 0;
+    });
+  }
+
+  private scheduleFaqMeasure(): void {
+    if (!this.isBrowser()) return;
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => this.measureFaqHeights());
+    });
+  }
+
   /* ===================== Lifecycle ===================== */
   ngOnInit(): void {
     // Langue + FAQ + SEO (source unique = faq.routes.ts)
@@ -252,7 +306,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       // ✅ Champ ACF = "clients-text" (avec tiret)
       const rawClientsText =
         (clientsRoot?.['clients-text'] ??
-          clientsRoot?.['clients_text'] ?? // fallback au cas où
+          clientsRoot?.['clients_text'] ??
           clientsRoot?.clients_text ??
           clientsRoot?.clientsText ??
           '') as string;
@@ -274,12 +328,17 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
       const logoTokens = Object.entries(refs)
         .filter(([k, v]) => /^logo_/i.test(k) && v != null && v !== '')
-        .map(([, v]: any) => (typeof v === 'number' || typeof v === 'string' ? v : v?.id ?? v?.url ?? ''))
+        .map(([, v]: any) =>
+          typeof v === 'number' || typeof v === 'string' ? v : v?.id ?? v?.url ?? '',
+        )
         .filter((v: any) => v !== '' && v != null) as Array<string | number>;
 
       this.hydrateReferences(logoTokens);
 
       this.scheduleBind();
+
+      // ✅ après chargement data (et potentiellement rendu), re-mesure FAQ
+      this.scheduleFaqMeasure();
     });
 
     // NavigationEnd : au cas où (route /en/...) + SEO/FAQ doivent suivre
@@ -295,15 +354,28 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser()) return;
     await this.setupGsap();
 
-    this.ctxRows?.changes?.subscribe(() => {
+    this.ctxRowsSub = this.ctxRows?.changes?.subscribe(() => {
       if (!this.animLock) this.scheduleBind();
     });
-    this.cliRows?.changes?.subscribe(() => {
+    this.cliRowsSub = this.cliRows?.changes?.subscribe(() => {
       if (!this.animLock) this.scheduleBind();
     });
-    this.refLogos?.changes?.subscribe(() => {
+    this.refLogosSub = this.refLogos?.changes?.subscribe(() => {
       if (!this.animLock) this.scheduleBind();
     });
+
+    // ✅ FAQ : si la liste change (langue), on rebinde + re-mesure heights
+    this.faqItemsSub = this.faqItemEls?.changes?.subscribe(() => {
+      this.scheduleBind();
+      this.scheduleFaqMeasure();
+    });
+
+    this.faqInnerChangesSub = this.faqInnerEls?.changes?.subscribe(() => {
+      this.scheduleFaqMeasure();
+    });
+
+    // mesure initiale
+    this.scheduleFaqMeasure();
 
     this.scheduleBind();
   }
@@ -311,6 +383,12 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.navSub?.unsubscribe();
     this.weglotOff?.();
+
+    this.ctxRowsSub?.unsubscribe();
+    this.cliRowsSub?.unsubscribe();
+    this.refLogosSub?.unsubscribe();
+    this.faqItemsSub?.unsubscribe();
+    this.faqInnerChangesSub?.unsubscribe();
 
     if (this.isBrowser() && this.ScrollTrigger) {
       try {
@@ -331,8 +409,23 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
     this.faqItems = getFaqForRoute('services', lang) || [];
     this.faqOpen = new Array(this.faqItems.length).fill(false);
 
+    // ✅ init heights (sinon template peut crasher si tu l'utilises)
+    this.faqHeights = new Array(this.faqItems.length).fill(0);
+
+    // (optionnel) reset open indexes pour éviter incohérences quand la FAQ change
+    this.openFaqIndexes.clear();
+
     // SEO centralisé + FAQ JSON-LD basé sur la FAQ réellement affichée
     this.applySeoFromConfig(this.faqItems);
+
+    // ✅ reset animation FAQ si changement de langue
+    this.faqPlayed = false;
+
+    // ✅ rebind (si gsap pas prêt : pendingBind)
+    this.scheduleBind();
+
+    // ✅ re-mesure heights après rerender
+    this.scheduleFaqMeasure();
   }
 
   private bindWeglotLangEvents(): void {
@@ -463,17 +556,14 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
 
-    // Canonical absolu (priorité config)
     const canonicalAbs =
       baseSeo.canonical && /^https?:\/\//i.test(baseSeo.canonical)
         ? baseSeo.canonical
         : this.normalizeUrl(siteUrl, baseSeo.canonical || '/expertise-immobiliere-services');
 
-    // Image OG absolue (si SeoService l’utilise)
     const ogCandidate = baseSeo.image || '/assets/og/og-default.jpg';
     const ogAbs = this.absUrl(ogCandidate, siteUrl);
 
-    // JSON-LD "base"
     const existingJsonLd: any = baseSeo.jsonLd;
     let baseGraph: any[] = [];
     let baseContext = 'https://schema.org';
@@ -484,7 +574,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       if (typeof existingJsonLd['@context'] === 'string') baseContext = existingJsonLd['@context'];
     }
 
-    // FAQ JSON-LD basé sur la FAQ réellement affichée
     const faqLd =
       faqItems && faqItems.length
         ? {
@@ -534,7 +623,13 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /* ================= Animations ================= */
   private scheduleBind() {
-    if (!this.isBrowser() || !this.gsap) return;
+    if (!this.isBrowser()) return;
+
+    if (!this.gsap) {
+      this.pendingBind = true;
+      return;
+    }
+
     if (this.bindScheduled) return;
 
     if (this.animLock) {
@@ -638,6 +733,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
           autoAlpha: 1,
           y: 0,
           duration: 0.24,
+          stagger: 0.06,
           onComplete: () => gsap.set(ctxRowEls, { clearProps: 'transform,opacity' }),
         },
         '<',
@@ -731,7 +827,7 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
 
     /* ---------- CLIENTS (scroll) ---------- */
     const cliTitleEl = this.clientsTitleRef?.nativeElement;
-    const cliTextEl = this.clientsTextRef?.nativeElement; // ✅ AJOUT
+    const cliTextEl = this.clientsTextRef?.nativeElement;
     const cliListEl = this.cliListRef?.nativeElement;
     const cliRowEls = (this.cliRows?.toArray() || []).map((r) => r.nativeElement);
 
@@ -751,7 +847,6 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       );
     }
 
-    // ✅ Animation du bloc .clients-text (sinon il peut rester masqué par .prehide)
     if (cliTextEl) {
       gsap.fromTo(
         cliTextEl,
@@ -848,8 +943,72 @@ export class ServicesComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
+    /* ---------- FAQ (FIN DE PAGE) — anim scroll + items ---------- */
+    const faqWrap = this.faqWrapEl?.nativeElement || null;
+    const faqTitle = this.faqTitleEl?.nativeElement || null;
+    const faqItems = (this.faqItemEls?.toArray() || []).map((r) => r.nativeElement);
+
+    const playFaq = () => {
+      if (!faqWrap) return;
+
+      rmPrehide(faqWrap);
+      gsap.set(faqWrap, { autoAlpha: 1, y: 0, clearProps: 'transform,opacity,visibility' });
+
+      if (faqTitle) {
+        rmPrehide(faqTitle);
+        gsap.fromTo(
+          faqTitle,
+          { autoAlpha: 0, y: 16 },
+          {
+            autoAlpha: 1,
+            y: 0,
+            duration: 0.45,
+            ease: EASE,
+            onComplete: () => gsap.set(faqTitle, { clearProps: 'all' }),
+          },
+        );
+      }
+
+      if (faqItems.length) {
+        rmPrehide(faqItems);
+        gsap.set(faqItems, { autoAlpha: 0, y: 12 });
+        gsap.to(faqItems, {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.34,
+          stagger: 0.08,
+          ease: EASE,
+          onComplete: () => gsap.set(faqItems, { clearProps: 'transform,opacity' }),
+        });
+      }
+    };
+
+    if (faqWrap && (faqTitle || faqItems.length)) {
+      if (!this.faqPlayed) {
+        ScrollTrigger.create({
+          trigger: faqWrap,
+          start: 'top 85%',
+          once: true,
+          onEnter: () => {
+            playFaq();
+            this.faqPlayed = true;
+            this.scheduleFaqMeasure();
+          },
+        });
+      } else {
+        rmPrehide([faqWrap, ...(faqTitle ? [faqTitle] : []), ...faqItems]);
+        gsap.set([faqWrap, ...(faqTitle ? [faqTitle] : []), ...faqItems], {
+          autoAlpha: 1,
+          y: 0,
+          clearProps: 'transform,opacity,visibility',
+        });
+      }
+    }
+
     try {
       ScrollTrigger.refresh();
     } catch {}
+
+    this.scheduleFaqMeasure();
   }
 }

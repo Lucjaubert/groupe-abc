@@ -19,6 +19,14 @@ $fs-48: map.get(vars.$font-size, "100"); /* 48px */
 
 $fw-regular: map.get(vars.$font-weight, "regular"); /* 400 */
 
+/* ==========================================================================
+   COULEURS THEMES (aligné avec la page liste)
+   ========================================================================== */
+$theme-expertise: #7B86D8; /* pastel bleu/lavande */
+$theme-juridique: #2F3566; /* bleu nuit adouci */
+$theme-marche:    #4F9B8F; /* vert sauge */
+$theme-autre:     $theme-expertise;
+
 .news-detail-wrapper {
   width: 100%;
 
@@ -64,9 +72,16 @@ $fw-regular: map.get(vars.$font-weight, "regular"); /* 400 */
   .news-row {
     position: relative;
     isolation: isolate;
+
+    /* ✅ accent CSS variable (pour le bouton thème + fond) */
+    --accent: #{$theme-expertise};
+    &.theme-expertise { --accent: #{$theme-expertise}; }
+    &.theme-juridique { --accent: #{$theme-juridique}; }
+    &.theme-marche    { --accent: #{$theme-marche}; }
+    &.theme-autre     { --accent: #{$theme-autre}; }
   }
 
-  /* background "bande" plein écran (comme avant) */
+  /* ✅ background "bande" plein écran teintée par le thème (comme la page liste) */
   .news-bg {
     position: absolute;
     inset: 0;
@@ -75,14 +90,17 @@ $fw-regular: map.get(vars.$font-weight, "regular"); /* 400 */
     transform: translateX(-50%);
     z-index: 0;
     pointer-events: none;
-    background: $grey-100;
-  }
 
-  /* variantes thème (inchangé) */
-  .news-row.theme-expertise .news-bg { background: #eee; }
-  .news-row.theme-juridique .news-bg { background: rgba(234, 77, 77, 0.08); }
-  .news-row.theme-marche .news-bg    { background: rgba(88, 80, 173, 0.16); }
-  .news-row.theme-autre .news-bg     { background: $grey-100; }
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent) 10%, #ffffff) 0%,
+      color-mix(in srgb, var(--accent) 6%,  #ffffff) 100%
+    );
+
+    /* optionnel, cohérent avec la page liste */
+    border-top: 1px solid color-mix(in srgb, var(--accent) 14%, rgba(0,0,0,0));
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 14%, rgba(0,0,0,0));
+  }
 
   /* ========================================= */
   /* ✅ Layout : titre > image (50% à gauche) > texte */
@@ -144,7 +162,7 @@ $fw-regular: map.get(vars.$font-weight, "regular"); /* 400 */
     margin-inline: 0;       /* ✅ pas de centrage */
   }
 
-  /* ===== Theme chip ===== */
+  /* ===== Theme chip (EXISTANT, inchangé) ===== */
   .theme-chip {
     display: inline-flex;
     align-items: center;
@@ -176,6 +194,72 @@ $fw-regular: map.get(vars.$font-weight, "regular"); /* 400 */
       height: 13px;
       display: inline-grid;
       place-items: center;
+    }
+  }
+
+  /* ==========================================================================
+     ✅ Bridge : si theme-chip est utilisé comme "theme-filter-btn"
+     -> look pastel + aria-pressed comme sur news list
+     -> on ne supprime rien : on override seulement quand les 2 classes sont présentes
+     ========================================================================== */
+  .theme-chip.theme-filter-btn {
+    /* on neutralise la taille fixe du chip detail pour matcher la liste */
+    width: auto;
+    height: auto;
+    justify-content: center;
+
+    /* fallback */
+    --accent: #{$theme-expertise};
+    &.theme-expertise { --accent: #{$theme-expertise}; }
+    &.theme-juridique { --accent: #{$theme-juridique}; }
+    &.theme-marche    { --accent: #{$theme-marche}; }
+    &.theme-autre     { --accent: #{$theme-autre}; }
+
+    appearance: none;
+    border-radius: 999px;
+    padding: 10px 14px;
+    cursor: pointer;
+
+    font-size: $fs-13;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+
+    background: color-mix(in srgb, var(--accent) 10%, #ffffff);
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, rgba(0,0,0,0));
+    color: color-mix(in srgb, var(--accent) 78%, #000000);
+
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.06);
+
+    transition:
+      transform 140ms ease,
+      box-shadow 140ms ease,
+      border-color 140ms ease,
+      background 140ms ease,
+      color 140ms ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      background: color-mix(in srgb, var(--accent) 14%, #ffffff);
+      border-color: color-mix(in srgb, var(--accent) 30%, rgba(0,0,0,0));
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.09);
+    }
+
+    &[aria-pressed="true"] {
+      background: color-mix(in srgb, var(--accent) 18%, #ffffff);
+      border-color: color-mix(in srgb, var(--accent) 40%, rgba(0,0,0,0));
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.10);
+    }
+
+    &:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      outline-offset: 3px;
+    }
+
+    .chip-label {
+      color: inherit;
+      font-style: normal; /* on aligne avec la liste */
+      font-weight: 700;
+      font-size: $fs-13;
     }
   }
 

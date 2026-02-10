@@ -40,7 +40,7 @@
       [ngClass]="themeClass(t.key)"
       [attr.aria-pressed]="filterTheme === t.key"
       (click)="onFilter(t.key)"
-      >
+    >
       {{ t.label }}
     </button>
   </div>
@@ -60,47 +60,16 @@
           <div class="news-box prehide-row">
             <!-- Col texte -->
             <div class="news-col news-col--text">
-              <!-- Thème: bouton principal + puce de filtrage -->
+              <!-- Thème: même logique + même style que les 3 boutons -->
               <button
-                class="theme-chip"
+                class="theme-filter-btn theme-chip"
                 type="button"
-                [attr.aria-pressed]="promoteTheme === p.themeKey"
-                (click)="onPromote(p.themeKey!)"
-                title="Mettre ce thème en premier (sans filtrer)"
+                [ngClass]="themeClass(p.themeKey)"
+                [attr.aria-pressed]="filterTheme === p.themeKey"
+                (click)="onFilter(p.themeKey!)"
+                title="Filtrer par ce thème"
               >
-                <span class="chip-label">{{ p.theme }}</span>
-
-                <span
-                  class="chip-icon"
-                  tabindex="0"
-                  [attr.aria-pressed]="filterTheme === p.themeKey"
-                  (click)="$event.stopPropagation(); onFilter(p.themeKey!)"
-                  (keydown.enter)="$event.stopPropagation(); onFilter(p.themeKey!)"
-                  (keydown.space)="$event.preventDefault(); $event.stopPropagation(); onFilter(p.themeKey!)"
-                  title="Afficher uniquement ce thème"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="22"
-                    height="13"
-                    viewBox="0 0 22 13"
-                    fill="none"
-                    aria-hidden="true"
-                  >
-                    <path d="M16.2703 9.79272H20.0868" stroke="#444898" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M2.09473 9.79272H10.7704" stroke="#444898" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M13.4678 3.59302H20.0869" stroke="#444898" stroke-linecap="round" stroke-linejoin="round" />
-                    <path d="M2.09473 3.59302H7.9582" stroke="#444898" stroke-linecap="round" stroke-linejoin="round" />
-                    <path
-                      d="M12.5494 11.8277C13.5373 11.8277 14.3381 11.1483 14.3381 10.3102C14.3381 9.47212 13.5373 8.79272 12.5494 8.79272C11.5616 8.79272 10.7607 9.47212 10.7607 10.3102C10.7607 11.1483 11.5616 11.8277 12.5494 11.8277Z"
-                      stroke="#444898"
-                    />
-                    <path
-                      d="M9.73743 4.59306C10.7253 4.59306 11.5261 3.91366 11.5261 3.07558C11.5261 2.2375 10.7253 1.55811 9.73743 1.55811C8.74956 1.55811 7.94873 2.2375 7.94873 3.07558C7.94873 3.91366 8.74956 4.59306 9.73743 4.59306Z"
-                      stroke="#444898"
-                    />
-                  </svg>
-                </span>
+                {{ p.theme }}
               </button>
 
               <!-- Métadonnées -->

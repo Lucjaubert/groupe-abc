@@ -24,67 +24,65 @@
         <!-- ✅ 1) TITRE -->
         <h1 class="post-title" *ngIf="post.title">{{ post.title }}</h1>
 
-        <!-- Image (dans le container, pas full-bleed) -->
-          <div class="post-media">
-            <img
-              class="post-media__img"
-              [appImgFast]="post?._imageUrl || '/assets/fallbacks/image-placeholder.svg'"
-              [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-          </div>
 
+        <button
+          *ngIf="post.theme && post.themeKey"
+          type="button"
+          class="theme-chip theme-filter-btn"
+          [ngClass]="themeClass(post.themeKey)"
+          [attr.aria-pressed]="true"
+          (click)="goBackToList(post.themeKey)"
+          title="Voir les articles de ce thème"
+          [attr.aria-label]="'Filtrer la liste par thème : ' + post.theme"
+        >
+          <span class="chip-label">{{ post.theme }}</span>
+        </button>
+
+
+
+        <!-- Métadonnées -->
+        <div class="meta-line">
+          <img
+            class="firm-logo"
+            [appImgFast]="post?._firmLogoUrl || '/assets/fallbacks/logo-placeholder.svg'"
+            [placeholder]="'/assets/fallbacks/logo-placeholder.svg'"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+          />
+
+          <div class="meta-text d-flex flex-column">
+            <div class="firm-info">
+              <span class="firm-name" *ngIf="post.firmName">{{ post.firmName }}</span>
+              <span class="meta-sep" aria-hidden="true">—</span>
+            </div>
+
+            <div class="post-meta">
+              <span class="author-date" *ngIf="post.author || post.date">
+                {{ post.author }}<ng-container *ngIf="post.author && post.date">, </ng-container>{{ post.date }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image (dans le container, pas full-bleed) -->
+        <div class="post-media">
+          <img
+            class="post-media__img"
+            [appImgFast]="post?._imageUrl || '/assets/fallbacks/image-placeholder.svg'"
+            [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
 
         <!-- ✅ 3) TEXTE (et le reste) -->
         <div class="news-content">
-
-          <!-- Thème -->
-          <div class="theme-chip" role="note" *ngIf="post.theme">
-            <span class="chip-label">{{ post.theme }}</span>
-            <span class="chip-icon" aria-hidden="true">
-              <!-- SVG inchangé -->
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="13" viewBox="0 0 22 13" fill="none" aria-hidden="true">
-                <path d="M16.2703 9.79272H20.0868" stroke="#444898" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M2.09473 9.79272H10.7704" stroke="#444898" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M13.4678 3.59302H20.0869" stroke="#444898" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M2.09473 3.59302H7.9582" stroke="#444898" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M12.5494 11.8277C13.5373 11.8277 14.3381 11.1483 14.3381 10.3102C14.3381 9.47212 13.5373 8.79272 12.5494 8.79272C11.5616 8.79272 10.7607 9.47212 10.7607 10.3102C10.7607 11.1483 11.5616 11.8277 12.5494 11.8277Z" stroke="#444898"/>
-                <path d="M9.73743 4.59306C10.7253 4.59306 11.5261 3.91366 11.5261 3.07558C11.5261 2.2375 10.7253 1.55811 9.73743 1.55811C8.74956 1.55811 7.94873 2.2375 7.94873 3.07558C7.94873 3.91366 8.74956 4.59306 9.73743 4.59306Z" stroke="#444898"/>
-              </svg>
-            </span>
-          </div>
-
-          <!-- Métadonnées -->
-          <div class="meta-line">
-            <img
-              class="firm-logo"
-              [appImgFast]="post?._firmLogoUrl || '/assets/fallbacks/logo-placeholder.svg'"
-              [placeholder]="'/assets/fallbacks/logo-placeholder.svg'"
-              alt=""
-              aria-hidden="true"
-              loading="lazy"
-              decoding="async"
-            />
-
-            <div class="meta-text d-flex flex-column">
-              <div class="firm-info">
-                <span class="firm-name" *ngIf="post.firmName">{{ post.firmName }}</span>
-                <span class="meta-sep" aria-hidden="true">—</span>
-              </div>
-
-              <div class="post-meta">
-                <span class="author-date" *ngIf="post.author || post.date">
-                  {{ post.author }}<ng-container *ngIf="post.author && post.date">, </ng-container>{{ post.date }}
-                </span>
-              </div>
-            </div>
-          </div>
-
           <!-- Contenu -->
           <div class="post-excerpt">
-            <div class="excerpt-body" *ngIf="post.html" [innerHTML]="post.html"></div>
+            <div class="excerpt-body pt-5" *ngIf="post.html" [innerHTML]="post.html"></div>
           </div>
 
           <!-- CTA LinkedIn -->

@@ -9,6 +9,7 @@ $rail-w: 40px;
   position: relative;
   padding-top: 60px;
   background: map.get(vars.$theme-colors, "white");
+  --header-top-offset: 60px;
 }
 
 .header-inner {
@@ -89,6 +90,7 @@ $rail-w: 40px;
   z-index: 2000;
   isolation: isolate;
   pointer-events: auto;
+  top: calc(var(--header-top-offset) + env(safe-area-inset-top));
 }
 
 .lang-switch {

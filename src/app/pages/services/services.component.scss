@@ -18,7 +18,8 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
 .hero .prehide,
 .contexts .prehide,
 .clients .prehide,
-.refs .prehide {
+.refs .prehide,
+.faq .prehide {
   opacity: 0;
   visibility: hidden;
   transform: translateY(20px);
@@ -27,7 +28,8 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
 }
 .contexts .prehide-row,
 .clients  .prehide-row,
-.refs     .prehide-row {
+.refs     .prehide-row,
+.faq      .prehide-row {
   opacity: 0;
   visibility: hidden;
 }
@@ -107,7 +109,6 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     /* ✅ main partout sur la ligne */
     cursor: pointer;
 
-    /* zone hover/clic visuelle future */
     &::after {
       content: "";
       position: absolute;
@@ -116,18 +117,11 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     }
   }
 
-  /* ✅ la “ligne” est interactive */
-  .row-line {
-    display: contents;
-  }
+  .row-line { display: contents; }
 
-  /* ✅ main sur tous les éléments de la ligne (sinon certains héritent pas) */
   .ctx-row .ctx-icon,
-  .ctx-row .row-name {
-    cursor: pointer;
-  }
+  .ctx-row .row-name { cursor: pointer; }
 
-  /* ✅ bouton chevron doit rester cliquable, avec curseur cohérent */
   .ctx-row .deon-toggle {
     cursor: pointer;
     position: relative;
@@ -196,10 +190,9 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
   .ctx-row.open {
     padding-block-start: 16px;
     row-gap: 20px;
-    cursor: default; /* optionnel : si tu veux éviter l’impression de clic sur la zone description */
+    cursor: default;
   }
 
-  /* ✅ mais la ligne (row-line) reste en main même ouvert */
   .ctx-row.open > .row-line,
   .ctx-row.open .ctx-icon,
   .ctx-row.open .row-name,
@@ -260,7 +253,6 @@ img:not([src]), img[src=""] { opacity: 0; }
     padding-block-start: 0;
     row-gap: 0;
 
-    /* ✅ main partout */
     cursor: pointer;
 
     &::after {
@@ -361,8 +353,6 @@ img:not([src]), img[src=""] { opacity: 0; }
     font-weight: 400;
     line-height: 1.2;
     text-align: center;
-    margin-top: 120px;
-    margin-bottom: 75px;
   }
 
   .refs-grid{
@@ -372,11 +362,9 @@ img:not([src]), img[src=""] { opacity: 0; }
 
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 85px;
 
-    /* espace identique horizontal + vertical */
-    gap: 85px;               // ou gap: 85px 120px; (row / column)
-
-    justify-items: center;   // centre chaque cellule
+    justify-items: center;
     align-items: center;
     width: 100%;
   }
@@ -387,7 +375,6 @@ img:not([src]), img[src=""] { opacity: 0; }
     justify-content: center;
   }
 
-  /* ⚠️ à supprimer sinon ça décale et casse l’égalité */
   .refs-grid li:nth-child(4n + 1),
   .refs-grid li:nth-child(4n + 2),
   .refs-grid li:nth-child(4n + 3),
@@ -406,8 +393,6 @@ img:not([src]), img[src=""] { opacity: 0; }
 
   .refs-grid { padding-inline: clamp(16px, 4vw, 64px); }
 
-
-
   @media (max-width: 480px){
     .refs-grid{
       grid-template-columns: repeat(3, 1fr);
@@ -424,7 +409,6 @@ img:not([src]), img[src=""] { opacity: 0; }
 /* ===================================================================== */
 
 .faq {
-  padding-block: clamp(48px, 7vw, 36px);
 
   .faq-inner {
     width: 100%;
@@ -490,6 +474,8 @@ img:not([src]), img[src=""] { opacity: 0; }
     transform: rotate(180deg);
   }
 
+  /* ✅ AJOUT pour ton effet "collapse" visuel
+     (optionnel si tu utilises encore display:none ; ici on passe en "height/opacity") */
   .faq-a {
     padding: 0 clamp(14px, 2.2vw, 18px) clamp(14px, 2.2vw, 18px);
 
@@ -499,12 +485,18 @@ img:not([src]), img[src=""] { opacity: 0; }
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: 1.7;
 
+    overflow: hidden; /* ✅ */
+    transition: height .25s ease, opacity .2s ease; /* ✅ (si tu gères la hauteur via TS/GSAP, sinon OK) */
+
     p { margin: 0 0 10px 0; }
     p:last-child { margin-bottom: 0; }
   }
 
   .faq-a.is-collapsed {
-    display: none;
+    height: 0;       /* ✅ */
+    opacity: 0;      /* ✅ */
+    padding-top: 0;  /* ✅ évite un espace résiduel */
+    padding-bottom: 0;
   }
 }
 
@@ -565,6 +557,11 @@ img:not([src]), img[src=""] { opacity: 0; }
       padding: 0 12px 14px;
       font-size: 14px;
       line-height: 1.6;
+    }
+
+    .faq-a.is-collapsed {
+      padding-top: 0;
+      padding-bottom: 0;
     }
   }
 

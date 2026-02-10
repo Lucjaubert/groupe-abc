@@ -95,8 +95,8 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
       tagline_html: `Expertise amiable & judiciaire<br>en France métropolitaine<br>et Dom-Tom`,
       menu: [
         'Qui sommes-nous ?',
-        'Nos Services',
-        'Biens & Méthodes',
+        'Nos services',
+        'Biens & méthodes',
         'Équipe',
         'Actualités',
         'Contact',

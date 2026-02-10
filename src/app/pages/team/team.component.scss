@@ -180,7 +180,6 @@ $blue-hero: #444798;
     color: $blue;
     font-size: clamp(24px, 3.2vw, 36px);
     line-height: normal;
-    margin: 0 0 56px;
 
     @media (max-width: 768px) { margin: 0; }
   }
@@ -558,7 +557,9 @@ $blue-hero: #444798;
   }
 
   .teach-list {
-    list-style: none; margin: 0; padding: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
     border-top: map.get(vars.$border-size, "2") solid $blue-hero;
     margin-top: 50px;
     margin-bottom: 100px;
@@ -572,7 +573,9 @@ $blue-hero: #444798;
     block-size: var(--row-h);
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
 
-    > * { min-height: 0; }
+    > * {
+      min-height: 0;
+    }
   }
 
   .teach-left {
@@ -583,9 +586,15 @@ $blue-hero: #444798;
     justify-self: start;
 
     .teach-logo {
-      inline-size: 80px; block-size: 80px;
+      inline-size: 80px;
+      block-size: 80px;
 
-      img { width: 100%; height: 100%; object-fit: contain; display:block; }
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
     }
   }
 
@@ -594,8 +603,19 @@ $blue-hero: #444798;
     flex-direction: column;
     gap: 6px;
 
-    .ts-school-name { color: $blue-hero; font-size: clamp(18px, 2.1vw, 19px); line-height: 1.25; font-weight: 500; }
-    .ts-level       { color: $blue; font-size: 14px; text-decoration: none; font-weight: 600; line-height: normal; }
+    .ts-school-name {
+      color: $blue-hero;
+      font-size: clamp(18px, 2.1vw, 19px);
+      line-height: 1.25;
+      font-weight: 500;
+    }
+    .ts-level {
+      color: $blue;
+      font-size: 14px;
+      text-decoration: none;
+      font-weight: 600;
+      line-height: normal;
+    }
 
     .ts-link {
       color: $blue;
@@ -623,21 +643,51 @@ $blue-hero: #444798;
     justify-self: start;
 
     .ts-photo {
-      inline-size: 80px; block-size: 80px; object-fit: cover; display:block; background:#f5e1dd;
-      opacity: 0; transition: opacity .16s ease;
+      inline-size: 80px;
+      block-size: 80px;
+      object-fit: cover;
+      display: block;
+      background: #f5e1dd;
+      opacity: 0;
+      transition: opacity 0.16s ease;
     }
-    .ts-photo[src]:not([src=""]):not([src="null"]):not([src="undefined"]) { opacity: 1; }
+    .ts-photo[src]:not([src=""]):not([src="null"]):not([src="undefined"]) {
+      opacity: 1;
+    }
 
-    .ts-person { display:flex; flex-direction:column; justify-content: space-between; gap:6px; min-height: 100%; }
-    .ts-name   { color:$blue-hero; font-size: clamp(16px, 1.9vw, 20px); line-height: 1.1; }
+    .ts-person {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      min-height: 100%;
+    }
+    .ts-name {
+      color: $blue-hero;
+      font-size: clamp(16px, 1.9vw, 20px);
+      line-height: 1.1;
+    }
 
-    .lk { display:inline-flex; align-items:center; justify-content:center; inline-size:26px; block-size:26px; }
-    .lk-ico { inline-size:26px; block-size:26px; }
+    .lk {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: 26px;
+      block-size: 26px;
+    }
+    .lk-ico {
+      inline-size: 26px;
+      block-size: 26px;
+    }
   }
 
   .teach-course {
-    display:flex; flex-direction:column; align-items:flex-start; justify-content: space-between;
-    gap: 20px; text-align:left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    text-align: left;
 
     .tc-title {
       display: -webkit-box;
@@ -650,13 +700,46 @@ $blue-hero: #444798;
       line-height: normal;
       color: $blue-hero;
     }
-    .tc-city { color:$red; font-size: 16px; }
+
+    /* ✅ Ville + icône localisation */
+    .tc-city {
+      color: $red;
+      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.1;
+    }
+
+    .tc-city-ico {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      flex: 0 0 auto;
+      color: currentColor; /* ✅ reprend le rouge de .tc-city */
+    }
+
+    .tc-city-text {
+      display: inline;
+      color: inherit;
+    }
   }
 
   @media (max-width: 1199.98px) {
-    .teach-row { grid-template-columns: 1fr; row-gap: 14px; block-size: auto; }
-    .teach-left { grid-template-columns: 80px 1fr; }
-    .teach-course .tc-title { white-space: normal; overflow: visible; text-overflow: clip; color: $blue-hero}
+    .teach-row {
+      grid-template-columns: 1fr;
+      row-gap: 14px;
+      block-size: auto;
+    }
+    .teach-left {
+      grid-template-columns: 80px 1fr;
+    }
+    .teach-course .tc-title {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      color: $blue-hero;
+    }
   }
 }
 
@@ -681,16 +764,33 @@ $blue-hero: #444798;
       column-gap: 12px;
       align-items: center;
 
-      .teach-logo { inline-size: 64px; block-size: 64px; }
-      .teach-logo img { width: 100%; height: 100%; object-fit: contain; }
+      .teach-logo {
+        inline-size: 64px;
+        block-size: 64px;
+      }
+      .teach-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
     }
 
     .teach-school {
       gap: 4px;
 
-      .ts-school-name { font-size: clamp(14px, 4.2vw, 18px); line-height: 1.25; }
-      .ts-level, .ts-link { font-size: 12px; font-weight: 400; }
-      .ts-link-icon { width: 12px; height: 12px; }
+      .ts-school-name {
+        font-size: clamp(14px, 4.2vw, 18px);
+        line-height: 1.25;
+      }
+      .ts-level,
+      .ts-link {
+        font-size: 12px;
+        font-weight: 400;
+      }
+      .ts-link-icon {
+        width: 12px;
+        height: 12px;
+      }
     }
 
     .teach-speaker {
@@ -700,11 +800,26 @@ $blue-hero: #444798;
       column-gap: 12px;
       align-items: center;
 
-      .ts-photo { inline-size: 56px; block-size: 56px; object-fit: cover; }
-      .ts-person { gap: 4px; }
-      .ts-name { font-size: clamp(14px, 4vw, 16px); line-height: 1.1; }
-      .lk { inline-size: 24px; block-size: 24px; }
-      .lk-ico { inline-size: 24px; block-size: 24px; }
+      .ts-photo {
+        inline-size: 56px;
+        block-size: 56px;
+        object-fit: cover;
+      }
+      .ts-person {
+        gap: 4px;
+      }
+      .ts-name {
+        font-size: clamp(14px, 4vw, 16px);
+        line-height: 1.1;
+      }
+      .lk {
+        inline-size: 24px;
+        block-size: 24px;
+      }
+      .lk-ico {
+        inline-size: 24px;
+        block-size: 24px;
+      }
     }
 
     .teach-course {
@@ -722,7 +837,16 @@ $blue-hero: #444798;
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
-      .tc-city { font-size: 14px; }
+
+      .tc-city {
+        font-size: 14px;
+        gap: 6px;
+      }
+
+      .tc-city-ico {
+        width: 14px;
+        height: 14px;
+      }
     }
   }
 }
@@ -745,7 +869,6 @@ $blue-hero: #444798;
 /* ===================================================================== */
 
 .faq {
-  padding-block: clamp(48px, 7vw, 96px);
 
   .faq-inner {
     width: 100%;
@@ -811,7 +934,12 @@ $blue-hero: #444798;
     transform: rotate(180deg);
   }
 
+  /* ✅ Réponse : wrapper ajouté dans le HTML */
   .faq-a {
+    overflow: hidden; /* important: pas de display:none */
+  }
+
+  .faq-a-inner {
     padding: 0 clamp(14px, 2.2vw, 18px) clamp(14px, 2.2vw, 18px);
 
     color: $blue;
@@ -822,45 +950,39 @@ $blue-hero: #444798;
 
     p { margin: 0 0 10px 0; }
     p:last-child { margin-bottom: 0; }
+
+    /* ✅ listes injectées via [innerHTML] */
+    ul,
+    ol {
+      margin: 10px 0 0 18px;
+      padding: 0;
+      font-family: inherit;
+      font-size: 16px;
+      line-height: inherit;
+      font-weight: inherit;
+    }
+
+    li {
+      margin: 0 0 6px 0;
+      font-family: inherit;
+      font-size: 16px;
+      line-height: inherit;
+      font-weight: inherit;
+
+      &::marker { font-size: 0.85em; }
+    }
   }
 
+  /* ✅ état fermé : animable (height + opacity) */
   .faq-a.is-collapsed {
-    display: none;
+    height: 0;
+    opacity: 0;
   }
-}
-
-/* ===================================================================== */
-/* ===== FIX GLOBAL pour listes injectées via [innerHTML] = 16px ======== */
-/* ===================================================================== */
-
-.faq .faq-a ul,
-.faq .faq-a ol {
-  margin: 10px 0 0 18px;
-  padding: 0;
-
-  font-family: inherit;
-  font-size: 16px;
-  line-height: inherit;
-  font-weight: inherit;
-}
-
-.faq .faq-a li {
-  margin: 0 0 6px 0;
-
-  font-family: inherit;
-  font-size: 16px;
-  line-height: inherit;
-  font-weight: inherit;
-}
-
-.faq .faq-a li::marker {
-  font-size: 0.85em;
 }
 
 /* ====================== FAQ — MOBILE ≤ 768px ====================== */
 @media (max-width: 768px) {
   .faq {
-    padding-block: 40px;
 
     .faq-title {
       font-size: 24px;
@@ -887,20 +1009,29 @@ $blue-hero: #444798;
       height: 20px;
     }
 
-    .faq-a {
+    /* padding déplacé dans .faq-a-inner */
+    .faq-a-inner {
       padding: 0 12px 14px;
       font-size: 14px;
       line-height: 1.6;
+
+      ul,
+      ol,
+      li {
+        font-size: 14px;
+      }
+
+      li::marker {
+        font-size: 0.85em;
+      }
     }
   }
-
-  .faq .faq-a ul,
-  .faq .faq-a ol,
-  .faq .faq-a li {
-    font-size: 14px;
-  }
-
-  .faq .faq-a li::marker {
-    font-size: 0.85em;
-  }
 }
+
+.team--boot {
+  .section:not(.hero) { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+  .hero .hero-intro { opacity: 0 !important; visibility: hidden !important; }
+  .hero .page-title { opacity: 1 !important; visibility: visible !important; transform: none !important; }
+}
+
+

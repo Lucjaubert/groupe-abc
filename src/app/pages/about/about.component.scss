@@ -897,18 +897,30 @@ $white:      map.get(vars.$theme-colors, "white");
     padding-left: var(--rail-gap);
   }
 
+  /* ✅ Solution 1 : 2 lignes = 2 spans (tl-t1 / tl-t2) */
   .tl-item-title {
     color: $blue-hero;
     font-weight: map.get(vars.$font-weight, "regular");
     font-size: clamp(18px, 2vw, 24px);
     line-height: 1.25;
     margin: 0 0 10px;
+
+    .tl-t1,
+    .tl-t2 {
+      display: block;   /* force la 2e ligne */
+      margin: 0;
+      padding: 0;
+    }
+
+    /* option : léger écart entre les 2 lignes */
+    .tl-t2 { margin-top: 2px; }
   }
 
+  /* ✅ Texte / description */
   .tl-desc {
     color: $blue-hero;
     font-weight: map.get(vars.$font-weight, "regular");
-    font-size: map.get(vars.$font-size, "20");
+    font-size: 20px;
     line-height: 1.55;
   }
 
@@ -931,12 +943,12 @@ $white:      map.get(vars.$theme-colors, "white");
   }
 }
 
+
 /* ===================================================================== */
 /* ================================= FAQ =============================== */
 /* ===================================================================== */
 
 .faq {
-  padding-block: clamp(48px, 7vw, 96px);
 
   .faq-inner {
     width: 100%;

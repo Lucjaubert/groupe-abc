@@ -231,6 +231,13 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.posts = onlyPosts;
 
+    // ✅ NEW: lire un filtre thème via query param ?theme=...
+    const qpTheme = (this.route.snapshot.queryParamMap.get('theme') || '').trim();
+    if (qpTheme && ['expertise', 'juridique', 'marche', 'autre'].includes(qpTheme)) {
+      this.filterTheme = qpTheme as ThemeKey;
+      this.promoteTheme = null;
+    }
+
     // Réordonner si ?open= est présent
     const open = (this.route.snapshot.queryParamMap.get('open') || '').trim();
     if (open) {
@@ -252,6 +259,18 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     this.rebuildView();
+
+    // ✅ nettoyer ?theme= si présent (sans casser open handling)
+    if (qpTheme && this.isBrowser() && !open) {
+      try {
+        this.router.navigate([], {
+          relativeTo: this.route,
+          queryParams: { theme: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true,
+        });
+      } catch {}
+    }
 
     // Ouvrir l’article ciblé puis nettoyer l’URL
     if (open) {
@@ -390,62 +409,62 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /* ============ Animations ============ */
   private initIntroSequence(onComplete?: () => void): void {
-  if (!this.isBrowser() || !this.gsap) {
-    onComplete?.();
-    return;
+    if (!this.isBrowser() || !this.gsap) {
+      onComplete?.();
+      return;
+    }
+    if (this.introPlayed) {
+      onComplete?.();
+      return;
+    }
+    this.introPlayed = true;
+
+    const gsap = this.gsap!;
+    const titleEl = this.introTitle?.nativeElement;
+    const subEl = this.introSubtitle?.nativeElement;
+    const linkEl = this.introLinkedin?.nativeElement;
+
+    // ✅ Boutons filtres (3 boutons)
+    const filterBtns = (this.themeFilterBtns?.toArray() || [])
+      .map((r) => r.nativeElement)
+      .filter(Boolean);
+
+    if (!titleEl || !subEl || !linkEl) {
+      onComplete?.();
+      return;
+    }
+
+    // Même logique que tes textes
+    gsap.set([titleEl, subEl, linkEl], { autoAlpha: 0, y: 20 });
+
+    // ✅ On masque aussi les boutons (si présents)
+    if (filterBtns.length) {
+      gsap.set(filterBtns, { autoAlpha: 0, y: 20, willChange: 'transform,opacity' });
+    }
+
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    tl.to(titleEl, { autoAlpha: 1, y: 0, duration: 0.65 })
+      .to(subEl, { autoAlpha: 1, y: 0, duration: 0.65 }, '-=0.35')
+      .to(linkEl, { autoAlpha: 1, y: 0, duration: 0.55 }, '-=0.40');
+
+    // ✅ Ajout animation boutons, même style, avec stagger
+    if (filterBtns.length) {
+      tl.to(
+        filterBtns,
+        {
+          autoAlpha: 1,
+          y: 0,
+          duration: 0.55,
+          stagger: 0.08,
+          onComplete: () => gsap.set(filterBtns, { clearProps: 'transform,opacity,willChange' }),
+        },
+        '-=0.20',
+      );
+    }
+
+    tl.add(() => onComplete && onComplete());
   }
-  if (this.introPlayed) {
-    onComplete?.();
-    return;
-  }
-  this.introPlayed = true;
-
-  const gsap = this.gsap!;
-  const titleEl = this.introTitle?.nativeElement;
-  const subEl = this.introSubtitle?.nativeElement;
-  const linkEl = this.introLinkedin?.nativeElement;
-
-  // ✅ Boutons filtres (3 boutons)
-  const filterBtns = (this.themeFilterBtns?.toArray() || [])
-    .map((r) => r.nativeElement)
-    .filter(Boolean);
-
-  if (!titleEl || !subEl || !linkEl) {
-    onComplete?.();
-    return;
-  }
-
-  // Même logique que tes textes
-  gsap.set([titleEl, subEl, linkEl], { autoAlpha: 0, y: 20 });
-
-  // ✅ On masque aussi les boutons (si présents)
-  if (filterBtns.length) {
-    gsap.set(filterBtns, { autoAlpha: 0, y: 20, willChange: 'transform,opacity' });
-  }
-
-  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
-
-  tl.to(titleEl, { autoAlpha: 1, y: 0, duration: 0.65 })
-    .to(subEl, { autoAlpha: 1, y: 0, duration: 0.65 }, '-=0.35')
-    .to(linkEl, { autoAlpha: 1, y: 0, duration: 0.55 }, '-=0.40');
-
-  // ✅ Ajout animation boutons, même style, avec stagger
-  if (filterBtns.length) {
-    tl.to(
-      filterBtns,
-      {
-        autoAlpha: 1,
-        y: 0,
-        duration: 0.55,
-        stagger: 0.08,
-        onComplete: () => gsap.set(filterBtns, { clearProps: 'transform,opacity,willChange' }),
-      },
-      '-=0.20',
-    );
-  }
-
-  tl.add(() => onComplete && onComplete());
-}
 
   private animateFirstRow(): void {
     if (!this.isBrowser() || !this.gsap) return;

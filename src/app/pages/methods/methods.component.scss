@@ -21,15 +21,22 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 .assets .prehide,
 .values .prehide,
 .evals .prehide,
-.piloting .prehide {
-  opacity: 0; visibility: hidden; transform: translateY(20px);
+.piloting .prehide,
+.faq .prehide {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
   will-change: transform, opacity;
 }
+
 .assets .prehide-row,
 .values .prehide-row,
 .evals  .prehide-row,
-.piloting .prehide-row {
-  opacity: 0; visibility: hidden;
+.piloting .prehide-row,
+.faq .prehide-row {
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
 }
 
 /* ===== HERO ===== */
@@ -156,10 +163,9 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   .panel-list a:focus,
   .panel-list a:active{
     color: inherit;
-    text-decoration: none; /* ✅ pas de soulignement */
+    text-decoration: none;
   }
 
-  /* Focus clavier sans underline */
   .panel-list a:focus-visible{
     outline: 2px solid rgba(68, 70, 151, 0.35);
     outline-offset: 2px;
@@ -167,7 +173,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     text-decoration: none;
   }
 
-  /* si tu as une classe dédiée (recommandé) */
   .li-link{
     display: inline;
     color: inherit;
@@ -187,19 +192,11 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   .li-row{
     display: inline-flex;
     align-items: baseline;
-    gap: 10px;
-    min-width: 0;
-  }
-
-    /* ligne texte + bouton icône */
-  .li-row{
-    align-items: baseline;
     justify-content: space-between;
     gap: 10px;
     min-width: 0;
   }
 
-  /* bouton icône (petit carré cliquable) */
   .li-open{
     width: 28px;
     height: 28px;
@@ -227,14 +224,12 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     }
   }
 
-  /* ton icône */
   .ts-link-icon{
     width: 14px;
     height: 14px;
     display: inline-block;
     flex: 0 0 auto;
   }
-
 
   .sub-list{
     list-style: none;
@@ -341,7 +336,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 
 @media (min-width: 1024px){
   .values{
-    --title-image-gap: 64px;
+    --title-image-gap: 24px;
 
     display: block;
 
@@ -373,9 +368,18 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 /* ===================== */
 /* MÉTHODES = Accordéon  */
 /* ===================== */
+
+/* ✅ on neutralise les anciennes règles liées à row-line (puisqu’on passe sur row-head) */
+.eval-row .row-line > .row-name{
+  white-space: normal;
+}
+.eval-row .row-line > .row-name br{
+  display: none;
+}
+
 .evals {
   --evals-top-gap: 105px;
-  --evals-title-bottom-gap: 57px;
+  --evals-title-bottom-gap: 25px;
 
   .section-inner { padding-top: var(--evals-top-gap); }
 
@@ -389,17 +393,11 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 
   .eval-intro {
     margin: 12px 0 30px;
-    max-width: 980px;
     line-height: 1.6;
     color: $blue;
 
-    p {
-      margin: 0;
-    }
-
-    p + p {
-      margin-top: 10px;
-    }
+    p { margin: 0; }
+    p + p { margin-top: 10px; }
   }
 
   .eval-list{
@@ -409,24 +407,39 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     border-top: $bd-2 solid $blue;
   }
 
+  /* ✅ la ligne n’est plus un grid sur <li>, mais sur le bouton .row-head */
   .eval-row{
+    border-bottom: $bd-2 solid $blue;
+    padding: 0;
+  }
+
+  /* ✅ header cliquable pleine largeur */
+  .row-head{
+    width: 100%;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    color: $blue;
+
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
     column-gap: clamp(16px, 3vw, 24px);
-    border-bottom: $bd-2 solid $blue;
-    padding-block-start: 0;
-    row-gap: 0;
+
+    min-height: clamp(78px, 10vw, 98px);
   }
 
-  .row-line { display: contents; }
+  .row-head:focus-visible{
+    outline: 2px solid rgba(68, 70, 151, 0.35);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
 
-  .row-line > .eval-icon,
-  .row-line > .row-name,
-  .row-line > .row-toggle{
-    block-size: clamp(78px, 10vw, 98px);
-    display: flex;
-    align-items: center;
+  /* (optionnel mais souvent apprécié) */
+  .row-head:hover .chevron{
+    opacity: 1;
   }
 
   .eval-icon{
@@ -436,7 +449,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     justify-self: start;
   }
 
-  .eval-row .row-line > .row-name{
+  .row-name{
     width: fit-content !important;
     text-align: left;
     align-self: center;
@@ -451,21 +464,16 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     word-break: normal;
   }
 
-  .eval-row .row-line > .row-name > p,
-  .eval-row .row-line > .row-name > div,
-  .eval-row .row-line > .row-name > span{
+  .row-name br{
+    display: none;
+  }
+
+  .row-name > p,
+  .row-name > div,
+  .row-name > span{
     display: inline;
     margin: 0;
     padding: 0;
-  }
-
-  .row-toggle{
-    background: none;
-    border: 0;
-    padding: 0;
-    color: $blue;
-    cursor: pointer;
-    justify-self: end;
   }
 
   .chevron{
@@ -473,12 +481,15 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     height: 30px;
     transform: rotate(90deg);
     transition: transform .25s ease;
+    justify-self: end;
+    opacity: 0.9;
   }
   .eval-row.open .chevron{ transform: rotate(0deg); }
 
   .row-desc{
-    grid-column: 2 / 3;
     padding: 8px 0 18px;
+    /* aligne sous la colonne “titre” (icon + gap) */
+    padding-left: calc(56px + clamp(16px, 3vw, 24px));
   }
 
   .row-desc-inner{
@@ -489,9 +500,9 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     p:last-child{ margin-bottom: 0; }
   }
 
-  .eval-row.open{
-    padding-block-start: 16px;
-    row-gap: 20px;
+  /* si tu veux garder l’“air” quand open */
+  .eval-row.open .row-head{
+    padding-top: 16px;
   }
 
   @media (max-width: 768px){
@@ -523,7 +534,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   .pilot-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: clamp(24px, 4vw, 48px); // desktop/tablet
+    gap: clamp(24px, 4vw, 48px);
   }
 
   .pilot-figure {
@@ -547,23 +558,16 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   @media (max-width: 900px) {
     .pilot-grid {
       grid-template-columns: 1fr;
-
-      /* ✅ plus d’espace ENTRE les items (vertical) */
       row-gap: clamp(80px, 7vw, 80px);
-
-      /* (optionnel) tu peux laisser un petit column-gap même si 1 col */
       column-gap: 0;
     }
   }
 }
 
-
 /* ===================================================================== */
 /* ================================= FAQ =============================== */
 /* ===================================================================== */
-
 .faq {
-  padding-block: clamp(48px, 7vw, 96px);
 
   .faq-inner {
     width: 100%;
@@ -590,10 +594,9 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   .faq-item {
     border-radius: 12px;
     background: rgba(68, 70, 151, 0.06);
-    overflow: hidden; /* propre pour l'accordéon */
+    overflow: hidden;
   }
 
-  /* ===== Ligne question cliquable ===== */
   .faq-qrow {
     width: 100%;
     display: flex;
@@ -626,12 +629,10 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     transition: transform 0.2s ease;
   }
 
-  /* Chevron tourne quand ouvert */
   .faq-qrow[aria-expanded="true"] .faq-chevron {
     transform: rotate(180deg);
   }
 
-  /* ===== Réponse ===== */
   .faq-a {
     padding: 0 clamp(14px, 2.2vw, 18px) clamp(14px, 2.2vw, 18px);
 
@@ -641,47 +642,39 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     font-weight: map.get(vars.$font-weight, "regular");
     line-height: 1.7;
 
-    /* évite les marges énormes si le WYSIWYG renvoie des <p> */
     p { margin: 0 0 10px 0; }
     p:last-child { margin-bottom: 0; }
   }
 
-  /* Etat fermé */
+  /* ✅ Etat fermé : DOM conservé mais masqué */
   .faq-a.is-collapsed {
     display: none;
   }
 }
 
-/* ===================================================================== */
-/* ===== FIX GLOBAL pour listes injectées via [innerHTML] = 16px ======== */
-/* ===================================================================== */
-
+/* Fix listes dans innerHTML */
 .faq .faq-a ul,
 .faq .faq-a ol {
   margin: 10px 0 0 18px;
   padding: 0;
 
   font-family: inherit;
-  font-size: 16px;      /* ✅ li = 16px */
+  font-size: 16px;
   line-height: inherit;
   font-weight: inherit;
 }
 
 .faq .faq-a li {
   margin: 0 0 6px 0;
-
   font-family: inherit;
-  font-size: 16px;      /* ✅ li = 16px */
+  font-size: 16px;
   line-height: inherit;
   font-weight: inherit;
 }
 
-/* ✅ marker un peu plus petit */
-.faq .faq-a li::marker {
-  font-size: 0.85em;    /* ajuste 0.8 / 0.75 si besoin */
-}
+.faq .faq-a li::marker { font-size: 0.85em; }
 
-/* ====================== FAQ — MOBILE ≤ 768px ====================== */
+/* Mobile */
 @media (max-width: 768px) {
   .faq {
     padding-block: 40px;
@@ -693,23 +686,16 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
       margin-bottom: 16px;
     }
 
-    .faq-item {
-      border-radius: 0;
-    }
+    .faq-item { border-radius: 0; }
 
-    .faq-qrow {
-      padding: 14px 12px;
-    }
+    .faq-qrow { padding: 14px 12px; }
 
     .faq-q {
       font-size: 18px;
       line-height: 1.25;
     }
 
-    .faq-chevron {
-      width: 20px;
-      height: 20px;
-    }
+    .faq-chevron { width: 20px; height: 20px; }
 
     .faq-a {
       padding: 0 12px 14px;
@@ -718,16 +704,13 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     }
   }
 
-  /* Mobile : listes à 14px si tu gardes réponse à 14px */
   .faq .faq-a ul,
   .faq .faq-a ol,
   .faq .faq-a li {
     font-size: 14px;
   }
 
-  .faq .faq-a li::marker {
-    font-size: 0.85em;
-  }
+  .faq .faq-a li::marker { font-size: 0.85em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -738,7 +721,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   }
 }
 
-/* === DEBUG / FALLBACK : forcer visible si besoin === */
+/* Debug fallback */
 .methods-wrapper.no-anim {
   .prehide,
   .prehide-row {

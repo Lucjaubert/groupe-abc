@@ -13,6 +13,10 @@ export interface PartnerCard {
   jobHtml: string;
   linkedin?: string;
   email?: string;
+  firmName?: string;
+  firmLogo?: string;
+  organismLogo?: string;
+  partnerDescriptionHtml?: string;
 }
 
 /* ===========================
@@ -386,28 +390,58 @@ export class WordpressService {
   }
 
   private normalizeTeamPartnersFrom(acfRoot: any): PartnerCard[] {
-    const firms = (acfRoot?.firms ?? acfRoot) || {};
-    const out: PartnerCard[] = [];
+  const firms = (acfRoot?.firms ?? acfRoot) || {};
+  const out: PartnerCard[] = [];
 
-    Object.keys(firms).forEach(key => {
-      if (!/^firm_\d+$/i.test(key)) return;
-      const f = firms[key] || {};
+  Object.keys(firms).forEach(key => {
+    if (!/^firm_\d+$/i.test(key)) return;
+    const f = firms[key] || {};
 
-      const area = (f.region_name ?? '').toString().trim();
-      const first = (f.partner_lastname ?? '').toString().trim();
-      const last = (f.partner_familyname ?? '').toString().trim();
-      const jobHtml = (f.titles_partner_ ?? f.titles_partner ?? '').toString();
-      const photo = fixWpMediaUrl((f.partner_image ?? '').toString().trim());
-      const linkedin = (f.partner_lk ?? '').toString().trim();
-      const email = (f.contact_email ?? '').toString().trim();
+    const area = (f.region_name ?? '').toString().trim();
+    const first = (f.partner_lastname ?? '').toString().trim();
+    const last = (f.partner_familyname ?? '').toString().trim();
 
-      if ((first || last) && photo) {
-        out.push({ photo, area, nameFirst: first, nameLast: last, jobHtml, linkedin, email });
-      }
-    });
+    const jobHtmlRaw = (f.titles_partner_ ?? f.titles_partner ?? '').toString();
+    const jobHtml = rewriteUploadsInHtml(jobHtmlRaw);
 
-    return out;
-  }
+    const photo = fixWpMediaUrl((f.partner_image ?? '').toString().trim());
+    const linkedin = (f.partner_lk ?? '').toString().trim();
+    const email = (f.contact_email ?? '').toString().trim();
+
+    // ✅ infos “cabinet”
+    const firmName = (f.name ?? '').toString().trim();
+    const firmLogo = fixWpMediaUrl((f.logo ?? '').toString().trim());
+
+    // ✅ LOGO RICS / organismes
+    // (parfois false → on renvoie '')
+    const organismLogo =
+      typeof f.organism_logo === 'string' ? fixWpMediaUrl(f.organism_logo.trim()) : '';
+
+    const partnerDescriptionHtml = rewriteUploadsInHtml(
+      (f.partner_description ?? '').toString()
+    );
+
+    // critère d’inclusion : au minimum un nom + une photo (comme chez toi)
+    if ((first || last) && photo) {
+      out.push({
+        photo,
+        area,
+        nameFirst: first,
+        nameLast: last,
+        jobHtml,
+        linkedin,
+        email,
+        firmName,
+        firmLogo,
+        organismLogo,
+        partnerDescriptionHtml,
+      });
+    }
+  });
+
+  return out;
+}
+
 
   getTeamPartners(): Observable<PartnerCard[]> {
     const params = new HttpParams().set('per_page', '1');

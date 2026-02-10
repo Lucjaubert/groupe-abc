@@ -210,9 +210,19 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
     });
   }
 
-  goBackToList(): void {
+  /**
+   * ✅ Retour liste
+   * - si theme fourni => on revient avec ?theme=xxx pour activer le filtre côté liste
+   */
+  goBackToList(theme?: ThemeKey | null): void {
     const isEN = this.currentPath().startsWith('/en/');
     const target = isEN ? '/en/real-estate-valuation-news' : '/actualites-expertise-immobiliere';
+
+    if (theme) {
+      this.router.navigate([target], { queryParams: { theme } });
+      return;
+    }
+
     this.router.navigateByUrl(target);
   }
 

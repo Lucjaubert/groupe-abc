@@ -136,9 +136,9 @@
   <!-- ===== RÉFÉRENCES ===== -->
   <section class="refs">
     <div class="section-refs">
-      <h2 #refsTitleEl class="refs-title prehide">{{ refsTitle }}</h2>
+      <h2 #refsTitleEl class="refs-title pt-9 pb-3 pt-lg-10 pb-lg-9">{{ refsTitle }}</h2>
 
-      <ul #refsGrid class="refs-grid pt-7 prehide" role="list">
+      <ul #refsGrid class="refs-grid pt-7 px-0 prehide" role="list">
         <li *ngFor="let r of references; trackBy: trackByIndex">
           <img
             #refLogo
@@ -156,9 +156,10 @@
   </section>
 
   <!-- ===== FAQ (visible / crawlable) — FIN DE PAGE ===== -->
-  <section class="faq" *ngIf="faqItems.length" aria-labelledby="faq-title">
+  <section class="faq pb-8" *ngIf="faqItems.length" aria-labelledby="faq-title">
     <div class="faq-inner px-0">
-      <h2 id="faq-title pt-0" class="faq-title">FAQ</h2>
+      <!-- ✅ FIX : id sans espace, pt-0 en class -->
+      <h2 id="faq-title" class="faq-title pt-0">FAQ</h2>
 
       <ul class="faq-list" role="list">
         <li class="faq-item" *ngFor="let q of faqItems; let i = index; trackBy: trackByIndex">
@@ -184,13 +185,17 @@
             </svg>
           </button>
 
+          <!-- ✅ Collapse animé (height) + wrapper interne -->
           <div
             class="faq-a"
             [class.is-collapsed]="!isFaqItemOpen(i)"
+            [class.is-open]="isFaqItemOpen(i)"
+            [style.height.px]="isFaqItemOpen(i) ? faqHeights[i] : 0"
             [attr.id]="'faq-a-' + i"
             [attr.aria-hidden]="!isFaqItemOpen(i)"
-            [innerHTML]="q.a"
-          ></div>
+          >
+            <div class="faq-a-inner" #faqInner [innerHTML]="q.a"></div>
+          </div>
         </li>
       </ul>
     </div>

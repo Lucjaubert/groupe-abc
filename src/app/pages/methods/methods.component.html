@@ -157,7 +157,7 @@
           [innerHTML]="wheelIntroHtml"
         ></div>
 
-        <div #wheelWrap class="wheel prehide-row">
+        <div #wheelWrap class="wheel pt-lg-8 pt-0 prehide-row">
           <img
             class="wheel-img"
             [appImgFast]="
@@ -193,7 +193,14 @@
             *ngFor="let m of methods; let i = index; trackBy: trackByIndex"
             [class.open]="evalOpen[i]"
           >
-            <div class="row-line">
+            <!-- ✅ Toute la ligne cliquable (un seul bouton) -->
+            <button
+              class="row-head"
+              type="button"
+              (click)="toggleEval(i)"
+              [attr.aria-expanded]="evalOpen[i] ? 'true' : 'false'"
+              [attr.aria-controls]="'eval-desc-' + i"
+            >
               <img
                 class="eval-icon"
                 [appImgFast]="
@@ -209,32 +216,32 @@
 
               <span class="row-name" [innerHTML]="m.title"></span>
 
-              <button
-                class="row-toggle"
-                type="button"
-                [attr.aria-expanded]="evalOpen[i] ? 'true' : 'false'"
-                (click)="toggleEval(i)"
-              >
-                <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    d="M6 9l6 6 6-6"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  ></path>
-                </svg>
-                <span class="sr-only">{{ evalOpen[i] ? 'Réduire' : 'Déployer' }}</span>
-              </button>
-            </div>
+              <!-- chevron décoratif -->
+              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  d="M6 9l6 6 6-6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                ></path>
+              </svg>
 
-            <div class="row-desc" *ngIf="m.html && evalOpen[i]">
+              <span class="sr-only">{{ evalOpen[i] ? 'Réduire' : 'Déployer' }}</span>
+            </button>
+
+            <div
+              class="row-desc"
+              *ngIf="m.html && evalOpen[i]"
+              [attr.id]="'eval-desc-' + i"
+            >
               <div class="row-desc-inner" [innerHTML]="m.html"></div>
             </div>
           </li>
         </ul>
       </div>
     </section>
+
 
     <!-- ===== PILOTAGE DES MISSIONS ===== -->
     <section class="section piloting" *ngIf="piloting?.html || piloting?.flows?.length">
@@ -262,13 +269,16 @@
     </section>
 
     <!-- ===== FAQ (visible / crawlable) — FIN DE PAGE ===== -->
-    <section class="faq" *ngIf="faqItems.length" aria-labelledby="faq-title">
+    <section #faqWrapEl class="faq prehide pb-8" *ngIf="faqItems.length" aria-labelledby="faq-title">
       <div class="faq-inner px-0">
-        <h2 id="faq-title" class="faq-title">FAQ</h2>
+        <h2 #faqTitleEl id="faq-title" class="faq-title prehide">FAQ</h2>
 
         <ul class="faq-list" role="list">
-          <li class="faq-item" *ngFor="let q of faqItems; let i = index; trackBy: trackByIndex">
-            <!-- Ligne question + chevron (cliquable) -->
+          <li
+            #faqItemEl
+            class="faq-item prehide-row"
+            *ngFor="let q of faqItems; let i = index; trackBy: trackByIndex"
+          >
             <button
               type="button"
               class="faq-qrow"
@@ -278,7 +288,6 @@
             >
               <span class="faq-q">{{ q.q }}</span>
 
-              <!-- chevron -->
               <svg
                 class="faq-chevron"
                 xmlns="http://www.w3.org/2000/svg"
@@ -292,7 +301,6 @@
               </svg>
             </button>
 
-            <!-- Réponse (DOM conservé pour crawl ; masqué via CSS) -->
             <div
               class="faq-a"
               [class.is-collapsed]="!isFaqItemOpen(i)"
