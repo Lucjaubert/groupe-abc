@@ -169,11 +169,17 @@ $blue-hero: #444798;
   --region-left: 582px;
   --overlap-right: calc(var(--row-h) - 20px);
 
+
+  .download .dl-link {
+    .dl-accent--red {
+      color: $red;
+    }
+  }
+
   .firms-title {
     color: $blue;
     font-size: clamp(24px, 3.2vw, 36px);
     line-height: normal;
-    margin: 0 0 56px;
 
     @media (max-width: 768px) { margin: 0; }
   }
@@ -198,6 +204,17 @@ $blue-hero: #444798;
     min-block-size: var(--row-h);
     position: relative;
     z-index: 2;
+
+    /* ✅ click zone */
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* ✅ focus visible (clavier) */
+  .fr-head:focus-visible {
+    outline: 2px solid $blue-hero;
+    outline-offset: 4px;
+    border-radius: 6px;
   }
 
   .fr-logo {
@@ -477,13 +494,13 @@ $blue-hero: #444798;
     grid-template-columns: 1fr;
     gap: 12px;
     grid-template-areas:
-      "region"  /* 1. ff-region */
-      "right"   /* 2. ff-right (juste sous region) */
-      "desc"    /* 3. ff-desc */
-      "cta";    /* 4. fr-cta (si présent) */
+      "region"
+      "right"
+      "desc"
+      "cta";
   }
 
-  .firms .ff-left {        /* aplatit le conteneur gauche */
+  .firms .ff-left {
     display: contents;
     margin-top: 0 !important;
   }
@@ -524,6 +541,8 @@ $blue-hero: #444798;
 :host ::ng-deep .ff-titles p + p { margin-top: 2px !important; }
 
 /* ===== Teaching ===== */
+/* (ton code inchangé ci-dessous) */
+
 .section.teaching {
   --row-h: 120px;
   --gap: clamp(16px, 3vw, 24px);
@@ -538,7 +557,9 @@ $blue-hero: #444798;
   }
 
   .teach-list {
-    list-style: none; margin: 0; padding: 0;
+    list-style: none;
+    margin: 0;
+    padding: 0;
     border-top: map.get(vars.$border-size, "2") solid $blue-hero;
     margin-top: 50px;
     margin-bottom: 100px;
@@ -552,7 +573,9 @@ $blue-hero: #444798;
     block-size: var(--row-h);
     border-bottom: map.get(vars.$border-size, "2") solid $blue-hero;
 
-    > * { min-height: 0; }
+    > * {
+      min-height: 0;
+    }
   }
 
   .teach-left {
@@ -563,18 +586,53 @@ $blue-hero: #444798;
     justify-self: start;
 
     .teach-logo {
-      inline-size: 80px; block-size: 80px;
+      inline-size: 80px;
+      block-size: 80px;
 
-      img { width: 100%; height: 100%; object-fit: contain; display:block; }
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
+      }
     }
   }
 
   .teach-school {
-    display:flex; flex-direction:column; gap:6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 
-    .ts-school-name { color:$blue-hero; font-size: clamp(18px, 2.1vw, 19px); line-height: 1.25; font-weight: 500; }
-    .ts-level       { color:$blue; font-size:14px; text-decoration:none; font-weight: 600; line-height: normal; }
-    .ts-link        { color:$blue; font-size:14px; text-decoration:none; font-weight: 400; line-height: normal; }
+    .ts-school-name {
+      color: $blue-hero;
+      font-size: clamp(18px, 2.1vw, 19px);
+      line-height: 1.25;
+      font-weight: 500;
+    }
+    .ts-level {
+      color: $blue;
+      font-size: 14px;
+      text-decoration: none;
+      font-weight: 600;
+      line-height: normal;
+    }
+
+    .ts-link {
+      color: $blue;
+      font-size: 14px;
+      text-decoration: none;
+      font-weight: 400;
+      line-height: normal;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ts-link-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
   }
 
   .teach-speaker {
@@ -585,21 +643,51 @@ $blue-hero: #444798;
     justify-self: start;
 
     .ts-photo {
-      inline-size: 80px; block-size: 80px; object-fit: cover; display:block; background:#f5e1dd;
-      opacity: 0; transition: opacity .16s ease;
+      inline-size: 80px;
+      block-size: 80px;
+      object-fit: cover;
+      display: block;
+      background: #f5e1dd;
+      opacity: 0;
+      transition: opacity 0.16s ease;
     }
-    .ts-photo[src]:not([src=""]):not([src="null"]):not([src="undefined"]) { opacity: 1; }
+    .ts-photo[src]:not([src=""]):not([src="null"]):not([src="undefined"]) {
+      opacity: 1;
+    }
 
-    .ts-person { display:flex; flex-direction:column; justify-content: space-between; gap:6px; min-height: 100%; }
-    .ts-name   { color:$blue-hero; font-size: clamp(16px, 1.9vw, 20px); line-height: 1.1; }
+    .ts-person {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 6px;
+      min-height: 100%;
+    }
+    .ts-name {
+      color: $blue-hero;
+      font-size: clamp(16px, 1.9vw, 20px);
+      line-height: 1.1;
+    }
 
-    .lk { display:inline-flex; align-items:center; justify-content:center; inline-size:26px; block-size:26px; }
-    .lk-ico { inline-size:26px; block-size:26px; }
+    .lk {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      inline-size: 26px;
+      block-size: 26px;
+    }
+    .lk-ico {
+      inline-size: 26px;
+      block-size: 26px;
+    }
   }
 
   .teach-course {
-    display:flex; flex-direction:column; align-items:flex-start; justify-content: space-between;
-    gap: 20px; text-align:left;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    text-align: left;
 
     .tc-title {
       display: -webkit-box;
@@ -610,14 +698,48 @@ $blue-hero: #444798;
       font-size: 16px;
       font-weight: 600;
       line-height: normal;
+      color: $blue-hero;
     }
-    .tc-city { color:$red; font-size: 16px; }
+
+    /* ✅ Ville + icône localisation */
+    .tc-city {
+      color: $red;
+      font-size: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      line-height: 1.1;
+    }
+
+    .tc-city-ico {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      flex: 0 0 auto;
+      color: currentColor; /* ✅ reprend le rouge de .tc-city */
+    }
+
+    .tc-city-text {
+      display: inline;
+      color: inherit;
+    }
   }
 
   @media (max-width: 1199.98px) {
-    .teach-row { grid-template-columns: 1fr; row-gap: 14px; block-size: auto; }
-    .teach-left { grid-template-columns: 80px 1fr; }
-    .teach-course .tc-title { white-space: normal; overflow: visible; text-overflow: clip; }
+    .teach-row {
+      grid-template-columns: 1fr;
+      row-gap: 14px;
+      block-size: auto;
+    }
+    .teach-left {
+      grid-template-columns: 80px 1fr;
+    }
+    .teach-course .tc-title {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
+      color: $blue-hero;
+    }
   }
 }
 
@@ -642,15 +764,33 @@ $blue-hero: #444798;
       column-gap: 12px;
       align-items: center;
 
-      .teach-logo { inline-size: 64px; block-size: 64px; }
-      .teach-logo img { width: 100%; height: 100%; object-fit: contain; }
+      .teach-logo {
+        inline-size: 64px;
+        block-size: 64px;
+      }
+      .teach-logo img {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+      }
     }
 
     .teach-school {
       gap: 4px;
 
-      .ts-school-name { font-size: clamp(14px, 4.2vw, 18px); line-height: 1.25; }
-      .ts-level, .ts-link { font-size: 12px; font-weight: 400; }
+      .ts-school-name {
+        font-size: clamp(14px, 4.2vw, 18px);
+        line-height: 1.25;
+      }
+      .ts-level,
+      .ts-link {
+        font-size: 12px;
+        font-weight: 400;
+      }
+      .ts-link-icon {
+        width: 12px;
+        height: 12px;
+      }
     }
 
     .teach-speaker {
@@ -660,11 +800,26 @@ $blue-hero: #444798;
       column-gap: 12px;
       align-items: center;
 
-      .ts-photo { inline-size: 56px; block-size: 56px; object-fit: cover; }
-      .ts-person { gap: 4px; }
-      .ts-name { font-size: clamp(14px, 4vw, 16px); line-height: 1.1; }
-      .lk { inline-size: 24px; block-size: 24px; }
-      .lk-ico { inline-size: 24px; block-size: 24px; }
+      .ts-photo {
+        inline-size: 56px;
+        block-size: 56px;
+        object-fit: cover;
+      }
+      .ts-person {
+        gap: 4px;
+      }
+      .ts-name {
+        font-size: clamp(14px, 4vw, 16px);
+        line-height: 1.1;
+      }
+      .lk {
+        inline-size: 24px;
+        block-size: 24px;
+      }
+      .lk-ico {
+        inline-size: 24px;
+        block-size: 24px;
+      }
     }
 
     .teach-course {
@@ -682,11 +837,19 @@ $blue-hero: #444798;
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
-      .tc-city { font-size: 14px; }
+
+      .tc-city {
+        font-size: 14px;
+        gap: 6px;
+      }
+
+      .tc-city-ico {
+        width: 14px;
+        height: 14px;
+      }
     }
   }
 }
-
 
 .sr-only,
 .visually-hidden {
@@ -700,3 +863,175 @@ $blue-hero: #444798;
   white-space:nowrap !important;
   border:0 !important;
 }
+
+/* ===================================================================== */
+/* ================================= FAQ =============================== */
+/* ===================================================================== */
+
+.faq {
+
+  .faq-inner {
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  .faq-title {
+    margin: 0 0 clamp(18px, 3vw, 28px);
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: map.get(vars.$font-size, "80");
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.1;
+  }
+
+  .faq-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: clamp(14px, 2.4vw, 18px);
+  }
+
+  .faq-item {
+    border-radius: 12px;
+    background: rgba(68, 70, 151, 0.06);
+    overflow: hidden;
+  }
+
+  .faq-qrow {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+
+    padding: clamp(14px, 2.2vw, 18px);
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+
+  .faq-q {
+    margin: 0;
+    font-size: map.get(vars.$font-size, "40");
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .faq-chevron {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+    opacity: 0.9;
+    transition: transform 0.2s ease;
+  }
+
+  .faq-qrow[aria-expanded="true"] .faq-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* ✅ Réponse : wrapper ajouté dans le HTML */
+  .faq-a {
+    overflow: hidden; /* important: pas de display:none */
+  }
+
+  .faq-a-inner {
+    padding: 0 clamp(14px, 2.2vw, 18px) clamp(14px, 2.2vw, 18px);
+
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: map.get(vars.$font-size, "30");
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.7;
+
+    p { margin: 0 0 10px 0; }
+    p:last-child { margin-bottom: 0; }
+
+    /* ✅ listes injectées via [innerHTML] */
+    ul,
+    ol {
+      margin: 10px 0 0 18px;
+      padding: 0;
+      font-family: inherit;
+      font-size: 16px;
+      line-height: inherit;
+      font-weight: inherit;
+    }
+
+    li {
+      margin: 0 0 6px 0;
+      font-family: inherit;
+      font-size: 16px;
+      line-height: inherit;
+      font-weight: inherit;
+
+      &::marker { font-size: 0.85em; }
+    }
+  }
+
+  /* ✅ état fermé : animable (height + opacity) */
+  .faq-a.is-collapsed {
+    height: 0;
+    opacity: 0;
+  }
+}
+
+/* ====================== FAQ — MOBILE ≤ 768px ====================== */
+@media (max-width: 768px) {
+  .faq {
+
+    .faq-title {
+      font-size: 24px;
+      font-weight: 400;
+      line-height: normal;
+      margin-bottom: 16px;
+    }
+
+    .faq-item {
+      border-radius: 0;
+    }
+
+    .faq-qrow {
+      padding: 14px 12px;
+    }
+
+    .faq-q {
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .faq-chevron {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* padding déplacé dans .faq-a-inner */
+    .faq-a-inner {
+      padding: 0 12px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+
+      ul,
+      ol,
+      li {
+        font-size: 14px;
+      }
+
+      li::marker {
+        font-size: 0.85em;
+      }
+    }
+  }
+}
+
+.team--boot {
+  .section:not(.hero) { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+  .hero .hero-intro { opacity: 0 !important; visibility: hidden !important; }
+  .hero .page-title { opacity: 1 !important; visibility: visible !important; transform: none !important; }
+}
+
+

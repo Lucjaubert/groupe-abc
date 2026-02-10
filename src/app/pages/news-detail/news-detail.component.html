@@ -1,0 +1,105 @@
+<!-- src/app/pages/news-detail/news-detail.component.html -->
+<section class="section news-detail-wrapper" *ngIf="p as post">
+  <div class="section-inner px-0">
+
+    <button
+      type="button"
+      class="back-btn back-btn--icon"
+      (click)="goBackToList()"
+      aria-label="Retour aux articles"
+      title="Retour aux articles"
+    >
+      <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M9 6L4.5 10.5 9 15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M4.5 10.5H14.5c3.9 0 7 3.1 7 7v0.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+
+    <div class="news-row" [ngClass]="themeClass(post.themeKey)">
+      <div class="news-bg" aria-hidden="true"></div>
+
+      <!-- ✅ Layout vertical -->
+      <div class="news-box news-box--stack">
+
+        <!-- ✅ 1) TITRE -->
+        <h1 class="post-title" *ngIf="post.title">{{ post.title }}</h1>
+
+
+        <button
+          *ngIf="post.theme && post.themeKey"
+          type="button"
+          class="theme-chip theme-filter-btn"
+          [ngClass]="themeClass(post.themeKey)"
+          [attr.aria-pressed]="true"
+          (click)="goBackToList(post.themeKey)"
+          title="Voir les articles de ce thème"
+          [attr.aria-label]="'Filtrer la liste par thème : ' + post.theme"
+        >
+          <span class="chip-label">{{ post.theme }}</span>
+        </button>
+
+
+
+        <!-- Métadonnées -->
+        <div class="meta-line">
+          <img
+            class="firm-logo"
+            [appImgFast]="post?._firmLogoUrl || '/assets/fallbacks/logo-placeholder.svg'"
+            [placeholder]="'/assets/fallbacks/logo-placeholder.svg'"
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+          />
+
+          <div class="meta-text d-flex flex-column">
+            <div class="firm-info">
+              <span class="firm-name" *ngIf="post.firmName">{{ post.firmName }}</span>
+              <span class="meta-sep" aria-hidden="true">—</span>
+            </div>
+
+            <div class="post-meta">
+              <span class="author-date" *ngIf="post.author || post.date">
+                {{ post.author }}<ng-container *ngIf="post.author && post.date">, </ng-container>{{ post.date }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Image (dans le container, pas full-bleed) -->
+        <div class="post-media">
+          <img
+            class="post-media__img"
+            [appImgFast]="post?._imageUrl || '/assets/fallbacks/image-placeholder.svg'"
+            [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+
+        <!-- ✅ 3) TEXTE (et le reste) -->
+        <div class="news-content">
+          <!-- Contenu -->
+          <div class="post-excerpt">
+            <div class="excerpt-body pt-5" *ngIf="post.html" [innerHTML]="post.html"></div>
+          </div>
+
+          <!-- CTA LinkedIn -->
+          <div class="card-cta" *ngIf="post.linkedinUrl">
+            <a
+              [href]="post.linkedinUrl"
+              target="_blank"
+              rel="noopener"
+              class="card-linkedin"
+              aria-label="Lire sur LinkedIn"
+            >
+              <img src="assets/icons/linkedin.webp" alt="" aria-hidden="true" />
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

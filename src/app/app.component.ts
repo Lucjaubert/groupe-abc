@@ -1,4 +1,4 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, ViewportScroller, isPlatformBrowser } from '@angular/common';
 import {
   Component,
   Inject,
@@ -20,7 +20,7 @@ import {
   FooterComponent,
   FooterSection,
 } from './shared/components/footer/footer.component';
-import { FaqBubbleComponent } from './shared/components/faq-bubble/faq-bubble.component';
+import { ContactFabComponent } from './shared/components/faq-bubble/contact-fab.component';
 
 import { SeoService } from './services/seo.service';
 import { WeglotRefreshService } from './services/weglot-refresh.service';
@@ -34,7 +34,7 @@ import { environment } from '../environments/environment';
     CommonModule,
     HeaderComponent,
     FooterComponent,
-    FaqBubbleComponent,
+    ContactFabComponent,
   ],
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss'],
@@ -77,9 +77,14 @@ export class AppComponent implements OnInit, OnDestroy {
     private router: Router,
     @Inject(PLATFORM_ID) private platformId: Object,
     private renderer: Renderer2,
+    private viewport: ViewportScroller,
     private seo: SeoService,
     private _wgRefresh: WeglotRefreshService
   ) {}
+
+  private get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
 
   ngOnInit(): void {
     // =========================
@@ -89,7 +94,8 @@ export class AppComponent implements OnInit, OnDestroy {
       /\/+$/,
       ''
     );
-    const logoUrl = `${origin}/assets/favicons/android-chrome-512x512.png`;
+    // On utilise le même logo que dans le header
+    const logoUrl = `${origin}/assets/img/header/logo-groupe-abc.webp`;
 
     this.seo.setSitewideJsonLd({
       '@context': 'https://schema.org',
@@ -137,20 +143,30 @@ export class AppComponent implements OnInit, OnDestroy {
         this.currentRoute = evt.urlAfterRedirects || evt.url;
         this.showFooter = true;
 
-        if (isPlatformBrowser(this.platformId)) {
-          try {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          } catch {}
+        // ✅ SSR-safe : tout ce qui touche au DOM / scroll / Weglot => browser only
+        if (!this.isBrowser) return;
 
+        // ✅ SSR-friendly : pas de window.scrollTo
+        try {
+          // instant, sans dépendance DOM
+          this.viewport.scrollToPosition([0, 0]);
+          // Si tu tiens au smooth, Angular ne le gère pas via ViewportScroller.
+          // On reste donc "instant" pour rester propre SSR/hydration.
+        } catch {}
+
+        // ✅ Renderer2 OK, mais document.body only en browser
+        try {
           if (this.currentRoute.includes('/contact-expert-immobilier')) {
             this.renderer.addClass(document.body, 'contact-page');
           } else {
             this.renderer.removeClass(document.body, 'contact-page');
           }
+        } catch {}
 
-          // Weglot : rescans sur changement de route
+        // ✅ Weglot : rescans sur changement de route (browser only)
+        try {
           this._wgRefresh.refresh();
-        }
+        } catch {}
       }
     });
   }

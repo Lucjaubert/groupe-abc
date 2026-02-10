@@ -15,6 +15,8 @@
   <!-- ===== CONTEXTES ===== -->
   <section class="contexts">
     <div class="section-contexts">
+      <div class="ctx-text prehide" *ngIf="contextsText" [innerHTML]="contextsText"></div>
+
       <ul #ctxList class="ctx-list prehide" role="list">
         <li
           *ngFor="let c of contexts; let i = index; trackBy: trackByIndex"
@@ -22,12 +24,21 @@
           class="ctx-row prehide-row"
           [class.open]="ctxOpen[i]"
         >
-          <div class="row-line" (click)="toggleCtx(i)">
+          <!-- ✅ toute la ligne cliquable + curseur main -->
+          <div
+            class="row-line"
+            role="button"
+            tabindex="0"
+            (click)="toggleCtx(i)"
+            (keydown.enter)="toggleCtx(i)"
+            (keydown.space)="toggleCtx(i); $event.preventDefault()"
+          >
             <img
               class="ctx-icon"
               [appImgFast]="c?.iconUrl || defaultCtxIcon"
               [placeholder]="defaultCtxIcon"
-              width="56" height="56"
+              width="56"
+              height="56"
               alt=""
               loading="lazy"
               decoding="async"
@@ -45,7 +56,13 @@
               aria-label="Afficher / masquer la description"
             >
               <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path
+                  d="M6 9l6 6 6-6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                ></path>
               </svg>
             </button>
           </div>
@@ -63,6 +80,13 @@
     <div class="section-clients">
       <h2 #clientsTitleEl class="clients-title prehide">{{ clientsTitle }}</h2>
 
+      <div
+        #clientsTextEl
+        class="clients-text prehide"
+        *ngIf="clientsText"
+        [innerHTML]="clientsText"
+      ></div>
+
       <ul #cliList class="cli-list prehide" role="list">
         <li
           *ngFor="let c of clients; let i = index; trackBy: trackByIndex"
@@ -70,7 +94,15 @@
           class="cli-row prehide-row"
           [class.open]="cliOpen[i]"
         >
-          <div class="row-line" (click)="toggleCli(i)">
+          <!-- ✅ toute la ligne cliquable + curseur main -->
+          <div
+            class="row-line"
+            role="button"
+            tabindex="0"
+            (click)="toggleCli(i)"
+            (keydown.enter)="toggleCli(i)"
+            (keydown.space)="toggleCli(i); $event.preventDefault()"
+          >
             <div class="cli-name">{{ c.title }}</div>
 
             <button
@@ -82,7 +114,13 @@
               aria-label="Afficher / masquer le détail"
             >
               <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                <path
+                  d="M6 9l6 6 6-6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                ></path>
               </svg>
             </button>
           </div>
@@ -98,9 +136,9 @@
   <!-- ===== RÉFÉRENCES ===== -->
   <section class="refs">
     <div class="section-refs">
-      <h2 #refsTitleEl class="refs-title prehide">{{ refsTitle }}</h2>
+      <h2 #refsTitleEl class="refs-title pt-9 pb-3 pt-lg-10 pb-lg-9">{{ refsTitle }}</h2>
 
-      <ul #refsGrid class="refs-grid prehide" role="list">
+      <ul #refsGrid class="refs-grid pt-7 px-0 prehide" role="list">
         <li *ngFor="let r of references; trackBy: trackByIndex">
           <img
             #refLogo
@@ -116,23 +154,50 @@
       </ul>
     </div>
   </section>
-</div>
 
-<!-- ========= FAQ INLINE SSR (INVISIBLE, SEO ONLY) ========= -->
-<section
-  class="sr-only"
-  data-faq-inline
-  aria-hidden="true"
-  style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;"
->
-  <h2>{{ isEN ? 'Frequently Asked Questions' : 'Questions fréquentes' }}</h2>
-  <ul>
-    <li *ngFor="let it of faqItems; trackBy: trackByIndex">
-      <details>
-        <summary>{{ it.q }}</summary>
-        <!-- innerText pour éviter tout HTML non souhaité côté SSR -->
-        <div [innerText]="it.a"></div>
-      </details>
-    </li>
-  </ul>
-</section>
+  <!-- ===== FAQ (visible / crawlable) — FIN DE PAGE ===== -->
+  <section class="faq pb-8" *ngIf="faqItems.length" aria-labelledby="faq-title">
+    <div class="faq-inner px-0">
+      <!-- ✅ FIX : id sans espace, pt-0 en class -->
+      <h2 id="faq-title" class="faq-title pt-0">FAQ</h2>
+
+      <ul class="faq-list" role="list">
+        <li class="faq-item" *ngFor="let q of faqItems; let i = index; trackBy: trackByIndex">
+          <button
+            type="button"
+            class="faq-qrow"
+            (click)="toggleFaqItem(i)"
+            [attr.aria-expanded]="isFaqItemOpen(i)"
+            [attr.aria-controls]="'faq-a-' + i"
+          >
+            <span class="faq-q">{{ q.q }}</span>
+
+            <svg
+              class="faq-chevron"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                fill="currentColor"
+                d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"
+              />
+            </svg>
+          </button>
+
+          <!-- ✅ Collapse animé (height) + wrapper interne -->
+          <div
+            class="faq-a"
+            [class.is-collapsed]="!isFaqItemOpen(i)"
+            [class.is-open]="isFaqItemOpen(i)"
+            [style.height.px]="isFaqItemOpen(i) ? faqHeights[i] : 0"
+            [attr.id]="'faq-a-' + i"
+            [attr.aria-hidden]="!isFaqItemOpen(i)"
+          >
+            <div class="faq-a-inner" #faqInner [innerHTML]="q.a"></div>
+          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+</div>

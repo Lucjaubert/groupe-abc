@@ -10,30 +10,22 @@
     "ng": "ng",
     "start": "ng serve --proxy-config proxy.conf.json",
     "build": "ng build",
-
     "build:ssr": "ng build --configuration=production && ng run groupe-abc:server:production",
     "postbuild:ssr": "node -e \"const fs=require('fs'),p='dist/groupe-abc/server/'; if(fs.existsSync(p+'main.js')) fs.copyFileSync(p+'main.js', p+'main.cjs');\"",
-
     "serve:ssr": "ng run groupe-abc:serve-ssr:production",
     "start:ssr": "npm run build:ssr && npm run serve:ssr",
-
     "build:ssr:staging": "ng build --configuration=staging && ng run groupe-abc:server:staging",
     "postbuild:ssr:staging": "node -e \"const fs=require('fs'),p='dist/groupe-abc/server/'; if(fs.existsSync(p+'main.js')) fs.copyFileSync(p+'main.js', p+'main.cjs');\"",
     "serve:ssr:staging": "ng run groupe-abc:serve-ssr:staging",
     "start:ssr:staging": "npm run build:ssr:staging && npm run serve:ssr:staging",
-
     "serve:ssr:node": "node ssr.mjs",
     "start:ssr:node": "npm run build:ssr && node ssr.mjs",
-
     "prerender": "ng run groupe-abc:prerender",
     "prerender:staging": "ng run groupe-abc:prerender:staging",
-
     "deploy-assets:prod": "ng run groupe-abc:deploy-assets:production",
     "deploy-assets:staging": "ng run groupe-abc:deploy-assets:staging",
-
     "build:prod": "ng build --configuration=production && ng run groupe-abc:server:production && npm run deploy-assets:prod",
     "build:staging": "ng build --configuration=staging && ng run groupe-abc:server:staging && npm run deploy-assets:staging",
-
     "test": "ng test --watch=false",
     "lint": "node -e \"console.log('Lint non configuré. Exécutez: ng add @angular-eslint/schematics');\"",
     "clean": "rimraf dist .angular"
@@ -53,6 +45,7 @@
     "animejs": "3.2.2",
     "bootstrap": "5.3.3",
     "compression": "1.7.4",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "domino": "^2.1.6",
     "express": "^4.21.2",

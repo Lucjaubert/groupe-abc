@@ -23,7 +23,9 @@
               "src/sitemap.xml",
               "src/favicon.ico"
             ],
-            "styles": ["src/styles/styles.scss"],
+            "styles": [
+              "src/styles/styles.scss"
+            ],
             "scripts": []
           },
           "configurations": {
@@ -121,12 +123,23 @@
             "serverTarget": "groupe-abc:server:production",
             "routes": [
               "/",
-              "/qui-sommes-nous",
-              "/services",
-              "/biens-et-methodes",
-              "/equipe",
-              "/actualites",
-              "/contact"
+
+              "/expert-immobilier-reseau-national",
+              "/expertise-immobiliere-services",
+              "/methodes-evaluation-immobiliere",
+              "/experts-immobiliers-agrees",
+              "/actualites-expertise-immobiliere",
+              "/contact-expert-immobilier",
+              "/mentions-legales",
+
+              "/en",
+              "/en/expert-network-chartered-valuers",
+              "/en/real-estate-valuation-services",
+              "/en/valuation-methods-assets",
+              "/en/chartered-valuers-team",
+              "/en/real-estate-valuation-news",
+              "/en/contact-chartered-valuers",
+              "/en/legal-notice"
             ]
           },
           "configurations": {
@@ -135,12 +148,23 @@
               "serverTarget": "groupe-abc:server:staging",
               "routes": [
                 "/",
-                "/qui-sommes-nous",
-                "/services",
-                "/biens-et-methodes",
-                "/equipe",
-                "/actualites",
-                "/contact"
+
+                "/expert-immobilier-reseau-national",
+                "/expertise-immobiliere-services",
+                "/methodes-evaluation-immobiliere",
+                "/experts-immobiliers-agrees",
+                "/actualites-expertise-immobiliere",
+                "/contact-expert-immobilier",
+                "/mentions-legales",
+
+                "/en",
+                "/en/expert-network-chartered-valuers",
+                "/en/real-estate-valuation-services",
+                "/en/valuation-methods-assets",
+                "/en/chartered-valuers-team",
+                "/en/real-estate-valuation-news",
+                "/en/contact-chartered-valuers",
+                "/en/legal-notice"
               ]
             }
           }

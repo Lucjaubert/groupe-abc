@@ -21,15 +21,22 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 .assets .prehide,
 .values .prehide,
 .evals .prehide,
-.piloting .prehide {
-  opacity: 0; visibility: hidden; transform: translateY(20px);
+.piloting .prehide,
+.faq .prehide {
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(20px);
   will-change: transform, opacity;
 }
+
 .assets .prehide-row,
 .values .prehide-row,
 .evals  .prehide-row,
-.piloting .prehide-row {
-  opacity: 0; visibility: hidden;
+.piloting .prehide-row,
+.faq .prehide-row {
+  opacity: 0;
+  visibility: hidden;
+  will-change: transform, opacity;
 }
 
 /* ===== HERO ===== */
@@ -55,14 +62,12 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 /* DOMAINES D’ACTIFS     */
 /* ===================== */
 .assets{
-  /* hauteur de la bande + centrage vertical */
   --band-h: 488.057px;
 
   position: relative;
   isolation: isolate;
   margin-top: clamp(36px, 5vw, 74px);
 
-  /* ---- Bande de fond FULL-BLEED ---- */
   .assets-bg{
     position: absolute;
     top: 0;
@@ -81,21 +86,16 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     }
   }
 
-  /* ---- Contenu centré VERTICALEMENT dans la bande ---- */
   .section-inner{
     position: relative;
     z-index: 1;
-
-    /* on retire le padding vertical pour ne pas fausser la hauteur */
     padding-block: 0;
 
-    /* centre tout le contenu au milieu de la bande */
     min-height: var(--band-h);
     display: flex;
-    align-items: center;   /* ⟵ centrage vertical */
+    align-items: center;
   }
 
-  /* grille 3 colonnes */
   .assets-grid{
     list-style: none;
     margin: 0;
@@ -107,7 +107,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     width: 100%;
   }
 
-  /* entêtes de colonne */
   .asset-head{
     display: flex;
     align-items: center;
@@ -123,7 +122,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     line-height: 1.1;
   }
 
-  /* ===== Liste au trait rouge (panel-list) ===== */
   .panel-list{
     margin: 0;
     padding: 0;
@@ -142,7 +140,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
       will-change: transform, opacity;
     }
 
-    /* trait rouge avant chaque item */
     li::before{
       content: "—";
       color: $red;
@@ -157,30 +154,104 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     .li-text, .li-group{ flex: 1 1 auto; }
   }
 
-  /* sous-liste (puces) */
+  /* ===================== */
+  /* LIENS items cliquables */
+  /* ===================== */
+  .panel-list a,
+  .panel-list a:visited,
+  .panel-list a:hover,
+  .panel-list a:focus,
+  .panel-list a:active{
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .panel-list a:focus-visible{
+    outline: 2px solid rgba(68, 70, 151, 0.35);
+    outline-offset: 2px;
+    border-radius: 6px;
+    text-decoration: none;
+  }
+
+  .li-link{
+    display: inline;
+    color: inherit;
+    text-decoration: none;
+  }
+  .li-link:hover,
+  .li-link:focus,
+  .li-link:active,
+  .li-link:visited{
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* ===================== */
+  /* ✅ Ajout : ligne + icône ouvrir */
+  /* ===================== */
+  .li-row{
+    display: inline-flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .li-open{
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: transparent;
+    padding: 0;
+    margin-left: 6px;
+    color: $blue;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+
+    opacity: 0.75;
+    transition: opacity .15s ease, transform .15s ease;
+    border-radius: 8px;
+
+    &:hover{
+      opacity: 1;
+      transform: translateY(-1px);
+    }
+
+    &:focus-visible{
+      outline: 2px solid rgba(68, 70, 151, 0.35);
+      outline-offset: 2px;
+    }
+  }
+
+  .ts-link-icon{
+    width: 14px;
+    height: 14px;
+    display: inline-block;
+    flex: 0 0 auto;
+  }
+
   .sub-list{
     list-style: none;
     margin: 6px 0 0;
     padding: 0;
 
-    /* chaque item = [•] [texte] → baseline alignée */
     li{
       display: flex;
       align-items: baseline;
-      gap: 10px;            /* espace entre la puce et le texte */
+      gap: 10px;
       margin: 6px 0 0;
       color: $blue;
       line-height: 1.35;
       font-size: clamp(14px, 2.2vw, 16px);
 
-      /* puce visuelle (pas absolue → meilleur alignement) */
       &::before{
         content: "•";
-        flex: 0 0 auto;     /* largeur auto, ne s’écrase pas */
+        flex: 0 0 auto;
         color: $blue;
-        font-size: 0.9em;   /* ajuste si tu veux une puce un peu plus petite */
+        font-size: 0.9em;
         line-height: 1;
-        transform: translateY(-.05em); /* micro-ajustement vertical */
+        transform: translateY(-.05em);
       }
     }
   }
@@ -188,7 +259,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   @media (max-width: 768px){
     .assets-grid{ grid-template-columns: 1fr; }
 
-    /* option: desserre un peu en mobile */
     .section-inner{
       min-height: auto;
       padding-block: 24px;
@@ -201,18 +271,13 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 /* WHEEL / VALUES        */
 /* ===================== */
 .values{
-  /* écart entre la section précédente et le H2 */
   --values-top-gap: 74px;
+  --gap-title-wheel: 4px;
+  --tighten: 28px;
 
-  /* réglages par défaut (titre ↔ image) */
-  --gap-title-wheel: 4px;   /* espace sous le titre (0–8px) */
-  --tighten: 28px;          /* remonte l’image (marge négative) */
-
-  /* structure */
   display: grid;
-  grid-template-rows: auto 1fr; /* ligne 1: titre / ligne 2: image */
+  grid-template-rows: auto 1fr;
 
-  /* place le H2 exactement à 74px de ce qui précède */
   .section-inner{
     padding-top: var(--values-top-gap);
   }
@@ -222,8 +287,18 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     font-size: clamp(24px, 3.2vw, 36px);
     font-weight: 400;
     line-height: 1.2;
-    margin: 0 0 var(--gap-title-wheel); /* 0 en haut pour ne pas casser les 74px */
+    margin: 0 0 var(--gap-title-wheel);
     align-self: start;
+  }
+
+  .values-intro {
+    color: $blue;
+    font-size: 16px;
+    line-height: 1.6;
+    margin-top: 12px;
+    margin-bottom: 24px;
+
+    p { margin: 0; }
   }
 
   .wheel{
@@ -232,7 +307,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     width: var(--size);
     height: var(--size);
     align-self: start;
-    margin-top: calc(-1 * var(--tighten));  /* augmente --tighten pour coller davantage */
+    margin-top: calc(-1 * var(--tighten));
     margin-left: auto;
     margin-right: auto;
     overflow: visible;
@@ -242,7 +317,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%);       /* centrage parfait dans son conteneur */
+    transform: translate(-50%, -50%);
     width: min(100%, calc(var(--size) * 0.96));
     height: auto;
     display: block;
@@ -250,7 +325,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   }
 
   @media (max-width: 900px){
-    --values-top-gap: 40px;                 /* un peu moins d’air en mobile */
+    --values-top-gap: 40px;
     --gap-title-wheel: 2px;
     --tighten: 14px;
 
@@ -259,31 +334,26 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   }
 }
 
-/* ===== Desktop : écart Titre ↔ Image = 64px exactement ===== */
 @media (min-width: 1024px){
   .values{
-    --title-image-gap: 64px;
+    --title-image-gap: 24px;
 
-    /* on sort du layout “grid” pour contrôler l’écart précisément */
     display: block;
 
     .values-title{
-      margin-bottom: var(--title-image-gap); /* ⟵ écart exact */
+      margin-bottom: var(--title-image-gap);
     }
 
     .wheel{
       --size: clamp(560px, 66vw, 960px);
       width: var(--size);
       height: auto;
-      margin: 0 auto;               /* centré horizontalement */
+      margin: 0 auto;
       align-self: auto;
       overflow: visible;
-
-      /* annule la remontée mobile */
       margin-top: 0 !important;
     }
 
-    /* image “statique” : le haut de l’image = haut du conteneur */
     .wheel-img{
       position: static;
       transform: none;
@@ -298,9 +368,18 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 /* ===================== */
 /* MÉTHODES = Accordéon  */
 /* ===================== */
+
+/* ✅ on neutralise les anciennes règles liées à row-line (puisqu’on passe sur row-head) */
+.eval-row .row-line > .row-name{
+  white-space: normal;
+}
+.eval-row .row-line > .row-name br{
+  display: none;
+}
+
 .evals {
   --evals-top-gap: 105px;
-  --evals-title-bottom-gap: 57px;
+  --evals-title-bottom-gap: 25px;
 
   .section-inner { padding-top: var(--evals-top-gap); }
 
@@ -312,6 +391,15 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     margin: 0 0 var(--evals-title-bottom-gap);
   }
 
+  .eval-intro {
+    margin: 12px 0 30px;
+    line-height: 1.6;
+    color: $blue;
+
+    p { margin: 0; }
+    p + p { margin-top: 10px; }
+  }
+
   .eval-list{
     list-style: none;
     margin: 0;
@@ -319,25 +407,39 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     border-top: $bd-2 solid $blue;
   }
 
-  /* grille INCHANGÉE ⇒ icône | titre | chevron */
+  /* ✅ la ligne n’est plus un grid sur <li>, mais sur le bouton .row-head */
   .eval-row{
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;                       /* centrage vertical */
-    column-gap: clamp(16px, 3vw, 24px);        /* garde le départ du texte */
     border-bottom: $bd-2 solid $blue;
-    padding-block-start: 0;
-    row-gap: 0;
+    padding: 0;
   }
 
-  .row-line { display: contents; }
+  /* ✅ header cliquable pleine largeur */
+  .row-head{
+    width: 100%;
+    border: 0;
+    background: none;
+    padding: 0;
+    cursor: pointer;
+    text-align: left;
+    color: $blue;
 
-  .row-line > .eval-icon,
-  .row-line > .row-name,
-  .row-line > .row-toggle{
-    block-size: clamp(78px, 10vw, 98px);
-    display: flex;
-    align-items: center;                       /* centrés verticalement */
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: clamp(16px, 3vw, 24px);
+
+    min-height: clamp(78px, 10vw, 98px);
+  }
+
+  .row-head:focus-visible{
+    outline: 2px solid rgba(68, 70, 151, 0.35);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
+
+  /* (optionnel mais souvent apprécié) */
+  .row-head:hover .chevron{
+    opacity: 1;
   }
 
   .eval-icon{
@@ -347,43 +449,31 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     justify-self: start;
   }
 
-  /* ===== Titre : largeur bornée à 15ch SANS bouger le chevron ===== */
-  /* on met une spécificité forte pour gagner contre toute autre règle */
-  .eval-row .row-line > .row-name{
-    max-width: 15ch !important;                /* largeur cible en “caractères” */
-    width: fit-content !important;             /* s’arrête à max-width */
+  .row-name{
+    width: fit-content !important;
     text-align: left;
-    align-self: center;                        /* centrage vertical local */
+    align-self: center;
 
     color: $blue;
     font-size: clamp(14px, 3vw, 24px);
     font-weight: 400;
     line-height: 1.25;
 
-    /* respecte les \n si tu passes par [innerHTML] */
     white-space: pre-line;
-
-    /* coupures propres si un mot est très long */
     overflow-wrap: anywhere;
     word-break: normal;
   }
 
-  /* Si ACF/WYSIWYG injecte des balises, on neutralise leur mise en page */
-  .eval-row .row-line > .row-name > p,
-  .eval-row .row-line > .row-name > div,
-  .eval-row .row-line > .row-name > span{
-    display: inline;            /* évite qu’un <p> prenne toute la ligne */
-    margin: 0;
-    padding: 0;
+  .row-name br{
+    display: none;
   }
 
-  .row-toggle{
-    background: none;
-    border: 0;
+  .row-name > p,
+  .row-name > div,
+  .row-name > span{
+    display: inline;
+    margin: 0;
     padding: 0;
-    color: $blue;
-    cursor: pointer;
-    justify-self: end;          /* le chevron reste tout à droite */
   }
 
   .chevron{
@@ -391,12 +481,15 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     height: 30px;
     transform: rotate(90deg);
     transition: transform .25s ease;
+    justify-self: end;
+    opacity: 0.9;
   }
   .eval-row.open .chevron{ transform: rotate(0deg); }
 
   .row-desc{
-    grid-column: 2 / 3;
     padding: 8px 0 18px;
+    /* aligne sous la colonne “titre” (icon + gap) */
+    padding-left: calc(56px + clamp(16px, 3vw, 24px));
   }
 
   .row-desc-inner{
@@ -407,15 +500,13 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     p:last-child{ margin-bottom: 0; }
   }
 
-  .eval-row.open{
-    padding-block-start: 16px;
-    row-gap: 20px;
+  /* si tu veux garder l’“air” quand open */
+  .eval-row.open .row-head{
+    padding-top: 16px;
   }
 
   @media (max-width: 768px){
     .chevron { width: 18px; height: 18px; }
-    /* si tu veux resserrer en mobile :
-       .eval-row .row-line > .row-name{ max-width: 13ch !important; } */
   }
 }
 
@@ -425,7 +516,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 .piloting {
   margin-bottom: 105px;
 
-  .pilot-title{
+  .pilot-title {
     color: $blue;
     font-size: clamp(24px, 3.2vw, 36px);
     font-weight: 400;
@@ -433,54 +524,193 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     margin: clamp(80px, 10vw, 120px) 0 16px;
   }
 
-  .pilot-intro{
+  .pilot-intro {
     color: $blue;
     font-size: $fs16;
     line-height: 1.55;
     margin-bottom: clamp(40px, 5vw, 75px);
   }
 
-  .pilot-grid{
+  .pilot-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: clamp(24px, 4vw, 48px);
   }
 
-  .pilot-figure{
+  .pilot-figure {
     margin: 0;
     text-align: center;
 
-    img{
+    img {
       display: block;
       max-width: 60%;
       height: auto;
-      margin-inline: auto; /* ⟵ centre l’image dans le figure */
+      margin-inline: auto;
     }
 
-    figcaption{
+    figcaption {
       color: $blue;
       font-size: $fs12;
       margin-top: 8px;
     }
   }
 
-  @media (max-width: 900px){
-    .pilot-grid{ grid-template-columns: 1fr; }
+  @media (max-width: 900px) {
+    .pilot-grid {
+      grid-template-columns: 1fr;
+      row-gap: clamp(80px, 7vw, 80px);
+      column-gap: 0;
+    }
   }
 }
 
-/* A11y helper */
-.sr-only,
-.visually-hidden {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
+/* ===================================================================== */
+/* ================================= FAQ =============================== */
+/* ===================================================================== */
+.faq {
+
+  .faq-inner {
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  .faq-title {
+    margin: 0 0 clamp(18px, 3vw, 28px);
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: map.get(vars.$font-size, "80"); /* 36px */
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.1;
+  }
+
+  .faq-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: clamp(14px, 2.4vw, 18px);
+  }
+
+  .faq-item {
+    border-radius: 12px;
+    background: rgba(68, 70, 151, 0.06);
+    overflow: hidden;
+  }
+
+  .faq-qrow {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+
+    padding: clamp(14px, 2.2vw, 18px);
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+
+  .faq-q {
+    margin: 0;
+    font-size: map.get(vars.$font-size, "40"); /* ~20px */
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .faq-chevron {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+    opacity: 0.9;
+    transition: transform 0.2s ease;
+  }
+
+  .faq-qrow[aria-expanded="true"] .faq-chevron {
+    transform: rotate(180deg);
+  }
+
+  .faq-a {
+    padding: 0 clamp(14px, 2.2vw, 18px) clamp(14px, 2.2vw, 18px);
+
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: map.get(vars.$font-size, "30"); /* 16px */
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.7;
+
+    p { margin: 0 0 10px 0; }
+    p:last-child { margin-bottom: 0; }
+  }
+
+  /* ✅ Etat fermé : DOM conservé mais masqué */
+  .faq-a.is-collapsed {
+    display: none;
+  }
+}
+
+/* Fix listes dans innerHTML */
+.faq .faq-a ul,
+.faq .faq-a ol {
+  margin: 10px 0 0 18px;
+  padding: 0;
+
+  font-family: inherit;
+  font-size: 16px;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.faq .faq-a li {
+  margin: 0 0 6px 0;
+  font-family: inherit;
+  font-size: 16px;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.faq .faq-a li::marker { font-size: 0.85em; }
+
+/* Mobile */
+@media (max-width: 768px) {
+  .faq {
+    padding-block: 40px;
+
+    .faq-title {
+      font-size: 24px;
+      font-weight: 400;
+      line-height: normal;
+      margin-bottom: 16px;
+    }
+
+    .faq-item { border-radius: 0; }
+
+    .faq-qrow { padding: 14px 12px; }
+
+    .faq-q {
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .faq-chevron { width: 20px; height: 20px; }
+
+    .faq-a {
+      padding: 0 12px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  }
+
+  .faq .faq-a ul,
+  .faq .faq-a ol,
+  .faq .faq-a li {
+    font-size: 14px;
+  }
+
+  .faq .faq-a li::marker { font-size: 0.85em; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -488,5 +718,15 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     animation: none !important;
     transition: none !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* Debug fallback */
+.methods-wrapper.no-anim {
+  .prehide,
+  .prehide-row {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
   }
 }

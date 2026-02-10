@@ -2,122 +2,335 @@
   <div class="section-inner">
     <header class="contact-head">
       <!-- ✅ H1 toujours rendu (SSR) avec fallback selon la langue -->
-      <h1 #contactTitle id="contact-title" class="page-title prehide">{{ contactH1 }}</h1>
+      <h1 #contactTitle id="contact-title" class="page-title prehide">
+        {{ contactH1 }}
+      </h1>
 
-      <a *ngIf="linkedinUrl as li"
-         #contactLinkedin
-         class="linkedin prehide"
-         [attr.href]="li"
-         target="_blank"
-         rel="noopener"
-         aria-label="Voir notre page LinkedIn">
+      <a
+        *ngIf="linkedinUrl as li"
+        #contactLinkedin
+        class="linkedin prehide"
+        [attr.href]="li"
+        target="_blank"
+        rel="noopener"
+        aria-label="Voir notre page LinkedIn"
+      >
         <img
           src="assets/icons/linkedin.webp"
           alt=""
           aria-hidden="true"
           loading="lazy"
           decoding="async"
-          fetchpriority="low" />
+          fetchpriority="low"
+        />
       </a>
     </header>
 
-    <form class="form-card" novalidate (submit)="onSubmit($event)" autocomplete="on">
+    <form
+      class="form-card"
+      novalidate
+      (submit)="onSubmit($event)"
+      autocomplete="on"
+    >
       <fieldset #radiosEl class="radios" aria-label="Civilité / Type">
         <legend class="sr-only">Civilité / Type</legend>
 
         <div class="rad-row">
-          <div class="rad-left">
-            <label #radioItem class="radio prehide-row">
-              <input type="radio" name="civ" value="madame" (change)="onFormChange()">
+          <div class="rad-col">
+            <!-- Colonne gauche : CIV -->
+            <label #radioItem class="radio prehide-row is-civ">
+              <input
+                type="radio"
+                name="civ"
+                value="madame"
+                (change)="onFormChange()"
+              />
               <span>Madame</span>
             </label>
 
-            <label #radioItem class="radio prehide-row">
-              <input type="radio" name="civ" value="monsieur" (change)="onFormChange()">
+            <label #radioItem class="radio prehide-row is-civ">
+              <input
+                type="radio"
+                name="civ"
+                value="monsieur"
+                (change)="onFormChange()"
+              />
               <span>Monsieur</span>
             </label>
           </div>
 
-          <div class="rad-right">
-            <label #radioItem class="radio prehide-row">
-              <input type="radio" name="profil" value="pro" (change)="onFormChange()">
+          <div class="rad-col">
+            <!-- Colonne droite : PROFIL -->
+            <label #radioItem class="radio prehide-row is-profil">
+              <input
+                type="radio"
+                name="profil"
+                value="pro"
+                (change)="setProfil('pro')"
+              />
               <span>Professionnel</span>
             </label>
 
-            <label #radioItem class="radio prehide-row">
-              <input type="radio" name="profil" value="part" (change)="onFormChange()">
+            <label #radioItem class="radio prehide-row is-profil">
+              <input
+                type="radio"
+                name="profil"
+                value="part"
+                (change)="setProfil('part')"
+              />
               <span>Particulier</span>
             </label>
           </div>
         </div>
       </fieldset>
 
-      <div #formGridEl class="form-grid">
-        <label #fgLabel class="prehide-row">
+
+      <!-- ✅ Grille champs -->
+      <div #formGridEl class="form-grid" [class.is-pro]="isPro">
+        <!-- Particulier : Prénom | Nom -->
+        <label
+          #fgLabel
+          class="fg field fg-first prehide-row js-person"
+          [class.is-hidden]="isPro"
+        >
           <span class="sr-only">Prénom*</span>
-          <input type="text" name="firstname" placeholder="Prénom*" autocomplete="given-name" required (input)="onFormChange()">
-        </label>
-        <label #fgLabel class="prehide-row">
-          <span class="sr-only">eMail*</span>
-          <input type="email" name="email" placeholder="eMail*" autocomplete="email" required (input)="onFormChange()">
-        </label>
-        <label #fgLabel class="prehide-row">
-          <span class="sr-only">Nom*</span>
-          <input type="text" name="lastname" placeholder="Nom*" autocomplete="family-name" required (input)="onFormChange()">
-        </label>
-        <label #fgLabel class="prehide-row">
-          <span class="sr-only">Téléphone</span>
-          <input type="tel" name="phone" placeholder="Téléphone" autocomplete="tel" (input)="onFormChange()">
+          <input
+            type="text"
+            name="firstname"
+            placeholder="Prénom*"
+            autocomplete="given-name"
+            [required]="!isPro"
+            (input)="onFormChange()"
+          />
         </label>
 
-        <label #fgLabel class="full prehide-row">
+        <label
+          #fgLabel
+          class="fg field fg-last prehide-row js-person"
+          [class.is-hidden]="isPro"
+        >
+          <span class="sr-only">Nom*</span>
+          <input
+            type="text"
+            name="lastname"
+            placeholder="Nom*"
+            autocomplete="family-name"
+            [required]="!isPro"
+            (input)="onFormChange()"
+          />
+        </label>
+
+        <!-- Pro : Société (plein largeur) -->
+        <label
+          #fgLabel
+          class="fg field fg-company full prehide-row js-company"
+          [class.is-hidden]="!isPro"
+        >
+          <span class="sr-only">Société*</span>
+          <input
+            type="text"
+            name="company"
+            placeholder="Société*"
+            autocomplete="organization"
+            [required]="isPro"
+            (input)="onFormChange()"
+          />
+        </label>
+
+
+        <!-- Ligne suivante : Téléphone | Email -->
+        <label #fgLabel class="fg field fg-phone prehide-row">
+          <span class="sr-only">Téléphone</span>
+          <input
+            type="tel"
+            name="phone"
+            placeholder="Téléphone"
+            autocomplete="tel"
+            (input)="onFormChange()"
+          />
+        </label>
+
+        <label #fgLabel class="fg field fg-email prehide-row">
+          <span class="sr-only">Email*</span>
+          <input
+            type="email"
+            name="email"
+            placeholder="eMail*"
+            autocomplete="email"
+            required
+            (input)="onFormChange()"
+          />
+        </label>
+
+        <label #fgLabel class="fg field full prehide-row">
           <span class="sr-only">Message*</span>
-          <textarea name="message" placeholder="Message*" required (input)="onFormChange()"></textarea>
+          <textarea
+            name="message"
+            placeholder="Message*"
+            required
+            (input)="onFormChange()"
+          ></textarea>
         </label>
 
         <!-- Honeypot anti-bot -->
-        <input class="sr-only" id="website" name="website" type="text" tabindex="-1" autocomplete="off" aria-hidden="true">
+        <input
+          class="sr-only"
+          id="website"
+          name="website"
+          type="text"
+          tabindex="-1"
+          autocomplete="off"
+          aria-hidden="true"
+        />
       </div>
 
-      <div class="form-actions">
-        <button
-          #sendBtn
-          type="submit"
-          class="btn-contact prehide"
-          [class.is-loading]="isLoading"
-          [class.is-success]="isSuccess"
-          [disabled]="isLoading || isSuccess"
-          aria-live="polite"
-          [attr.aria-pressed]="isSuccess ? 'true' : 'false'"
-          [attr.aria-label]="isSuccess ? 'Message envoyé' : 'Envoyer le message'">
-          <span class="btn-label">{{ isSuccess ? 'Envoyé' : 'Envoyer' }}</span>
+      <!-- ✅ PJ + Envoyer sur la même ligne -->
+      <div #attachRowEl class="form-bottombar prehide-row">
+        <!-- Gauche : Pièce jointe -->
+        <div class="form-extras">
+          <label class="attach" aria-label="Ajouter une pièce jointe">
+            <input
+              class="attach-input"
+              type="file"
+              name="attachment"
+              (change)="onFileSelected($event)"
+              [attr.accept]="acceptedAttachmentTypes"
+            />
 
-          <!-- Icône avion (envoi) -->
-          <span class="ico-mail" aria-hidden="true">
-            <svg xmlns="http://www.w3.org/2000/svg" width="31" height="19" viewBox="0 0 31 19" fill="none">
-              <path d="M24.7339 12.681L21.2219 9.38599" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M16.524 9.38501L13.011 12.685" stroke="#A33536" stroke-linecap="round"/>
-              <mask id="mask0_mail" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="31" height="19">
-                <path d="M30.642 0.285889H0V18.3539H30.642V0.285889Z" fill="white"/>
-              </mask>
-              <g mask="url(#mask0_mail)">
-                <path d="M26.0319 2.896H11.7129C10.6083 2.896 9.71289 3.79143 9.71289 4.896V13.744C9.71289 14.8486 10.6083 15.744 11.7129 15.744H26.0319C27.1365 15.744 28.0319 14.8486 28.0319 13.744V4.896C28.0319 3.79143 27.1365 2.896 26.0319 2.896Z" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M10.5088 3.7771L18.8678 11.0211L27.2308 3.7771" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M2.60986 6.01196H9.71286" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M4.44092 9.32007H9.71292" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M6.27295 12.6289H9.71395" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
-              </g>
+            <span class="attach-btn" role="button" tabindex="0">
+              <span class="attach-ico" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                  <path
+                    fill="currentColor"
+                    d="M16.5 6.5v9.75a4.25 4.25 0 0 1-8.5 0V6.75a2.75 2.75 0 0 1 5.5 0v9.5a1.25 1.25 0 0 1-2.5 0V7.5H9.5v8.75a2.75 2.75 0 0 0 5.5 0V6.5a4.25 4.25 0 0 0-8.5 0v9.75a5.75 5.75 0 0 0 11.5 0V6.5h-1.5z"
+                  />
+                </svg>
+              </span>
+              <span class="attach-text">Pièce jointe</span>
+            </span>
+
+            <span
+              class="attach-name"
+              *ngIf="attachmentName"
+              [title]="attachmentName"
+            >
+              {{ attachmentName }}
+            </span>
+
+            <button
+              *ngIf="attachmentName"
+              type="button"
+              class="attach-clear"
+              (click)="clearAttachment()"
+              aria-label="Supprimer la pièce jointe"
+            >
+              ✕
+            </button>
+          </label>
+        </div>
+
+        <!-- Droite : Envoyer -->
+        <div class="form-actions">
+          <button
+            #sendBtn
+            type="submit"
+            class="btn-contact prehide"
+            [class.is-loading]="isLoading"
+            [class.is-success]="isSuccess"
+            [disabled]="isLoading || isSuccess"
+            aria-live="polite"
+            [attr.aria-pressed]="isSuccess ? 'true' : 'false'"
+            [attr.aria-label]="
+              isSuccess ? 'Message envoyé' : 'Envoyer le message'
+            "
+          >
+            <span class="btn-label">{{ isSuccess ? 'Envoyé' : 'Envoyer' }}</span>
+
+            <span class="ico-mail" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="31"
+                height="19"
+                viewBox="0 0 31 19"
+                fill="none"
+              >
+                <path
+                  d="M24.7339 12.681L21.2219 9.38599"
+                  stroke="#A33536"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M16.524 9.38501L13.011 12.685"
+                  stroke="#A33536"
+                  stroke-linecap="round"
+                />
+                <mask
+                  id="mask0_mail"
+                  style="mask-type:luminance"
+                  maskUnits="userSpaceOnUse"
+                  x="0"
+                  y="0"
+                  width="31"
+                  height="19"
+                >
+                  <path
+                    d="M30.642 0.285889H0V18.3539H30.642V0.285889Z"
+                    fill="white"
+                  />
+                </mask>
+                <g mask="url(#mask0_mail)">
+                  <path
+                    d="M26.0319 2.896H11.7129C10.6083 2.896 9.71289 3.79143 9.71289 4.896V13.744C9.71289 14.8486 10.6083 15.744 11.7129 15.744H26.0319C27.1365 15.744 28.0319 14.8486 28.0319 13.744V4.896C28.0319 3.79143 27.1365 2.896 26.0319 2.896Z"
+                    stroke="#A33536"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M10.5088 3.7771L18.8678 11.0211L27.2308 3.7771"
+                    stroke="#A33536"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M2.60986 6.01196H9.71286"
+                    stroke="#A33536"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M4.44092 9.32007H9.71292"
+                    stroke="#A33536"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                  <path
+                    d="M6.27295 12.6289H9.71395"
+                    stroke="#A33536"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                  />
+                </g>
+              </svg>
+            </span>
+
+            <svg class="ico-check" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M20.285 6.708a1 1 0 0 1 .007 1.414l-9.2 9.2a1 1 0 0 1-1.414 0l-5-5a1 1 0 1 1 1.414-1.414l4.293 4.293 8.493-8.493a1 1 0 0 1 1.407 0z"
+              />
             </svg>
-          </span>
-
-          <!-- Icône check (succès) -->
-          <svg class="ico-check" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M20.285 6.708a1 1 0 0 1 .007 1.414l-9.2 9.2a1 1 0 0 1-1.414 0l-5-5a1 1 0 1 1 1.414-1.414l4.293 4.293 8.493-8.493a1 1 0 0 1 1.407 0z"/>
-          </svg>
-        </button>
+          </button>
+        </div>
       </div>
 
-      <p *ngIf="isError && messageError" class="form-error" role="alert" aria-live="assertive">{{ messageError }}</p>
+      <p
+        *ngIf="isError && messageError"
+        class="form-error"
+        role="alert"
+        aria-live="assertive"
+      >
+        {{ messageError }}
+      </p>
     </form>
 
     <!-- ==================== BLOC BOTTOM (Adresse + Download côte à côte) ==================== -->
@@ -125,42 +338,53 @@
       <div #bigInfosEl class="big-infos">
         <p #bigLine class="prehide">18 rue Pasquier</p>
         <p #bigLine class="prehide">75008 Paris</p>
-        <p #bigLine class="prehide"><a href="tel:+33178414441">T. 01 78 41 44 41</a></p>
-        <!-- <p #bigLine class="prehide"><a href="mailto:contact@groupe-abc.fr">contact&#64;groupe-abc.fr</a></p> -->
+        <p #bigLine class="prehide">
+          <a href="tel:+33178414441">T. 01 78 41 44 41</a>
+        </p>
         <p #bigLine class="site mt-8 prehide">groupe-abc.fr</p>
       </div>
 
       <article class="download pb-lg-0 pb-7" *ngIf="presentation as pres">
-        <a class="dl-link"
-           (click)="onDlClick($event, pres.file)"
-           [class.disabled]="!hasFile"
-           [attr.href]="hasFile ? pres.file : null"
-           [attr.tabindex]="hasFile ? null : '-1'"
-           [attr.download]="hasFile && isSameOrigin(pres.file!) ? safeDownloadName(pres.file!) : null"
-           [attr.target]="hasFile && !isSameOrigin(pres.file!) ? '_blank' : null"
-           [attr.rel]="hasFile && !isSameOrigin(pres.file!) ? 'noopener' : null">
-
+        <a
+          class="dl-link"
+          (click)="onDlClick($event, pres.file)"
+          [class.disabled]="!hasFile"
+          [attr.href]="hasFile ? pres.file : null"
+          [attr.tabindex]="hasFile ? null : '-1'"
+          [attr.download]="
+            hasFile && isSameOrigin(pres.file!)
+              ? safeDownloadName(pres.file!)
+              : null
+          "
+          [attr.target]="
+            hasFile && !isSameOrigin(pres.file!) ? '_blank' : null
+          "
+          [attr.rel]="hasFile && !isSameOrigin(pres.file!) ? 'noopener' : null"
+        >
           <div class="dl-text">
             <div class="dl-line">
-              <!-- Desktop -->
               <span class="only-desktop">
                 {{ dlL1 }} {{ dlL2 }}
                 <span class="dl-accent">{{ presentation.text2 }}</span>
               </span>
-              <!-- Mobile (3 lignes fixes) -->
+
               <span class="only-mobile">
-                {{ dlL1 }}<br>
-                {{ dlL2 }}<br>
-                <span class="dl-accent">{{ presentation.text2 }}</span>
+                <span class="dl-l1">{{ dlL1 }}</span>
+                <span class="dl-l2">{{ dlL2 }}</span>
+                <span class="dl-l3 dl-accent">{{ presentation.text2 }}</span>
               </span>
+
             </div>
           </div>
 
-          <img class="dl-icon-img"
-               src="assets/icons/download.webp"
-               alt="Télécharger"
-               width="48" height="56"
-               loading="lazy">
+          <img
+            class="dl-icon-img"
+            src="assets/icons/download.webp"
+            alt="Télécharger"
+            width="48"
+            height="56"
+            loading="lazy"
+          />
         </a>
       </article>
     </div>

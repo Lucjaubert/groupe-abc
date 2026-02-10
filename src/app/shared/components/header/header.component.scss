@@ -9,6 +9,7 @@ $rail-w: 40px;
   position: relative;
   padding-top: 60px;
   background: map.get(vars.$theme-colors, "white");
+  --header-top-offset: 60px;
 }
 
 .header-inner {
@@ -69,7 +70,6 @@ $rail-w: 40px;
   border-bottom: 1px solid transparent;
 }
 .menu li { position: relative; display: flex; align-items: center; justify-content: center; min-width: 0; }
-.menu li + li { border-left: 1px solid rgba(68, 71, 152, .5); }
 .menu a {
   display: block; width: 100%; text-decoration: none; white-space: nowrap;
   font-family: "Plus Jakarta Sans", sans-serif; font-size: 18px; font-weight: 500; line-height: 1;
@@ -90,6 +90,7 @@ $rail-w: 40px;
   z-index: 2000;
   isolation: isolate;
   pointer-events: auto;
+  top: calc(var(--header-top-offset) + env(safe-area-inset-top));
 }
 
 .lang-switch {
@@ -234,96 +235,191 @@ $rail-w: 40px;
 /* ===== Bouton burger caché en desktop ===== */
 .burger { display: none; }
 
+
+
+
+/* ================== BURGER EARLY (≤ 1300px) ==================
+   Objectif :
+   - éviter débordement menu desktop
+   - burger AU-DESSUS, puis Extranet, puis FR (dans le rail)
+*/
+@media (max-width: 1300px) {
+  .menu { display: none !important; }
+
+  /* ✅ burger toujours tout en haut du rail */
+  .burger {
+    display: inline-grid;
+    place-content: center;
+    gap: 4px;
+
+    position: fixed;
+    top: calc(env(safe-area-inset-top) + 8px);
+    right: calc(0px + env(safe-area-inset-right));
+
+    inline-size: $rail-w;
+    block-size: $rail-w;
+
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+
+    z-index: 3100; /* ✅ au-dessus du rail */
+    pointer-events: auto;
+
+    .burger-bar {
+      inline-size: 28px;
+      block-size: 2px;
+      background: #444697;
+      border-radius: 2px;
+      display: block;
+    }
+    .burger-bar:nth-child(2) { inline-size: 21px; }
+    .burger-bar:nth-child(3) { inline-size: 14px; }
+  }
+
+  /* ✅ on cache le burger quand overlay ouvert */
+  .header.menu-open .burger { display: none !important; }
+
+  /* ✅ rail qui commence SOUS le burger : burger(40) + gap(10) */
+  // .right-rail {
+  //   top: calc(env(safe-area-inset-top) + 8px + #{$rail-w} + 10px);
+  // }
+
+  .rail-social { display: none !important; } /* comme mobile */
+}
+
 /* ================== MOBILE (≤ md ≈ 768px) ================== */
 @media (max-width: map.get(vars.$breakpoints, "md")) {
-  /* mêmes espacements header/overlay + réserve pour rail */
-  .header{
+  .header {
     padding-top: clamp(17px, 4vw, 28px);
     padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
     background: map.get(vars.$theme-colors, "white");
   }
 
   .menu-overlay .menu-overlay-inner,
-  .menu-overlay.open .menu-overlay-inner{
+  .menu-overlay.open .menu-overlay-inner {
     padding-top: clamp(17px, 4vw, 28px);
     padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
     background: map.get(vars.$theme-colors, "white");
     --step: clamp(8px, 6vh, 84px);
   }
 
-  .header-inner{
-    display: grid; grid-template-columns: 1fr auto;
-    align-items: start; row-gap: clamp(8px, 3vw, 16px);
+  .header-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: start;
+    row-gap: clamp(8px, 3vw, 16px);
   }
 
-  .brand{ grid-column: 1 / 2; display: grid; align-items: center; text-decoration: none; color: inherit; }
-  .logo{ inline-size: 89.654px; block-size: 90px; aspect-ratio: 89.654 / 90; flex-shrink: 0; }
-  .slogan{
+  .brand {
+    grid-column: 1 / 2;
+    display: grid;
+    align-items: center;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .logo {
+    inline-size: 89.654px;
+    block-size: 90px;
+    aspect-ratio: 89.654 / 90;
+    flex-shrink: 0;
+  }
+
+  .slogan {
     max-width: clamp(260px, 64vw, 420px);
-    text-align: left; font-family: "Plus Jakarta Sans", sans-serif; font-size: 20px; font-weight: 400; line-height: normal; color: #EA4D4D; overflow: visible;
+    text-align: left;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 20px;
+    font-weight: 400;
+    line-height: normal;
+    color: #ea4d4d;
+    overflow: visible;
   }
 
-  .tagline{ grid-column: 1 / -1; display: block !important; align-items: flex-start !important; margin-top: clamp(6px, 2vw, 12px); }
-  .tagline-text{ display: inline-block; font-family: "Plus Jakarta Sans", sans-serif; font-size: 16px; font-weight: 400; line-height: normal; color: #444697; text-align: left !important; }
-  .tagline-text br:nth-of-type(2){ display: none; }
-  .rics{ margin-top: 10px; inline-size: 57px; block-size: 21px; aspect-ratio: 19 / 7; flex-shrink: 0; margin-left: 0; }
-
-  .menu-bar{ grid-column: 1 / -1; padding: 0; width: 100%; }
-  .menu{ display: none !important; }
-  .header.menu-open .menu, .menu-bar.open .menu{
-    display: grid !important; grid-template-columns: 1fr;
-    border-top: 1px solid rgba(68,71,152,.5); margin-top: 12px;
+  .tagline {
+    grid-column: 1 / -1;
+    display: block !important;
+    align-items: flex-start !important;
+    margin-top: clamp(6px, 2vw, 12px);
   }
-  .header.menu-open .menu li + li, .menu-bar.open .menu li + li{
-    border-left: 0; border-top: 1px solid rgba(68,71,152,.5);
+
+  .tagline-text {
+    display: inline-block;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: 16px;
+    font-weight: 400;
+    line-height: normal;
+    color: #444697;
+    text-align: left !important;
   }
-  .header.menu-open .menu a, .menu-bar.open .menu a{ text-align: left; padding: 14px 0; font-size: 18px; }
 
-  .right-rail{ top: calc(env(safe-area-inset-top) + 0px); width: $rail-w; gap: 10px; }
-  .header.menu-open .right-rail .lang-switch{ margin-top: 10px; }
+  .tagline-text br:nth-of-type(2) { display: none; }
 
-  .overlay-nav{ gap: var(--step); }
+  .rics {
+    margin-top: 10px;
+    inline-size: 57px;
+    block-size: 21px;
+    aspect-ratio: 19 / 7;
+    flex-shrink: 0;
+    margin-left: 0;
+  }
 
-  .overlay-bottom{
+  .menu-bar {
+    grid-column: 1 / -1;
+    padding: 0;
+    width: 100%;
+  }
+
+  .menu { display: none !important; }
+
+  /* ✅ On garde la même logique : rail sous burger */
+  // .right-rail {
+  //   top: calc(env(safe-area-inset-top) + 8px + #{$rail-w} + 10px);
+  //   width: $rail-w;
+  //   gap: 10px;
+  // }
+
+  .header.menu-open .right-rail .lang-switch { margin-top: 10px; }
+
+  .overlay-nav { gap: var(--step); }
+
+  .overlay-bottom {
     align-self: end;
     margin-bottom: 0;
     padding-right: calc(#{$rail-w} + 12px + env(safe-area-inset-right));
     font-size: 16px;
   }
 
-  .burger{
-    display: inline-grid; place-content: center; gap: 4px;
-    position: fixed;
-    top: calc(env(safe-area-inset-top) + 8px);
-    right: calc(0px + env(safe-area-inset-right));
-    inline-size: $rail-w; block-size: $rail-w;
-    padding: 0; border: 0; background: transparent; cursor: pointer;
-    z-index: 3000;
-
-    .burger-bar{ inline-size: 28px; block-size: 2px; background: #444697; border-radius: 2px; display: block; }
-    .burger-bar:nth-child(2){ inline-size: 21px; }
-    .burger-bar:nth-child(3){ inline-size: 14px; }
-  }
-  .header.menu-open .burger{ display: none !important; }
-
+  /* ✅ IMPORTANT : ici on ne redéfinit PAS le burger,
+     il est déjà géré par le breakpoint 1300 */
+  .header.menu-open .burger { display: none !important; }
   .rail-social { display: none !important; }
 }
 
 /* Hauteurs faibles */
-@media (max-height: 768px){
-  .menu-overlay-inner{ --step: clamp(24px, 5vh, 64px); }
+@media (max-height: 768px) {
+  .menu-overlay-inner { --step: clamp(24px, 5vh, 64px); }
 }
 
 /* Divers */
-.no-scroll{ overflow: hidden !important; }
+.no-scroll { overflow: hidden !important; }
+
 .right-rail .extranet-badge .extranet-text .extranet-slash,
-.menu-overlay .extranet-badge .extranet-text .extranet-slash{ color: map.get(vars.$theme-colors, "light-red") !important; }
-.extranet-slash *{ color: inherit !important; }
+.menu-overlay .extranet-badge .extranet-text .extranet-slash {
+  color: map.get(vars.$theme-colors, "light-red") !important;
+}
+
+.extranet-slash * { color: inherit !important; }
+
 :host ::ng-deep .right-rail .extranet-badge .extranet-text .extranet-slash,
-:host ::ng-deep .menu-overlay .extranet-badge .extranet-text .extranet-slash{
+:host ::ng-deep .menu-overlay .extranet-badge .extranet-text .extranet-slash {
   color: map.get(vars.$theme-colors, "light-red") !important;
   -webkit-text-fill-color: map.get(vars.$theme-colors, "light-red") !important;
 }
-:host ::ng-deep .extranet-slash *{
-  color: inherit !important; -webkit-text-fill-color: inherit !important;
+
+:host ::ng-deep .extranet-slash * {
+  color: inherit !important;
+  -webkit-text-fill-color: inherit !important;
 }

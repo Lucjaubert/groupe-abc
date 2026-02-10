@@ -158,12 +158,13 @@ p {
     line-height: 30px;
   }
 }
-ul, li, a {
+
+a {
   font-family: "Plus Jakarta Sans", sans-serif;
   font-weight: 400;
   font-style: normal;
   line-height: normal;
-  font-size: 22px;
+  font-size: 18px;
   color: map.get(vars.$theme-colors, "light-blue");
 
   @media (max-width: map.get(vars.$breakpoints, "md")) {
@@ -322,4 +323,49 @@ body.no-scroll { overflow: hidden; }
 
   /* nb : &nbsp; est un texte, pas un élément ; :has ne peut pas cibler le texte brut.
      D’où la préférence pour le nettoyage TS (#1). */
+}
+
+
+
+/* ===================================================================== */
+/* ========================= FAQ (GLOBAL OVERRIDE) ====================== */
+/* ===================================================================== */
+
+/* Verrouille la typo des listes générées via [innerHTML] */
+.faq .faq-a ul,
+.faq .faq-a ol {
+  margin: 10px 0 0 18px;
+  padding: 0;
+
+  font-family: inherit;
+  font-size: 16px;        /* ✅ texte des puces = 16px */
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.faq .faq-a li {
+  margin: 0 0 6px 0;
+
+  font-family: inherit;
+  font-size: 16px;        /* ✅ li = 16px */
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+/* ✅ marker un peu plus petit */
+.faq .faq-a li::marker {
+  font-size: 0.85em;      /* ajuste à 0.8 / 0.75 si tu veux encore plus petit */
+}
+
+/* Mobile : tu gardes ton 14px pour la réponse si tu veux */
+@media (max-width: 768px) {
+  .faq .faq-a ul,
+  .faq .faq-a ol,
+  .faq .faq-a li {
+    font-size: 14px;
+  }
+
+  .faq .faq-a li::marker {
+    font-size: 0.85em;
+  }
 }

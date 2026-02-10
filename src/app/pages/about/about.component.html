@@ -44,6 +44,24 @@
                 </div>
               </div>
 
+              <!-- Badge organisme (RICS) : lien vers page Équipe -->
+              <a
+                *ngIf="currentOrgLogoUrl"
+                class="member-org-link"
+                [routerLink]="teamRouteLink()"
+                [attr.aria-label]="isEnglish() ? 'View the team' : 'Voir l’équipe'"
+              >
+                <img
+                  class="member-org-logo"
+                  [attr.src]="currentOrgLogoUrl"
+                  alt="RICS"
+                  loading="lazy"
+                  decoding="async"
+                  (error)="onOrgImgError($event)"
+                />
+              </a>
+
+
               <div
                 class="member-job"
                 [innerHTML]="activePartner?.jobHtml || ''">
@@ -82,7 +100,7 @@
     <ul
       #meshLevelsEl
       class="mesh-levels prehide"
-      *ngIf="ms.levels?.length">
+      *ngIf="ms.levels.length">
       <li
         #meshLevelEl
         class="prehide"
@@ -116,7 +134,7 @@
             {{ ms.title }}
           </h2>
 
-          <ul *ngIf="ms.items?.length">
+          <ul *ngIf="ms.items.length">
             <li
               #mapItem
               class="prehide-row map-item--clickable"
@@ -137,7 +155,7 @@
   </section>
 
   <!-- ========================= VALEURS ========================= -->
-  <section class="section values" *ngIf="coreValues?.length">
+  <section class="section values" *ngIf="coreValues.length">
     <div class="values-bg">
       <div class="values-layer active"></div>
     </div>
@@ -185,7 +203,7 @@
   </section>
 
   <!-- ========================= AFFILIATIONS ========================= -->
-  <section class="section affiliations" *ngIf="affiliations?.length">
+  <section class="section affiliations" *ngIf="affiliations.length">
     <div class="section-inner px-0">
       <h2
         #affTitleEl
@@ -195,195 +213,220 @@
       </h2>
 
       <ul class="aff-list" role="list">
-        <li
-          #affRowEl
-          class="aff-row prehide-row py-2"
-          *ngFor="let a of affiliations; let i = index; trackBy: trackByIndex"
-          [class.open]="affOpen[i]"
-        >
-          <div class="aff-line">
-            <img
-              class="aff-logo"
-              *ngIf="a.logo"
-              [src]="a.logo || ''"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
+  <li
+    #affRowEl
+    class="aff-row prehide-row py-2"
+    *ngFor="let a of affiliations; let i = index; trackBy: trackByIndex"
+    [class.open]="affOpen[i]"
 
-            <div class="aff-name" *ngIf="a.excerpt as n">
-              <span class="aff-abbr">
-                {{ splitAffName(n).abbr }} :
-              </span>
-              <span class="aff-label">
-                {{ splitAffName(n).label }}
-              </span>
-            </div>
+    tabindex="0"
+    role="button"
+    [attr.aria-expanded]="affOpen[i] ? 'true' : 'false'"
+    [attr.aria-controls]="'aff-desc-' + i"
+    [attr.aria-label]="(affOpen[i] ? 'Réduire : ' : 'Déployer : ') + (a.excerpt || 'Appartenance')"
 
-            <button
-              class="aff-toggle"
-              type="button"
-              [attr.aria-expanded]="affOpen[i] ? 'true':'false'"
-              (click)="toggleAff(i)">
-              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-                <path
-                  d="M6 9l6 6 6-6"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round" />
-              </svg>
-              <span class="sr-only">
-                {{ affOpen[i] ? 'Réduire' : 'Déployer' }}
-              </span>
-            </button>
-          </div>
+    (click)="toggleAff(i)"
+    (keydown)="onRowToggleKeydown($event, i, 'aff')"
+  >
+    <div class="aff-line">
+      <img
+        class="aff-logo"
+        *ngIf="a.logo"
+        [src]="a.logo || ''"
+        alt=""
+        loading="lazy"
+        decoding="async"
+      />
 
-          <div class="aff-desc" *ngIf="a.content && affOpen[i]">
-            <div
-              class="aff-desc-inner"
-              [innerHTML]="a.content">
-            </div>
-          </div>
-        </li>
-      </ul>
+      <div class="aff-name" *ngIf="a.excerpt as n">
+        <span class="aff-abbr">{{ splitAffName(n).abbr }} :</span>
+        <span class="aff-label">{{ splitAffName(n).label }}</span>
+      </div>
+
+      <!-- ✅ Le chevron continue de fonctionner, mais ne déclenche pas le click du <li> -->
+      <button
+        class="aff-toggle"
+        type="button"
+        [attr.aria-expanded]="affOpen[i] ? 'true':'false'"
+        (click)="$event.stopPropagation(); toggleAff(i)"
+      >
+        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <span class="sr-only">{{ affOpen[i] ? 'Réduire' : 'Déployer' }}</span>
+      </button>
+    </div>
+
+    <div class="aff-desc" *ngIf="a.content && affOpen[i]" [attr.id]="'aff-desc-' + i">
+      <div class="aff-desc-inner" [innerHTML]="a.content"></div>
+    </div>
+  </li>
+</ul>
+
     </div>
   </section>
 
   <!-- ========================= DEONTOLOGIE ========================= -->
-  <section class="section deon" *ngIf="deontology?.length">
+  <section class="section deon" *ngIf="deontology.length">
   <div class="section-inner px-0">
     <h2 #deonTitleEl class="deon-title prehide" *ngIf="deonTitle">
       {{ deonTitle }}
     </h2>
 
     <ul class="deon-list" role="list">
-      <li #deonRowEl class="deon-row prehide-row"
-          *ngFor="let d of deontology; let i = index; trackBy: trackByIndex"
-          [class.open]="deonOpen[i]">
-        <div class="deon-line">
-          <div class="deon-name">{{ d.title }}</div>
+  <li
+    #deonRowEl
+    class="deon-row prehide-row"
+    *ngFor="let d of deontology; let i = index; trackBy: trackByIndex"
+    [class.open]="deonOpen[i]"
 
-          <!-- Bouton téléchargement version "inline" (desktop + mobile fermé) -->
-          <a *ngIf="d.file"
-             class="deon-dl deon-dl--inline"
-             [attr.href]="d.file"
-             [attr.download]="isSameOrigin(d.file) ? safeDownloadName(d.file) : null"
-             [attr.target]="!isSameOrigin(d.file) ? '_blank' : null"
-             [attr.rel]="!isSameOrigin(d.file) ? 'noopener' : null"
-             [attr.aria-label]="(isEnglish() ? 'Download the document: ' : 'Télécharger le document : ') + d.title">
-            <img class="dl-icon-img" src="assets/icons/download.webp" alt="" width="35" height="46" loading="lazy" />
-            <span class="dl-label">
-              {{ isEnglish() ? 'Download documentation' : 'Télécharger la charte' }}
-            </span>
-          </a>
+    tabindex="0"
+    role="button"
+    [attr.aria-expanded]="deonOpen[i] ? 'true' : 'false'"
+    [attr.aria-controls]="'deon-desc-' + i"
+    [attr.aria-label]="(deonOpen[i] ? 'Réduire : ' : 'Déployer : ') + (d.title || 'Déontologie')"
 
-          <button class="deon-toggle" type="button"
-                  [attr.aria-expanded]="deonOpen[i] ? 'true' : 'false'"
-                  (click)="toggleDeon(i)">
-            <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-            <span class="sr-only">
-              {{ deonOpen[i] ? 'Réduire le texte de déontologie' : 'Afficher le texte de déontologie' }}
-            </span>
-          </button>
-        </div>
+    (click)="toggleDeon(i)"
+    (keydown)="onRowToggleKeydown($event, i, 'deon')"
+  >
+    <div class="deon-line">
+      <div class="deon-name">{{ d.title }}</div>
 
-        <div class="deon-desc" *ngIf="d.html && deonOpen[i]">
-          <div class="deon-desc-inner pe-5" [innerHTML]="d.html"></div>
+      <!-- ✅ IMPORTANT : ne pas toggler quand on clique le lien -->
+      <a
+        *ngIf="d.file"
+        class="deon-dl deon-dl--inline"
+        [attr.href]="d.file"
+        [attr.download]="isSameOrigin(d.file) ? safeDownloadName(d.file) : null"
+        [attr.target]="!isSameOrigin(d.file) ? '_blank' : null"
+        [attr.rel]="!isSameOrigin(d.file) ? 'noopener' : null"
+        [attr.aria-label]="(isEnglish() ? 'Download the document: ' : 'Télécharger le document : ') + d.title"
+        (click)="$event.stopPropagation()"
+        (keydown.enter)="$event.stopPropagation()"
+        (keydown.space)="$event.stopPropagation()"
+      >
+        <img class="dl-icon-img" src="assets/icons/download.webp" alt="" width="35" height="46" loading="lazy" />
+        <span class="dl-label">{{ isEnglish() ? 'Download documentation' : 'Télécharger la charte' }}</span>
+      </a>
 
-          <!-- Bouton téléchargement version "below" (mobile + ouvert) -->
-          <a *ngIf="d.file"
-             class="deon-dl deon-dl--below"
-             [attr.href]="d.file"
-             [attr.download]="isSameOrigin(d.file) ? safeDownloadName(d.file) : null"
-             [attr.target]="!isSameOrigin(d.file) ? '_blank' : null"
-             [attr.rel]="!isSameOrigin(d.file) ? 'noopener' : null"
-             [attr.aria-label]="(isEnglish() ? 'Download the document: ' : 'Télécharger le document : ') + d.title">
-            <img class="dl-icon-img" src="assets/icons/download.webp" alt="" width="35" height="46" loading="lazy" />
-            <span class="dl-label">
-              {{ isEnglish() ? 'Download documentation' : 'Télécharger la documentation' }}
-            </span>
-          </a>
-        </div>
-      </li>
-    </ul>
+      <!-- ✅ Chevron ok, sans bubble -->
+      <button
+        class="deon-toggle"
+        type="button"
+        [attr.aria-expanded]="deonOpen[i] ? 'true' : 'false'"
+        (click)="$event.stopPropagation(); toggleDeon(i)"
+      >
+        <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <span class="sr-only">
+          {{ deonOpen[i] ? 'Réduire le texte de déontologie' : 'Afficher le texte de déontologie' }}
+        </span>
+      </button>
+    </div>
+
+    <div class="deon-desc" *ngIf="d.html && deonOpen[i]" [attr.id]="'deon-desc-' + i">
+      <div class="deon-desc-inner pe-5" [innerHTML]="d.html"></div>
+
+      <!-- ✅ pareil: clic sur lien n’ouvre/ferme pas la ligne -->
+      <a
+        *ngIf="d.file"
+        class="deon-dl deon-dl--below"
+        [attr.href]="d.file"
+        [attr.download]="isSameOrigin(d.file) ? safeDownloadName(d.file) : null"
+        [attr.target]="!isSameOrigin(d.file) ? '_blank' : null"
+        [attr.rel]="!isSameOrigin(d.file) ? 'noopener' : null"
+        [attr.aria-label]="(isEnglish() ? 'Download the document: ' : 'Télécharger le document : ') + d.title"
+        (click)="$event.stopPropagation()"
+        (keydown.enter)="$event.stopPropagation()"
+        (keydown.space)="$event.stopPropagation()"
+      >
+        <img class="dl-icon-img" src="assets/icons/download.webp" alt="" width="35" height="46" loading="lazy" />
+        <span class="dl-label">{{ isEnglish() ? 'Download documentation' : 'Télécharger la documentation' }}</span>
+      </a>
+    </div>
+  </li>
+</ul>
+
   </div>
 </section>
 
 
-  <!-- ========================= TIMELINE ========================= -->
-  <section class="section timeline" *ngIf="timeline.length">
-    <div class="timeline-bg">
-      <div class="timeline-layer"></div>
-    </div>
+<!-- ========================= TIMELINE ========================= -->
+<section class="section timeline" *ngIf="timeline.length">
+  <div class="timeline-bg">
+    <div class="timeline-layer"></div>
+  </div>
 
-    <div class="section-inner px-0">
-      <div class="tl-grid">
-        <span
-          #tlRail
-          class="tl-rail"
-          aria-hidden="true">
-        </span>
+  <div class="section-inner px-0">
+    <div class="tl-grid">
+      <span #tlRail class="tl-rail" aria-hidden="true"></span>
 
-        <h2
-          #tlTitleEl
-          class="timeline-title prehide">
-          {{ timelineTitle }}
-        </h2>
+      <h2 #tlTitleEl class="timeline-title prehide">
+        {{ timelineTitle }}
+      </h2>
 
-        <ng-container *ngFor="let s of timeline; trackBy: trackByIndex">
+      <ng-container *ngFor="let s of timeline; trackBy: trackByIndex">
+        <div #tlYearEl class="tl-year prehide">
+          {{ s.year }}
+        </div>
+
+        <div #tlBodyEl class="tl-body prehide">
+          <!-- ✅ title en HTML -->
+          <h2
+            class="tl-item-title"
+            *ngIf="s.title"
+            [innerHTML]="s.title">
+          </h2>
+
           <div
-            #tlYearEl
-            class="tl-year prehide">
-            {{ s.year }}
+            class="tl-desc"
+            *ngIf="s.html"
+            [innerHTML]="s.html">
           </div>
-
-          <div
-            #tlBodyEl
-            class="tl-body prehide">
-            <h2
-              class="tl-item-title"
-              *ngIf="s.title">
-              {{ s.title }}
-            </h2>
-
-            <div
-              class="tl-desc"
-              *ngIf="s.html"
-              [innerHTML]="s.html">
-            </div>
-          </div>
-        </ng-container>
-      </div>
+        </div>
+      </ng-container>
     </div>
-  </section>
+  </div>
+</section>
 
-  <!-- ========================= FAQ SEO-ONLY =========================
-       - Contenu rendu SSR dans le HTML initial
-       - Masqué visuellement via CSS (pas display:none)
-       - Sert de base au JSON-LD FAQPage dans applySeo()
-  ================================================================== -->
-  <section class="faq-seo" *ngIf="faqItems?.length">
-    <h2 class="faq-seo-title">
-      {{ isEnglish()
-        ? 'Frequently asked questions about ABC Group'
-        : 'Questions fréquentes sur le Groupe ABC'
-      }}
-    </h2>
 
-    <div class="faq-seo-list">
-      <article
-        class="faq-seo-item"
-        *ngFor="let f of faqItems; index as i">
-        <h3 class="faq-seo-question">
-          {{ f.q }}
-        </h3>
-        <p class="faq-seo-answer">
-          {{ f.a }}
-        </p>
-      </article>
-    </div>
-  </section>
+
+  <!-- ===== FAQ (visible / crawlable) — FIN DE PAGE ===== -->
+<section class="faq" *ngIf="faqItems.length" aria-labelledby="faq-title">
+  <div class="faq-inner px-0 pt-lg-8 pb-lg-8 pt-3 pb-lg-5">
+    <h2 id="faq-title" class="faq-title">FAQ</h2>
+
+    <ul class="faq-list" role="list">
+      <li class="faq-item" *ngFor="let q of faqItems; let i = index; trackBy: trackByIndex">
+
+        <!-- Ligne question + chevron (cliquable) -->
+        <button
+          type="button"
+          class="faq-qrow"
+          (click)="toggleFaqItem(i)"
+          [attr.aria-expanded]="isFaqItemOpen(i)"
+          [attr.aria-controls]="'faq-a-' + i"
+        >
+          <span class="faq-q">{{ q.q }}</span>
+
+          <!-- chevron -->
+          <svg class="faq-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+          </svg>
+        </button>
+
+        <!-- Réponse (on garde le DOM pour SEO/crawl, on masque via CSS) -->
+        <div
+          class="faq-a"
+          [class.is-collapsed]="!isFaqItemOpen(i)"
+          [attr.id]="'faq-a-' + i"
+          [attr.aria-hidden]="!isFaqItemOpen(i)"
+          [innerHTML]="q.a"
+        ></div>
+
+      </li>
+    </ul>
+  </div>
+</section>
 </div>

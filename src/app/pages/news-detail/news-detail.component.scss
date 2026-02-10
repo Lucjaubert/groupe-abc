@@ -1,0 +1,379 @@
+/* src/app/pages/news-detail/news-detail.component.scss */
+@use "sass:map";
+@use "../../../styles/_variables.scss" as vars;
+
+/* ===== Aliases depuis _variables.scss ===== */
+$dark-blue: map.get(vars.$theme-colors, "dark-blue"); /* #2C2D62 */
+$blue:      map.get(vars.$theme-colors, "light-blue"); /* #444697 */
+$red:       map.get(vars.$theme-colors, "light-red");  /* #EA4D4D */
+$grey-100:  map.get(vars.$theme-colors, "light-grey"); /* #F5F4F8 */
+$white:     map.get(vars.$theme-colors, "white");      /* #FFFFFF */
+
+$bd-1: map.get(vars.$border-size, "1");
+
+$fs-13: 13px;
+$fs-14: map.get(vars.$font-size, "20");  /* 14px */
+$fs-16: map.get(vars.$font-size, "30");  /* 16px */
+$fs-36: map.get(vars.$font-size, "80");  /* 36px */
+$fs-48: map.get(vars.$font-size, "100"); /* 48px */
+
+$fw-regular: map.get(vars.$font-weight, "regular"); /* 400 */
+
+/* ==========================================================================
+   COULEURS THEMES (aligné avec la page liste)
+   ========================================================================== */
+$theme-expertise: #7B86D8; /* pastel bleu/lavande */
+$theme-juridique: #2F3566; /* bleu nuit adouci */
+$theme-marche:    #4F9B8F; /* vert sauge */
+$theme-autre:     $theme-expertise;
+
+.news-detail-wrapper {
+  width: 100%;
+
+  /* ===================== */
+  /* Back button (inchangé) */
+  /* ===================== */
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+
+    border: 1px solid $blue;
+    color: $blue;
+    background: transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-bottom: 18px;
+
+    padding: 0;
+    line-height: 0;
+    transition: transform 120ms ease, background-color 120ms ease;
+  }
+
+  .back-btn:hover { background: rgba(68, 70, 151, 0.08); }
+  .back-btn:active { transform: translateY(1px); }
+
+  .back-btn:focus-visible {
+    outline: 2px solid $blue;
+    outline-offset: 2px;
+  }
+
+  .back-icon {
+    width: 22px;
+    height: 22px;
+    display: block;
+  }
+
+  /* ===================== */
+  /* Base row / background  */
+  /* ===================== */
+  .news-row {
+    position: relative;
+    isolation: isolate;
+
+    /* ✅ accent CSS variable (pour le bouton thème + fond) */
+    --accent: #{$theme-expertise};
+    &.theme-expertise { --accent: #{$theme-expertise}; }
+    &.theme-juridique { --accent: #{$theme-juridique}; }
+    &.theme-marche    { --accent: #{$theme-marche}; }
+    &.theme-autre     { --accent: #{$theme-autre}; }
+  }
+
+  /* ✅ background "bande" plein écran teintée par le thème (comme la page liste) */
+  .news-bg {
+    position: absolute;
+    inset: 0;
+    left: 50%;
+    width: 100vw;
+    transform: translateX(-50%);
+    z-index: 0;
+    pointer-events: none;
+
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--accent) 10%, #ffffff) 0%,
+      color-mix(in srgb, var(--accent) 6%,  #ffffff) 100%
+    );
+
+    /* optionnel, cohérent avec la page liste */
+    border-top: 1px solid color-mix(in srgb, var(--accent) 14%, rgba(0,0,0,0));
+    border-bottom: 1px solid color-mix(in srgb, var(--accent) 14%, rgba(0,0,0,0));
+  }
+
+  /* ========================================= */
+  /* ✅ Layout : titre > image (50% à gauche) > texte */
+  /* ========================================= */
+  .news-box {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    margin-inline: auto;
+    box-sizing: border-box;
+    padding-top: 40px;
+    padding-bottom: 40px;
+  }
+
+  .news-box--stack {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: auto;
+    align-items: flex-start; /* ✅ tout collé à gauche */
+  }
+
+  /* ✅ Titre */
+  .post-title {
+    color: $blue;
+    font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+    font-size: $fs-36;
+    font-weight: $fw-regular;
+    line-height: 1.15;
+    margin: 0;
+    max-width: none;
+  }
+
+  /* ✅ Image : 50% du container, alignée à gauche */
+  .post-media {
+    width: 50%;
+    max-width: 50%;
+    margin-inline: 0;       /* ✅ gauche */
+    border-radius: 8px;
+    overflow: hidden;
+    background: #e9eaef;
+    aspect-ratio: 496 / 355;
+  }
+
+  .post-media__img {
+    width: 100%;            /* ✅ l'image remplit SON conteneur */
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  /* ✅ Bloc texte sous l’image (aligné à gauche) */
+  .news-content {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    width: 100%;
+    margin-inline: 0;       /* ✅ pas de centrage */
+  }
+
+  /* ===== Theme chip (EXISTANT, inchangé) ===== */
+  .theme-chip {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+    width: 133px;
+    height: 23px;
+    border-radius: 5px;
+    border: $bd-1 solid $blue;
+    background: $white;
+    padding: 0 8px;
+
+    .chip-label {
+      min-width: 0;
+      color: $blue;
+      font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+      font-size: $fs-14;
+      font-style: italic;
+      font-weight: 300;
+      line-height: normal;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .chip-icon {
+      flex: 0 0 22px;
+      width: 22px;
+      height: 13px;
+      display: inline-grid;
+      place-items: center;
+    }
+  }
+
+  /* ==========================================================================
+     ✅ Bridge : si theme-chip est utilisé comme "theme-filter-btn"
+     -> look pastel + aria-pressed comme sur news list
+     -> on ne supprime rien : on override seulement quand les 2 classes sont présentes
+     ========================================================================== */
+  .theme-chip.theme-filter-btn {
+    /* on neutralise la taille fixe du chip detail pour matcher la liste */
+    width: auto;
+    height: auto;
+    justify-content: center;
+
+    /* fallback */
+    --accent: #{$theme-expertise};
+    &.theme-expertise { --accent: #{$theme-expertise}; }
+    &.theme-juridique { --accent: #{$theme-juridique}; }
+    &.theme-marche    { --accent: #{$theme-marche}; }
+    &.theme-autre     { --accent: #{$theme-autre}; }
+
+    appearance: none;
+    border-radius: 999px;
+    padding: 10px 14px;
+    cursor: pointer;
+
+    font-size: $fs-13;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+
+    background: color-mix(in srgb, var(--accent) 10%, #ffffff);
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, rgba(0,0,0,0));
+    color: color-mix(in srgb, var(--accent) 78%, #000000);
+
+    box-shadow: 0 12px 26px rgba(0, 0, 0, 0.06);
+
+    transition:
+      transform 140ms ease,
+      box-shadow 140ms ease,
+      border-color 140ms ease,
+      background 140ms ease,
+      color 140ms ease;
+
+    &:hover {
+      transform: translateY(-1px);
+      background: color-mix(in srgb, var(--accent) 14%, #ffffff);
+      border-color: color-mix(in srgb, var(--accent) 30%, rgba(0,0,0,0));
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.09);
+    }
+
+    &[aria-pressed="true"] {
+      background: color-mix(in srgb, var(--accent) 18%, #ffffff);
+      border-color: color-mix(in srgb, var(--accent) 40%, rgba(0,0,0,0));
+      box-shadow: 0 16px 34px rgba(0, 0, 0, 0.10);
+    }
+
+    &:focus-visible {
+      outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      outline-offset: 3px;
+    }
+
+    .chip-label {
+      color: inherit;
+      font-style: normal; /* on aligne avec la liste */
+      font-weight: 700;
+      font-size: $fs-13;
+    }
+  }
+
+  /* ===== Meta ===== */
+  .meta-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 0 14px;
+
+    .firm-logo {
+      width: 40px;
+      height: 40px;
+      aspect-ratio: 1 / 1;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .meta-text {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      line-height: 1.2;
+    }
+
+    .firm-info {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 2px;
+    }
+
+    .firm-name {
+      color: $blue;
+      font-family: "Plus Jakarta Sans";
+      font-size: $fs-14;
+      font-weight: 500;
+      line-height: normal;
+    }
+
+    .meta-sep {
+      color: $red;
+      font-family: "Plus Jakarta Sans";
+      font-size: $fs-14;
+      font-weight: $fw-regular;
+      line-height: normal;
+    }
+
+    .author-date {
+      color: $blue;
+      font-family: "Plus Jakarta Sans";
+      font-size: $fs-13;
+      font-style: italic;
+      font-weight: $fw-regular;
+      line-height: normal;
+    }
+  }
+
+  /* ===== Contenu ===== */
+  .post-excerpt { overflow: hidden; }
+
+  .excerpt-body {
+    color: $blue;
+    font-family: "Plus Jakarta Sans";
+    font-size: $fs-14;
+    font-weight: $fw-regular;
+    line-height: 1.7;
+
+    p { margin: 0 0 10px; }
+    p:last-child { margin-bottom: 0; }
+  }
+
+  /* ===== CTA LinkedIn ===== */
+  .card-cta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 10px;
+
+    .card-linkedin img {
+      width: 36px;
+      height: 36px;
+      display: block;
+    }
+  }
+
+  /* ===================== */
+  /* Responsive            */
+  /* ===================== */
+  @media (max-width: 992px) {
+    .news-box {
+      padding-top: 28px;
+      padding-bottom: 28px;
+    }
+
+    .post-title {
+      font-size: clamp(24px, 5.2vw, $fs-36);
+      line-height: 1.2;
+    }
+
+    /* ✅ Sur tablette/mobile : image en pleine largeur */
+    .post-media {
+      width: 100%;
+      max-width: 100%;
+      aspect-ratio: 16 / 9;
+    }
+
+    .news-content {
+      max-width: 650px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .meta-line { margin: 6px 0 10px; }
+    .excerpt-body { line-height: 1.65; }
+  }
+}
