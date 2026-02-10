@@ -134,7 +134,7 @@
   <section class="wh mt-lg-5" *ngIf="whatHow">
     <div class="wh-grid">
       <div class="wh-left">
-        <article class="what py-5 py-lg-5">
+        <article class="what py-5">
           <h2 class="block-title">{{ whatHow.whatTitle }}</h2>
 
           <ul class="dash-list mt-5">
@@ -205,18 +205,7 @@
 
     <div class="contexts-inner px-0">
       <div class="contexts-head">
-        <h2 id="contexts-title" class="contexts-title mt-lg-0 mt-8">{{ contexts?.title }}</h2>
-
-        <div class="contexts-actions mt-6 mt-lg-0 mb-5 mb-lg-0">
-          <button type="button" class="cta-btn" routerLink="/expertise-immobiliere-services">
-            <span class="cta-label">Plus d'infos</span>
-            <span class="cta-plus" aria-hidden="true">
-              <svg viewBox="0 0 24 24" class="icon-plus">
-                <path d="M12 5v14M5 12h14" />
-              </svg>
-            </span>
-          </button>
-        </div>
+        <h2 id="contexts-title" class="contexts-title mt-lg-6 mt-8">{{ contexts?.title }}</h2>
       </div>
 
       <ul class="contexts-grid px-0 pb-4" role="list">
@@ -227,6 +216,16 @@
           <div class="ctx-label mt-4" [appAlignFirstWord]="it.label"></div>
         </li>
       </ul>
+      <div class="contexts-actions mt-6 mt-lg-0 mb-5 mb-lg-0">
+        <button type="button" class="cta-btn" routerLink="/expertise-immobiliere-services">
+          <span class="cta-label">Plus d'infos</span>
+          <span class="cta-plus" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-plus">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </span>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -261,61 +260,80 @@
   </section>
 
   <!-- ===== Team ===== -->
-  <section id="team" class="team" *ngIf="teamPages.length">
-    <div class="team-inner px-0">
-      <h2 class="team-title" #teamTitle>
-        <span class="line1">{{ teamTitleLine1 }}</span>
-        <span class="line2">{{ teamTitleLine2 }}</span>
-      </h2>
+<section id="team" class="team" *ngIf="teamPages.length">
+  <div class="team-inner px-0">
+    <h2 class="team-title" #teamTitle>
+      <span class="line1">{{ teamTitleLine1 }}</span>
+      <span class="line2">{{ teamTitleLine2 }}</span>
+    </h2>
 
-      <div class="team-grid" aria-live="polite">
-        <article class="member-card" #teamCard *ngFor="let m of teamPages[teamPageIndex]; trackBy: trackByIndex">
-          <div class="photo-tile">
+    <div class="team-grid" aria-live="polite">
+      <article
+        class="member-card"
+        #teamCard
+        *ngFor="let m of teamPages[teamPageIndex]; trackBy: trackByIndex"
+      >
+        <div class="photo-tile">
+          <img
+            [src]="teamPhotoUrl(m)"
+            [attr.alt]="'Portrait de ' + (m?.nameFirst || '') + ' ' + (m?.nameLast || '')"
+            loading="lazy"
+            decoding="async"
+            (error)="onTeamImgError($event)"
+          />
+        </div>
+
+        <div class="member-text pt-3">
+          <div class="member-area">{{ m.area }}</div>
+
+          <div class="member-name">
+            <div class="first">{{ m.nameFirst }}</div>
+            <div class="last">{{ m.nameLast }}</div>
+          </div>
+
+          <div class="ff-person-meta" *ngIf="m?.ricsLogo">
             <img
-              [src]="s(m?.photo) || defaultPortrait"
-              [attr.alt]="'Portrait de ' + (m?.nameFirst || '') + ' ' + (m?.nameLast || '')"
+              class="ff-org"
+              [src]="m.ricsLogo"
+              alt="RICS"
               loading="lazy"
               decoding="async"
-              (error)="$any($event.target).src = defaultPortrait"
             />
           </div>
 
-          <div class="member-text pt-3">
-            <div class="member-area">{{ m.area }}</div>
-            <div class="member-name">
-              <div class="first">{{ m.nameFirst }}</div>
-              <div class="last">{{ m.nameLast }}</div>
-            </div>
-            <div class="member-job" [innerHTML]="m.jobHtml"></div>
-          </div>
-        </article>
+          <div class="member-job" [innerHTML]="m.jobHtml"></div>
+        </div>
+      </article>
+    </div>
+
+    <div class="team-bottom">
+      <div class="team-dots" role="tablist" aria-label="Profils de l’équipe">
+        <button
+          *ngFor="let _ of teamPages; let i = index; trackBy: trackByIndex"
+          type="button"
+          class="team-dot"
+          [class.active]="i === teamPageIndex"
+          [attr.aria-label]="'Aller aux profils ' + (i * 2 + 1) + '–' + (i * 2 + 2)"
+          [attr.aria-selected]="i === teamPageIndex ? 'true' : 'false'"
+          role="tab"
+          (click)="goTeamTo(i)"
+        ></button>
       </div>
 
-      <div class="team-bottom">
-        <div class="team-dots" role="tablist" aria-label="Profils de l’équipe">
-          <button
-            *ngFor="let _ of teamPages; let i = index; trackBy: trackByIndex"
-            type="button"
-            class="team-dot"
-            [class.active]="i === teamPageIndex"
-            [attr.aria-label]="'Aller aux profils ' + (i * 2 + 1) + '–' + (i * 2 + 2)"
-            [attr.aria-selected]="i === teamPageIndex ? 'true' : 'false'"
-            role="tab"
-            (click)="goTeamTo(i)"
-          ></button>
-        </div>
-
-        <div class="team-cta">
-          <button type="button" class="cta-btn" [routerLink]="['/experts-immobiliers-agrees']">
-            <span class="cta-label">Voir nos équipes</span>
-            <span class="cta-plus" aria-hidden="true">
-              <svg viewBox="0 0 24 24" class="icon-plus"><path d="M12 5v14M5 12h14" /></svg>
-            </span>
-          </button>
-        </div>
+      <div class="team-cta">
+        <button type="button" class="cta-btn" [routerLink]="['/experts-immobiliers-agrees']">
+          <span class="cta-label">Voir notre équipe</span>
+          <span class="cta-plus" aria-hidden="true">
+            <svg viewBox="0 0 24 24" class="icon-plus">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+          </span>
+        </button>
       </div>
     </div>
-  </section>
+  </div>
+</section>
+
 
   <!-- ===================== NEWS ===================== -->
   <section class="news" *ngIf="news" style="--news-side-right:40px; --news-side-gap:83px">
@@ -361,4 +379,42 @@
       </div>
     </div>
   </section>
+
+  <!-- ===== FAQ (visible / crawlable) — FIN DE PAGE ===== -->
+<section class="faq" *ngIf="faqItems.length" aria-labelledby="faq-title">
+  <div class="faq-inner px-0">
+    <h2 id="faq-title" class="faq-title">FAQ</h2>
+
+    <ul class="faq-list" role="list">
+      <li class="faq-item" *ngFor="let q of faqItems; let i = index; trackBy: trackByIndex">
+
+        <!-- Ligne question + chevron (cliquable) -->
+        <button
+          type="button"
+          class="faq-qrow"
+          (click)="toggleFaqItem(i)"
+          [attr.aria-expanded]="isFaqItemOpen(i)"
+          [attr.aria-controls]="'faq-a-' + i"
+        >
+          <span class="faq-q">{{ q.q }}</span>
+
+          <!-- chevron -->
+          <svg class="faq-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="currentColor" d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+          </svg>
+        </button>
+
+        <!-- Réponse (on garde le DOM pour SEO/crawl, on masque via CSS) -->
+        <div
+          class="faq-a"
+          [class.is-collapsed]="!isFaqItemOpen(i)"
+          [attr.id]="'faq-a-' + i"
+          [attr.aria-hidden]="!isFaqItemOpen(i)"
+          [innerHTML]="q.a"
+        ></div>
+
+      </li>
+    </ul>
+  </div>
+</section>
 </div>

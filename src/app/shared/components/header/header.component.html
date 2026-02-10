@@ -3,10 +3,15 @@
 
     <!-- Brand : doit aller sur la HOME de la langue -->
     <a [routerLink]="getHomeLink()" class="brand" (click)="closeAfterNav()">
-      <img [src]="brandSrc" alt="Groupe ABC" class="logo" (error)="onBrandError($event)">
+      <img
+        [src]="brandSrc"
+        alt="Groupe ABC"
+        class="logo"
+        (error)="onBrandError($event)"
+      />
       <span class="slogan pl-lg-3 pl-1" data-wg-notranslate>
-        Groupement<br>
-        d’Experts immobiliers<br>
+        Groupement<br />
+        d’Experts immobiliers<br />
         indépendants
       </span>
     </a>
@@ -17,7 +22,8 @@
       aria-label="Ouvrir le menu"
       aria-controls="main-menu-overlay"
       [attr.aria-expanded]="menuOpen ? 'true' : 'false'"
-      (click)="toggleMenu()">
+      (click)="toggleMenu()"
+    >
       <span class="burger-bar" aria-hidden="true"></span>
       <span class="burger-bar" aria-hidden="true"></span>
       <span class="burger-bar" aria-hidden="true"></span>
@@ -25,17 +31,20 @@
 
     <div class="tagline d-flex flex-column align-items-end">
       <span class="tagline-text text-end mt-3 mt-lg-0" data-wg-notranslate>
-        Expertise amiable & judiciaire<br>
-        en France métropolitaine<br>
+        Expertise amiable & judiciaire<br />
+        en France métropolitaine<br />
         et Dom-Tom
       </span>
-      <img class="rics mt-6 mt-lg-5" src="assets/img/logos-organisms/rics-logo.png" alt="RICS">
+      <img
+        class="rics mt-6 mt-lg-5"
+        src="assets/img/logos-organisms/rics-logo.png"
+        alt="RICS"
+      />
     </div>
 
     <nav class="menu-bar" [class.open]="menuOpen">
       <ul class="menu">
         <li>
-          <!-- ✅ About canonique maintenant -->
           <a [routerLink]="getLink('about')" (click)="closeAfterNav()">
             Qui sommes-nous ?
           </a>
@@ -52,7 +61,7 @@
         </li>
         <li>
           <a [routerLink]="getLink('teams')" (click)="closeAfterNav()">
-            Équipes
+            Équipe
           </a>
         </li>
         <li>
@@ -72,28 +81,35 @@
 
   <!-- Rail droit -->
   <div class="right-rail d-flex flex-column align-items-end">
-    <a class="extranet-badge d-flex align-items-center justify-content-center mt-8 mt-lg-0"
-       href="#"
-       rel="nofollow"
-       aria-label="Espace Extranet Groupe ABC">
+    <a
+      class="extranet-badge d-flex align-items-center justify-content-center mt-8 mt-lg-0"
+      href="#"
+      rel="nofollow"
+      aria-label="Espace Extranet Groupe ABC"
+    >
       <span class="extranet-text" data-wg-notranslate>EXTRANET</span>
     </a>
 
-    <button class="lang-switch d-flex align-items-center justify-content-center"
-            type="button"
-            data-wg-notranslate
-            aria-label="Switch language"
-            aria-controls="main-menu-overlay"
-            [attr.aria-expanded]="menuOpen ? 'true' : 'false'"
-            (click)="onPrimaryAction($event)">
+    <!-- Switch FR/EN : on déclenche la logique TS qui calcule la bonne URL -->
+    <button
+      class="lang-switch d-flex align-items-center justify-content-center"
+      type="button"
+      data-wg-notranslate
+      aria-label="Switch language"
+      aria-controls="main-menu-overlay"
+      [attr.aria-expanded]="menuOpen ? 'true' : 'false'"
+      (click)="onPrimaryAction($event)"
+    >
       {{ (lang.lang$ | async) === 'en' ? 'EN' : 'FR' }}
     </button>
 
-    <a class="rail-social linkedin-btn"
-       href="https://www.linkedin.com/company/groupe-abc/"
-       target="_blank"
-       rel="noopener noreferrer"
-       aria-label="Ouvrir la page LinkedIn du Groupe ABC">
+    <a
+      class="rail-social linkedin-btn"
+      href="https://www.linkedin.com/company/groupe-abc/"
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="Ouvrir la page LinkedIn du Groupe ABC"
+    >
       <!-- svg -->
     </a>
   </div>
@@ -105,50 +121,80 @@
   class="menu-overlay"
   [class.open]="menuOpen"
   (click)="closeOnBackdrop($event)"
-  [attr.aria-hidden]="menuOpen ? 'false' : 'true'">
-
-  <div class="menu-overlay-inner pe-0 pe-lg-3"
-       role="dialog"
-       [attr.aria-modal]="'true'">
-
+  [attr.aria-hidden]="menuOpen ? 'false' : 'true'"
+>
+  <div
+    class="menu-overlay-inner pe-0 pe-lg-3"
+    role="dialog"
+    [attr.aria-modal]="'true'"
+  >
     <button
       class="overlay-close"
       type="button"
       aria-label="Fermer le menu"
       (click)="setMenu(false)"
       (keydown.enter)="setMenu(false)"
-      (keydown.space)="setMenu(false)">
+      (keydown.space)="setMenu(false)"
+    >
       <!-- svg -->
     </button>
 
     <div class="overlay-top">
       <!-- Brand overlay : home aussi -->
-      <a [routerLink]="getHomeLink()" class="overlay-brand d-flex" (click)="closeAfterNav()">
-        <img src="assets/img/header/logo-groupe-abc.webp" alt="Groupe ABC" data-wg-notranslate>
+      <a
+        [routerLink]="getHomeLink()"
+        class="overlay-brand d-flex"
+        (click)="closeAfterNav()"
+      >
+        <img
+          src="assets/img/header/logo-groupe-abc.webp"
+          alt="Groupe ABC"
+          data-wg-notranslate
+        />
         <span class="brand-text ps-2 pt-2" data-wg-notranslate>
-          Groupement<br>d’Experts immobiliers<br>indépendants
+          Groupement<br />d’Experts immobiliers<br />indépendants
         </span>
       </a>
     </div>
 
     <div class="overlay">
       <nav class="overlay-nav">
-        <a [routerLink]="getLink('about')"    (click)="closeAfterNav()">QUI SOMMES-NOUS ?</a>
-        <a [routerLink]="getLink('services')" (click)="closeAfterNav()">NOS SERVICES</a>
-        <a [routerLink]="getLink('methods')"  (click)="closeAfterNav()">BIENS ET MÉTHODES</a>
-        <a [routerLink]="getLink('teams')"    (click)="closeAfterNav()">ÉQUIPES</a>
-        <a [routerLink]="getLink('news')"     (click)="closeAfterNav()">ACTUALITÉS</a>
-        <a [routerLink]="getLink('contact')"  (click)="closeAfterNav()">CONTACT</a>
+        <a [routerLink]="getLink('about')" (click)="closeAfterNav()">
+          QUI SOMMES-NOUS ?
+        </a>
+        <a [routerLink]="getLink('services')" (click)="closeAfterNav()">
+          NOS SERVICES
+        </a>
+        <a [routerLink]="getLink('methods')" (click)="closeAfterNav()">
+          BIENS ET MÉTHODES
+        </a>
+        <a [routerLink]="getLink('teams')" (click)="closeAfterNav()">
+          ÉQUIPE
+        </a>
+        <a [routerLink]="getLink('news')" (click)="closeAfterNav()">
+          ACTUALITÉS
+        </a>
+        <a [routerLink]="getLink('contact')" (click)="closeAfterNav()">
+          CONTACT
+        </a>
       </nav>
 
-      <a class="mm-social" href="https://www.linkedin.com/company/groupe-abc/" target="_blank" rel="noopener" aria-label="LinkedIn">
+      <a
+        class="mm-social"
+        href="https://www.linkedin.com/company/groupe-abc/"
+        target="_blank"
+        rel="noopener"
+        aria-label="LinkedIn"
+      >
         <!-- svg -->
       </a>
     </div>
 
     <div class="overlay-bottom">
-      <a [routerLink]="(activeLang === 'en' ? '/en/legal-notice' : '/mentions-legales')"
-         class="mm-legal mt-6">
+      <a
+        [routerLink]="activeLang === 'en' ? '/en/legal-notice' : '/mentions-legales'"
+        class="mm-legal mt-6"
+      >
         ©2025 - Mentions Légales - Crédits
       </a>
     </div>

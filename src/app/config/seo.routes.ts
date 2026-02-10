@@ -44,5 +44,9 @@ export const SEO_ROUTE_CONFIG: Record<SeoRouteKey, { fr: SeoConfig; en: SeoConfi
 };
 
 export function getSeoForRoute(key: SeoRouteKey, lang: Lang): SeoConfig {
-  return SEO_ROUTE_CONFIG[key][lang];
+  const cfg = SEO_ROUTE_CONFIG[key]?.[lang];
+  if (!cfg) {
+    return SEO_ROUTE_CONFIG.home[lang];
+  }
+  return cfg;
 }

@@ -2,28 +2,61 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <title>Expertise immobilière nationale – Valeur vénale & locative certifiée</title>
+
+    <!-- Google Tag Manager -->
+    <script>
+      (function (w, d, s, l, i) {
+        w[l] = w[l] || [];
+        w[l].push({ 'gtm.start': new Date().getTime(), event: 'gtm.js' });
+        var f = d.getElementsByTagName(s)[0],
+          j = d.createElement(s),
+          dl = l != 'dataLayer' ? '&l=' + l : '';
+        j.async = true;
+        j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+        f.parentNode.insertBefore(j, f);
+      })(window, document, 'script', 'dataLayer', 'GTM-TK8NSMS8');
+    </script>
+    <!-- End Google Tag Manager -->
+
+    <title>Groupe ABC – Expertise immobilière nationale certifiée</title>
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#444697" />
 
     <!-- Google Search Console -->
-    <meta name="google-site-verification" content="vVZ7W-srvDTqDhQh7rH3PMjrkh1oZdbwy0sujaH_C40" />
+    <meta
+      name="google-site-verification"
+      content="vVZ7W-srvDTqDhQh7rH3PMjrkh1oZdbwy0sujaH_C40"
+    />
 
     <!-- Fallback générique (SSR/SeoService surchargera par page) -->
     <meta
       name="description"
-      content="Experts agréés en évaluation immobilière sur tout le territoire. Rapports conformes à la Charte de l’expertise et aux standards RICS."
+      content="Groupe ABC, réseau d’experts immobiliers certifiés, réalise des expertises immobilières de valeur vénale et locative pour investisseurs, entreprises, banques, collectivités et particuliers en France et Outre-mer."
     />
     <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="googlebot" content="index,follow,max-image-preview:large" />
 
     <!-- Favicons -->
     <link rel="icon" href="/favicon.ico" />
     <link rel="icon" type="image/svg+xml" href="/assets/favicons/favicon.svg" />
-    <link rel="icon" type="image/png" sizes="96x96" href="/assets/favicons/favicon-96x96.png" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/assets/favicons/apple-touch-icon.png" />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="96x96"
+      href="/assets/favicons/favicon-96x96.png"
+    />
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/assets/favicons/apple-touch-icon.png"
+    />
     <link rel="manifest" href="/assets/favicons/site.webmanifest" />
-    <link rel="mask-icon" href="/assets/favicons/safari-pinned-tab.svg" color="#EA4D4D" />
+    <link
+      rel="mask-icon"
+      href="/assets/favicons/safari-pinned-tab.svg"
+      color="#EA4D4D"
+    />
     <meta name="msapplication-TileColor" content="#444697" />
 
     <!-- Fonts (preload) -->
@@ -64,45 +97,86 @@
     <meta property="og:site_name" content="Groupe ABC" />
     <meta
       property="og:title"
-      content="Expertise immobilière nationale – Valeur vénale & locative certifiée"
+      content="Groupe ABC – Expertise immobilière nationale certifiée"
     />
     <meta
       property="og:description"
-      content="Experts agréés en évaluation immobilière sur tout le territoire. Rapports conformes à la Charte de l’expertise et aux standards RICS."
+      content="Groupe ABC, réseau d’experts immobiliers certifiés, réalise des expertises immobilières de valeur vénale et locative pour investisseurs, entreprises, banques, collectivités et particuliers en France et Outre-mer."
     />
-    <meta property="og:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
+    <meta
+      property="og:image"
+      content="https://groupe-abc.fr/assets/img/seo/og-groupe-abc-default.jpg"
+    />
 
     <!-- Twitter (fallback global) -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta
       name="twitter:title"
-      content="Expertise immobilière nationale – Valeur vénale & locative certifiée"
+      content="Groupe ABC – Expertise immobilière nationale certifiée"
     />
     <meta
       name="twitter:description"
-      content="Experts agréés en évaluation immobilière sur tout le territoire. Rapports conformes à la Charte de l’expertise et aux standards RICS."
+      content="Groupe ABC, réseau d’experts immobiliers certifiés, réalise des expertises immobilières de valeur vénale et locative pour investisseurs, entreprises, banques, collectivités et particuliers en France et Outre-mer."
     />
-    <meta name="twitter:image" content="https://groupe-abc.fr/assets/og/og-default.jpg" />
+    <meta
+      name="twitter:image"
+      content="https://groupe-abc.fr/assets/img/seo/og-groupe-abc-default.jpg"
+    />
 
     <!-- Pas de canonical/hreflang ici : gérés dynamiquement par SSR/SeoService -->
 
-    <!-- JSON-LD Organization sitewide -->
+    <!-- JSON-LD Organization + WebSite sitewide -->
     <script type="application/ld+json" id="ld-sitewide">
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      "@id": "https://groupe-abc.fr/#organization",
-      "name": "Groupe ABC",
-      "url": "https://groupe-abc.fr/",
-      "logo": "https://groupe-abc.fr/assets/favicons/android-chrome-512x512.png",
-      "sameAs": [
-        "https://www.linkedin.com/company/groupe-abc"
-      ]
-    }
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://groupe-abc.fr#organization",
+            "name": "Groupe ABC",
+            "url": "https://groupe-abc.fr",
+            "logo": {
+              "@type": "ImageObject",
+              "@id": "https://groupe-abc.fr#logo",
+              "url": "https://groupe-abc.fr/assets/img/header/logo-groupe-abc.webp",
+              "contentUrl": "https://groupe-abc.fr/assets/img/header/logo-groupe-abc.webp",
+              "width": 512,
+              "height": 512
+            },
+            "sameAs": ["https://www.linkedin.com/company/groupe-abc-experts/"]
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://groupe-abc.fr#website",
+            "url": "https://groupe-abc.fr",
+            "name": "Groupe ABC",
+            "inLanguage": ["fr-FR", "en-US"],
+            "publisher": {
+              "@id": "https://groupe-abc.fr#organization"
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://groupe-abc.fr/?s={search_term_string}",
+              "query-input": "required name=search_term_string"
+            }
+          }
+        ]
+      }
     </script>
   </head>
 
   <body>
+    <!-- Google Tag Manager (noscript) -->
+    <noscript
+      ><iframe
+        src="https://www.googletagmanager.com/ns.html?id=GTM-TK8NSMS8"
+        height="0"
+        width="0"
+        style="display: none; visibility: hidden"
+      ></iframe
+    ></noscript>
+    <!-- End Google Tag Manager (noscript) -->
+
     <app-root></app-root>
     <noscript>Activez JavaScript pour utiliser le changeur de langue.</noscript>
 
@@ -123,10 +197,12 @@
                 translateMeta: false,
                 hrefLang: false,
                 redirect: false,
-                translateAttributes: ['alt','title','placeholder','aria-label'],
+                translateAttributes: ['alt', 'title', 'placeholder', 'aria-label'],
                 excludedPaths: [
-                  '/wordpress/wp-json*','/wp-json*',
-                  '/wordpress/wp-admin*','/wordpress/wp-login*',
+                  '/wordpress/wp-json*',
+                  '/wp-json*',
+                  '/wordpress/wp-admin*',
+                  '/wordpress/wp-login*',
                   '?rest_route='
                 ]
               });

@@ -70,21 +70,29 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
 /* CONTEXTES = Accordéon */
 /* ===================== */
 .contexts {
+  .ctx-text {
+    color: $blue;
+    font-size: $fs16;
+    line-height: 1.6;
+    margin: 0 0 28px;
+
+    p { margin: 0; }
+  }
+
   .ctx-list {
     list-style: none;
     margin: 0;
     padding: 0;
-    /* Par défaut: transparent pour éviter le flash */
     border-top: $bd-2 solid transparent;
   }
 
-  /* Tant que la liste est cachée/tenue, rester transparent */
   .ctx-list.prehide,
   .ctx-list._hold-bar {
     border-top: $bd-2 solid transparent !important;
   }
 
   .ctx-row {
+    position: relative; /* ✅ nécessaire pour ::after */
     display: grid;
     grid-template-columns: auto 1fr auto;
     align-items: center;
@@ -93,12 +101,38 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     min-height: 98px;
     min-block-size: 98px;
 
-    /* NEW: gestion d’espaces homogènes */
     padding-block-start: 0;
     row-gap: 0;
+
+    /* ✅ main partout sur la ligne */
+    cursor: pointer;
+
+    /* zone hover/clic visuelle future */
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none; /* ✅ ne bloque pas les clics */
+    }
   }
 
-  .row-line { display: contents; }
+  /* ✅ la “ligne” est interactive */
+  .row-line {
+    display: contents;
+  }
+
+  /* ✅ main sur tous les éléments de la ligne (sinon certains héritent pas) */
+  .ctx-row .ctx-icon,
+  .ctx-row .row-name {
+    cursor: pointer;
+  }
+
+  /* ✅ bouton chevron doit rester cliquable, avec curseur cohérent */
+  .ctx-row .deon-toggle {
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+  }
 
   .row-line > .ctx-icon,
   .row-line > .row-name,
@@ -127,7 +161,6 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     border: 0;
     padding: 0;
     color: $blue;
-    cursor: pointer;
     justify-self: end;
     display: inline-grid;
     place-items: center;
@@ -160,10 +193,18 @@ $fs60: map.get(vars.$font-size, "110"); // 60 approx
     p:last-child { margin-bottom: 0; }
   }
 
-  /* NEW: espace au-dessus du titre et entre titre/description quand ouvert */
   .ctx-row.open {
-    padding-block-start: 16px;  /* espace entre la barre et le titre */
-    row-gap: 20px;              /* espace entre ligne (titre) et description */
+    padding-block-start: 16px;
+    row-gap: 20px;
+    cursor: default; /* optionnel : si tu veux éviter l’impression de clic sur la zone description */
+  }
+
+  /* ✅ mais la ligne (row-line) reste en main même ouvert */
+  .ctx-row.open > .row-line,
+  .ctx-row.open .ctx-icon,
+  .ctx-row.open .row-name,
+  .ctx-row.open .deon-toggle {
+    cursor: pointer;
   }
 
   @media (max-width: 768px) {
@@ -178,6 +219,15 @@ img:not([src]), img[src=""] { opacity: 0; }
 /* CLIENTS = Accordéon   */
 /* ===================== */
 .clients {
+  .clients-text {
+    color: $blue;
+    font-size: $fs16;
+    line-height: 1.6;
+    margin: -20px 0 40px;
+
+    p { margin: 0; }
+  }
+
   .clients-title{
     color: $blue;
     font-size: clamp(24px, 3.2vw, 36px);
@@ -190,17 +240,16 @@ img:not([src]), img[src=""] { opacity: 0; }
     list-style: none;
     margin: 0;
     padding: 0;
-    /* Par défaut: transparent pour éviter le flash */
     border-top: $bd-2 solid transparent;
   }
 
-  /* Tant que la liste est cachée/tenue, rester transparent */
   .cli-list.prehide,
   .cli-list._hold-bar {
     border-top: $bd-2 solid transparent !important;
   }
 
   .cli-row{
+    position: relative; /* ✅ nécessaire pour ::after */
     display: grid;
     grid-template-columns: 1fr auto;
     align-items: center;
@@ -208,12 +257,29 @@ img:not([src]), img[src=""] { opacity: 0; }
     min-height: 98px;
     min-block-size: 98px;
 
-    /* NEW: gestion d’espaces homogènes */
     padding-block-start: 0;
     row-gap: 0;
+
+    /* ✅ main partout */
+    cursor: pointer;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
   }
 
-  .row-line{ display: contents; }
+  .row-line { display: contents; }
+
+  .cli-row .cli-name { cursor: pointer; }
+
+  .cli-row .deon-toggle {
+    cursor: pointer;
+    position: relative;
+    z-index: 2;
+  }
 
   .row-line > .cli-name,
   .row-line > .deon-toggle{
@@ -229,9 +295,13 @@ img:not([src]), img[src=""] { opacity: 0; }
   }
 
   .deon-toggle{
-    background: none; border: 0; padding: 0;
-    color: $blue; cursor: pointer; justify-self: end;
-    display: inline-grid; place-items: center;
+    background: none;
+    border: 0;
+    padding: 0;
+    color: $blue;
+    justify-self: end;
+    display: inline-grid;
+    place-items: center;
 
     &:focus-visible {
       outline: 2px solid $red;
@@ -241,27 +311,38 @@ img:not([src]), img[src=""] { opacity: 0; }
   }
 
   .chevron{
-    width: 24px; height: 34.66px;
+    width: 24px;
+    height: 34.66px;
     transform: rotate(90deg);
     transition: transform .25s ease;
   }
 
   .deon-toggle[aria-expanded="true"] .chevron { transform: rotate(0deg); }
-  .cli-row.open .chevron { transform: rotate(0deg); } /* secours */
+  .cli-row.open .chevron { transform: rotate(0deg); }
 
   .row-desc{
     grid-column: 1 / -1;
     padding: 8px 0 18px;
   }
+
   .row-desc-inner{
-    color: $blue; font-size: $fs16; line-height: 1.55;
-    p{ margin: 0 0 10px; } p:last-child{ margin-bottom: 0; }
+    color: $blue;
+    font-size: $fs16;
+    line-height: 1.55;
+    p{ margin: 0 0 10px; }
+    p:last-child{ margin-bottom: 0; }
   }
 
-  /* NEW: espace au-dessus du titre et entre titre/description quand ouvert */
   .cli-row.open {
-    padding-block-start: 16px;  /* espace entre la barre et le titre */
-    row-gap: 20px;              /* espace entre ligne (titre) et description */
+    padding-block-start: 16px;
+    row-gap: 20px;
+    cursor: default;
+  }
+
+  .cli-row.open > .row-line,
+  .cli-row.open .cli-name,
+  .cli-row.open .deon-toggle {
+    cursor: pointer;
   }
 
   @media (max-width: 768px) {
@@ -290,11 +371,12 @@ img:not([src]), img[src=""] { opacity: 0; }
     padding: 0;
 
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    column-gap: 0;
-    row-gap: 85px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
 
-    justify-items: stretch;
+    /* espace identique horizontal + vertical */
+    gap: 85px;               // ou gap: 85px 120px; (row / column)
+
+    justify-items: center;   // centre chaque cellule
     align-items: center;
     width: 100%;
   }
@@ -304,19 +386,27 @@ img:not([src]), img[src=""] { opacity: 0; }
     align-items: center;
     justify-content: center;
   }
-  .refs-grid li:nth-child(3n + 1){ justify-content: flex-start; }
-  .refs-grid li:nth-child(3n + 2){ justify-content: center; }
-  .refs-grid li:nth-child(3n){ justify-content: flex-end; }
+
+  /* ⚠️ à supprimer sinon ça décale et casse l’égalité */
+  .refs-grid li:nth-child(4n + 1),
+  .refs-grid li:nth-child(4n + 2),
+  .refs-grid li:nth-child(4n + 3),
+  .refs-grid li:nth-child(4n){
+    justify-content: center;
+  }
 
   .refs-grid img{
     width: 120px;
     height: 120px;
-    aspect-ratio: 1 / 1;
     object-fit: contain;
     background: $grey-100;
     border-radius: 6px;
     display: block;
   }
+
+  .refs-grid { padding-inline: clamp(16px, 4vw, 64px); }
+
+
 
   @media (max-width: 480px){
     .refs-grid{
@@ -325,45 +415,167 @@ img:not([src]), img[src=""] { opacity: 0; }
       row-gap: clamp(18px, 6vw, 28px);
     }
     .refs-grid img{ width: 82px; height: 82px; }
-
     .chevron { width: 5.55px; height: 7.906px; }
   }
 }
 
-/* ===================== */
-/* FAQ INLINE (si jamais visible un jour) */
-/* ===================== */
-.faq-inline {
-  border-top: $bd-2 solid $blue;
-  margin-top: 48px;
-  padding-top: 48px;
+/* ===================================================================== */
+/* ================================= FAQ =============================== */
+/* ===================================================================== */
 
-  .faq-title{
-    color: $blue;
-    font-size: clamp(24px, 3.2vw, 36px);
-    font-weight: 400;
-    line-height: 1.2;
-    margin: 0 0 20px;
+.faq {
+  padding-block: clamp(48px, 7vw, 36px);
+
+  .faq-inner {
+    width: 100%;
+    margin-inline: auto;
   }
 
-  .faq-list{
+  .faq-title {
+    margin: 0 0 clamp(18px, 3vw, 28px);
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: map.get(vars.$font-size, "80");
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.1;
+  }
+
+  .faq-list {
     list-style: none;
     margin: 0;
     padding: 0;
-    border-top: $bd-2 solid $blue;
+    display: grid;
+    gap: clamp(14px, 2.4vw, 18px);
   }
 
-  .faq-item{
-    border-bottom: $bd-2 solid $blue;
+  .faq-item {
+    border-radius: 12px;
+    background: rgba(68, 70, 151, 0.06);
+    overflow: hidden;
   }
 
-  .faq-a{
-    padding: 0 0 18px 0;
-  }
-  .faq-a-inner{
+  .faq-qrow {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+
+    padding: clamp(14px, 2.2vw, 18px);
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+
     color: $blue;
-    font-size: $fs16;
-    line-height: 1.55;
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+
+  .faq-q {
+    margin: 0;
+    font-size: map.get(vars.$font-size, "40");
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .faq-chevron {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+    opacity: 0.9;
+    transition: transform 0.2s ease;
+  }
+
+  .faq-qrow[aria-expanded="true"] .faq-chevron {
+    transform: rotate(180deg);
+  }
+
+  .faq-a {
+    padding: 0 clamp(14px, 2.2vw, 18px) clamp(14px, 2.2vw, 18px);
+
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: map.get(vars.$font-size, "30");
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.7;
+
+    p { margin: 0 0 10px 0; }
+    p:last-child { margin-bottom: 0; }
+  }
+
+  .faq-a.is-collapsed {
+    display: none;
+  }
+}
+
+/* ===================================================================== */
+/* ===== FIX GLOBAL pour listes injectées via [innerHTML] = 16px ======== */
+/* ===================================================================== */
+
+.faq .faq-a ul,
+.faq .faq-a ol {
+  margin: 10px 0 0 18px;
+  padding: 0;
+
+  font-family: inherit;
+  font-size: 16px;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.faq .faq-a li {
+  margin: 0 0 6px 0;
+
+  font-family: inherit;
+  font-size: 16px;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.faq .faq-a li::marker {
+  font-size: 0.85em;
+}
+
+@media (max-width: 768px) {
+  .faq {
+    padding-block: 40px;
+
+    .faq-title {
+      font-size: 24px;
+      font-weight: 400;
+      line-height: normal;
+      margin-bottom: 16px;
+    }
+
+    .faq-item { border-radius: 0; }
+
+    .faq-qrow { padding: 14px 12px; }
+
+    .faq-q {
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .faq-chevron {
+      width: 20px;
+      height: 20px;
+    }
+
+    .faq-a {
+      padding: 0 12px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  }
+
+  .faq .faq-a ul,
+  .faq .faq-a ol,
+  .faq .faq-a li {
+    font-size: 14px;
+  }
+
+  .faq .faq-a li::marker {
+    font-size: 0.85em;
   }
 }
 

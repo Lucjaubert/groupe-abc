@@ -213,6 +213,113 @@ textarea:focus {
   box-shadow: 0 0 0 3px rgba(68, 71, 152, .15);
 }
 
+/* =========================================================================
+   ✅ BARRE BAS DE FORM : PJ à gauche + Envoyer à droite (même ligne)
+   ========================================================================= */
+.form-bottombar{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* Left side */
+.form-bottombar .form-extras{
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+  margin-top: 0; /* annule l'ancien margin-top */
+}
+
+/* Right side */
+.form-bottombar .form-actions{
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 0; /* annule l'ancien margin-top */
+  flex: 0 0 auto;
+}
+
+/* =========================================================================
+   ✅ Pièce jointe (dans la bottom bar)
+   ========================================================================= */
+.attach {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  cursor: pointer;
+  user-select: none;
+  min-width: 0;
+}
+
+.attach-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.attach-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(68, 70, 151, .55);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: $blue;
+  background: #fff;
+  transition: transform .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease;
+}
+
+.attach-ico {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  color: $blue;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    display: block;
+  }
+}
+
+.attach-text {
+  font-size: 13px;
+  font-weight: 400;
+  line-height: normal;
+}
+
+.attach-name {
+  max-width: 360px;
+  font-size: 13px;
+  color: rgba(68, 70, 151, .9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attach-clear {
+  border: 0;
+  background: transparent;
+  color: rgba(68, 70, 151, .75);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background-color .15s ease, color .15s ease;
+}
+.attach-clear:hover { background: rgba(68, 71, 152, .08); color: rgba(68, 70, 151, 1); }
+
+.attach:hover .attach-btn { transform: translateY(-1px); opacity: .95; }
+.attach:active .attach-btn { transform: none; opacity: .9; }
+.attach:focus-within .attach-btn { outline: 2px solid rgba(68,71,152,.25); outline-offset: 2px; }
+
 /* ===== Bouton Envoyer ===== */
 .btn-contact {
   width: 185px;
@@ -253,10 +360,11 @@ textarea:focus {
 
 .form-error { margin-top: 10px; color: #b91c1c; font-size: 14px; }
 
+/* (on garde la classe pour compat, mais c’est la bottom bar qui gère l’alignement) */
 .form-actions {
   display: flex;
   justify-content: flex-end;
-  margin-top: 12px;
+  margin-top: 0;
 
   .ico-mail {
     justify-self: end;
@@ -421,4 +529,13 @@ textarea:focus {
     column-gap: 14px;
     row-gap: 14px;
   }
+
+  /* ✅ en mobile, PJ + Envoyer stackés (plus propre) */
+  .form-bottombar{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .attach-name { max-width: 210px; }
 }

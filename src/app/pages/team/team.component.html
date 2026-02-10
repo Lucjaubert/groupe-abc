@@ -15,123 +15,175 @@
   </section>
 
   <!-- ===== Firms / Les membres du Groupe ABC ===== -->
-  <section class="section firms py-6 my-6" *ngIf="firms?.length">
-    <div class="section-member"><!-- <- singulier -->
+<section class="section firms py-6 my-6" *ngIf="firms?.length">
+  <div class="section-member"><!-- <- singulier -->
 
-      <!-- BARRE DE TITRE + BOUTON -->
-      <div #firmsBarEl class="firms-titlebar">
-        <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap pb-5">
-          <h2 #firmsTitleEl class="firms-title prehide">{{ firmsTitle }}</h2>
+    <!-- BARRE DE TITRE + BOUTON -->
+    <div #firmsBarEl class="firms-titlebar">
+      <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap pb-5">
+        <h2 #firmsTitleEl class="firms-title prehide">{{ firmsTitle }}</h2>
 
-          <article class="download" aria-label="Fiche des contacts du Groupe ABC">
-            <a class="dl-link d-flex flex-nowrap align-items-end justify-content-lg-center gap-3 text-decoration-none prehide"
-               [class.disabled]="!contactsSheet.file"
-               [attr.href]="contactsSheet.file || null"
-               [attr.tabindex]="contactsSheet.file ? null : '-1'"
-               [attr.aria-disabled]="!contactsSheet.file ? 'true' : null"
-               download
-               rel="noopener">
-              <div class="dl-text">
-                <div class="dl-line dl-line--hard">
-                  Télécharger<br>
-                  la <span class="dl-accent">fiche des contacts</span><br>
-                  du <span class="dl-accent">Groupe ABC</span>
-                </div>
+        <article class="download" aria-label="Fiche des contacts du Groupe ABC">
+          <a
+            class="dl-link d-flex flex-nowrap align-items-end justify-content-lg-center gap-3 text-decoration-none prehide"
+            [class.disabled]="!contactsSheet.file"
+            [attr.href]="contactsSheet.file || null"
+            [attr.tabindex]="contactsSheet.file ? null : '-1'"
+            [attr.aria-disabled]="!contactsSheet.file ? 'true' : null"
+            download
+            rel="noopener"
+          >
+            <div class="dl-text">
+              <div class="dl-line dl-line--hard">
+                Télécharger<br />
+                la <span class="dl-accent">fiche des contacts</span><br />
+                du <span class="dl-accent dl-accent--red">Groupe ABC</span>
               </div>
-              <img
-                class="dl-icon-img ms-3 flex-shrink-0"
-                src="assets/icons/download.webp"
-                alt="Télécharger"
-                width="48"
-                height="56"
-                loading="lazy">
-            </a>
-          </article>
-        </div>
-      </div>
-
-      <ul class="firm-list" role="list">
-        <li
-          #firmRowEl
-          class="firm-row prehide-row"
-          *ngFor="let f of firms; index as i; trackBy: trackByIndex"
-          [class.open]="isOpen(i)"
-          [attr.id]="rowAnchorId(i, f)">
-
-          <!-- Entête de ligne (logo | nom | région | chevron) -->
-          <div class="fr-head">
-            <div class="fr-logo" *ngIf="f.logoUrl">
-              <img
-                [appImgFast]="f.logoUrl ? ('' + f.logoUrl) : '/assets/fallbacks/image-placeholder.svg'"
-                [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
-                loading="lazy"
-                decoding="async"
-                alt=""
-                aria-hidden="true" />
             </div>
 
-            <div class="fr-name">{{ f.name }}</div>
-            <div class="fr-region" *ngIf="f.region">{{ f.region }}</div>
 
-            <button
-              type="button"
-              class="fr-toggle"
-              [attr.aria-expanded]="chevronAriaExpanded(i)"
-              (click)="toggleFirm(i)">
-              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M8 10l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-            </button>
+            <img
+              class="dl-icon-img ms-3 flex-shrink-0"
+              src="assets/icons/download.webp"
+              alt="Télécharger"
+              width="48"
+              height="56"
+              loading="lazy"
+            />
+          </a>
+        </article>
+      </div>
+    </div>
+
+    <ul class="firm-list" role="list">
+      <li
+        #firmRowEl
+        class="firm-row prehide-row"
+        *ngFor="let f of firms; index as i; trackBy: trackByIndex"
+        [class.open]="isOpen(i)"
+        [attr.id]="rowAnchorId(i, f)"
+      >
+
+        <!-- Entête cliquable (div entière) -->
+        <div
+          class="fr-head"
+          role="button"
+          tabindex="0"
+          [attr.aria-expanded]="chevronAriaExpanded(i)"
+          [attr.aria-controls]="'firm-details-' + i"
+          (click)="toggleFirm(i)"
+          (keydown.enter)="toggleFirm(i); $event.preventDefault()"
+          (keydown.space)="toggleFirm(i); $event.preventDefault()"
+        >
+          <div class="fr-logo" *ngIf="f.logoUrl">
+            <img
+              [appImgFast]="f.logoUrl ? ('' + f.logoUrl) : '/assets/fallbacks/image-placeholder.svg'"
+              [placeholder]="'/assets/fallbacks/image-placeholder.svg'"
+              loading="lazy"
+              decoding="async"
+              alt=""
+              aria-hidden="true"
+            />
           </div>
 
-          <!-- Panneau détaillé ↓ -->
-          <div class="fr-details" *ngIf="isOpen(i)" #detailEl>
-            <div class="ff-left prehide">
-              <div class="ff-region" *ngIf="f.region">{{ f.region }}</div>
-              <div class="ff-desc mt-2" *ngIf="f.partnerDescHtml" [innerHTML]="f.partnerDescHtml"></div>
-            </div>
+          <div class="fr-name">{{ f.name }}</div>
+          <div class="fr-region" *ngIf="f.region">{{ f.region }}</div>
 
-            <div class="ff-right prehide">
-              <img
-                class="ff-portrait"
-                [attr.src]="f._partnerImgUrl || defaultPortrait"
-                (error)="onFirmImgError($event)"
-                alt=""
-                aria-hidden="true"
-                loading="lazy"
-                decoding="async" />
+          <!-- Chevron : stopPropagation pour ne pas doubler le toggle -->
+          <button
+            type="button"
+            class="fr-toggle"
+            [attr.aria-expanded]="chevronAriaExpanded(i)"
+            [attr.aria-controls]="'firm-details-' + i"
+            (click)="$event.stopPropagation(); toggleFirm(i)"
+          >
+            <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M8 10l4 4 4-4"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+              />
+            </svg>
+          </button>
+        </div>
 
-              <div class="ff-person mt-4" *ngIf="f.partnerLastname || f.partnerFamilyname">
-                <div class="ff-person-name" *ngIf="f.partnerLastname">{{ f.partnerLastname }}</div>
-                <div class="ff-person-name" *ngIf="f.partnerFamilyname">{{ f.partnerFamilyname }}</div>
+        <!-- Panneau détaillé ↓ -->
+        <div
+          class="fr-details"
+          *ngIf="isOpen(i)"
+          #detailEl
+          [attr.id]="'firm-details-' + i"
+        >
+          <div class="ff-left prehide">
+            <div class="ff-region" *ngIf="f.region">{{ f.region }}</div>
+            <div class="ff-desc mt-2" *ngIf="f.partnerDescHtml" [innerHTML]="f.partnerDescHtml"></div>
+          </div>
 
-                <div class="ff-person-meta">
-                  <img
-                    class="ff-org my-3"
-                    *ngIf="f.organismLogoUrl"
-                    [attr.src]="f.organismLogoUrl ? ('' + f.organismLogoUrl) : '/assets/fallbacks/image-placeholder.svg'"
-                    alt=""
-                    aria-hidden="true"
-                    loading="lazy"
-                    decoding="async" />
-                </div>
+          <div class="ff-right prehide">
+            <img
+              class="ff-portrait"
+              [attr.src]="f._partnerImgUrl || defaultPortrait"
+              (error)="onFirmImgError($event)"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+              decoding="async"
+            />
 
-                <div class="ff-titles my-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>
+            <div class="ff-person mt-4" *ngIf="f.partnerLastname || f.partnerFamilyname">
+              <div class="ff-person-name" *ngIf="f.partnerLastname">{{ f.partnerLastname }}</div>
+              <div class="ff-person-name" *ngIf="f.partnerFamilyname">{{ f.partnerFamilyname }}</div>
+
+              <div class="ff-person-meta">
+                <img
+                  class="ff-org my-3"
+                  *ngIf="f.organismLogoUrl"
+                  [attr.src]="f.organismLogoUrl ? ('' + f.organismLogoUrl) : '/assets/fallbacks/image-placeholder.svg'"
+                  alt=""
+                  aria-hidden="true"
+                  loading="lazy"
+                  decoding="async"
+                />
               </div>
+
+              <div class="ff-titles my-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>
             </div>
 
-            <div class="fr-cta" *ngIf="f.contactEmail || f.partnerLinkedin">
-              <a class="btn-contact" *ngIf="f.contactEmail" [href]="'mailto:' + f.contactEmail">
+            <!-- CTA (tracking) -->
+            <div class="fr-cta pt-3" *ngIf="f.contactEmail || f.partnerLinkedin">
+
+              <!-- ✅ Contact : mailto généré par le TS (pas d'encodeURIComponent dans le template) -->
+              <a
+                class="btn-contact"
+                *ngIf="f.contactEmail"
+                [attr.href]="firmContactMailtoHref()"
+                (click)="handleFirmContactClick($event, f)"
+              >
                 <span>Contact</span>
                 <span class="ico-mail" aria-hidden="true">
                   <svg xmlns="http://www.w3.org/2000/svg" width="31" height="19" viewBox="0 0 31 19" fill="none">
                     <path d="M24.7339 12.681L21.2219 9.38599" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
                     <path d="M16.524 9.38501L13.011 12.685" stroke="#A33536" stroke-linecap="round"/>
-                    <mask id="mask0_mail" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="31" height="19">
+
+                    <!-- ✅ mask unique -->
+                    <mask
+                      [attr.id]="'mask0_mail_' + i"
+                      style="mask-type:luminance"
+                      maskUnits="userSpaceOnUse"
+                      x="0" y="0" width="31" height="19"
+                    >
                       <path d="M30.642 0.285889H0V18.3539H30.642V0.285889Z" fill="white"/>
                     </mask>
-                    <g mask="url(#mask0_mail)">
-                      <path d="M26.0319 2.896H11.7129C10.6083 2.896 9.71289 3.79143 9.71289 4.896V13.744C9.71289 14.8486 10.6083 15.744 11.7129 15.744H26.0319C27.1365 15.744 28.0319 14.8486 28.0319 13.744V4.896C28.0319 3.79143 27.1365 2.896 26.0319 2.896Z" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
+
+                    <g [attr.mask]="'url(#mask0_mail_' + i + ')'">
+                      <path
+                        d="M26.0319 2.896H11.7129C10.6083 2.896 9.71289 3.79143 9.71289 4.896V13.744C9.71289 14.8486 10.6083 15.744 11.7129 15.744H26.0319C27.1365 15.744 28.0319 14.8486 28.0319 13.744V4.896C9.71289 3.79143 10.6083 2.896 11.7129 2.896Z"
+                        stroke="#A33536"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      />
                       <path d="M10.5088 3.7771L18.8678 11.0211L27.2308 3.7771" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
                       <path d="M2.60986 6.01196H9.71286" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
                       <path d="M4.44092 9.32007H9.71292" stroke="#A33536" stroke-linecap="round" stroke-linejoin="round"/>
@@ -141,22 +193,35 @@
                 </span>
               </a>
 
-              <a class="lk" *ngIf="f.partnerLinkedin" [href]="f.partnerLinkedin" target="_blank" rel="noopener" aria-label="LinkedIn">
+              <!-- LinkedIn : une seule fois, bien fermé -->
+              <a
+                class="lk"
+                *ngIf="f.partnerLinkedin"
+                [href]="f.partnerLinkedin"
+                target="_blank"
+                rel="noopener"
+                aria-label="LinkedIn"
+                (click)="trackFirmLinkedinClick(f)"
+              >
                 <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none" aria-hidden="true">
                   <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5h24.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
                   <path d="M7 14.5833H12.4167V33H7V14.5833ZM9.692 12.417H9.662C8.045 12.417 7 11.212 7 9.707 7 8.17 8.078 7 9.724 7 11.371 7 12.386 8.17 12.417 9.707c0 1.504-1.046 2.71-2.725 2.71ZM33 33h-5.417V23.143c0-2.381-1.327-4.006-3.458-4.006-1.626 0-2.506 1.096-2.933 2.155-.156.38-.109 1.428-.109 1.959V33H15.667V14.583h5.416v2.834c.781-1.209 2.004-2.834 5.133-2.834 3.876 0 6.783 2.438 6.783 7.88V33Z" fill="#fff"/>
                 </svg>
               </a>
+
             </div>
           </div>
+        </div>
 
-        </li>
-      </ul>
-    </div>
-  </section>
+      </li>
+    </ul>
+  </div>
+</section>
+
+
 
   <!-- ===== TEACHING ===== -->
-  <section class="section teaching py-6" *ngIf="teachingCourses?.length">
+  <section class="section teaching py-6" *ngIf="teachingCourses.length">
     <div class="section-teaching mt-lg-5">
       <h2 #teachingTitleEl class="teach-title prehide">{{ teachingTitle }}</h2>
 
@@ -187,10 +252,35 @@
             <div class="teach-school">
               <div class="ts-school-name">{{ c.schoolName }}</div>
               <div class="ts-level" *ngIf="c.programLevel">{{ c.programLevel }}</div>
-              <a class="ts-link" *ngIf="c.schoolUrl" [href]="c.schoolUrl" target="_blank" rel="noopener">
+
+              <a
+                class="ts-link"
+                *ngIf="c.schoolUrl"
+                [href]="c.schoolUrl"
+                target="_blank"
+                rel="noopener"
+              >
                 Visiter le site
+                <svg
+                  class="ts-link-icon"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3ZM5 5h6v2H7v10h10v-4h2v6H5V5Z"
+                  />
+                </svg>
               </a>
             </div>
+          </div>
+
+          <!-- Colonne droite -->
+          <div class="teach-course py-2">
+            <div class="tc-title">{{ c.courseTitle }}</div>
+            <div class="tc-city" *ngIf="c.city">{{ c.city }}</div>
           </div>
 
           <!-- Colonne centre -->
@@ -206,7 +296,14 @@
             <div class="ts-person py-2">
               <div class="ts-name" *ngIf="c.speakerName">{{ c.speakerName }}</div>
 
-              <a class="lk" *ngIf="c.speakerLinkedin" [href]="c.speakerLinkedin" target="_blank" rel="noopener" aria-label="LinkedIn">
+              <a
+                class="lk"
+                *ngIf="c.speakerLinkedin"
+                [href]="c.speakerLinkedin"
+                target="_blank"
+                rel="noopener"
+                aria-label="LinkedIn"
+              >
                 <svg class="lk-ico" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" fill="none">
                   <path d="M39.5 34.0833C39.5 37.0755 37.0755 39.5 34.0833 39.5H5.91666C2.92558 39.5 0.5 37.0755 0.5 34.0833V5.91666C0.5 2.9245 2.92558 0.5 5.91666 0.5h24.0833C37.0755 0.5 39.5 2.9245 39.5 5.91666V34.0833Z" fill="#444798"/>
                   <path d="M7 14.5833H12.4167V33H7V14.5833ZM9.692 12.417H9.662C8.045 12.417 7 11.212 7 9.707 7 8.17 8.078 7 9.724 7 11.371 7 12.386 8.17 12.417 9.707c0 1.504-1.046 2.71-2.725 2.71ZM33 33h-5.417V23.143c0-2.381-1.327-4.006-3.458-4.006-1.626 0-2.506 1.096-2.933 2.155-.156.38-.109 1.428-.109 1.959V33H15.667V14.583h5.416v2.834c.781-1.209 2.004-2.834 5.133-2.834 3.876 0 6.783 2.438 6.783 7.88V33Z" fill="#fff"/>
@@ -215,11 +312,40 @@
             </div>
           </div>
 
-          <!-- Colonne droite -->
-          <div class="teach-course py-2">
-            <div class="tc-title">{{ c.courseTitle }}</div>
-            <div class="tc-city" *ngIf="c.city">{{ c.city }}</div>
-          </div>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== FAQ (visible / crawlable) — FIN DE PAGE ===== -->
+  <section class="faq" *ngIf="faqItems.length" aria-labelledby="faq-title">
+    <div class="faq-inner px-0">
+      <h2 id="faq-title" class="faq-title">FAQ</h2>
+
+      <ul class="faq-list" role="list">
+        <li class="faq-item" *ngFor="let q of faqItems; let i = index; trackBy: trackByIndex">
+
+          <button
+            type="button"
+            class="faq-qrow"
+            (click)="toggleFaqItem(i)"
+            [attr.aria-expanded]="isFaqItemOpen(i)"
+            [attr.aria-controls]="'faq-a-' + i"
+          >
+            <span class="faq-q">{{ q.q }}</span>
+
+            <svg class="faq-chevron" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"/>
+            </svg>
+          </button>
+
+          <div
+            class="faq-a"
+            [class.is-collapsed]="!isFaqItemOpen(i)"
+            [attr.id]="'faq-a-' + i"
+            [attr.aria-hidden]="!isFaqItemOpen(i)"
+            [innerHTML]="q.a"
+          ></div>
 
         </li>
       </ul>

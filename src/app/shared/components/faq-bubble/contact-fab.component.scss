@@ -1,0 +1,58 @@
+.contact-fab {
+  position: fixed;
+  right: clamp(12px, 2vw, 24px);
+  bottom: clamp(12px, 2vw, 24px);
+  z-index: 9999;
+
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+
+  border: none;
+  cursor: pointer;
+
+  background: #444697;
+  color: #fff;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+
+  @media (max-width: 768px) {
+    width: 42px;
+    height: 42px;
+  }
+}
+
+.contact-fab:hover {
+  filter: brightness(1.03);
+}
+
+.contact-fab:active {
+  transform: translateY(1px);
+}
+
+.contact-fab:focus-visible {
+  outline: 3px solid #9aa0ff;
+  outline-offset: 2px;
+}
+
+.contact-fab .icon {
+  width: 22px;
+  height: 22px;
+}
+
+/* accessibilité */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

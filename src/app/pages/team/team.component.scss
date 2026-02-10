@@ -169,6 +169,13 @@ $blue-hero: #444798;
   --region-left: 582px;
   --overlap-right: calc(var(--row-h) - 20px);
 
+
+  .download .dl-link {
+    .dl-accent--red {
+      color: $red;
+    }
+  }
+
   .firms-title {
     color: $blue;
     font-size: clamp(24px, 3.2vw, 36px);
@@ -198,6 +205,17 @@ $blue-hero: #444798;
     min-block-size: var(--row-h);
     position: relative;
     z-index: 2;
+
+    /* ✅ click zone */
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* ✅ focus visible (clavier) */
+  .fr-head:focus-visible {
+    outline: 2px solid $blue-hero;
+    outline-offset: 4px;
+    border-radius: 6px;
   }
 
   .fr-logo {
@@ -477,13 +495,13 @@ $blue-hero: #444798;
     grid-template-columns: 1fr;
     gap: 12px;
     grid-template-areas:
-      "region"  /* 1. ff-region */
-      "right"   /* 2. ff-right (juste sous region) */
-      "desc"    /* 3. ff-desc */
-      "cta";    /* 4. fr-cta (si présent) */
+      "region"
+      "right"
+      "desc"
+      "cta";
   }
 
-  .firms .ff-left {        /* aplatit le conteneur gauche */
+  .firms .ff-left {
     display: contents;
     margin-top: 0 !important;
   }
@@ -524,6 +542,8 @@ $blue-hero: #444798;
 :host ::ng-deep .ff-titles p + p { margin-top: 2px !important; }
 
 /* ===== Teaching ===== */
+/* (ton code inchangé ci-dessous) */
+
 .section.teaching {
   --row-h: 120px;
   --gap: clamp(16px, 3vw, 24px);
@@ -570,11 +590,29 @@ $blue-hero: #444798;
   }
 
   .teach-school {
-    display:flex; flex-direction:column; gap:6px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 
-    .ts-school-name { color:$blue-hero; font-size: clamp(18px, 2.1vw, 19px); line-height: 1.25; font-weight: 500; }
-    .ts-level       { color:$blue; font-size:14px; text-decoration:none; font-weight: 600; line-height: normal; }
-    .ts-link        { color:$blue; font-size:14px; text-decoration:none; font-weight: 400; line-height: normal; }
+    .ts-school-name { color: $blue-hero; font-size: clamp(18px, 2.1vw, 19px); line-height: 1.25; font-weight: 500; }
+    .ts-level       { color: $blue; font-size: 14px; text-decoration: none; font-weight: 600; line-height: normal; }
+
+    .ts-link {
+      color: $blue;
+      font-size: 14px;
+      text-decoration: none;
+      font-weight: 400;
+      line-height: normal;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ts-link-icon {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      flex: 0 0 auto;
+    }
   }
 
   .teach-speaker {
@@ -610,6 +648,7 @@ $blue-hero: #444798;
       font-size: 16px;
       font-weight: 600;
       line-height: normal;
+      color: $blue-hero;
     }
     .tc-city { color:$red; font-size: 16px; }
   }
@@ -617,7 +656,7 @@ $blue-hero: #444798;
   @media (max-width: 1199.98px) {
     .teach-row { grid-template-columns: 1fr; row-gap: 14px; block-size: auto; }
     .teach-left { grid-template-columns: 80px 1fr; }
-    .teach-course .tc-title { white-space: normal; overflow: visible; text-overflow: clip; }
+    .teach-course .tc-title { white-space: normal; overflow: visible; text-overflow: clip; color: $blue-hero}
   }
 }
 
@@ -651,6 +690,7 @@ $blue-hero: #444798;
 
       .ts-school-name { font-size: clamp(14px, 4.2vw, 18px); line-height: 1.25; }
       .ts-level, .ts-link { font-size: 12px; font-weight: 400; }
+      .ts-link-icon { width: 12px; height: 12px; }
     }
 
     .teach-speaker {
@@ -687,7 +727,6 @@ $blue-hero: #444798;
   }
 }
 
-
 .sr-only,
 .visually-hidden {
   position:absolute !important;
@@ -699,4 +738,169 @@ $blue-hero: #444798;
   clip:rect(0,0,0,0) !important;
   white-space:nowrap !important;
   border:0 !important;
+}
+
+/* ===================================================================== */
+/* ================================= FAQ =============================== */
+/* ===================================================================== */
+
+.faq {
+  padding-block: clamp(48px, 7vw, 96px);
+
+  .faq-inner {
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  .faq-title {
+    margin: 0 0 clamp(18px, 3vw, 28px);
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: map.get(vars.$font-size, "80");
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.1;
+  }
+
+  .faq-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: clamp(14px, 2.4vw, 18px);
+  }
+
+  .faq-item {
+    border-radius: 12px;
+    background: rgba(68, 70, 151, 0.06);
+    overflow: hidden;
+  }
+
+  .faq-qrow {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+
+    padding: clamp(14px, 2.2vw, 18px);
+    border: 0;
+    background: transparent;
+    cursor: pointer;
+    text-align: left;
+
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+  }
+
+  .faq-q {
+    margin: 0;
+    font-size: map.get(vars.$font-size, "40");
+    font-weight: 500;
+    line-height: 1.3;
+  }
+
+  .faq-chevron {
+    width: 22px;
+    height: 22px;
+    flex: 0 0 auto;
+    opacity: 0.9;
+    transition: transform 0.2s ease;
+  }
+
+  .faq-qrow[aria-expanded="true"] .faq-chevron {
+    transform: rotate(180deg);
+  }
+
+  .faq-a {
+    padding: 0 clamp(14px, 2.2vw, 18px) clamp(14px, 2.2vw, 18px);
+
+    color: $blue;
+    font-family: "Plus Jakarta Sans", sans-serif;
+    font-size: map.get(vars.$font-size, "30");
+    font-weight: map.get(vars.$font-weight, "regular");
+    line-height: 1.7;
+
+    p { margin: 0 0 10px 0; }
+    p:last-child { margin-bottom: 0; }
+  }
+
+  .faq-a.is-collapsed {
+    display: none;
+  }
+}
+
+/* ===================================================================== */
+/* ===== FIX GLOBAL pour listes injectées via [innerHTML] = 16px ======== */
+/* ===================================================================== */
+
+.faq .faq-a ul,
+.faq .faq-a ol {
+  margin: 10px 0 0 18px;
+  padding: 0;
+
+  font-family: inherit;
+  font-size: 16px;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.faq .faq-a li {
+  margin: 0 0 6px 0;
+
+  font-family: inherit;
+  font-size: 16px;
+  line-height: inherit;
+  font-weight: inherit;
+}
+
+.faq .faq-a li::marker {
+  font-size: 0.85em;
+}
+
+/* ====================== FAQ — MOBILE ≤ 768px ====================== */
+@media (max-width: 768px) {
+  .faq {
+    padding-block: 40px;
+
+    .faq-title {
+      font-size: 24px;
+      font-weight: 400;
+      line-height: normal;
+      margin-bottom: 16px;
+    }
+
+    .faq-item {
+      border-radius: 0;
+    }
+
+    .faq-qrow {
+      padding: 14px 12px;
+    }
+
+    .faq-q {
+      font-size: 18px;
+      line-height: 1.25;
+    }
+
+    .faq-chevron {
+      width: 20px;
+      height: 20px;
+    }
+
+    .faq-a {
+      padding: 0 12px 14px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+  }
+
+  .faq .faq-a ul,
+  .faq .faq-a ol,
+  .faq .faq-a li {
+    font-size: 14px;
+  }
+
+  .faq .faq-a li::marker {
+    font-size: 0.85em;
+  }
 }

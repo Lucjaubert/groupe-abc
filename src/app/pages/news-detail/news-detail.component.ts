@@ -1,41 +1,35 @@
-import {
-  Component,
-  OnInit,
-  inject,
-  PLATFORM_ID,
-} from '@angular/core';
-import {
-  CommonModule,
-  isPlatformBrowser,
-} from '@angular/common';
-import {
-  ActivatedRoute,
-  Router,
-  RouterModule,
-} from '@angular/router';
-import { firstValueFrom } from 'rxjs';
+// src/app/pages/news-detail/news-detail.component.ts
+import { CommonModule, isPlatformBrowser, DOCUMENT } from '@angular/common';
+import { Component, OnInit, inject, PLATFORM_ID, Inject, OnDestroy } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { firstValueFrom, Subscription } from 'rxjs';
 
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
-import { getSeoForRoute } from '../../config/seo.routes';
 import { environment } from '../../../environments/environment';
+import { ImgFastDirective } from '../../directives/img-fast.directive';
 
-type Lang = 'fr' | 'en';
 type ThemeKey = 'expertise' | 'juridique' | 'marche' | 'autre';
 
 type NewsPost = {
   id?: number | string;
-  slug?: string;
+  wpSlug?: string;
+  prettySlug?: string;
+
   theme?: string;
   themeKey?: ThemeKey;
-  firmLogo?: string | number;
-  firmName?: string;
-  author?: string;
-  date?: string;
+
   title?: string;
   html?: string;
-  imageUrl?: string | number;
+
+  date?: string;
+  author?: string;
+  firmName?: string;
+
+  firmLogo?: any;
+  imageUrl?: any;
   linkedinUrl?: string;
+
   _imageUrl?: string;
   _firmLogoUrl?: string;
 };
@@ -43,101 +37,134 @@ type NewsPost = {
 @Component({
   selector: 'app-news-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterLink, ImgFastDirective],
   templateUrl: './news-detail.component.html',
   styleUrls: ['./news-detail.component.scss'],
 })
-export class NewsDetailComponent implements OnInit {
+export class NewsDetailComponent implements OnInit, OnDestroy {
   private wp = inject(WordpressService);
+  private seo = inject(SeoService);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
-  private seo = inject(SeoService);
   private platformId = inject(PLATFORM_ID);
 
-  post: NewsPost | null = null;
-  loading = true;
-  lang: Lang = 'fr';
+  // ✅ SSR-safe : ne jamais utiliser window/document directement
+  constructor(@Inject(DOCUMENT) private doc: Document) {}
+
+  private get win(): Window | null {
+    return (this.doc?.defaultView as Window) || null;
+  }
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
   }
 
+  loading = true;
+  notFound = false;
+
+  slugParam = '';
+
+  /** IMPORTANT: le template News Detail utilise `p` */
+  p: NewsPost | null = null;
+
+  private routeSub?: Subscription;
+
   async ngOnInit(): Promise<void> {
-    try {
-      this.lang = this.currentPath().startsWith('/en/') ? 'en' : 'fr';
+    // ✅ Réagit aussi si on navigue vers un autre slug en restant sur le même composant
+    this.routeSub = this.route.paramMap.subscribe(() => {
+      // pas de await dans subscribe: on délègue
+      void this.loadFromRoute();
+    });
 
-      const slug = this.route.snapshot.paramMap.get('slug');
-      if (!slug) {
-        await this.router.navigate(['/404']);
-        return;
-      }
+    // 1er chargement
+    await this.loadFromRoute();
+  }
 
-      const list: any[] = await firstValueFrom(this.wp.getAllNews());
-      const it = list.find(
-        (item) =>
-          item?.slug === slug ||
-          String(item?.id) === slug,
-      );
+  ngOnDestroy(): void {
+    this.routeSub?.unsubscribe();
+  }
 
-      if (!it) {
-        await this.router.navigate(['/404']);
-        return;
-      }
+  private async loadFromRoute(): Promise<void> {
+    this.loading = true;
+    this.notFound = false;
+    this.p = null;
 
-      const mapped = await this.mapOne(it);
-      this.post = mapped;
-
-      // SEO dynamiques pour l’article
-      this.applySeo(mapped);
-
+    this.slugParam = (this.route.snapshot.paramMap.get('slug') || '').trim();
+    if (!this.slugParam) {
+      this.notFound = true;
       this.loading = false;
-    } catch {
-      this.loading = false;
-      await this.router.navigate(['/404']);
+      return;
     }
+
+    let list: any[] = [];
+    try {
+      list = await firstValueFrom(this.wp.getAllNews());
+    } catch {
+      // si l’API plante, on met un 404 “soft”
+      this.notFound = true;
+      this.loading = false;
+      return;
+    }
+
+    // mapping proche de NewsComponent
+    const mapped: NewsPost[] = [];
+    for (const it of list) {
+      const acfPost = it?.acf?.post || null;
+      if (!acfPost) continue;
+
+      const title = acfPost.post_title || it?.title?.rendered || '';
+      const wpSlug = it?.slug || '';
+      const prettySlug = this.makePrettySlug(title);
+
+      mapped.push({
+        id: it?.id,
+        wpSlug,
+        prettySlug,
+
+        theme: acfPost.theme || '',
+        themeKey: this.toThemeKey(acfPost.theme),
+
+        title,
+        html: acfPost.post_content || it?.content?.rendered || '',
+
+        date: acfPost.date || it?.date || '',
+        author: acfPost.author || '',
+        firmName: acfPost.nam_firm || '',
+
+        firmLogo: acfPost.logo_firm,
+        imageUrl: acfPost.post_image,
+        linkedinUrl: acfPost.linkedin_link || '',
+      });
+    }
+
+    // retirer le post “news” d’intro
+    const posts = mapped.filter((x) => x.wpSlug !== 'news');
+
+    // match exact slug WP, sinon match slug “propre”
+    const found =
+      posts.find((x) => x.wpSlug === this.slugParam) ||
+      posts.find((x) => x.prettySlug === this.slugParam) ||
+      null;
+
+    if (!found) {
+      this.notFound = true;
+      this.loading = false;
+      return;
+    }
+
+    // hydrater médias (logos/images)
+    found._imageUrl = await this.resolveMedia(found.imageUrl);
+    found._firmLogoUrl = await this.resolveMedia(found.firmLogo);
+
+    this.p = found;
+
+    // SEO dynamique
+    this.updateSeo(found);
+
+    this.loading = false;
   }
 
-  /* ================= Helpers données ================= */
-
-  private async mapOne(it: any): Promise<NewsPost> {
-    const p = it?.acf?.post || {};
-
-    const firmLogo: string | number | undefined =
-      typeof p.logo_firm === 'number' ||
-      typeof p.logo_firm === 'string'
-        ? p.logo_firm
-        : undefined;
-
-    const imageUrl: string | number | undefined =
-      typeof p.post_image === 'number' ||
-      typeof p.post_image === 'string'
-        ? p.post_image
-        : undefined;
-
-    const post: NewsPost = {
-      id: it?.id,
-      slug: it?.slug,
-      theme: p.theme || '',
-      themeKey: this.toThemeKey(p.theme),
-      firmLogo,
-      firmName: p.nam_firm || '',
-      author: p.author || '',
-      date: p.date || it?.date || '',
-      title: p.post_title || it?.title?.rendered || '',
-      html: p.post_content || it?.content?.rendered || '',
-      imageUrl,
-      linkedinUrl: p.linkedin_link || '',
-    };
-
-    // Résolution des URLs d’image/logo
-    const img = await this.resolveMedia(post.imageUrl);
-    const logo = await this.resolveMedia(post.firmLogo);
-    if (img) post._imageUrl = img;
-    if (logo) post._firmLogoUrl = logo;
-
-    return post;
-  }
-
+  /* ===== Thème : identique à NewsComponent ===== */
   private toThemeKey(raw?: string): ThemeKey {
     const s = (raw || '')
       .toLowerCase()
@@ -153,32 +180,80 @@ export class NewsDetailComponent implements OnInit {
     return k ? `theme-${k}` : 'theme-autre';
   }
 
-  /* ================= Helpers media ================= */
+  /* ===== SEO ===== */
+  private updateSeo(p: NewsPost) {
+    const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
+    const canonical = `${siteUrl}${this.currentPath()}`;
 
+    const title = this.stripHtml(p.title || 'Actualité');
+    const description = this.makeDescriptionFromHtml(p.html || '', 160);
+
+    const jsonLd: any = {
+      '@context': 'https://schema.org',
+      '@type': 'Article',
+      headline: title,
+      mainEntityOfPage: canonical,
+      datePublished: p.date || undefined,
+      author: p.author ? { '@type': 'Person', name: p.author } : undefined,
+    };
+
+    // optionnel : image dans JSON-LD si dispo
+    if (p._imageUrl) jsonLd.image = [p._imageUrl];
+
+    // ✅ OG image + title/desc + canonical
+    this.seo.update({
+      title,
+      description,
+      canonical,
+      image: p._imageUrl || undefined,
+      jsonLd,
+    });
+  }
+
+  goBackToList(): void {
+    const isEN = this.currentPath().startsWith('/en/');
+    const target = isEN ? '/en/real-estate-valuation-news' : '/actualites-expertise-immobiliere';
+    this.router.navigateByUrl(target);
+  }
+
+  private makeDescriptionFromHtml(html: string, maxLen = 160): string {
+    const txt = this.stripHtml(html);
+    if (!txt) return '';
+    if (txt.length <= maxLen) return txt;
+    return txt.slice(0, maxLen - 1).trim() + '…';
+  }
+
+  private stripHtml(raw: string): string {
+    return (raw || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+
+  private makePrettySlug(title: string, maxWords = 6): string {
+    const plain = this.stripHtml(title || '');
+    const tokens = plain
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9\s-]/g, ' ')
+      .split(/\s+/)
+      .filter(Boolean);
+
+    const cut = tokens.slice(0, maxWords).join('-');
+    return cut.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'article';
+  }
+
+  /** ====== Media (copié/aligné NewsComponent) ====== */
   private async resolveMedia(idOrUrl: any): Promise<string> {
     if (!idOrUrl) return '';
+
     if (typeof idOrUrl === 'object') {
-      const src =
-        idOrUrl?.source_url ||
-        idOrUrl?.url ||
-        idOrUrl?.medium_large ||
-        idOrUrl?.large ||
-        '';
+      const src = idOrUrl?.source_url || idOrUrl?.url || idOrUrl?.medium_large || idOrUrl?.large || '';
       if (src) return src;
       if (idOrUrl?.id != null) idOrUrl = idOrUrl.id;
     }
 
-    if (
-      typeof idOrUrl === 'number' ||
-      (typeof idOrUrl === 'string' &&
-        /^\d+$/.test(idOrUrl.trim()))
-    ) {
+    if (typeof idOrUrl === 'number' || (typeof idOrUrl === 'string' && /^\d+$/.test(idOrUrl.trim()))) {
       try {
-        return (
-          (await firstValueFrom(
-            this.wp.getMediaUrl(+idOrUrl),
-          )) || ''
-        );
+        return (await firstValueFrom(this.wp.getMediaUrl(+idOrUrl))) || '';
       } catch {
         return '';
       }
@@ -187,150 +262,20 @@ export class NewsDetailComponent implements OnInit {
     if (typeof idOrUrl === 'string') {
       const s = idOrUrl.trim();
       if (!s) return '';
-      if (
-        /^(https?:)?\/\//.test(s) ||
-        s.startsWith('/') ||
-        s.startsWith('data:')
-      )
-        return s;
+      if (/^(https?:)?\/\//.test(s) || s.startsWith('/') || s.startsWith('data:')) return s;
       return s;
     }
 
     return '';
   }
 
-  /* ================= Helpers généraux ================= */
-
   private currentPath(): string {
-    if (this.isBrowser()) {
-      try {
-        return window?.location?.pathname || '/';
-      } catch {
-        return this.router?.url || '/';
-      }
-    }
-    return this.router?.url || '/';
-  }
-
-  private absUrl(url: string, origin: string): string {
-    if (!url) return '';
+    // ✅ SSR-safe : pas de window.location en SSR
+    if (!this.isBrowser()) return this.router?.url || '/';
     try {
-      if (/^https?:\/\//i.test(url)) return url;
-      if (/^\/\//.test(url)) return 'https:' + url;
-      const o = origin.replace(/\/+$/, '');
-      return url.startsWith('/') ? o + url : `${o}/${url}`;
+      return this.win?.location?.pathname || this.router.url || '/';
     } catch {
-      return url;
+      return this.router.url || '/';
     }
-  }
-
-  private strip(html: string | undefined, max = 160): string {
-    const t = (html || '')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    return t.length > max ? t.slice(0, max - 1) + '…' : t;
-  }
-
-  /* ================= SEO dynamiques ================= */
-
-  private applySeo(post: NewsPost): void {
-    const lang: Lang = this.lang;
-    const isEN = lang === 'en';
-
-    const baseSeo = getSeoForRoute('news-list', lang);
-
-    const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(
-      /\/+$/,
-      '',
-    );
-
-    const path = this.currentPath() || '/';
-    const canonicalAbs = `${siteUrl}${path}`;
-
-    const baseTitle = baseSeo.title || (isEN ? 'News' : 'Actualités');
-    const postTitle = (post.title || '').trim();
-    const title = postTitle
-      ? `${postTitle} – Groupe ABC`
-      : baseTitle;
-
-    const descriptionFromPost = this.strip(post.html, 160);
-    const description =
-      descriptionFromPost || baseSeo.description || baseTitle;
-
-    const ogCandidate =
-      post._imageUrl || baseSeo.image || '/assets/og/og-default.jpg';
-    const ogAbs = this.absUrl(ogCandidate, siteUrl);
-
-    const articleNode: any = {
-      '@type': 'Article',
-      '@id': `${canonicalAbs}#article`,
-      headline: postTitle || baseTitle,
-      description,
-      inLanguage: isEN ? 'en-US' : 'fr-FR',
-      mainEntityOfPage: {
-        '@type': 'WebPage',
-        '@id': canonicalAbs,
-      },
-      url: canonicalAbs,
-      image: ogAbs,
-    };
-
-    if (post.date) {
-      articleNode.datePublished = post.date;
-    }
-    if (post.author) {
-      articleNode.author = {
-        '@type': 'Person',
-        name: post.author,
-      };
-    }
-    articleNode.publisher = {
-      '@type': 'Organization',
-      name: 'Groupe ABC – Experts immobiliers agréés',
-    };
-
-    const existingJsonLd: any = baseSeo.jsonLd;
-    let baseGraph: any[] = [];
-    let baseContext = 'https://schema.org';
-
-    if (existingJsonLd) {
-      if (Array.isArray(existingJsonLd['@graph'])) {
-        baseGraph = existingJsonLd['@graph'];
-      } else {
-        baseGraph = [existingJsonLd];
-      }
-      if (typeof existingJsonLd['@context'] === 'string') {
-        baseContext = existingJsonLd['@context'];
-      }
-    }
-
-    const jsonLd = {
-      '@context': baseContext,
-      '@graph': [...baseGraph, articleNode],
-    };
-
-    this.seo.update({
-      ...baseSeo,
-      title,
-      description,
-      canonical: canonicalAbs,
-      type: 'article',
-      image: ogAbs,
-      imageAlt:
-        baseSeo.imageAlt ||
-        (isEN
-          ? 'Groupe ABC – Real-estate valuation article'
-          : 'Groupe ABC – Article expertise immobilière'),
-      jsonLd,
-    });
-  }
-
-  /* ================= Helpers template ================= */
-
-  backLink(): any[] {
-    return this.lang === 'en'
-      ? ['/en', 'news-real-estate-valuation']
-      : ['/actualites-expertise-immobiliere'];
   }
 }

@@ -1,6 +1,6 @@
 // src/app/services/language.service.ts
-import { Injectable, Inject, PLATFORM_ID } from '@angular/core';
-import { BehaviorSubject, filter } from 'rxjs';
+import { Injectable, Inject, PLATFORM_ID, Optional, OnDestroy } from '@angular/core';
+import { BehaviorSubject, Subscription, filter } from 'rxjs';
 import { isPlatformBrowser, DOCUMENT } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { WeglotService } from './weglot.service';
@@ -8,59 +8,110 @@ import { WeglotService } from './weglot.service';
 export type Lang = 'fr' | 'en';
 
 @Injectable({ providedIn: 'root' })
-export class LanguageService {
+export class LanguageService implements OnDestroy {
   readonly lang$ = new BehaviorSubject<Lang>('fr');
-  get lang(): Lang { return this.lang$.value; }
+  get lang(): Lang {
+    return this.lang$.value;
+  }
+
+  private readonly isBrowser: boolean;
 
   private weglotReady = false;
   private bindingDone = false;
+
+  private subs: Subscription[] = [];
+
+  // Weglot listener cleanup
+  private onWeglotChanged?: (...args: any[]) => void;
 
   constructor(
     private router: Router,
     private wg: WeglotService,
     @Inject(DOCUMENT) private doc: Document,
-    @Inject(PLATFORM_ID) private platformId: Object
+    @Inject(PLATFORM_ID) private platformId: Object,
+    // Injecté par le SSR via { provide: 'SERVER_LANG', useValue: 'fr'|'en' }
+    @Optional() @Inject('SERVER_LANG') private serverLang: Lang | null
   ) {
-    // Langue initiale : déduite de l'URL (mais sans réécrire l'URL)
-    const initial = this.detectFromUrl() ?? this.getRememberedLang() ?? 'fr';
+    this.isBrowser = isPlatformBrowser(this.platformId);
+
+    // Langue initiale :
+    // 1) URL (/en...)
+    // 2) préférence mémorisée (localStorage)
+    // 3) SSR (détection serveur)
+    // 4) fallback fr
+    const initial =
+      this.detectFromUrl() ??
+      this.getRememberedLang() ??
+      (this.serverLang === 'en' || this.serverLang === 'fr' ? this.serverLang : null) ??
+      'fr';
+
     this.lang$.next(initial);
     this.applyHtmlLang(initial);
 
     // Sur navigation : on met à jour lang$ en fonction de l'URL
-    this.router.events
-      .pipe(filter(e => e instanceof NavigationEnd))
-      .subscribe(() => {
-        const fromUrl = this.detectFromUrl() ?? 'fr';
-        if (fromUrl !== this.lang) {
-          this.lang$.next(fromUrl);
-          this.applyHtmlLang(fromUrl);
-          this.rememberLang(fromUrl);
-          this.safeSwitch(fromUrl);
-        }
-      });
+    this.subs.push(
+      this.router.events
+        .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+        .subscribe(() => {
+          const fromUrl = this.detectFromUrl() ?? 'fr';
+          if (fromUrl !== this.lang) {
+            this.lang$.next(fromUrl);
+            this.applyHtmlLang(fromUrl);
+            this.rememberLang(fromUrl);
+            this.safeSwitch(fromUrl);
+          }
+        })
+    );
 
     // Weglot prêt → on aligne + on écoute ses changements
-    this.wg.ready$.subscribe(ok => {
-      if (!ok || this.bindingDone || !isPlatformBrowser(this.platformId)) return;
-      this.bindingDone = true;
-      this.weglotReady = true;
+    this.subs.push(
+      this.wg.ready$.subscribe((ok) => {
+        if (!ok || this.bindingDone || !this.isBrowser) return;
+        this.bindingDone = true;
+        this.weglotReady = true;
 
-      this.safeSwitch(this.lang);
+        this.safeSwitch(this.lang);
 
+        // Bind event "languageChanged" + cleanup
+        try {
+          const w = this.winWeglot();
+          if (!w?.on) return;
+
+          this.onWeglotChanged = () => {
+            const ww = this.winWeglot();
+            const wlang = ww?.getCurrentLang?.() ?? ww?.getCurrentLanguage?.();
+            const l: Lang = wlang === 'en' ? 'en' : 'fr';
+
+            if (l !== this.lang) {
+              // on met à jour l'état, mais on NE TOUCHE PAS à l'URL ici
+              this.lang$.next(l);
+              this.applyHtmlLang(l);
+              this.rememberLang(l);
+            }
+          };
+
+          w.on('languageChanged', this.onWeglotChanged);
+        } catch {}
+      })
+    );
+  }
+
+  ngOnDestroy(): void {
+    // Rx subscriptions
+    this.subs.forEach((s) => {
       try {
-        window.Weglot?.on?.('languageChanged', () => {
-          const w = window.Weglot;
-          const wlang = w?.getCurrentLang?.() ?? w?.getCurrentLanguage?.();
-          const l: Lang = (wlang === 'en' ? 'en' : 'fr');
-          if (l !== this.lang) {
-            // on met à jour l'état, mais on NE TOUCHE PAS à l'URL ici
-            this.lang$.next(l);
-            this.applyHtmlLang(l);
-            this.rememberLang(l);
-          }
-        });
+        s.unsubscribe();
       } catch {}
     });
+    this.subs = [];
+
+    // Weglot off
+    if (this.isBrowser && this.onWeglotChanged) {
+      try {
+        this.winWeglot()?.off?.('languageChanged', this.onWeglotChanged);
+      } catch {}
+    }
+    this.onWeglotChanged = undefined;
   }
 
   /** Appelé par le header quand on clique sur FR/EN */
@@ -85,17 +136,19 @@ export class LanguageService {
 
   private detectFromUrl(): Lang | null {
     const path = this.safePathname().replace(/\/{2,}/g, '/');
-    return (path === '/en' || path.startsWith('/en/')) ? 'en' : 'fr';
+    return path === '/en' || path.startsWith('/en/') ? 'en' : 'fr';
   }
 
   private safePathname(): string {
-    if (isPlatformBrowser(this.platformId)) {
+    if (this.isBrowser) {
       try {
         return this.doc.defaultView?.location?.pathname || '/';
       } catch {
         return '/';
       }
     }
+
+    // SSR : router.url est le meilleur fallback disponible (si correctement initialisé)
     try {
       return (this.router.url || '/').split('?')[0].split('#')[0];
     } catch {
@@ -104,15 +157,28 @@ export class LanguageService {
   }
 
   private applyHtmlLang(l: Lang): void {
+    // Si tu veux absolument le mettre aussi en SSR, fais-le côté serveur (index.html / template SSR).
+    if (!this.isBrowser) return;
+
     try {
       this.doc.documentElement.setAttribute('lang', l);
     } catch {}
   }
 
-  private safeSwitch(l: Lang): void {
-    if (!isPlatformBrowser(this.platformId) || !this.weglotReady) return;
+  private winWeglot(): any | null {
+    if (!this.isBrowser) return null;
     try {
-      const w = window.Weglot;
+      return (window as any).Weglot || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private safeSwitch(l: Lang): void {
+    if (!this.isBrowser || !this.weglotReady) return;
+
+    try {
+      const w = this.winWeglot();
       const curr = w?.getCurrentLang?.() ?? w?.getCurrentLanguage?.();
       if (curr !== l) {
         w?.switchTo?.(l);
@@ -121,14 +187,22 @@ export class LanguageService {
   }
 
   private rememberLang(l: Lang): void {
-    if (!isPlatformBrowser(this.platformId)) return;
+    if (!this.isBrowser) return;
+
+    // localStorage (client)
     try {
       localStorage.setItem('lang', l);
+    } catch {}
+
+    // cookie (pour SSR)
+    try {
+      this.doc.cookie = `lang=${l};path=/;max-age=31536000;SameSite=Lax`;
     } catch {}
   }
 
   private getRememberedLang(): Lang | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
+    if (!this.isBrowser) return null;
+
     try {
       const v = localStorage.getItem('lang');
       return v === 'fr' || v === 'en' ? v : null;

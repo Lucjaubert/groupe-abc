@@ -1,3 +1,5 @@
+// src/app/components/layout/header/header.component.ts
+
 import {
   Component,
   OnDestroy,
@@ -5,19 +7,20 @@ import {
   Renderer2,
   HostListener,
   AfterViewInit,
+  PLATFORM_ID,
 } from '@angular/core';
-import { CommonModule, DOCUMENT } from '@angular/common';
+import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { LanguageService, Lang } from '../../../services/language.service';
-import { LangLinkPipe } from '../../../pipes/lang-link.pipe';
+import { translateMethodsAssetDetailPath } from '../../../config/methods-slugs';
 
 type MenuKey = 'about' | 'services' | 'methods' | 'teams' | 'news' | 'contact';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterModule, LangLinkPipe],
+  imports: [CommonModule, RouterModule],
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.scss'],
 })
@@ -28,7 +31,11 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
   private brandTriedPng = false;
 
   private navSub?: Subscription;
+  private langSub?: Subscription;
+
   private mq?: MediaQueryList;
+  private mqHandler?: (e: MediaQueryListEvent) => void;
+
   private suppressCloseOnNextNav = false;
 
   /** Mapping FR ⇄ EN des pages canoniques */
@@ -54,7 +61,6 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
    */
   private readonly MENU_ROUTES: Record<Lang, Record<MenuKey, string>> = {
     fr: {
-      // ✅ About canonique FR (plus "/")
       about: '/expert-immobilier-reseau-national',
       services: '/expertise-immobiliere-services',
       methods: '/methodes-evaluation-immobiliere',
@@ -63,7 +69,6 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
       contact: '/contact-expert-immobilier',
     },
     en: {
-      // ✅ About canonique EN (plus "/en")
       about: '/en/expert-network-chartered-valuers',
       services: '/en/real-estate-valuation-services',
       methods: '/en/valuation-methods-assets',
@@ -92,15 +97,15 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
         'Qui sommes-nous ?',
         'Nos Services',
         'Biens & Méthodes',
-        'Équipes',
+        'Équipe',
         'Actualités',
         'Contact',
       ],
       menu_overlay: [
         'QUI SOMMES-NOUS ?',
         'NOS SERVICES',
-        'BIENS ET MÉTHODES',
-        'ÉQUIPES',
+        'BIENS & MÉTHODES',
+        'ÉQUIPE',
         'ACTUALITÉS',
         'CONTACT',
       ],
@@ -110,22 +115,8 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     en: {
       slogan_html: `Group of<br>independent real estate<br>experts`,
       tagline_html: `Out-of-court & judicial expertise<br>in mainland France<br>and Overseas Territories`,
-      menu: [
-        'About us',
-        'Our Services',
-        'Assets & Methods',
-        'Teams',
-        'News',
-        'Contact',
-      ],
-      menu_overlay: [
-        'ABOUT US',
-        'OUR SERVICES',
-        'ASSETS & METHODS',
-        'TEAMS',
-        'NEWS',
-        'CONTACT',
-      ],
+      menu: ['About us', 'Our Services', 'Assets & Methods', 'Teams', 'News', 'Contact'],
+      menu_overlay: ['ABOUT US', 'OUR SERVICES', 'ASSETS & METHODS', 'TEAMS', 'NEWS', 'CONTACT'],
       brand_text_html: `Group of<br>independent real estate<br>experts`,
       extranet_text_html: `EXTRANET`,
     },
@@ -136,17 +127,23 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     return this.lang.lang;
   }
 
+  private get isBrowser(): boolean {
+    return isPlatformBrowser(this.platformId);
+  }
+
   constructor(
     public lang: LanguageService,
     private router: Router,
     private renderer: Renderer2,
-    @Inject(DOCUMENT) private doc: Document
+    @Inject(DOCUMENT) private doc: Document,
+    @Inject(PLATFORM_ID) private platformId: Object,
   ) {
     // Construire EN_TO_FR à partir des canoniques
     Object.entries(this.FR_TO_EN).forEach(([fr, en]) => {
       this.EN_TO_FR[en] = fr;
     });
 
+    // Router events : OK en SSR, mais toute interaction DOM doit être guardée
     this.navSub = this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
       .subscribe(() => {
@@ -154,25 +151,31 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
           this.setMenu(false);
         }
         this.suppressCloseOnNextNav = false;
+
+        // DOM i18n : browser only
         this.applyI18nToDom();
       });
 
-    if (typeof window !== 'undefined' && 'matchMedia' in window) {
+    // matchMedia : browser only
+    if (this.isBrowser && typeof window !== 'undefined' && 'matchMedia' in window) {
       this.mq = window.matchMedia('(max-width: 768px)');
-      const onMqChange = (e: MediaQueryListEvent) => {
+      this.mqHandler = (e: MediaQueryListEvent) => {
         if (!e.matches && this.menuOpen) this.setMenu(false);
       };
+
       try {
-        this.mq.addEventListener('change', onMqChange);
+        this.mq.addEventListener('change', this.mqHandler);
       } catch {
-        this.mq.addListener?.(onMqChange as any);
+        this.mq.addListener?.(this.mqHandler as any);
       }
     }
 
-    this.lang.lang$.subscribe(() => this.applyI18nToDom());
+    // Lang changes : browser only pour la partie DOM
+    this.langSub = this.lang.lang$.subscribe(() => this.applyI18nToDom());
   }
 
   ngAfterViewInit(): void {
+    if (!this.isBrowser) return;
     setTimeout(() => this.applyI18nToDom(), 0);
   }
 
@@ -206,8 +209,7 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     const [pathOnly, qsHash] = currentUrl.split(/(?=[?#])/);
     const path = this.normalizePath(pathOnly);
 
-    const currentLang: Lang =
-      path === '/en' || path.startsWith('/en/') ? 'en' : 'fr';
+    const currentLang: Lang = path === '/en' || path.startsWith('/en/') ? 'en' : 'fr';
     const targetLang: Lang = currentLang === 'fr' ? 'en' : 'fr';
 
     const targetPath = this.computeTargetPath(path, targetLang);
@@ -237,6 +239,10 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
 
   setMenu(state: boolean): void {
     this.menuOpen = state;
+
+    // SSR-safe : aucune manip DOM côté serveur
+    if (!this.isBrowser) return;
+
     const body = this.doc.body;
     if (state) {
       this.renderer.addClass(body, 'no-scroll');
@@ -252,25 +258,51 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     return clean === '' ? '/' : clean;
   }
 
+  /**
+   * ✅ Fix :
+   * 1) Gérer les routes dynamiques /en/valuation-methods-assets/:slug (et FR équivalent)
+   * 2) Ne jamais fabriquer `/en` + une route FR inconnue → fallback /en
+   */
   private computeTargetPath(currPath: string, targetLang: Lang): string {
     const path = this.normalizePath(currPath);
 
+    // ✅ NEW : routes dynamiques methods_asset (detail)
+    // Ex:
+    // EN: /en/valuation-methods-assets/leasehold-financing
+    // FR: /methodes-evaluation-immobiliere/expertise-credit-bail
+    const dyn = translateMethodsAssetDetailPath(path, targetLang);
+    if (dyn) return dyn;
+
     if (targetLang === 'en') {
-      if (this.FR_TO_EN[path]) return this.FR_TO_EN[path];
+      // si déjà EN -> on garde
       if (path === '/en' || path.startsWith('/en/')) return path;
-      return path === '/' ? '/en' : `/en${path}`;
+
+      // mapping canonique FR -> EN
+      if (this.FR_TO_EN[path]) return this.FR_TO_EN[path];
+
+      // fallback sûr : home EN (évite /en/contact-expert-immobilier etc.)
+      return '/en';
     } else {
+      // mapping canonique EN -> FR
       if (this.EN_TO_FR[path]) return this.EN_TO_FR[path];
+
+      // si /en -> /
       if (path === '/en') return '/';
+
+      // si /en/... -> strip /en
       if (path.startsWith('/en/')) {
         const stripped = path.slice(3) || '/';
         return stripped === '' ? '/' : stripped;
       }
+
+      // déjà FR
       return path || '/';
     }
   }
 
   private applyI18nToDom(): void {
+    if (!this.isBrowser) return;
+
     const L = this.activeLang;
     const dict = this.I18N[L];
 
@@ -278,42 +310,33 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     if (slogan) slogan.innerHTML = dict.slogan_html;
 
     const overlayBrandTxt = this.doc.querySelector(
-      '.overlay-brand .brand-text'
+      '.overlay-brand .brand-text',
     ) as HTMLElement | null;
     if (overlayBrandTxt) overlayBrandTxt.innerHTML = dict.brand_text_html;
 
-    const tagline = this.doc.querySelector(
-      '.tagline-text'
-    ) as HTMLElement | null;
+    const tagline = this.doc.querySelector('.tagline-text') as HTMLElement | null;
     if (tagline) tagline.innerHTML = dict.tagline_html;
 
-    const headerMenuLinks = Array.from(
-      this.doc.querySelectorAll('.menu a')
-    ) as HTMLAnchorElement[];
+    const headerMenuLinks = Array.from(this.doc.querySelectorAll('.menu a')) as HTMLAnchorElement[];
     dict.menu.forEach((txt, i) => {
       if (headerMenuLinks[i]) headerMenuLinks[i].textContent = txt;
     });
 
     const overlayLinks = Array.from(
-      this.doc.querySelectorAll('.overlay-nav a')
+      this.doc.querySelectorAll('.overlay-nav a'),
     ) as HTMLAnchorElement[];
     dict.menu_overlay.forEach((txt, i) => {
       if (overlayLinks[i]) overlayLinks[i].textContent = txt;
     });
 
     const extranetNodes = Array.from(
-      this.doc.querySelectorAll('.extranet-badge .extranet-text')
+      this.doc.querySelectorAll('.extranet-badge .extranet-text'),
     ) as HTMLElement[];
     extranetNodes.forEach((n) => (n.innerHTML = dict.extranet_text_html));
 
-    const railBtn = this.doc.querySelector(
-      '.lang-switch'
-    ) as HTMLButtonElement | null;
+    const railBtn = this.doc.querySelector('.lang-switch') as HTMLButtonElement | null;
     if (railBtn) {
-      railBtn.setAttribute(
-        'aria-label',
-        L === 'fr' ? 'Basculer la langue' : 'Switch language'
-      );
+      railBtn.setAttribute('aria-label', L === 'fr' ? 'Basculer la langue' : 'Switch language');
       railBtn.textContent = L === 'en' ? 'EN' : 'FR';
     }
   }
@@ -323,17 +346,33 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
   }
 
   closeOnBackdrop(evt: MouseEvent): void {
-    if ((evt.target as HTMLElement).classList.contains('menu-overlay')) {
+    if (!this.isBrowser) return;
+
+    const target = evt.target as HTMLElement | null;
+    if (target && target.classList.contains('menu-overlay')) {
       this.setMenu(false);
     }
   }
 
   @HostListener('document:keydown', ['$event'])
   onDocKeydown(ev: KeyboardEvent): void {
+    // Guard utile : certains setups SSR/hydration peuvent déclencher des handlers tôt
+    if (!this.isBrowser) return;
+
     if (ev.key === 'Escape' && this.menuOpen) this.setMenu(false);
   }
 
   ngOnDestroy(): void {
     this.navSub?.unsubscribe();
+    this.langSub?.unsubscribe();
+
+    // cleanup matchMedia
+    if (this.mq && this.mqHandler) {
+      try {
+        this.mq.removeEventListener('change', this.mqHandler);
+      } catch {
+        this.mq.removeListener?.(this.mqHandler as any);
+      }
+    }
   }
 }

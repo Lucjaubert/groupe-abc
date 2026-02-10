@@ -73,6 +73,18 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     return !!f && typeof f === 'string' && f.trim().length > 0;
   }
 
+  /* =========================
+   * ✅ Pièce jointe
+   * ========================= */
+  attachmentFile: File | null = null;
+  attachmentName = '';
+
+  // Tu peux élargir/resserrer selon ta politique
+  readonly acceptedAttachmentTypes =
+    '.pdf,.doc,.docx,.png,.jpg,.jpeg,.webp';
+
+  private readonly MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024; // 10 MB
+
   /* ====== Injections ====== */
   private wp = inject(WordpressService);
   private cdr = inject(ChangeDetectorRef);
@@ -115,6 +127,10 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
   formGridEl!: ElementRef<HTMLElement>;
   @ViewChildren('fgLabel')
   fgLabels!: QueryList<ElementRef<HTMLElement>>;
+
+  // ✅ row "pièce jointe"
+  @ViewChild('attachRowEl')
+  attachRowEl?: ElementRef<HTMLElement>;
 
   @ViewChild('sendBtn')
   sendBtn!: ElementRef<HTMLElement>;
@@ -180,6 +196,70 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     try {
       this.gsap?.globalTimeline?.clear?.();
     } catch {}
+  }
+
+  /* ========================= Pièce jointe ========================= */
+
+  onFileSelected(ev: Event): void {
+    const input = ev.target as HTMLInputElement | null;
+    const file = input?.files?.[0] || null;
+
+    if (!file) {
+      this.clearAttachment();
+      return;
+    }
+
+    // Validation taille
+    if (file.size > this.MAX_ATTACHMENT_BYTES) {
+      this.clearAttachmentInput(input);
+      this.attachmentFile = null;
+      this.attachmentName = '';
+      this.sendState = 'error';
+      this.messageError = 'Fichier trop volumineux (max 10 MB).';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    // Validation type (best-effort)
+    const allowedExt = ['pdf', 'doc', 'docx', 'png', 'jpg', 'jpeg', 'webp'];
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    if (ext && !allowedExt.includes(ext)) {
+      this.clearAttachmentInput(input);
+      this.attachmentFile = null;
+      this.attachmentName = '';
+      this.sendState = 'error';
+      this.messageError = 'Type de fichier non autorisé.';
+      this.cdr.markForCheck();
+      return;
+    }
+
+    this.attachmentFile = file;
+    this.attachmentName = file.name;
+
+    // reset état message si besoin
+    if (this.sendState === 'success' || this.sendState === 'error') {
+      this.sendState = 'idle';
+      this.messageError = '';
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  clearAttachment(): void {
+    this.attachmentFile = null;
+    this.attachmentName = '';
+
+    // clear input file si présent dans le DOM (safe)
+    if (this.isBrowser()) {
+      const el = this.doc.querySelector<HTMLInputElement>('input[type="file"][name="attachment"]');
+      if (el) el.value = '';
+    }
+
+    this.cdr.markForCheck();
+  }
+
+  private clearAttachmentInput(input?: HTMLInputElement | null): void {
+    if (input) input.value = '';
   }
 
   /* ========================= Hydratation plaquette ========================= */
@@ -517,14 +597,10 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
           y: 0,
           duration: 0.58,
           ease: EASE,
-          onStart: () => {
-            rm(title);
-          },
+          onStart: () => rm(title),
           onComplete: () => {
             this.heroPlayed = true;
-            gsap.set(title, {
-              clearProps: 'all',
-            });
+            gsap.set(title, { clearProps: 'all' });
           },
         },
       );
@@ -533,11 +609,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     if (li) {
       gsap.fromTo(
         li,
-        {
-          autoAlpha: 0,
-          y: 16,
-          scale: 0.96,
-        },
+        { autoAlpha: 0, y: 16, scale: 0.96 },
         {
           autoAlpha: 1,
           y: 0,
@@ -545,95 +617,51 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
           duration: 0.5,
           ease: 'power2.out',
           delay: 0.06,
-          onStart: () => {
-            rm(li);
-          },
-          onComplete: () => {
-            gsap.set(li, {
-              clearProps: 'all',
-            });
-          },
+          onStart: () => rm(li),
+          onComplete: () => gsap.set(li, { clearProps: 'all' }),
         },
       );
     }
 
     {
       const radios = this.radiosEl?.nativeElement;
-      const items = (this.radioItems?.toArray() || []).map(
-        (r) => r.nativeElement,
-      );
+      const items = (this.radioItems?.toArray() || []).map((r) => r.nativeElement);
       if (radios && items.length) {
-        gsap.set(items, {
-          autoAlpha: 0,
-          y: 10,
-        });
-        gsap
-          .timeline({
-            defaults: { ease: EASE },
-            scrollTrigger: {
-              trigger: radios,
-              start: 'top 85%',
-              once: true,
-            },
-            onStart: () => {
-              rm([radios, ...items]);
-            },
-          })
-          .to(
-            items,
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.4,
-              stagger: 0.06,
-            },
-            0,
-          )
-          .add(() => {
-            gsap.set(items, {
-              clearProps: 'transform,opacity',
-            });
-          });
+        gsap.set(items, { autoAlpha: 0, y: 10 });
+        gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: radios, start: 'top 85%', once: true },
+          onStart: () => rm([radios, ...items]),
+        })
+        .to(items, { autoAlpha: 1, y: 0, duration: 0.4, stagger: 0.06 }, 0)
+        .add(() => gsap.set(items, { clearProps: 'transform,opacity' }));
       }
     }
 
     {
       const grid = this.formGridEl?.nativeElement;
-      const labels = (this.fgLabels?.toArray() || []).map(
-        (r) => r.nativeElement,
-      );
+      const labels = (this.fgLabels?.toArray() || []).map((r) => r.nativeElement);
       if (grid && labels.length) {
-        gsap.set(labels, {
-          autoAlpha: 0,
-          y: 14,
+        gsap.set(labels, { autoAlpha: 0, y: 14 });
+
+        const attachRow = this.attachRowEl?.nativeElement;
+        if (attachRow) gsap.set(attachRow, { autoAlpha: 0, y: 10 });
+
+        gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: grid, start: 'top 85%', once: true },
+          onStart: () => {
+            const arr: Element[] = [grid, ...labels];
+            if (attachRow) arr.push(attachRow);
+            rm(arr);
+          },
+        })
+        .to(labels, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.07 }, 0)
+        .to(attachRow, { autoAlpha: 1, y: 0, duration: 0.35 }, '-=0.15')
+        .add(() => {
+          gsap.set(labels, { clearProps: 'transform,opacity' });
+          if (attachRow) gsap.set(attachRow, { clearProps: 'transform,opacity' });
         });
-        gsap
-          .timeline({
-            defaults: { ease: EASE },
-            scrollTrigger: {
-              trigger: grid,
-              start: 'top 85%',
-              once: true,
-            },
-            onStart: () => {
-              rm([grid, ...labels]);
-            },
-          })
-          .to(
-            labels,
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.45,
-              stagger: 0.07,
-            },
-            0,
-          )
-          .add(() => {
-            gsap.set(labels, {
-              clearProps: 'transform,opacity',
-            });
-          });
       }
     }
 
@@ -642,30 +670,16 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
       if (btn) {
         gsap.fromTo(
           btn,
-          {
-            autoAlpha: 0,
-            y: 12,
-            scale: 0.98,
-          },
+          { autoAlpha: 0, y: 12, scale: 0.98 },
           {
             autoAlpha: 1,
             y: 0,
             scale: 1,
             duration: 0.44,
             ease: 'power2.out',
-            scrollTrigger: {
-              trigger: btn,
-              start: 'top 92%',
-              once: true,
-            },
-            onStart: () => {
-              rm(btn);
-            },
-            onComplete: () => {
-              gsap.set(btn, {
-                clearProps: 'all',
-              });
-            },
+            scrollTrigger: { trigger: btn, start: 'top 92%', once: true },
+            onStart: () => rm(btn),
+            onComplete: () => gsap.set(btn, { clearProps: 'all' }),
           },
         );
       }
@@ -673,41 +687,16 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
 
     {
       const wrap = this.bigInfosEl?.nativeElement;
-      const lines = (this.bigLines?.toArray() || []).map(
-        (r) => r.nativeElement,
-      );
+      const lines = (this.bigLines?.toArray() || []).map((r) => r.nativeElement);
       if (wrap && lines.length) {
-        gsap.set(lines, {
-          autoAlpha: 0,
-          y: 22,
-        });
-        gsap
-          .timeline({
-            defaults: { ease: EASE },
-            scrollTrigger: {
-              trigger: wrap,
-              start: 'top 85%',
-              once: true,
-            },
-            onStart: () => {
-              rm([wrap, ...lines]);
-            },
-          })
-          .to(
-            lines,
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.5,
-              stagger: 0.08,
-            },
-            0,
-          )
-          .add(() => {
-            gsap.set(lines, {
-              clearProps: 'transform,opacity',
-            });
-          });
+        gsap.set(lines, { autoAlpha: 0, y: 22 });
+        gsap.timeline({
+          defaults: { ease: EASE },
+          scrollTrigger: { trigger: wrap, start: 'top 85%', once: true },
+          onStart: () => rm([wrap, ...lines]),
+        })
+        .to(lines, { autoAlpha: 1, y: 0, duration: 0.5, stagger: 0.08 }, 0)
+        .add(() => gsap.set(lines, { clearProps: 'transform,opacity' }));
       }
     }
 
@@ -758,14 +747,14 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     if (website) {
       this.sendState = 'success';
       form.reset();
+      this.clearAttachment();
       this.cdr.markForCheck();
       return;
     }
 
     if (!firstname || !lastname || !email || !message) {
       this.sendState = 'error';
-      this.messageError =
-        'Merci de renseigner Prénom, Nom, eMail et Message.';
+      this.messageError = 'Merci de renseigner Prénom, Nom, eMail et Message.';
       this.cdr.markForCheck();
       return;
     }
@@ -787,9 +776,20 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.markForCheck();
 
     try {
-      await this.contact.send(payload);
+      // ✅ Si pièce jointe : envoi multipart (FormData)
+      if (this.attachmentFile) {
+        const out = new FormData();
+        Object.entries(payload).forEach(([k, v]) => out.append(k, String(v ?? '')));
+        out.append('attachment', this.attachmentFile, this.attachmentFile.name);
+
+        await this.contact.send(out as any);
+      } else {
+        await this.contact.send(payload as any);
+      }
+
       this.sendState = 'success';
       form.reset();
+      this.clearAttachment();
       this.cdr.markForCheck();
     } catch (e: any) {
       console.error('[Contact] API error', e);

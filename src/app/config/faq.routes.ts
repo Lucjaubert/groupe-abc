@@ -3,13 +3,65 @@ import type { Lang, SeoRouteKey } from './seo.routes';
 
 export type FaqItem = {
   q: string;
-  a: string;
+  a: string; // string "prête à afficher" (potentiellement avec <ul><li>...)
 };
 
 type FaqByLang = {
   fr: FaqItem[];
-  en?: FaqItem[]; // pour plus tard si tu traduis en EN
+  en?: FaqItem[]; // si tu traduis en EN
 };
+
+/**
+ * Transforme automatiquement les puces ("• ..." ou "- ...") en vraie liste HTML (<ul><li>).
+ * - Avant les puces : conservé en texte
+ * - Puces : converties en <ul><li>...</li></ul>
+ *
+ * ⚠️ IMPORTANT : pour voir la liste HTML, le template doit utiliser [innerHTML] sur la réponse.
+ */
+function formatFaqAnswer(raw: string): string {
+  const text = (raw ?? '').trim();
+  if (!text) return '';
+
+  const lines = text.split(/\r?\n/);
+
+  // Détecte la première ligne "puce"
+  const bulletIdx = lines.findIndex((l) => isBulletLine(l));
+
+  // Pas de puces -> on renvoie tel quel
+  if (bulletIdx === -1) return text;
+
+  const before = lines.slice(0, bulletIdx).join('\n').trim();
+
+  const bullets = lines
+    .slice(bulletIdx)
+    .map((l) => l.trim())
+    .filter((l) => isBulletLine(l))
+    .map((l) =>
+      l
+        .replace(/^•\s*/g, '')
+        .replace(/^-+\s*/g, '')
+        .replace(/[,;.]?\s*$/, ''),
+    )
+    .filter(Boolean);
+
+  const ul = `<ul>${bullets.map((b) => `<li>${escapeHtml(b)}</li>`).join('')}</ul>`;
+
+  return [before, ul].filter(Boolean).join('\n');
+}
+
+function isBulletLine(line: string): boolean {
+  const s = (line ?? '').trim();
+  return s.startsWith('•') || s.startsWith('-');
+}
+
+function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
 
 /**
  * FAQs "en dur" par page (clé = SeoRouteKey).
@@ -246,7 +298,6 @@ Ils sont habilités à intervenir dans le cadre de procédures contentieuses à 
 
   /* =========================
    * PAGE “ACTUALITÉS”  ('news-list' -> /actualites-expertise-immobiliere)
-   * (pas de FAQ fournie pour l’instant)
    * ========================= */
   'news-list': {
     fr: [],
@@ -254,7 +305,6 @@ Ils sont habilités à intervenir dans le cadre de procédures contentieuses à 
 
   /* =========================
    * PAGE “CONTACT”  ('contact' -> /contact-expert-immobilier)
-   * (pas de FAQ fournie pour l’instant)
    * ========================= */
   contact: {
     fr: [],
@@ -262,7 +312,6 @@ Ils sont habilités à intervenir dans le cadre de procédures contentieuses à 
 
   /* =========================
    * PAGE “MENTIONS LÉGALES”  ('legal' -> /mentions-legales)
-   * (aucune FAQ nécessaire)
    * ========================= */
   legal: {
     fr: [],
@@ -271,16 +320,19 @@ Ils sont habilités à intervenir dans le cadre de procédures contentieuses à 
 
 /**
  * Helper central : récupère la liste de FAQs pour une route + langue.
- * - Si pas de contenu en EN, on retombe automatiquement sur le FR.
+ *
+ * ✅ Reco SEO : si tu n’as pas encore traduit en EN, mieux vaut renvoyer []
+ * pour éviter d’afficher du FR sur des URLs /en.
  */
 export function getFaqForRoute(route: SeoRouteKey, lang: Lang): FaqItem[] {
   const cfg = FAQ_ROUTE_CONFIG[route];
   if (!cfg) return [];
 
-  if (lang === 'en') {
-    const en = cfg.en ?? [];
-    return en.length ? en : cfg.fr ?? [];
-  }
+  // EN : si pas de contenu EN, on renvoie vide (pas de FR en /en)
+  const src = lang === 'en' ? (cfg.en?.length ? cfg.en : []) : cfg.fr ?? [];
 
-  return cfg.fr ?? [];
+  return src.map((item) => ({
+    ...item,
+    a: formatFaqAnswer(item.a),
+  }));
 }

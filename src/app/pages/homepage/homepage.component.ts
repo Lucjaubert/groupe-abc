@@ -1,3 +1,5 @@
+// src/app/pages/homepage/homepage.component.ts
+
 import {
   Component,
   OnDestroy,
@@ -11,16 +13,8 @@ import {
   ChangeDetectorRef,
   PLATFORM_ID,
 } from '@angular/core';
-import {
-  CommonModule,
-  DOCUMENT,
-  isPlatformBrowser,
-} from '@angular/common';
-import {
-  RouterModule,
-  Router,
-  NavigationEnd,
-} from '@angular/router';
+import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { firstValueFrom, filter, Subscription } from 'rxjs';
 
 import { WordpressService } from '../../services/wordpress.service';
@@ -29,10 +23,8 @@ import { getSeoForRoute } from '../../config/seo.routes';
 
 import { AlignFirstWordDirective } from '../../shared/directives/align-first-word.directive';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
-import { FaqService } from '../../services/faq.service';
 import { getFaqForRoute, FaqItem } from '../../config/faq.routes';
 
-/* ===== Types ===== */
 type Slide = { title: string; subtitle: string; bg: string | number };
 
 type Identity = {
@@ -49,6 +41,7 @@ type WhatHow = {
   howTitle: string;
   howItems: string[];
 };
+
 type Presentation = { text1: string; text2: string; file: string | null };
 type ContextItem = { icon: string | number; label: string };
 type ExpertiseContext = { title: string; items: ContextItem[] };
@@ -58,6 +51,7 @@ type TeamMember = {
   photo: string | number;
   nameFirst: string;
   nameLast: string;
+  ricsLogo?: string;
   area: string;
   jobHtml: string;
 };
@@ -77,7 +71,6 @@ type NewsItem = {
 };
 type News = { title: string; items: NewsItem[] };
 
-/* ===== KeyFigures ===== */
 interface KeyFigure {
   value: number;
   label: string;
@@ -89,9 +82,6 @@ interface KeyFigure {
   played: boolean;
 }
 
-/* ==========================================================
-   TEXTES FIXES HERO
-   ========================================================== */
 const HERO_TEXT = {
   fr: {
     titles: ['Groupe ABC.', 'Groupe ABC.', 'Groupe ABC.'],
@@ -111,58 +101,26 @@ const HERO_TEXT = {
   },
 } as const;
 
-/* ====== KEY FIGURES – FR/EN ====== */
 type KF = { value: number; fr: string; en: string };
 
 const KEY_FIGURES_STATIC: KF[] = [
   { value: 8, fr: 'cabinets associés', en: 'associated firms' },
   { value: 70, fr: 'collaborateurs', en: 'employees' },
   { value: 35, fr: 'experts immobiliers', en: 'real estate experts' },
-  {
-    value: 14,
-    fr: 'bureaux, dont 4 dans les Dom-Tom',
-    en: 'offices, incl. 4 in DOM-TOM',
-  },
+  { value: 14, fr: 'bureaux, dont 4 dans les Dom-Tom', en: 'offices, incl. 4 in DOM-TOM' },
   { value: 172, fr: 'années d’expérience', en: 'years of experience' },
-  {
-    value: 8,
-    fr: 'experts judiciaires près la Cour d’appel',
-    en: 'court-appointed experts',
-  },
-  {
-    value: 7,
-    fr: 'experts accrédités RICS',
-    en: 'RICS-accredited experts',
-  },
-  {
-    value: 7,
-    fr: 'experts membres de l’IFEI',
-    en: 'experts, IFEI members',
-  },
-  {
-    value: 1,
-    fr: 'expert membre de la CEF',
-    en: 'expert member of the CEF',
-  },
-  {
-    value: 4,
-    fr: 'M€ HT de chiffre d’affaires annuel',
-    en: 'M€ annual turnover (excl. tax)',
-  },
+  { value: 8, fr: 'experts judiciaires près la Cour d’appel', en: 'court-appointed experts' },
+  { value: 7, fr: 'experts accrédités RICS', en: 'RICS-accredited experts' },
+  { value: 7, fr: 'experts membres de l’IFEI', en: 'experts, IFEI members' },
+  { value: 1, fr: 'expert membre de la CEF', en: 'expert member of the CEF' },
+  { value: 4, fr: 'M€ HT de chiffre d’affaires annuel', en: 'M€ annual turnover (excl. tax)' },
   { value: 1800, fr: 'expertises/an', en: 'appraisals/year' },
 ];
-
-/* ========================================================== */
 
 @Component({
   selector: 'app-homepage',
   standalone: true,
-  imports: [
-    CommonModule,
-    RouterModule,
-    AlignFirstWordDirective,
-    ImgFastDirective,
-  ],
+  imports: [CommonModule, RouterModule, AlignFirstWordDirective, ImgFastDirective],
   templateUrl: './homepage.component.html',
   styleUrls: ['./homepage.component.scss'],
 })
@@ -173,22 +131,28 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     return v == null ? '' : '' + v;
   }
 
-  /* ---------- Langue ---------- */
+  bgUrl(v: any): string {
+    if (!v) return '';
+    if (typeof v === 'string') return v.trim();
+    if (typeof v === 'object') {
+      const src = v?.source_url || v?.url || v?.src || '';
+      return (src || '').toString().trim();
+    }
+    return '';
+  }
+
   private currentLang: 'fr' | 'en' = 'fr';
   private weglotOff?: () => void;
 
-  /* ---------- HERO ---------- */
   heroSlides: Slide[] = [];
   heroIndex = 0;
   autoplayMs = 5000;
   private autoplayRef: any = null;
 
   @ViewChild('heroBg') heroBgRef!: ElementRef<HTMLElement>;
-  @ViewChildren('heroLayer')
-  heroLayerEls!: QueryList<ElementRef<HTMLElement>>;
+  @ViewChildren('heroLayer') heroLayerEls!: QueryList<ElementRef<HTMLElement>>;
   @ViewChild('heroTitle') heroTitleEl!: ElementRef<HTMLElement>;
-  @ViewChild('heroSubtitle')
-  heroSubtitleEl!: ElementRef<HTMLElement>;
+  @ViewChild('heroSubtitle') heroSubtitleEl!: ElementRef<HTMLElement>;
 
   private viewReady = false;
   private heroDataReady = false;
@@ -198,13 +162,13 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   private pointerStartX: number | null = null;
   private swipeThreshold = 40;
 
-  /* ---------- KEY FIGURES ---------- */
   keyFigures: KeyFigure[] = [];
-  @ViewChildren('kfItem')
-  kfItems!: QueryList<ElementRef<HTMLLIElement>>;
+  @ViewChildren('kfItem') kfItems!: QueryList<ElementRef<HTMLLIElement>>;
   maxValueCh = 6;
 
-  /* ---------- IDENTITY / WHAT-HOW / DOWNLOAD ---------- */
+  private kfIo?: IntersectionObserver;
+  private kfItemsChangesSub?: Subscription;
+
   identity: Identity = {
     whoTitle: '',
     whoHtml: '',
@@ -212,6 +176,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     whereMap: '',
     whereItems: [],
   };
+
   whereItems: string[] = [];
   whereOpen = false;
   toggleWhere(): void {
@@ -235,17 +200,11 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   whatHow: WhatHow | null = null;
   presentation: Presentation = { text1: '', text2: '', file: null };
 
-  /* ---------- CONTEXTES ---------- */
   contexts: ExpertiseContext | null = null;
-
-  /* ---------- CLIENTS ---------- */
   clients: Clients | null = null;
 
-  /* ---------- TEAM ---------- */
-  @ViewChild('teamTitle')
-  teamTitleEl!: ElementRef<HTMLElement>;
-  @ViewChildren('teamCard')
-  teamCardEls!: QueryList<ElementRef<HTMLElement>>;
+  @ViewChild('teamTitle') teamTitleEl!: ElementRef<HTMLElement>;
+  @ViewChildren('teamCard') teamCardEls!: QueryList<ElementRef<HTMLElement>>;
 
   teamTitle = '';
   teamMembers: TeamMember[] = [];
@@ -260,11 +219,10 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   defaultPortrait = '/assets/fallbacks/portrait-placeholder.svg';
 
-  /* ---------- NEWS ---------- */
   news: News | null = null;
 
-  /* ---------- FAQ SEO-only (homepage) ---------- */
   faqItems: FaqItem[] = [];
+  openFaqIndexes = new Set<number>();
 
   get currentSlide(): Slide | undefined {
     return this.heroSlides[this.heroIndex];
@@ -274,17 +232,18 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     const cur = this.currentSlide;
     if (cur?.title?.trim()) return cur.title.trim();
     const langKey = this.isEnglish() ? 'en' : 'fr';
-    return HERO_TEXT[langKey].titles[0];
+    const titles = HERO_TEXT[langKey].titles;
+    return titles[this.heroIndex] || titles[0] || 'Groupe ABC.';
   }
 
   get currentHeroSubtitle(): string {
     const cur = this.currentSlide;
     if (cur?.subtitle?.trim()) return cur.subtitle.trim();
     const langKey = this.isEnglish() ? 'en' : 'fr';
-    return HERO_TEXT[langKey].subtitles[0];
+    const subs = HERO_TEXT[langKey].subtitles;
+    return subs[this.heroIndex] || subs[0] || '';
   }
 
-  /* ---------- DI ---------- */
   private wp = inject(WordpressService);
   private cdr = inject(ChangeDetectorRef);
   private router = inject(Router);
@@ -292,18 +251,13 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
   private doc = inject(DOCUMENT);
   private seo = inject(SeoService);
-  private faq = inject(FaqService);
 
-  // GSAP
   private gsap: any | null = null;
   private ScrollTrigger: any | null = null;
 
-  // Titre 2 lignes
   teamTitleLine1 = 'Une équipe';
   teamTitleLine2 = 'de 8 experts à vos côtés';
 
-  /* ====================== Helpers ====================== */
-  // <<< RENDUE PUBLIQUE POUR UTILISATION DANS LE TEMPLATE >>>
   isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
   }
@@ -334,34 +288,20 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     ];
   }
 
-  /* ========================= Lifecycle ========================= */
   ngOnInit(): void {
     this.currentLang = this.detectInitialLang();
 
-    // FAQ "en dur" pour la home (faq.routes.ts)
-    this.faqItems = getFaqForRoute('home', this.currentLang);
-    if (this.faqItems && this.faqItems.length) {
-      if (this.currentLang === 'en') {
-        this.faq.set([], this.faqItems);
-      } else {
-        this.faq.set(this.faqItems, []);
-      }
-    } else {
-      this.faq.clear();
-    }
-
-    // SEO centralisé (route "home")
+    this.loadFaqForHome();
     this.applySeoFromConfig();
 
     this.heroSlides = this.buildDefaultHeroSlides();
     this.heroIndex = 0;
 
-    // Données WP
     this.wp.getHomepageData().subscribe(async (acf) => {
       this.acf = acf;
 
       this.extractHero();
-      this.preloadHeroImages();
+      await this.preloadHeroImages();
 
       this.heroDataReady = true;
       this.tryInitHeroIntro();
@@ -373,9 +313,11 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       this.extractClientsSection();
       this.extractTeamSection();
       await this.ensureTeamPageReady(this.teamPageIndex);
+
       if (this.isBrowser() && !this.teamAutoplayStoppedByUser) {
         this.startTeamAutoplay();
       }
+
       this.loadFeaturedNews();
 
       this.cdr.detectChanges();
@@ -386,24 +328,11 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     });
 
-    // NavigationEnd → rafraîchir langue / hero / key figures si Weglot change l’URL
     this.navSub = this.router.events
       .pipe(filter((e) => e instanceof NavigationEnd))
       .subscribe(() => {
         this.currentLang = this.detectInitialLang();
-
-        // Refresh FAQ + service sur navigation (utile si changement de langue côté URL)
-        this.faqItems = getFaqForRoute('home', this.currentLang);
-        if (this.faqItems && this.faqItems.length) {
-          if (this.currentLang === 'en') {
-            this.faq.set([], this.faqItems);
-          } else {
-            this.faq.set(this.faqItems, []);
-          }
-        } else {
-          this.faq.clear();
-        }
-
+        this.loadFaqForHome();
         this.applySeoFromConfig();
         this.extractHero();
         this.extractKeyFigures();
@@ -411,10 +340,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       });
 
     if (this.isBrowser()) {
-      document.addEventListener(
-        'visibilitychange',
-        this.handleVisibilityChange
-      );
+      this.doc.addEventListener('visibilitychange', this.handleVisibilityChange);
       this.setupGsap();
     }
   }
@@ -422,57 +348,55 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     if (!this.isBrowser()) return;
 
-    // Observer chiffres
-    if (typeof (window as any).IntersectionObserver !== 'undefined') {
-      const io = new IntersectionObserver(
+    if (typeof (this.doc.defaultView as any)?.IntersectionObserver !== 'undefined') {
+      this.kfIo = new IntersectionObserver(
         (entries) => {
           for (const e of entries) {
             if (e.isIntersecting) {
-              const idx = Number(
-                (e.target as HTMLElement).dataset['index']
-              );
+              const idx = Number((e.target as HTMLElement).dataset['index']);
               this.playFigure(idx);
-              io.unobserve(e.target);
+              this.kfIo?.unobserve(e.target);
             }
           }
         },
-        { threshold: 0.25 }
+        { threshold: 0.25 },
       );
 
-      this.kfItems?.changes?.subscribe(() => {
-        this.kfItems.forEach((el) => io.observe(el.nativeElement));
+      this.kfItemsChangesSub = this.kfItems?.changes?.subscribe(() => {
+        this.kfItems.forEach((el) => this.kfIo?.observe(el.nativeElement));
       });
-      setTimeout(() =>
-        this.kfItems.forEach((el) => io.observe(el.nativeElement))
-      );
+
+      setTimeout(() => {
+        this.kfItems.forEach((el) => this.kfIo?.observe(el.nativeElement));
+      });
     }
 
     this.viewReady = true;
     this.tryInitHeroIntro();
 
-    // Weglot
-    this.wgAddNodeDouble(document.getElementById('hero'));
-    this.wgAddNodeDouble(document.getElementById('key-figures'));
+    this.wgAddNodeDouble(this.doc.getElementById('hero'));
+    this.wgAddNodeDouble(this.doc.getElementById('key-figures'));
     this.bindWeglotLangEvents();
 
-    this.setupGsap().then(() =>
-      setTimeout(() => this.bindScrollAnimations(), 0)
-    );
+    this.setupGsap().then(() => setTimeout(() => this.bindScrollAnimations(), 0));
   }
 
   ngOnDestroy(): void {
     this.clearAutoplay();
     this.clearTeamAutoplay();
     this.navSub?.unsubscribe();
+
+    this.kfItemsChangesSub?.unsubscribe();
+    try {
+      this.kfIo?.disconnect();
+    } catch {}
+
     if (this.isBrowser()) {
-      document.removeEventListener(
-        'visibilitychange',
-        this.handleVisibilityChange
-      );
+      this.doc.removeEventListener('visibilitychange', this.handleVisibilityChange);
     }
-    // Nettoyage FAQ globale
-    this.faq.clear();
+
     this.weglotOff?.();
+
     try {
       this.ScrollTrigger?.getAll?.().forEach((t: any) => t.kill());
     } catch {}
@@ -481,7 +405,22 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch {}
   }
 
-  /* ========================= HERO ========================= */
+  toggleFaqItem(i: number): void {
+    if (this.openFaqIndexes.has(i)) this.openFaqIndexes.delete(i);
+    else this.openFaqIndexes.add(i);
+  }
+
+  isFaqItemOpen(i: number): boolean {
+    return this.openFaqIndexes.has(i);
+  }
+
+  private loadFaqForHome(): void {
+    this.faqItems = getFaqForRoute('home', this.currentLang);
+  }
+
+  private stripHtml(input: string): string {
+    return (input || '').replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+  }
 
   private isEnglish(): boolean {
     return this.currentLang === 'en';
@@ -497,14 +436,13 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     try {
-      const htmlLang =
-        (this.doc?.documentElement?.lang || '').toLowerCase();
+      const htmlLang = (this.doc?.documentElement?.lang || '').toLowerCase();
       if (htmlLang.startsWith('en')) return 'en';
       if (htmlLang.startsWith('fr')) return 'fr';
     } catch {}
 
     const url = this.router?.url || '/';
-    if (url.startsWith('/en/')) return 'en';
+    if (url === '/en' || url.startsWith('/en/')) return 'en';
     return 'fr';
   }
 
@@ -519,19 +457,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         if (next === this.currentLang) return;
         this.currentLang = next;
 
-        // Recalcule FAQ + service quand la langue change
-        this.faqItems = getFaqForRoute('home', this.currentLang);
-        if (this.faqItems && this.faqItems.length) {
-          if (this.currentLang === 'en') {
-            this.faq.set([], this.faqItems);
-          } else {
-            this.faq.set(this.faqItems, []);
-          }
-        } else {
-          this.faq.clear();
-        }
-
-        // Recalcule le SEO quand la langue change
+        this.loadFaqForHome();
         this.applySeoFromConfig();
 
         this.extractHero();
@@ -541,9 +467,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       };
 
       wg.on('initialized', () => onChanged(wg.getCurrentLang?.()));
-      wg.on('languageChanged', (newLang: string) =>
-        onChanged(newLang)
-      );
+      wg.on('languageChanged', (newLang: string) => onChanged(newLang));
 
       this.weglotOff = () => {
         try {
@@ -558,50 +482,46 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private extractHero(): void {
     const h = this.acf?.hero_section || {};
-    const bgs = [
-      h.hero_background_1,
-      h.hero_background_2,
-      h.hero_background_3,
-    ].filter(Boolean);
-    if (!bgs.length && h.hero_background) {
-      bgs.push(h.hero_background);
-    }
+    const isEN = this.isEnglish();
 
-    const langKey = this.isEnglish() ? 'en' : 'fr';
+    const pick = (frKey: string, enKey: string): string => {
+      if (isEN) return (h?.[enKey] ?? '').toString().trim();
+      return (h?.[frKey] ?? '').toString().trim();
+    };
+
+    const t1 = pick('hero_title_1', 'hero_title_1_en');
+    const t2 = pick('hero_title_2', 'hero_title_2_en');
+    const t3 = pick('hero_title_3', 'hero_title_3_en');
+
+    const s1 = pick('hero_subtitle_1', 'hero_subtitle_1_en');
+    const s2 = pick('hero_subtitle_2', 'hero_subtitle_2_en');
+    const s3 = pick('hero_subtitle_3', 'hero_subtitle_3_en');
+
+    const titles = [t1, t2, t3].filter(Boolean);
+    const subtitles = [s1, s2, s3].filter(Boolean);
+
+    const bgs = [h.hero_background_1, h.hero_background_2, h.hero_background_3].filter(Boolean);
+    if (!bgs.length && h.hero_background) bgs.push(h.hero_background);
+
+    const langKey = isEN ? 'en' : 'fr';
     const T = HERO_TEXT[langKey];
 
-    const n = Math.max(
-      1,
-      Math.min(
-        bgs.length || 1,
-        T.titles.length,
-        T.subtitles.length
-      )
-    );
+    const n = Math.max(1, bgs.length, T.titles.length, T.subtitles.length);
+    const count = Math.min(3, n);
 
     const slides: Slide[] = [];
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < count; i++) {
       slides.push({
-        title: T.titles[i],
-        subtitle: T.subtitles[i],
-        bg:
-          bgs[i] ??
-          bgs[0] ??
-          h.hero_background ??
-          '/assets/fallbacks/hero-placeholder.jpg',
+        title: (titles[i] || T.titles[i] || T.titles[0] || 'Groupe ABC.').trim(),
+        subtitle: (subtitles[i] || T.subtitles[i] || T.subtitles[0] || '').trim(),
+        bg: bgs[i] ?? bgs[0] ?? '/assets/fallbacks/hero-placeholder.jpg',
       });
     }
 
-    if (!slides.length) {
-      slides.push({
-        title: T.titles[0],
-        subtitle: T.subtitles[0],
-        bg: '/assets/fallbacks/hero-placeholder.jpg',
-      });
-    }
-
-    this.heroSlides = slides;
+    this.heroSlides = slides.length ? slides : this.buildDefaultHeroSlides();
     this.heroIndex = 0;
+
+    if (this.isBrowser()) this.applyHeroLayerVisibility(true);
   }
 
   private async preloadHeroImages(): Promise<void> {
@@ -619,77 +539,42 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private tryInitHeroIntro(): void {
     if (!this.isBrowser()) return;
-    if (this.heroIntroDone || !this.viewReady || !this.heroDataReady)
-      return;
-    queueMicrotask(() =>
-      setTimeout(() => this.initHeroIntroNow(), 0)
-    );
+    if (this.heroIntroDone || !this.viewReady || !this.heroDataReady) return;
+    queueMicrotask(() => setTimeout(() => this.initHeroIntroNow(), 0));
   }
 
   private initHeroIntroNow(): void {
     if (!this.isBrowser() || this.heroIntroDone) return;
 
     this.prefersReduced =
-      typeof window !== 'undefined'
-        ? window.matchMedia?.(
-            '(prefers-reduced-motion: reduce)'
-          )?.matches ?? false
-        : false;
+      this.doc.defaultView?.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
 
     const bg = this.heroBgRef?.nativeElement;
-    const layers =
-      this.heroLayerEls?.toArray().map((r) => r.nativeElement) ||
-      [];
+    const layers = this.heroLayerEls?.toArray().map((r) => r.nativeElement) || [];
     const titleEl = this.heroTitleEl?.nativeElement;
     const subEl = this.heroSubtitleEl?.nativeElement;
 
     if (layers.length) {
       if (this.gsap) {
-        layers.forEach((el, i) =>
-          this.gsap.set(el, {
-            opacity: i === this.heroIndex ? 1 : 0,
-          })
-        );
+        layers.forEach((el, i) => this.gsap.set(el, { opacity: i === this.heroIndex ? 1 : 0 }));
       } else {
-        layers.forEach(
-          (el, i) =>
-            (el.style.opacity =
-              i === this.heroIndex ? '1' : '0')
-        );
+        layers.forEach((el, i) => (el.style.opacity = i === this.heroIndex ? '1' : '0'));
       }
       if (bg) bg.classList.add('is-ready');
     }
 
     if (this.gsap) {
-      if (titleEl)
-        this.gsap.set(titleEl, {
-          autoAlpha: 0,
-          y: 16,
-          willChange: 'transform,opacity',
-        });
-      if (subEl)
-        this.gsap.set(subEl, {
-          autoAlpha: 0,
-          y: 12,
-          willChange: 'transform,opacity',
-        });
+      if (titleEl) this.gsap.set(titleEl, { autoAlpha: 0, y: 16, willChange: 'transform,opacity' });
+      if (subEl) this.gsap.set(subEl, { autoAlpha: 0, y: 12, willChange: 'transform,opacity' });
     }
 
-    const heroEl = document.getElementById('hero');
+    const heroEl = this.doc.getElementById('hero');
     const dots = heroEl
-      ? Array.from(
-          heroEl.querySelectorAll<HTMLButtonElement>(
-            '.hero-dots .hero-dot'
-          )
-        )
+      ? Array.from(heroEl.querySelectorAll<HTMLButtonElement>('.hero-dots .hero-dot'))
       : [];
 
     if (this.gsap && dots.length) {
-      this.gsap.set(dots, {
-        autoAlpha: 0,
-        y: 10,
-        willChange: 'transform,opacity',
-      });
+      this.gsap.set(dots, { autoAlpha: 0, y: 10, willChange: 'transform,opacity' });
     }
 
     const DUR_T = this.prefersReduced ? 0.001 : 2.5;
@@ -702,18 +587,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         defaults: { ease: 'power3.out' },
         onComplete: () => {
           this.heroIntroDone = true;
-          if (titleEl)
-            this.gsap.set(titleEl, {
-              clearProps: 'willChange',
-            });
-          if (subEl)
-            this.gsap.set(subEl, {
-              clearProps: 'willChange',
-            });
-          if (dots.length)
-            this.gsap.set(dots, {
-              clearProps: 'willChange',
-            });
+          if (titleEl) this.gsap.set(titleEl, { clearProps: 'willChange' });
+          if (subEl) this.gsap.set(subEl, { clearProps: 'willChange' });
+          if (dots.length) this.gsap.set(dots, { clearProps: 'willChange' });
           this.resumeAutoplay();
         },
       });
@@ -725,7 +601,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
           y: 0,
           duration: DUR_T,
         },
-        0.5
+        0.5,
       )
         .to(
           subEl,
@@ -734,7 +610,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
             y: 0,
             duration: DUR_S,
           },
-          0.8
+          0.8,
         )
         .to(
           dots,
@@ -744,7 +620,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
             duration: 0.5,
             stagger: { each: 0.08, from: 'start' },
           },
-          1.5
+          1.5,
         );
     } else {
       if (titleEl) titleEl.style.opacity = '1';
@@ -759,11 +635,26 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  private applyHeroLayerVisibility(instant = false): void {
+    if (!this.isBrowser()) return;
+    const layers = this.heroLayerEls?.toArray().map((r) => r.nativeElement) || [];
+    if (!layers.length) return;
+
+    if (this.gsap && !instant) {
+      layers.forEach((el, i) => {
+        this.gsap.to(el, { opacity: i === this.heroIndex ? 1 : 0, duration: 0.45, ease: 'power2.out' });
+      });
+    } else {
+      layers.forEach((el, i) => (el.style.opacity = i === this.heroIndex ? '1' : '0'));
+    }
+  }
+
   goTo(i: number): void {
     if (!this.heroSlides.length) return;
     const len = this.heroSlides.length;
     this.heroIndex = ((i % len) + len) % len;
-    this.wgAddNodeDouble(document.getElementById('hero'));
+    this.applyHeroLayerVisibility();
+    this.wgAddNodeDouble(this.doc.getElementById('hero'));
   }
 
   next(): void {
@@ -778,10 +669,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser()) return;
     this.clearAutoplay();
     if (this.heroSlides.length > 1) {
-      this.autoplayRef = setInterval(
-        () => this.next(),
-        this.autoplayMs
-      );
+      this.autoplayRef = setInterval(() => this.next(), this.autoplayMs);
     }
   }
 
@@ -792,10 +680,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   resumeAutoplay(): void {
     if (!this.isBrowser()) return;
-    if (
-      document.visibilityState === 'visible' &&
-      this.heroSlides.length > 1
-    ) {
+    if (this.doc.visibilityState === 'visible' && this.heroSlides.length > 1) {
       this.startAutoplay();
     }
   }
@@ -809,7 +694,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private handleVisibilityChange = () => {
     if (!this.isBrowser()) return;
-    if (document.visibilityState === 'hidden') {
+    if (this.doc.visibilityState === 'hidden') {
       this.pauseAutoplay();
       this.clearTeamAutoplay();
     } else {
@@ -849,8 +734,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /* ========================= Liste "Où ?" ========================= */
-
   private norm(s: string): string {
     return (s || '')
       .toLowerCase()
@@ -861,45 +744,26 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private regionKeyFromLabel(label: string): string {
-    const exact =
-      this.REGION_LABEL_TO_KEY[(label || '').trim()];
+    const exact = this.REGION_LABEL_TO_KEY[(label || '').trim()];
     if (exact) return exact;
 
     const n = this.norm(label);
-    if (n.includes('paris') || n.includes('ile-de-france'))
-      return 'idf';
+    if (n.includes('paris') || n.includes('ile-de-france')) return 'idf';
     if (n.includes('grand ouest')) return 'grand-ouest';
-    if (n.includes('rhone') || n.includes('auvergne'))
-      return 'rhone-alpes';
-    if (n.includes('cote d azur') || n.includes('sud-est'))
-      return 'cote-azur';
+    if (n.includes('rhone') || n.includes('auvergne')) return 'rhone-alpes';
+    if (n.includes('cote d azur') || n.includes('sud-est')) return 'cote-azur';
     if (n.includes('sud-ouest')) return 'sud-ouest';
-    if (
-      n.includes('grand est') ||
-      n.includes('nord & est') ||
-      n.includes('nord et est')
-    )
-      return 'grand-est';
-    if (n.includes('antilles') || n.includes('guyane'))
-      return 'antilles-guyane';
-    if (n.includes('reunion') || n.includes('mayotte'))
-      return 'reunion-mayotte';
-    return n
-      .replace(/[^a-z0-9- ]/g, '')
-      .replace(/\s+/g, '-');
+    if (n.includes('grand est') || n.includes('nord & est') || n.includes('nord et est')) return 'grand-est';
+    if (n.includes('antilles') || n.includes('guyane')) return 'antilles-guyane';
+    if (n.includes('reunion') || n.includes('mayotte')) return 'reunion-mayotte';
+    return n.replace(/[^a-z0-9- ]/g, '').replace(/\s+/g, '-');
   }
 
   openRegion(label: string): void {
     const key = this.regionKeyFromLabel(label);
-    const path = this.isEnglish()
-      ? this.TEAM_ROUTE_EN
-      : this.TEAM_ROUTE_FR;
-    this.router.navigate([path], {
-      queryParams: { region: key },
-    });
+    const path = this.isEnglish() ? this.TEAM_ROUTE_EN : this.TEAM_ROUTE_FR;
+    this.router.navigate([path], { queryParams: { region: key } });
   }
-
-  /* ========================= Key Figures ========================= */
 
   private extractKeyFigures(): void {
     const isEN = this.isEnglish();
@@ -922,15 +786,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     const widths = KEY_FIGURES_STATIC.map((k) => {
       const s = String(k.value);
       const hasDecimal = /[,.]/.test(s);
-      return Math.max(
-        s.length + (hasDecimal ? 2 : 0),
-        1
-      );
+      return Math.max(s.length + (hasDecimal ? 2 : 0), 1);
     });
-    this.maxValueCh = Math.max(
-      6,
-      ...(widths.length ? widths : [6])
-    );
+    this.maxValueCh = Math.max(6, ...(widths.length ? widths : [6]));
   }
 
   private playFigure(index: number): void {
@@ -941,27 +799,20 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const target = f.value;
     const dur = 4000;
+
     const start = performance.now();
-    const easeOutCubic = (t: number) =>
-      1 - Math.pow(1 - t, 3);
+    const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
 
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / dur);
       const p = easeOutCubic(t);
-      f.display = String(
-        Math.round(target * p)
-      );
-      if (t < 1) {
-        requestAnimationFrame(step);
-      } else {
-        f.display = String(target);
-      }
+      f.display = String(Math.round(target * p));
+      if (t < 1) requestAnimationFrame(step);
+      else f.display = String(target);
     };
 
     requestAnimationFrame(step);
   }
-
-  /* ========================= Identity / What / How ========================= */
 
   private extractIdentity(): void {
     const id = this.acf?.identity_section || {};
@@ -984,15 +835,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.whereItems = this.identity.whereItems;
   }
 
-  /* ========================= What / How / Download ========================= */
-
   private async extractWhatHowAndPresentation(): Promise<void> {
     const id = this.acf?.identity_section || {};
-    const whatItems = [
-      id.what_item_1,
-      id.what_item_2,
-      id.what_item_3,
-    ].filter(Boolean) as string[];
+    const whatItems = [id.what_item_1, id.what_item_2, id.what_item_3].filter(Boolean) as string[];
     const howItems = [
       id.how_item_1,
       id.how_item_2,
@@ -1016,60 +861,39 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     const resolved = await this.resolveMedia(rawFile);
 
     this.presentation = {
-      text1:
-        dl.presentation_button_text_1 ||
-        'Télécharger la présentation du',
-      text2:
-        dl.presentation_button_text_2 ||
-        'Groupe ABC',
+      text1: dl.presentation_button_text_1 || 'Télécharger la présentation du',
+      text2: dl.presentation_button_text_2 || 'Groupe ABC',
       file: resolved || null,
     };
   }
 
-  /* ========================= Scroll Animations ========================= */
-
   private bindScrollAnimations(): void {
-    if (!this.isBrowser() || !this.gsap || !this.ScrollTrigger)
-      return;
-    // Tes anims GSAP sont branchées ici si besoin
+    if (!this.isBrowser() || !this.gsap || !this.ScrollTrigger) return;
   }
 
-  /* ========================= News / Context / Clients ========================= */
-
   private loadFeaturedNews(): void {
-    this.wp
-      .getHomepageFeaturedNews(2)
-      .subscribe((items: any[]) => {
-        const mapped: NewsItem[] = (items || []).map(
-          (it: any) => {
-            const themeKey = this.toThemeKey(it?.theme);
-            const slug =
-              it?.slug || this.slugFromLink(it?.link);
-            return { ...it, themeKey, slug };
-          }
-        );
-        this.news = mapped.length
-          ? { title: 'Actualités', items: mapped }
-          : null;
-        this.cdr.detectChanges();
-        this.wgRefreshTick();
+    this.wp.getHomepageFeaturedNews(2).subscribe((items: any[]) => {
+      const mapped: NewsItem[] = (items || []).map((it: any) => {
+        const themeKey = this.toThemeKey(it?.theme);
+        const slug = it?.slug || this.slugFromLink(it?.link);
+        return { ...it, themeKey, slug };
       });
+      this.news = mapped.length ? { title: 'Actualités', items: mapped } : null;
+      this.cdr.detectChanges();
+      this.wgRefreshTick();
+    });
   }
 
   private extractExpertiseContext(): void {
-    const ctx =
-      this.acf?.expertise_contact_section || {};
+    const ctx = this.acf?.expertise_contact_section || {};
     const items: ContextItem[] = [];
     for (let i = 1; i <= 8; i++) {
       const icon = ctx[`context_icon_${i}`];
       const label = ctx[`context_label_${i}`];
-      if (label) {
-        items.push({ icon: icon ?? '', label });
-      }
+      if (label) items.push({ icon: icon ?? '', label });
     }
     this.contexts = {
-      title:
-        ctx.context_title || 'Contextes d’intervention',
+      title: ctx.context_title || 'Contextes d’intervention',
       items,
     };
   }
@@ -1084,6 +908,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       c.client_item_5,
       c.client_item_6,
     ].filter(Boolean) as string[];
+
     this.clients =
       c.clients_title || items.length
         ? {
@@ -1094,41 +919,28 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         : null;
   }
 
-  /* ========================= TEAM ========================= */
-
   private extractTeamSection(): void {
     const t = this.acf?.team_section || {};
-    this.teamTitle =
-      t.team_title_1 ||
-      'Une équipe de 8 experts à vos côtés';
+    this.teamTitle = t.team_title_1 || 'Une équipe de 8 experts à vos côtés';
     this.setTeamTitleTwoLines(this.teamTitle);
 
     const tmp: TeamMember[] = [];
     for (let i = 1; i <= 8; i++) {
       const photo = t[`team_photo_${i}`];
-      const name = (t[`team_name_${i}`] || '')
-        .toString()
-        .trim();
+      const name = (t[`team_name_${i}`] || '').toString().trim();
       const area = t[`team_area_${i}`] || '';
       const jobHtml = t[`team_job_${i}`] || '';
+      const ricsLogo = (t[`team_rics_${i}`] ?? '').toString().trim();
 
-      if (photo || name || area || jobHtml) {
+      if (photo || name || area || jobHtml || ricsLogo) {
         let nameFirst = name;
         let nameLast = '';
         const parts = name.split(/\s+/);
         if (parts.length > 1) {
-          nameFirst = parts
-            .slice(0, -1)
-            .join(' ');
+          nameFirst = parts.slice(0, -1).join(' ');
           nameLast = parts.slice(-1)[0];
         }
-        tmp.push({
-          photo: photo ?? '',
-          nameFirst,
-          nameLast,
-          area,
-          jobHtml,
-        });
+        tmp.push({ photo: photo ?? '', nameFirst, nameLast, area, jobHtml, ricsLogo: ricsLogo || undefined });
       }
     }
 
@@ -1136,33 +948,22 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.teamPages = [];
     for (let i = 0; i < this.teamMembers.length; i += 2) {
-      this.teamPages.push(
-        this.teamMembers.slice(i, i + 2)
-      );
+      this.teamPages.push(this.teamMembers.slice(i, i + 2));
     }
 
     if (this.teamPages.length) {
-      this.teamPageIndex = Math.floor(
-        Math.random() * this.teamPages.length
-      );
-      this.ensureTeamPageReady(
-        this.teamPageIndex
-      );
+      this.teamPageIndex = Math.floor(Math.random() * this.teamPages.length);
+      this.ensureTeamPageReady(this.teamPageIndex);
     }
   }
 
   teamPhotoUrl(m: TeamMember): string {
-    return (
-      this.resolvedPhotos.get(m) ||
-      this.defaultPortrait
-    );
+    return this.resolvedPhotos.get(m) || this.defaultPortrait;
   }
 
   onTeamImgError(e: Event): void {
     const img = e.target as HTMLImageElement;
-    if (img && img.src !== this.defaultPortrait) {
-      img.src = this.defaultPortrait;
-    }
+    if (img && img.src !== this.defaultPortrait) img.src = this.defaultPortrait;
   }
 
   async goTeamTo(i: number): Promise<void> {
@@ -1189,20 +990,14 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   private startTeamAutoplay(): void {
     if (!this.isBrowser()) return;
     this.clearTeamAutoplay();
-    if (
-      this.teamPages.length < 2 ||
-      this.teamAutoplayStoppedByUser
-    )
-      return;
+    if (this.teamPages.length < 2 || this.teamAutoplayStoppedByUser) return;
 
     this.teamAutoplayRef = setInterval(() => {
       const len = this.teamPages.length;
       if (len < 2) return;
 
       let next = this.teamPageIndex;
-      while (next === this.teamPageIndex) {
-        next = Math.floor(Math.random() * len);
-      }
+      while (next === this.teamPageIndex) next = Math.floor(Math.random() * len);
 
       this.ensureTeamPageReady(next).then(() => {
         this.teamPageIndex = next;
@@ -1224,21 +1019,14 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.clearTeamAutoplay();
   }
 
-  private async ensureTeamPageReady(
-    pageIndex: number
-  ): Promise<void> {
+  private async ensureTeamPageReady(pageIndex: number): Promise<void> {
     this.preparingPageIndex = pageIndex;
-    const page =
-      this.teamPages[pageIndex] || [];
-    await Promise.all(
-      page.map((m) => this.prepareMemberPhoto(m))
-    );
+    const page = this.teamPages[pageIndex] || [];
+    await Promise.all(page.map((m) => this.prepareMemberPhoto(m)));
     this.preparingPageIndex = null;
   }
 
-  private async prepareMemberPhoto(
-    m: TeamMember
-  ): Promise<void> {
+  private async prepareMemberPhoto(m: TeamMember): Promise<void> {
     if (this.resolvedPhotos.has(m)) return;
     const url = await this.resolveMedia(m.photo);
     const finalUrl = url || this.defaultPortrait;
@@ -1246,29 +1034,18 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     this.resolvedPhotos.set(m, finalUrl);
   }
 
-  /* ========================= Media / Utils ========================= */
-
-  private async resolveMedia(
-    idOrUrl: any
-  ): Promise<string> {
+  private async resolveMedia(idOrUrl: any): Promise<string> {
     if (!idOrUrl) return '';
 
     if (typeof idOrUrl === 'object') {
-      const src =
-        idOrUrl?.source_url || idOrUrl?.url || '';
+      const src = idOrUrl?.source_url || idOrUrl?.url || '';
       if (src) return src;
-      if (idOrUrl?.id != null) {
-        idOrUrl = idOrUrl.id;
-      }
+      if (idOrUrl?.id != null) idOrUrl = idOrUrl.id;
     }
 
     if (typeof idOrUrl === 'number') {
       try {
-        return (
-          (await firstValueFrom(
-            this.wp.getMediaUrl(idOrUrl)
-          )) || ''
-        );
+        return (await firstValueFrom(this.wp.getMediaUrl(idOrUrl))) || '';
       } catch {
         return '';
       }
@@ -1278,21 +1055,12 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       const s = idOrUrl.trim();
       if (/^\d+$/.test(s)) {
         try {
-          return (
-            (await firstValueFrom(
-              this.wp.getMediaUrl(+s)
-            )) || ''
-          );
+          return (await firstValueFrom(this.wp.getMediaUrl(+s))) || '';
         } catch {
           return '';
         }
       }
-      if (
-        /^(https?:)?\/\//.test(s) ||
-        s.startsWith('/') ||
-        s.startsWith('data:')
-      )
-        return s;
+      if (/^(https?:)?\/\//.test(s) || s.startsWith('/') || s.startsWith('data:')) return s;
       return s;
     }
 
@@ -1300,8 +1068,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private preload(src: string): Promise<void> {
-    if (!this.isBrowser() || !src)
-      return Promise.resolve();
+    if (!this.isBrowser() || !src) return Promise.resolve();
     return new Promise<void>((resolve) => {
       const img = new Image();
       img.onload = () => resolve();
@@ -1315,35 +1082,22 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   private shuffleArray<T>(arr: T[]): T[] {
     const a = arr.slice();
     for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(
-        Math.random() * (i + 1)
-      );
+      const j = Math.floor(Math.random() * (i + 1));
       [a[i], a[j]] = [a[j], a[i]];
     }
     return a;
   }
 
-  private setTeamTitleTwoLines(
-    full: string | undefined
-  ): void {
-    const s =
-      (full || '')
-        .replace(/\s+/g, ' ')
-        .trim() || '';
+  private setTeamTitleTwoLines(full: string | undefined): void {
+    const s = (full || '').replace(/\s+/g, ' ').trim() || '';
     if (s.includes('\n')) {
       const [l1, l2] = s.split('\n');
-      this.teamTitleLine1 =
-        l1?.trim() || this.teamTitleLine1;
-      this.teamTitleLine2 =
-        l2?.trim() || this.teamTitleLine2;
+      this.teamTitleLine1 = l1?.trim() || this.teamTitleLine1;
+      this.teamTitleLine2 = l2?.trim() || this.teamTitleLine2;
       return;
     }
-    if (
-      s.toLowerCase().startsWith('une équipe')
-    ) {
-      const rest = s
-        .slice('une équipe'.length)
-        .trim();
+    if (s.toLowerCase().startsWith('une équipe')) {
+      const rest = s.slice('une équipe'.length).trim();
       if (rest) this.teamTitleLine2 = rest;
     }
   }
@@ -1363,23 +1117,13 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     return `theme-${k || 'autre'}`;
   }
 
-  private slugFromLink(
-    link?: string
-  ): string | undefined {
+  private slugFromLink(link?: string): string | undefined {
     if (!link) return undefined;
     try {
-      const origin =
-        (this.doc as any)?.defaultView
-          ?.location?.origin ||
-        'https://groupe-abc.fr';
+      const origin = (this.doc as any)?.defaultView?.location?.origin || 'https://groupe-abc.fr';
       const u = new URL(link, origin);
-      const parts = u.pathname
-        .split('/')
-        .filter(Boolean);
-      return (
-        parts[parts.length - 1] ||
-        undefined
-      );
+      const parts = u.pathname.split('/').filter(Boolean);
+      return parts[parts.length - 1] || undefined;
     } catch {
       return undefined;
     }
@@ -1389,8 +1133,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     return i;
   }
 
-  /* ========================= FAQ JSON-LD helper ========================= */
-
   private buildFaqJsonLd(faqItems: FaqItem[], pageUrl: string): any | null {
     if (!faqItems || !faqItems.length) return null;
 
@@ -1399,7 +1141,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       '@id': pageUrl.replace(/\/+$/, '') + '#faq',
       mainEntity: faqItems.map((it) => ({
         '@type': 'Question',
-        name: it.q,
+        name: this.stripHtml(it.q),
         acceptedAnswer: {
           '@type': 'Answer',
           text: it.a,
@@ -1407,8 +1149,6 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       })),
     };
   }
-
-  /* ========================= SEO centralisé ========================= */
 
   private applySeoFromConfig(): void {
     const lang: 'fr' | 'en' = this.currentLang;
@@ -1422,9 +1162,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         const u = new URL(canonical);
         origin = `${u.protocol}//${u.host}`;
       }
-    } catch {
-      // fallback sur domaine par défaut
-    }
+    } catch {}
 
     const website = {
       '@type': 'WebSite',
@@ -1439,9 +1177,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       '@id': `${origin}#organization`,
       name: 'Groupe ABC',
       url: origin,
-      sameAs: [
-        'https://www.linkedin.com/company/groupe-abc-experts/',
-      ],
+      sameAs: ['https://www.linkedin.com/company/groupe-abc-experts/'],
     };
 
     const pageUrl = canonical || origin;
@@ -1483,39 +1219,27 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  /* ========================= Weglot helpers ========================= */
-
   private wgRefreshTick(): void {
     if (!this.isBrowser()) return;
     setTimeout(() => {
       const wg: any = (window as any).Weglot;
-      const host =
-        document.querySelector('app-root') ||
-        document.querySelector('main') ||
-        document.body;
+      const host = this.doc.querySelector('app-root') || this.doc.querySelector('main') || this.doc.body;
       wg?.addNodes?.([host]);
     }, 0);
   }
 
-  private wgAddNode(
-    target?: Element | null
-  ): void {
+  private wgAddNode(target?: Element | null): void {
     if (!this.isBrowser()) return;
     setTimeout(() => {
       const wg: any = (window as any).Weglot;
-      const el = target || document.body;
+      const el = target || this.doc.body;
       wg?.addNodes?.([el]);
     }, 0);
   }
 
-  private wgAddNodeDouble(
-    target?: Element | null
-  ): void {
+  private wgAddNodeDouble(target?: Element | null): void {
     if (!this.isBrowser()) return;
     this.wgAddNode(target);
-    setTimeout(
-      () => this.wgAddNode(target),
-      120
-    );
+    setTimeout(() => this.wgAddNode(target), 120);
   }
 }

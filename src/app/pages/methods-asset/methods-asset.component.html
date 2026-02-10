@@ -1,0 +1,120 @@
+<div class="methods-asset-wrapper">
+  <!-- ✅ Détail uniquement si on est bien sur une page fille -->
+  <ng-container *ngIf="isDetail; else emptyTpl">
+    <!-- ===== HERO ===== -->
+    <section class="section hero" aria-labelledby="asset-title">
+
+      <div class="section-inner">
+
+      <button
+        type="button"
+        class="back-btn back-btn--icon"
+        (click)="goBackToList()"
+        aria-label="Retour à la page Biens & Méthodes"
+        title="Retour à la page Biens & Méthodes"
+      >
+        <svg class="back-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M9 6L4.5 10.5 9 15" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4.5 10.5H14.5c3.9 0 7 3.1 7 7v0.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+        <h1 #heroTitle id="asset-title" class="page-title prehide">
+          {{ hero.title }}
+        </h1>
+
+        <h2 *ngIf="hero.subtitle" #heroSubtitle class="page-sub mt-lg-6 mt-2 prehide">
+          {{ hero.subtitle }}
+        </h2>
+
+        <div *ngIf="hero.html" #heroIntro class="page-intro prehide" [innerHTML]="hero.html"></div>
+
+        <div *ngIf="hero.imageUrl" class="hero-media prehide-row" #heroMedia>
+          <img
+            class="hero-img"
+            [appImgFast]="hero.imageUrl"
+            [placeholder]="defaultHeroImg"
+            alt=""
+            loading="lazy"
+            decoding="async"
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== CONTENT SECTIONS ===== -->
+    <section class="section content" *ngIf="sections?.length">
+      <div class="">
+        <div
+          class="content-block prehide-row"
+          #contentBlock
+          *ngFor="let s of sections; trackBy: trackByIndex"
+        >
+          <div class="content-text">
+            <h2 class="content-title" *ngIf="s.title">{{ s.title }}</h2>
+            <div class="content-body" *ngIf="s.html" [innerHTML]="s.html"></div>
+          </div>
+
+          <div class="content-media" *ngIf="s.imageUrl">
+            <img
+              class="content-img"
+              [appImgFast]="s.imageUrl"
+              [placeholder]="defaultSectionImg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ (visible / crawlable) — FIN DE PAGE ===== -->
+    <section class="faq" *ngIf="faqItems?.length" aria-labelledby="faq-title">
+      <div class="faq-inner px-0">
+        <h2 id="faq-title" class="faq-title prehide" #faqTitle>FAQ</h2>
+
+        <ul class="faq-list prehide-row" #faqList role="list">
+          <li class="faq-item" *ngFor="let q of faqItems; let i = index; trackBy: trackByIndex">
+            <!-- Ligne question + chevron (cliquable) -->
+            <button
+              type="button"
+              class="faq-qrow"
+              (click)="toggleFaqItem(i)"
+              [attr.aria-expanded]="isFaqItemOpen(i)"
+              [attr.aria-controls]="'faq-a-' + i"
+            >
+              <span class="faq-q">{{ q.q }}</span>
+
+              <svg
+                class="faq-chevron"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"
+                />
+              </svg>
+
+              <span class="sr-only">{{ isFaqItemOpen(i) ? 'Réduire' : 'Déployer' }}</span>
+            </button>
+
+            <!-- Réponse (DOM conservé pour crawl ; masqué via CSS) -->
+            <div
+              class="faq-a"
+              [class.is-collapsed]="!isFaqItemOpen(i)"
+              [attr.id]="'faq-a-' + i"
+              [attr.aria-hidden]="!isFaqItemOpen(i)"
+              [innerHTML]="q.a"
+            ></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+  </ng-container>
+
+  <!-- ✅ Rien à afficher si on n’est pas sur une page fille -->
+  <ng-template #emptyTpl></ng-template>
+</div>

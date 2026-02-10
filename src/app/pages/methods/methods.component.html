@@ -1,140 +1,312 @@
 <div class="methods-wrapper">
+  <!-- ✅ Listing uniquement si on n’est pas sur une page fille -->
+  <ng-container *ngIf="!isDetail; else detailTpl">
+    <!-- ===== HERO ===== -->
+    <section class="section hero" aria-labelledby="methods-title">
+      <div class="section-inner">
+        <h1 #heroTitle id="methods-title" class="page-title prehide">
+          {{ hero.title }}
+        </h1>
 
-  <!-- ===== HERO ===== -->
-  <section class="section hero" aria-labelledby="methods-title">
-    <div class="section-inner">
-      <h1 #heroTitle id="methods-title" class="page-title prehide">
-        {{ hero.title }}
-      </h1>
-      <h2 *ngIf="hero.subtitle" #heroSubtitle class="page-sub mt-lg-6 mt-2 prehide">
-        {{ hero.subtitle }}
-      </h2>
-      <div *ngIf="hero.html" #heroIntro class="page-intro prehide" [innerHTML]="hero.html"></div>
-    </div>
-  </section>
+        <h2 *ngIf="hero.subtitle" #heroSubtitle class="page-sub mt-lg-6 mt-2 prehide">
+          {{ hero.subtitle }}
+        </h2>
 
-  <!-- ===== DOMAINES D’ACTIFS ===== -->
-  <section class="section assets" *ngIf="domains?.length">
-    <div class="assets-bg" aria-hidden="true">
-      <div class="assets-layer"></div>
-    </div>
-
-    <div class="section-inner ps-3 ps-lg-0">
-      <ul #assetsList class="assets-grid prehide-row" role="list">
-        <li #assetCol class="asset-col mt-4 mt-lg-0" *ngFor="let d of domains; trackBy: trackByIndex">
-          <div class="asset-head">
-            <img
-              class="asset-icon"
-              [appImgFast]="d?.icon != null && d?.icon !== '' ? ('' + d.icon) : (d?.iconUrl || defaultDomainIcon)"
-              [placeholder]="defaultDomainIcon"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
-            <h2 class="asset-title">{{ d.title }}</h2>
-          </div>
-
-          <ul class="panel-list" role="list">
-            <li *ngFor="let it of d.items; trackBy: trackByIndex">
-              <ng-container [ngSwitch]="it.kind">
-                <span *ngSwitchCase="'text'" class="li-text">{{ it.text }}</span>
-
-                <div *ngSwitchCase="'group'" class="li-group">
-                  <span class="group-title">{{ it.title }}</span>
-                  <ul class="sub-list" *ngIf="it.sub?.length" role="list">
-                    <li *ngFor="let s of it.sub; trackBy: trackByIndex">{{ s }}</li>
-                  </ul>
-                </div>
-              </ng-container>
-            </li>
-          </ul>
-        </li>
-      </ul>
-    </div>
-  </section>
-
-  <!-- ===== VALEURS : image seule ===== -->
-  <section class="section values pt-7 pt-lg-0" *ngIf="wheel.image || wheel.imageUrl">
-    <div class="section-inner">
-      <h2 #wheelTitle class="values-title prehide">{{ wheel.title }}</h2>
-
-      <div #wheelWrap class="wheel prehide-row">
-        <img
-          class="wheel-img"
-          [appImgFast]="(wheel.image !== null && wheel.image !== undefined && wheel.image !== '' ? ('' + wheel.image) : (wheel.imageUrl || defaultWheelImg))"
-          [placeholder]="defaultWheelImg"
-          [attr.alt]="wheel.centerAlt || ''"
-          loading="lazy"
-          decoding="async"
-        />
+        <div *ngIf="hero.html" #heroIntro class="page-intro prehide" [innerHTML]="hero.html"></div>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <!-- ===== MÉTHODES D’ÉVALUATION (Accordéon) ===== -->
-  <section class="section evals" *ngIf="methods?.length">
-    <div class="section-evals px-0 pt-lg-12">
-      <h2 #evalTitle class="eval-title prehide">{{ evalTitleText }}</h2>
+    <!-- ===== DOMAINES D’ACTIFS ===== -->
+    <section class="section assets" *ngIf="domains?.length">
+      <div class="assets-bg" aria-hidden="true">
+        <div class="assets-layer"></div>
+      </div>
 
-      <ul #evalList class="eval-list prehide-row" role="list">
-        <li
-          #evalRow
-          class="eval-row"
-          *ngFor="let m of methods; let i = index; trackBy: trackByIndex"
-          [class.open]="evalOpen[i]"
-        >
-          <div class="row-line">
-            <img
-              class="eval-icon"
-              [appImgFast]="m?.icon != null && m?.icon !== '' ? ('' + m.icon) : (m?.iconUrl || defaultEvalIcon)"
-              [placeholder]="defaultEvalIcon"
-              alt=""
-              loading="lazy"
-              decoding="async"
-            />
+      <div class="section-inner ps-3 ps-lg-0">
+        <ul #assetsList class="assets-grid prehide-row" role="list">
+          <li
+            #assetCol
+            class="asset-col mt-4 mt-lg-0"
+            *ngFor="let d of domains; trackBy: trackByIndex"
+          >
+            <div class="asset-head">
+              <img
+                class="asset-icon"
+                [appImgFast]="
+                  d?.icon != null && d?.icon !== ''
+                    ? ('' + d.icon)
+                    : (d?.iconUrl || defaultDomainIcon)
+                "
+                [placeholder]="defaultDomainIcon"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+              <h2 class="asset-title">{{ d.title }}</h2>
+            </div>
 
-            <span class="row-name" [innerHTML]="m.title"></span>
+            <ul class="panel-list" role="list">
+              <li *ngFor="let it of d.items; trackBy: trackByIndex">
+                <ng-container [ngSwitch]="it.kind">
+                  <!-- ======================= -->
+                  <!-- TEXT -->
+                  <!-- ======================= -->
+                  <ng-container *ngSwitchCase="'text'">
+                    <ng-container *ngIf="it.slug; else plainText">
+                      <span class="li-row">
+                        <!-- libellé cliquable -->
+                        <a
+                          class="li-link li-text"
+                          [routerLink]="assetLink(it.slug!)"
+                          [attr.aria-label]="it.text || ''"
+                        >
+                          {{ it.text }}
+                        </a>
 
-            <button
-              class="row-toggle"
-              type="button"
-              [attr.aria-expanded]="evalOpen[i] ? 'true' : 'false'"
-              (click)="toggleEval(i)"
-            >
-              <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"></path>
-              </svg>
-              <span class="sr-only">{{ evalOpen[i] ? 'Réduire' : 'Déployer' }}</span>
-            </button>
-          </div>
+                        <!-- icône ouvrir -->
+                        <a
+                          class="li-open"
+                          [routerLink]="assetLink(it.slug!)"
+                          [attr.aria-label]="'Ouvrir la page : ' + (it.text || '')"
+                          title="Ouvrir"
+                        >
+                          <svg
+                            class="ts-link-icon"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                            focusable="false"
+                          >
+                            <path
+                              fill="currentColor"
+                              d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3ZM5 5h6v2H7v10h10v-4h2v6H5V5Z"
+                            />
+                          </svg>
+                        </a>
+                      </span>
+                    </ng-container>
 
-          <div class="row-desc" *ngIf="m.html && evalOpen[i]">
-            <div class="row-desc-inner" [innerHTML]="m.html"></div>
-          </div>
-        </li>
-      </ul>
-    </div>
-  </section>
+                    <!-- sinon texte simple -->
+                    <ng-template #plainText>
+                      <span class="li-text">{{ it.text }}</span>
+                    </ng-template>
+                  </ng-container>
 
-  <!-- ===== PILOTAGE DES MISSIONS ===== -->
-  <section class="section piloting" *ngIf="piloting?.html || piloting?.flows?.length">
-    <div class="section-piloting">
-      <h2 #pilotTitle class="pilot-title prehide">{{ pilotingTitle }}</h2>
-      <div #pilotIntro class="pilot-intro prehide" [innerHTML]="piloting.html"></div>
+                  <!-- ======================= -->
+                  <!-- GROUP -->
+                  <!-- ======================= -->
+                  <div *ngSwitchCase="'group'" class="li-group">
+                    <ng-container *ngIf="it.slug; else plainGroupTitle">
+                      <span class="li-row">
+                        <a
+                          class="group-title li-link"
+                          [routerLink]="assetLink(it.slug!)"
+                          [attr.aria-label]="it.title || ''"
+                        >
+                          {{ it.title }}
+                        </a>
 
-      <div #pilotGrid class="pilot-grid prehide-row" *ngIf="piloting.flows?.length">
-        <figure *ngFor="let f of piloting.flows; trackBy: trackByIndex" class="pilot-figure">
+                        <a
+                          class="li-open"
+                          [routerLink]="assetLink(it.slug!)"
+                          [attr.aria-label]="'Ouvrir la page : ' + (it.title || '')"
+                          title="Ouvrir"
+                        >
+                          <svg
+                            class="ts-link-icon"
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                            focusable="false"
+                          >
+                            <path
+                              fill="currentColor"
+                              d="M14 3h7v7h-2V6.41l-9.29 9.3-1.42-1.42 9.3-9.29H14V3ZM5 5h6v2H7v10h10v-4h2v6H5V5Z"
+                            />
+                          </svg>
+                        </a>
+                      </span>
+                    </ng-container>
+
+                    <ng-template #plainGroupTitle>
+                      <span class="group-title">{{ it.title }}</span>
+                    </ng-template>
+
+                    <ul class="sub-list" *ngIf="it.sub?.length" role="list">
+                      <li *ngFor="let s of it.sub; trackBy: trackByIndex">{{ s }}</li>
+                    </ul>
+                  </div>
+                </ng-container>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===== VALEURS : image seule ===== -->
+    <section class="section values pt-7 pt-lg-0" *ngIf="wheel.image || wheel.imageUrl">
+      <div class="section-inner">
+        <h2 #wheelTitle class="values-title prehide">{{ wheel.title }}</h2>
+
+        <!-- ✅ utilise wheelIntroHas + wheelIntroHtml (évite les HTML "vides") -->
+        <div
+          #wheelIntro
+          class="values-intro prehide"
+          *ngIf="wheelIntroHas"
+          [innerHTML]="wheelIntroHtml"
+        ></div>
+
+        <div #wheelWrap class="wheel prehide-row">
           <img
-            [appImgFast]="f?.src != null && f?.src !== '' ? ('' + f.src) : (f?.url || defaultPilotImg)"
-            [placeholder]="defaultPilotImg"
-            alt=""
+            class="wheel-img"
+            [appImgFast]="
+              wheel.image !== null && wheel.image !== undefined && wheel.image !== ''
+                ? ('' + wheel.image)
+                : (wheel.imageUrl || defaultWheelImg)
+            "
+            [placeholder]="defaultWheelImg"
+            [attr.alt]="wheel.centerAlt || ''"
             loading="lazy"
             decoding="async"
           />
-          <figcaption *ngIf="f.caption">{{ f.caption }}</figcaption>
-        </figure>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
+    <!-- ===== MÉTHODES D’ÉVALUATION (Accordéon) ===== -->
+    <section class="section evals" *ngIf="methods?.length">
+      <div class="section-evals px-0 pt-lg-12">
+        <h2 #evalTitle class="eval-title prehide">{{ evalTitleText }}</h2>
+
+        <div
+          *ngIf="evalIntroHas"
+          #evalIntro
+          class="eval-intro prehide"
+          [innerHTML]="evalIntroHtml"
+        ></div>
+
+        <ul #evalList class="eval-list prehide-row" role="list">
+          <li
+            #evalRow
+            class="eval-row"
+            *ngFor="let m of methods; let i = index; trackBy: trackByIndex"
+            [class.open]="evalOpen[i]"
+          >
+            <div class="row-line">
+              <img
+                class="eval-icon"
+                [appImgFast]="
+                  m?.icon != null && m?.icon !== ''
+                    ? ('' + m.icon)
+                    : (m?.iconUrl || defaultEvalIcon)
+                "
+                [placeholder]="defaultEvalIcon"
+                alt=""
+                loading="lazy"
+                decoding="async"
+              />
+
+              <span class="row-name" [innerHTML]="m.title"></span>
+
+              <button
+                class="row-toggle"
+                type="button"
+                [attr.aria-expanded]="evalOpen[i] ? 'true' : 'false'"
+                (click)="toggleEval(i)"
+              >
+                <svg class="chevron" viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    d="M6 9l6 6 6-6"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                  ></path>
+                </svg>
+                <span class="sr-only">{{ evalOpen[i] ? 'Réduire' : 'Déployer' }}</span>
+              </button>
+            </div>
+
+            <div class="row-desc" *ngIf="m.html && evalOpen[i]">
+              <div class="row-desc-inner" [innerHTML]="m.html"></div>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ===== PILOTAGE DES MISSIONS ===== -->
+    <section class="section piloting" *ngIf="piloting?.html || piloting?.flows?.length">
+      <div class="section-piloting">
+        <h2 #pilotTitle class="pilot-title prehide">{{ pilotingTitle }}</h2>
+        <div #pilotIntro class="pilot-intro prehide" [innerHTML]="piloting.html"></div>
+
+        <div #pilotGrid class="pilot-grid prehide-row" *ngIf="piloting.flows?.length">
+          <figure *ngFor="let f of piloting.flows; trackBy: trackByIndex" class="pilot-figure">
+            <img
+              [appImgFast]="
+                f?.src != null && f?.src !== ''
+                  ? ('' + f.src)
+                  : (f?.url || defaultPilotImg)
+              "
+              [placeholder]="defaultPilotImg"
+              alt=""
+              loading="lazy"
+              decoding="async"
+            />
+            <figcaption *ngIf="f.caption">{{ f.caption }}</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== FAQ (visible / crawlable) — FIN DE PAGE ===== -->
+    <section class="faq" *ngIf="faqItems.length" aria-labelledby="faq-title">
+      <div class="faq-inner px-0">
+        <h2 id="faq-title" class="faq-title">FAQ</h2>
+
+        <ul class="faq-list" role="list">
+          <li class="faq-item" *ngFor="let q of faqItems; let i = index; trackBy: trackByIndex">
+            <!-- Ligne question + chevron (cliquable) -->
+            <button
+              type="button"
+              class="faq-qrow"
+              (click)="toggleFaqItem(i)"
+              [attr.aria-expanded]="isFaqItemOpen(i)"
+              [attr.aria-controls]="'faq-a-' + i"
+            >
+              <span class="faq-q">{{ q.q }}</span>
+
+              <!-- chevron -->
+              <svg
+                class="faq-chevron"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path
+                  fill="currentColor"
+                  d="M7.41 8.59 12 13.17l4.59-4.58L18 10l-6 6-6-6z"
+                />
+              </svg>
+            </button>
+
+            <!-- Réponse (DOM conservé pour crawl ; masqué via CSS) -->
+            <div
+              class="faq-a"
+              [class.is-collapsed]="!isFaqItemOpen(i)"
+              [attr.id]="'faq-a-' + i"
+              [attr.aria-hidden]="!isFaqItemOpen(i)"
+              [innerHTML]="q.a"
+            ></div>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-template #detailTpl>
+    <router-outlet></router-outlet>
+  </ng-template>
 </div>

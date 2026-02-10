@@ -14,9 +14,9 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Subscription } from 'rxjs';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import { getSeoForRoute } from '../../config/seo.routes';
 
@@ -25,7 +25,6 @@ import { FaqItem, getFaqForRoute } from '../../config/faq.routes';
 
 /* ===== Types ===== */
 type Lang = 'fr' | 'en';
-
 type MapSection = { title?: string; image?: any; items: string[] };
 
 type Firm = {
@@ -59,7 +58,7 @@ type TeachingCourse = {
 @Component({
   selector: 'app-team',
   standalone: true,
-  imports: [CommonModule, ImgFastDirective],
+  imports: [CommonModule, ImgFastDirective, RouterLink],
   templateUrl: './team.component.html',
   styleUrls: ['./team.component.scss'],
 })
@@ -75,27 +74,153 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   // GSAP lazy (SSR-safe)
   private gsap: any | null = null;
   private ScrollTrigger: any | null = null;
+
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
   }
 
+  // ✅ Fix: si scheduleBind() est appelé avant setupGsap(), on rejoue plus tard
+  private pendingBind = false;
+
   private async setupGsap(): Promise<void> {
     if (!this.isBrowser() || this.gsap) return;
-    const { gsap } = await import('gsap');
-    const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-    this.gsap = gsap;
-    this.ScrollTrigger = ScrollTrigger;
+
     try {
-      this.gsap.registerPlugin(this.ScrollTrigger);
-    } catch {}
+      const { gsap } = await import('gsap');
+      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
+      this.gsap = gsap;
+      this.ScrollTrigger = ScrollTrigger;
+      try {
+        this.gsap.registerPlugin(this.ScrollTrigger);
+      } catch {}
+    } catch {
+      // si import échoue, on laisse gsap/null
+    }
+
+    // ✅ rejoue un bind demandé trop tôt
+    if (this.pendingBind && this.gsap) {
+      this.pendingBind = false;
+      this.scheduleBind();
+    }
   }
 
   s(v: unknown): string {
     return v == null ? '' : '' + v;
   }
 
+  /* =====================================================================
+   * Tracking (GA4 via GTM / dataLayer)
+   * ===================================================================== */
+  private pushToDataLayer(payload: Record<string, any>): void {
+    if (!this.isBrowser()) return;
+    try {
+      const w = window as any;
+      w.dataLayer = w.dataLayer || [];
+      w.dataLayer.push(payload);
+    } catch {
+      // no-op
+    }
+  }
+
+  private firmDisplayName(f: Firm): string {
+    const name = (f?.name || '').toString().trim();
+    const person = `${(f?.partnerLastname || '').toString().trim()} ${(f?.partnerFamilyname || '')
+      .toString()
+      .trim()}`.trim();
+    // On priorise le nom de firme, sinon le nom personne, sinon fallback
+    return name || person || 'unknown';
+  }
+
+  private firmRegion(f: Firm): string {
+    return (f?.region || '').toString().trim();
+  }
+
+  private pageLang(): 'fr' | 'en' {
+    return this.isEN ? 'en' : 'fr';
+  }
+
+  /** Event commun GA4 */
+  private trackFirmCta(kind: 'linkedin' | 'contact', f: Firm, url?: string): void {
+    const label = this.firmDisplayName(f);
+    const region = this.firmRegion(f);
+
+    this.pushToDataLayer({
+      event: 'team_cta_click', // nom d'event GA4 (via GTM)
+      team_cta_type: kind, // linkedin | contact
+      team_member: label, // nom firme/membre
+      team_region: region, // région si dispo
+      page_lang: this.pageLang(), // fr/en
+
+      // ✅ évite de pousser null (plus clean côté GTM)
+      outbound_url: url || undefined,
+
+      // ✅ évite null
+      page_path: this.currentPath() || undefined,
+    });
+  }
+
+  /** Handlers appelés par le HTML */
+  trackFirmLinkedinClick(f: Firm): void {
+    this.trackFirmCta('linkedin', f, (f?.partnerLinkedin || '').toString().trim());
+  }
+
+  trackFirmContactClick(f: Firm): void {
+    this.trackFirmCta('contact', f);
+  }
+
+  /* =====================================================================
+   * CTA contact (mailto + navigation page contact) — FIX template encodeURIComponent
+   * ===================================================================== */
+
+  /** route contact (FR/EN) */
+  contactRoute(): any[] {
+    return this.isEN ? ['/en', 'contact-chartered-valuers'] : ['/contact-expert-immobilier'];
+  }
+
+  /** URL absolue de la page contact (utile dans le body du mail) */
+  private contactPageAbsUrl(): string {
+    const base = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
+    const path = this.isEN ? '/en/contact-chartered-valuers' : '/contact-expert-immobilier';
+    return base + path;
+  }
+
+  /** mailto final (subject + body encodés) */
+  firmContactMailtoHref(): string {
+    const subject = 'Demande de contact – Groupe ABC';
+    const body =
+      `Bonjour,\n\n` +
+      `Je souhaite entrer en contact avec Groupe ABC.\n\n` +
+      `Page contact : ${this.contactPageAbsUrl()}\n\n` +
+      `Cordialement,`;
+
+    return (
+      `mailto:contact@groupe-abc.fr` +
+      `?subject=${encodeURIComponent(subject)}` +
+      `&body=${encodeURIComponent(body)}`
+    );
+  }
+
+  /**
+   * 1 clic = tracking + ouvre mail + navigue vers page contact.
+   * (le preventDefault évite que le <a> gère seul la navigation)
+   */
+  handleFirmContactClick(ev: MouseEvent, f: Firm): void {
+    ev.preventDefault();
+
+    // tracking conservé
+    this.trackFirmContactClick(f);
+
+    if (!this.isBrowser()) return;
+
+    // ouvre le mail
+    window.location.href = this.firmContactMailtoHref();
+
+    // navigation vers la page contact (best effort)
+    this.router.navigate(this.contactRoute());
+  }
+
   /* ===== Données ===== */
-  heroTitle = 'Équipes';
+  heroTitle = 'Équipe';
   heroIntroHtml: SafeHtml | '' = '';
   mapSection: MapSection | null = null;
   whereOpen = true;
@@ -115,6 +240,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   faqItems: FaqItem[] = [];
   faqOpen: boolean[] = [];
   isEN = false;
+
+  /** FAQ */
+  openFaqIndexes = new Set<number>();
 
   defaultPortrait = 'assets/fallbacks/portrait-placeholder.svg';
   defaultMap = 'assets/fallbacks/image-placeholder.svg';
@@ -156,6 +284,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private preloadQueue: string[] = [];
   private preloadInFlight = 0;
 
+  // ✅ Fix fuites : on garde les subs pour unsubscribe
+  private firmRowChangesSub?: Subscription;
+  private detailChangesSub?: Subscription;
+  private teachingChangesSub?: Subscription;
+
   private defer(fn: () => void) {
     if (!this.isBrowser()) {
       setTimeout(fn, 0);
@@ -177,11 +310,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.preloadQueue.push(src);
     this.kickQueue();
   }
+
   private kickQueue() {
-    while (
-      this.preloadInFlight < this.MAX_PARALLEL_PRELOAD &&
-      this.preloadQueue.length
-    ) {
+    while (this.preloadInFlight < this.MAX_PARALLEL_PRELOAD && this.preloadQueue.length) {
       const src = this.preloadQueue.shift()!;
       this.preloadInFlight++;
       this.preload(src).finally(() => {
@@ -191,21 +322,25 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  toggleFaqItem(i: number): void {
+    if (this.openFaqIndexes.has(i)) this.openFaqIndexes.delete(i);
+    else this.openFaqIndexes.add(i);
+  }
+
+  isFaqItemOpen(i: number): boolean {
+    return this.openFaqIndexes.has(i);
+  }
+
   /* ===== Helpers fail-safe ===== */
   private revealAllFailSafe(host?: HTMLElement) {
     if (!this.isBrowser()) return;
     try {
-      const root =
-        host ||
-        ((document.querySelector('.team-wrapper') as HTMLElement) ||
-          document.body);
-      root
-        ?.querySelectorAll<HTMLElement>('.prehide, .prehide-row')
-        .forEach((el) => {
-          el.style.opacity = '1';
-          (el.style as any).visibility = 'visible';
-          el.style.transform = 'none';
-        });
+      const root = host || ((document.querySelector('.team-wrapper') as HTMLElement) || document.body);
+      root?.querySelectorAll<HTMLElement>('.prehide, .prehide-row').forEach((el) => {
+        el.style.opacity = '1';
+        (el.style as any).visibility = 'visible';
+        el.style.transform = 'none';
+      });
     } catch {}
   }
 
@@ -228,12 +363,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private regionKeyFromLabel(label?: string | null): string {
     const n = this.norm(label || '');
     if (!n) return '';
-    if (
-      n.includes('paris') ||
-      n.includes('ile-de-france') ||
-      n.includes('ile de france')
-    )
-      return 'idf';
+    if (n.includes('paris') || n.includes('ile-de-france') || n.includes('ile de france')) return 'idf';
     if (n.includes('grand ouest')) return 'grand-ouest';
     if (n.includes('rhone') || n.includes('auvergne')) return 'rhone-alpes';
     if (
@@ -254,12 +384,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       return 'grand-est';
     if (n.includes('antilles') || n.includes('guyane')) return 'antilles-guyane';
     if (n.includes('reunion') || n.includes('mayotte')) return 'reunion-mayotte';
-    return n
-      .replace(/[^a-z0-9- ]/g, '')
-      .replace(/\s+/g, '-');
+    return n.replace(/[^a-z0-9- ]/g, '').replace(/\s+/g, '-');
   }
 
-  /** Déplace la ligne i en tête de liste. Retourne true si déplacé. */
+  /** (conservé, mais plus utilisé pour le toggle) */
   private moveFirmToTop(i: number): boolean {
     if (i <= 0 || i >= this.firms.length) return false;
     const [pick] = this.firms.splice(i, 1);
@@ -271,9 +399,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   rowAnchorId(i: number, f: Firm): string | null {
     const key = this.regionKeyFromLabel(f.region || '');
     if (!key) return null;
-    const first = this.firms.findIndex(
-      (x) => this.regionKeyFromLabel(x.region || '') === key,
-    );
+    const first = this.firms.findIndex((x) => this.regionKeyFromLabel(x.region || '') === key);
     return first === i ? key : null;
   }
 
@@ -281,16 +407,16 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   goToRegion(label: string): void {
     const key = this.regionKeyFromLabel(label);
     if (!key) return;
-    const idx = this.firms.findIndex(
-      (f) => this.regionKeyFromLabel(f.region || '') === key,
-    );
+    const idx = this.firms.findIndex((f) => this.regionKeyFromLabel(f.region || '') === key);
     if (idx >= 0) {
       this.router.navigate([], {
         queryParams: { region: key },
         fragment: key,
         replaceUrl: true,
       });
-      this.openAndScrollTo(idx);
+
+      // ✅ Ici on veut ouvrir + scroller (navigation “région”)
+      this.openAndMaybeScrollTo(idx, true);
     }
   }
 
@@ -299,12 +425,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const qp = this.route.snapshot.queryParamMap.get('region') || '';
     const key = this.regionKeyFromLabel(qp);
     if (!key) return;
-    const idx = this.firms.findIndex(
-      (f) => this.regionKeyFromLabel(f.region || '') === key,
-    );
+    const idx = this.firms.findIndex((f) => this.regionKeyFromLabel(f.region || '') === key);
     if (idx >= 0) {
       this.animateDetailOnFirstLoad = true;
-      this.openAndScrollTo(idx);
+      // ✅ Ici aussi on scrolle (arrivée directe via URL)
+      this.openAndMaybeScrollTo(idx, true);
     }
   }
 
@@ -319,11 +444,8 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     this.faqOpen = new Array(this.faqItems.length).fill(false);
 
     if (this.faqItems.length) {
-      if (lang === 'en') {
-        this.faq.set([], this.faqItems);
-      } else {
-        this.faq.set(this.faqItems, []);
-      }
+      if (lang === 'en') this.faq.set([], this.faqItems);
+      else this.faq.set(this.faqItems, []);
     } else {
       this.faq.clear();
     }
@@ -335,14 +457,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             const acf = root?.acf ?? {};
 
             /* HERO */
-            this.heroTitle =
-              acf?.hero?.section_title ||
-              (this.isEN ? 'Team' : 'Équipes');
-            this.heroIntroHtml = this.sanitizeTrimParagraphs(
-              acf?.hero?.intro_body || '',
-            );
+            this.heroTitle = acf?.hero?.section_title || (this.isEN ? 'Team' : 'Équipe');
+            this.heroIntroHtml = this.sanitizeTrimParagraphs(acf?.hero?.intro_body || '');
 
-            /* MAP (liste des régions) */
+            /* MAP */
             const ms = acf?.map_section ?? {};
             const items = [
               ms?.region_name_1,
@@ -356,9 +474,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             ]
               .filter((s: any) => (s || '').toString().trim())
               .map((s: string) => s.trim());
+
             this.mapSection = {
-              title:
-                ms?.section_title || (this.isEN ? 'Where?' : 'Où ?'),
+              title: ms?.section_title || (this.isEN ? 'Where?' : 'Où ?'),
               image: ms?.map_image || '',
               items,
             };
@@ -366,8 +484,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             /* FIRMS */
             const fr = acf?.firms ?? {};
             this.firmsTitle =
-              fr?.section_title ||
-              (this.isEN ? 'Groupe ABC members' : 'Les membres du Groupe ABC');
+              fr?.section_title || (this.isEN ? 'Groupe ABC members' : 'Les membres du Groupe ABC');
 
             // PDF contacts
             try {
@@ -384,17 +501,13 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
                 logoUrl: fi.logo,
                 name: (fi.name || '').trim(),
                 region: (fi.region_name || '').trim(),
-                partnerDescHtml: fi.partner_description
-                  ? this.sanitizeTrimParagraphs(fi.partner_description)
-                  : '',
+                partnerDescHtml: fi.partner_description ? this.sanitizeTrimParagraphs(fi.partner_description) : '',
                 contactEmail: (fi.contact_email || '').trim() || '',
                 partnerImageUrl: fi.partner_image,
                 partnerLastname: (fi.partner_lastname || '').trim(),
                 partnerFamilyname: (fi.partner_familyname || '').trim(),
                 organismLogoUrl: fi.organism_logo,
-                titlesHtml: this.sanitizeTrimParagraphs(
-                  fi.titles_partner_ || '',
-                ),
+                titlesHtml: this.sanitizeTrimParagraphs(fi.titles_partner_ || ''),
                 partnerLinkedin: (fi.partner_lk || '').trim(),
               };
               return f.name || f.region || f.logoUrl ? f : null;
@@ -408,22 +521,19 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             }
             this.firms = rows;
 
+            // ✅ Shuffle uniquement au chargement
             if (this.RANDOMIZE_FIRMS_ON_LOAD && this.firms.length > 1) {
               this.shuffleInPlace(this.firms);
             }
 
-            const idx = this.firstOpenableIndex();
-            this.openFirmIndex = idx !== null ? idx : null;
-            this.animateDetailOnFirstLoad = idx !== null;
+            this.openFirmIndex = null;
+            this.animateDetailOnFirstLoad = false;
 
             /* TEACHING */
             const teaching = acf?.teaching ?? {};
             this.teachingTitle =
-              teaching?.section_title ||
-              (this.isEN ? 'Teaching & training' : 'Enseignement & formation');
-            this.teachingIntroHtml = this.sanitizeTrimParagraphs(
-              teaching?.intro_body || '',
-            );
+              teaching?.section_title || (this.isEN ? 'Teaching & training' : 'Enseignement & formation');
+            this.teachingIntroHtml = this.sanitizeTrimParagraphs(teaching?.intro_body || '');
 
             const toCourse = (ci: any): TeachingCourse | null => {
               if (!ci) return null;
@@ -450,44 +560,35 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
             // backfill photos intervenant depuis firms
             if (courses.length && this.firms.length) {
-              const norm = (s: string) =>
-                (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+              const norm = (s: string) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
               courses.forEach((c) => {
                 if (!c.speakerPhotoUrl && c.speakerName) {
                   const needle = norm(`${c.speakerName}`);
                   const match = this.firms.find(
-                    (f) =>
-                      norm(
-                        `${f.partnerLastname || ''} ${
-                          f.partnerFamilyname || ''
-                        }`,
-                      ) === needle,
+                    (f) => norm(`${f.partnerLastname || ''} ${f.partnerFamilyname || ''}`) === needle,
                   );
-                  if (match?.partnerImageUrl)
-                    c.speakerPhotoUrl = match.partnerImageUrl;
+                  if (match?.partnerImageUrl) c.speakerPhotoUrl = match.partnerImageUrl;
                 }
               });
             }
 
             this.teachingCourses = courses;
 
-            if (
-              this.TEACHING_RANDOMIZE &&
-              this.teachingCourses.length > 1
-            ) {
+            if (this.TEACHING_RANDOMIZE && this.teachingCourses.length > 1) {
               this.shuffleTeachingCourses(this.teachingCourses);
             }
 
             /* Images */
             await this.hydrateImages();
 
-            /* SEO (+ FAQ JSON-LD merge avec config centrale) */
+            /* SEO */
             const introText = (acf?.hero?.intro_body || '').toString();
             this.applySeo(introText);
 
             // ?region=xxx
             this.applyRegionFromUrl();
 
+            // ✅ ok même si gsap pas encore prêt
             this.scheduleBind();
           } catch (err) {
             console.error('[Team] init failed:', err);
@@ -507,14 +608,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser()) return 0;
     try {
       const hdr =
-        (document.querySelector(
-          '.site-header.is-sticky',
-        ) as HTMLElement) ||
+        (document.querySelector('.site-header.is-sticky') as HTMLElement) ||
         (document.querySelector('header.sticky') as HTMLElement) ||
         (document.querySelector('header') as HTMLElement);
-      return hdr
-        ? Math.ceil(hdr.getBoundingClientRect().height)
-        : 0;
+      return hdr ? Math.ceil(hdr.getBoundingClientRect().height) : 0;
     } catch {
       return 0;
     }
@@ -529,24 +626,22 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         const offset = this.getFixedHeaderOffset() + 12;
-        const top =
-          row.getBoundingClientRect().top +
-          window.scrollY -
-          offset;
-        const behavior: ScrollBehavior = this.prefersReducedMotion()
-          ? 'auto'
-          : 'smooth';
+        const top = row.getBoundingClientRect().top + window.scrollY - offset;
+        const behavior: ScrollBehavior = this.prefersReducedMotion() ? 'auto' : 'smooth';
         window.scrollTo({ top, behavior });
       });
     });
   }
 
-  private openAndScrollTo(i: number): void {
-    this.moveFirmToTop(i);
-    this.openFirmIndex = 0;
+  /**
+   * ✅ Ouvre une firme, optionnellement scroll.
+   * - IMPORTANT : ne réordonne plus la liste (plus de moveFirmToTop ici)
+   */
+  private openAndMaybeScrollTo(i: number, doScroll: boolean): void {
+    this.openFirmIndex = i;
     this.scheduleBind();
-    if (!this.isBrowser()) return;
-    requestAnimationFrame(() => this.scrollFirmRowIntoView(0));
+    if (!this.isBrowser() || !doScroll) return;
+    requestAnimationFrame(() => this.scrollFirmRowIntoView(i));
   }
 
   /* ===== Accordéon ===== */
@@ -579,35 +674,25 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    this.openAndScrollTo(i);
+    // ✅ Toggle normal : pas de scroll, pas de reorder
+    this.openAndMaybeScrollTo(i, false);
 
-    const nf = this.firms[0];
-    if (nf) {
-      if (nf._partnerImgUrl)
-        this.defer(() => this.enqueuePreload(nf._partnerImgUrl!));
-      if (nf.logoUrl)
-        this.defer(() =>
-          this.enqueuePreload(nf.logoUrl as string),
-        );
-      if (nf.organismLogoUrl)
-        this.defer(() =>
-          this.enqueuePreload(nf.organismLogoUrl as string),
-        );
+    // ✅ Preload sur la firme ouverte (pas firms[0])
+    const opened = this.firms[i];
+    if (opened) {
+      if (opened._partnerImgUrl) this.defer(() => this.enqueuePreload(opened._partnerImgUrl!));
+      if (opened.logoUrl) this.defer(() => this.enqueuePreload(opened.logoUrl as string));
+      if (opened.organismLogoUrl)
+        this.defer(() => this.enqueuePreload(opened.organismLogoUrl as string));
     }
   }
 
   isOpen(i: number) {
     return this.openFirmIndex === i;
   }
+
   chevronAriaExpanded(i: number) {
     return this.isOpen(i) ? 'true' : 'false';
-  }
-
-  /* ===== FAQ ===== */
-  toggleFaq(i: number) {
-    const willOpen = !this.faqOpen[i];
-    this.faqOpen.fill(false);
-    if (willOpen) this.faqOpen[i] = true;
   }
 
   /* ===== Utils ===== */
@@ -617,10 +702,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private sanitizeTrimParagraphs(html: string): SafeHtml {
     const compact = (html || '')
-      .replace(
-        /<p>(?:&nbsp;|&#160;|\s|<br\s*\/?>)*<\/p>/gi,
-        '',
-      )
+      .replace(/<p>(?:&nbsp;|&#160;|\s|<br\s*\/?>)*<\/p>/gi, '')
       .replace(/>\s+</g, '><');
     return this.sanitizer.bypassSecurityTrustHtml(compact);
   }
@@ -629,12 +711,14 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const img = e.target as HTMLImageElement;
     if (img) img.src = this.defaultMap;
   }
+
   onTeachImgError(e: Event) {
     const img = e.target as HTMLImageElement;
     if (img && img.src !== this.defaultPortrait) {
       img.src = this.defaultPortrait;
     }
   }
+
   onFirmImgError(e: Event) {
     const img = e.target as HTMLImageElement;
     if (img && img.src !== this.defaultPortrait) {
@@ -653,11 +737,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private prefersReducedMotion(): boolean {
     if (!this.isBrowser()) return false;
     try {
-      return (
-        window
-          .matchMedia?.('(prefers-reduced-motion: reduce)')
-          ?.matches ?? false
-      );
+      return window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches ?? false;
     } catch {
       return false;
     }
@@ -667,23 +747,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser() || !this.gsap) return;
     try {
       const gsap = this.gsap!;
-      const pre = Array.from(
-        host.querySelectorAll<HTMLElement>('.prehide'),
-      );
-      const rows = Array.from(
-        host.querySelectorAll<HTMLElement>('.prehide-row'),
-      );
-      if (pre.length)
-        gsap.set(pre, {
-          autoAlpha: 0,
-          y: 20,
-          visibility: 'hidden',
-        });
-      if (rows.length)
-        gsap.set(rows, {
-          autoAlpha: 0,
-          visibility: 'hidden',
-        });
+      const pre = Array.from(host.querySelectorAll<HTMLElement>('.prehide'));
+      const rows = Array.from(host.querySelectorAll<HTMLElement>('.prehide-row'));
+      if (pre.length) gsap.set(pre, { autoAlpha: 0, y: 20, visibility: 'hidden' });
+      if (rows.length) gsap.set(rows, { autoAlpha: 0, visibility: 'hidden' });
     } catch {}
   }
 
@@ -694,37 +761,27 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       } catch {}
     });
     this.hoverCleanup = [];
-    if (
-      !items?.length ||
-      this.prefersReducedMotion() ||
-      !this.isBrowser() ||
-      !this.gsap
-    )
-      return;
+
+    if (!items?.length || this.prefersReducedMotion() || !this.isBrowser() || !this.gsap) return;
 
     const gsap = this.gsap!;
 
     items.forEach((el) => {
       el.style.transformOrigin = 'left center';
       el.style.willChange = 'transform';
+
       const enter = () => {
-        gsap.to(el, {
-          scale: 1.045,
-          duration: 0.18,
-          ease: 'power3.out',
-        });
+        gsap.to(el, { scale: 1.045, duration: 0.18, ease: 'power3.out' });
       };
       const leave = () => {
-        gsap.to(el, {
-          scale: 1,
-          duration: 0.22,
-          ease: 'power2.out',
-        });
+        gsap.to(el, { scale: 1, duration: 0.22, ease: 'power2.out' });
       };
+
       el.addEventListener('mouseenter', enter);
       el.addEventListener('mouseleave', leave);
       el.addEventListener('focus', enter, true);
       el.addEventListener('blur', leave, true);
+
       this.hoverCleanup.push(() => {
         el.removeEventListener('mouseenter', enter);
         el.removeEventListener('mouseleave', leave);
@@ -745,41 +802,19 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     return arr;
   }
 
-  private firstOpenableIndex(): number | null {
-    if (!this.firms?.length) return null;
-    if (!this.OPEN_ONLY_IF_HAS_DETAILS) return 0;
-    for (let i = 0; i < this.firms.length; i++) {
-      if (this.firmHasDetails(this.firms[i])) return i;
-    }
-    return null;
-  }
-
   /* ======= Média : résolution + préchargement borné ======= */
   private async resolveMedia(idOrUrl: any): Promise<string> {
     if (!idOrUrl) return '';
 
     if (typeof idOrUrl === 'object') {
-      const src =
-        idOrUrl?.source_url ||
-        idOrUrl?.url ||
-        idOrUrl?.medium_large ||
-        idOrUrl?.large ||
-        '';
+      const src = idOrUrl?.source_url || idOrUrl?.url || idOrUrl?.medium_large || idOrUrl?.large || '';
       if (src) return src;
       if (idOrUrl?.id != null) idOrUrl = idOrUrl.id;
     }
 
-    if (
-      typeof idOrUrl === 'number' ||
-      (typeof idOrUrl === 'string' &&
-        /^\d+$/.test(idOrUrl.trim()))
-    ) {
+    if (typeof idOrUrl === 'number' || (typeof idOrUrl === 'string' && /^\d+$/.test(idOrUrl.trim()))) {
       try {
-        return (
-          (await firstValueFrom(
-            this.wp.getMediaUrl(+idOrUrl),
-          )) || ''
-        );
+        return (await firstValueFrom(this.wp.getMediaUrl(+idOrUrl))) || '';
       } catch {
         return '';
       }
@@ -788,12 +823,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (typeof idOrUrl === 'string') {
       const s = idOrUrl.trim();
       if (!s) return '';
-      if (
-        /^(https?:)?\/\//.test(s) ||
-        s.startsWith('/') ||
-        s.startsWith('data:')
-      )
-        return s;
+      if (/^(https?:)?\/\//.test(s) || s.startsWith('/') || s.startsWith('data:')) return s;
       return s;
     }
 
@@ -817,71 +847,43 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (this.mapSection?.image) {
       const u = await this.resolveMedia(this.mapSection.image);
       this.mapSection.image = u || this.defaultMap;
-      this.defer(() =>
-        this.enqueuePreload(this.mapSection!.image as string),
-      );
+      this.defer(() => this.enqueuePreload(this.mapSection!.image as string));
     }
 
     // FIRMS
     for (const f of this.firms) {
       if (f.partnerImageUrl) {
         const partner = await this.resolveMedia(f.partnerImageUrl);
-        (f as any)._partnerImgUrl =
-          partner || this.defaultPortrait;
+        (f as any)._partnerImgUrl = partner || this.defaultPortrait;
       } else {
         (f as any)._partnerImgUrl = this.defaultPortrait;
       }
 
-      if (f.logoUrl)
-        f.logoUrl =
-          (await this.resolveMedia(f.logoUrl)) ||
-          f.logoUrl ||
-          '';
+      if (f.logoUrl) f.logoUrl = (await this.resolveMedia(f.logoUrl)) || f.logoUrl || '';
       if (f.organismLogoUrl)
-        f.organismLogoUrl =
-          (await this.resolveMedia(f.organismLogoUrl)) ||
-          f.organismLogoUrl ||
-          '';
+        f.organismLogoUrl = (await this.resolveMedia(f.organismLogoUrl)) || f.organismLogoUrl || '';
     }
 
     // TEACHING
     for (let i = 0; i < this.teachingCourses.length; i++) {
       const c = this.teachingCourses[i];
       const sp = await this.resolveMedia(c.speakerPhotoUrl);
-      (c as any)._speakerImgUrl =
-        sp || this.defaultPortrait;
+      (c as any)._speakerImgUrl = sp || this.defaultPortrait;
 
       if (c.schoolLogoUrl)
-        c.schoolLogoUrl =
-          (await this.resolveMedia(c.schoolLogoUrl)) ||
-          c.schoolLogoUrl ||
-          '';
+        c.schoolLogoUrl = (await this.resolveMedia(c.schoolLogoUrl)) || c.schoolLogoUrl || '';
 
       if (i < 2 && (c as any)._speakerImgUrl) {
-        this.defer(() =>
-          this.enqueuePreload(
-            (c as any)._speakerImgUrl as string,
-          ),
-        );
+        this.defer(() => this.enqueuePreload((c as any)._speakerImgUrl as string));
       }
     }
 
-    // précharge row ouverte
-    if (
-      this.openFirmIndex != null &&
-      this.firms[this.openFirmIndex]
-    ) {
+    // précharge row ouverte (si jamais)
+    if (this.openFirmIndex != null && this.firms[this.openFirmIndex]) {
       const f = this.firms[this.openFirmIndex];
-      if (f._partnerImgUrl)
-        this.defer(() => this.enqueuePreload(f._partnerImgUrl!));
-      if (f.logoUrl)
-        this.defer(() =>
-          this.enqueuePreload(f.logoUrl as string),
-        );
-      if (f.organismLogoUrl)
-        this.defer(() =>
-          this.enqueuePreload(f.organismLogoUrl as string),
-        );
+      if (f._partnerImgUrl) this.defer(() => this.enqueuePreload(f._partnerImgUrl!));
+      if (f.logoUrl) this.defer(() => this.enqueuePreload(f.logoUrl as string));
+      if (f.organismLogoUrl) this.defer(() => this.enqueuePreload(f.organismLogoUrl as string));
     }
   }
 
@@ -890,20 +892,27 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser()) return;
     await this.setupGsap();
 
-    this.firmRowEls?.changes?.subscribe(() => this.scheduleBind());
-    this.detailEls?.changes?.subscribe(() => this.scheduleBind());
-    this.teachingRowEls?.changes?.subscribe(() => this.scheduleBind());
+    this.firmRowChangesSub = this.firmRowEls?.changes?.subscribe(() => this.scheduleBind());
+    this.detailChangesSub = this.detailEls?.changes?.subscribe(() => this.scheduleBind());
+    this.teachingChangesSub = this.teachingRowEls?.changes?.subscribe(() => this.scheduleBind());
+
     this.scheduleBind();
   }
 
   ngOnDestroy(): void {
+    this.firmRowChangesSub?.unsubscribe();
+    this.detailChangesSub?.unsubscribe();
+    this.teachingChangesSub?.unsubscribe();
+
     if (!this.isBrowser()) return;
+
     try {
       this.ScrollTrigger?.getAll().forEach((t: any) => t.kill());
     } catch {}
     try {
       this.gsap?.globalTimeline?.clear?.();
     } catch {}
+
     this.hoverCleanup.forEach((fn) => {
       try {
         fn();
@@ -914,9 +923,16 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private scheduleBind() {
-    if (!this.isBrowser() || !this.gsap) return;
+    if (!this.isBrowser()) return;
+
+    if (!this.gsap) {
+      this.pendingBind = true;
+      return;
+    }
+
     if (this.bindScheduled) return;
     this.bindScheduled = true;
+
     queueMicrotask(() =>
       requestAnimationFrame(() => {
         this.bindScheduled = false;
@@ -925,24 +941,21 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
+  // --------------------------
+  // bindAnimations(): identique à ton code (non modifié)
+  // --------------------------
   private bindAnimations(): void {
     if (!this.isBrowser() || !this.gsap || !this.ScrollTrigger) return;
     const gsap = this.gsap!;
     const ScrollTrigger = this.ScrollTrigger!;
 
-    const host =
-      (document.querySelector('.team-wrapper') as HTMLElement) ||
-      document.body;
+    const host = (document.querySelector('.team-wrapper') as HTMLElement) || document.body;
     this.forceInitialHidden(host);
 
     const EASE = 'power3.out';
-    const rmPrehide = (
-      els: Element | Element[] | null | undefined,
-    ) => {
+    const rmPrehide = (els: Element | Element[] | null | undefined) => {
       if (!els) return;
-      (Array.isArray(els) ? els : [els]).forEach((el) =>
-        el?.classList?.remove('prehide', 'prehide-row'),
-      );
+      (Array.isArray(els) ? els : [els]).forEach((el) => el?.classList?.remove('prehide', 'prehide-row'));
     };
 
     /* HERO */
@@ -950,44 +963,24 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const hi = this.heroIntroEl?.nativeElement || null;
 
     /* FIRMS */
-    const bar = this.firmsBarEl?.nativeElement as
-      | HTMLElement
-      | null;
-    const h2 = this.firmsTitleEl?.nativeElement as
-      | HTMLElement
-      | null;
-    const link = bar?.querySelector(
-      '.dl-link',
-    ) as HTMLElement | null;
+    const bar = this.firmsBarEl?.nativeElement as HTMLElement | null;
+    const h2 = this.firmsTitleEl?.nativeElement as HTMLElement | null;
+    const link = bar?.querySelector('.dl-link') as HTMLElement | null;
 
-    const rows = (this.firmRowEls?.toArray() || []).map(
-      (r) => r.nativeElement,
-    );
-    const listWrap = rows[0]?.closest(
-      '.firm-list',
-    ) as HTMLElement | null;
+    const rows = (this.firmRowEls?.toArray() || []).map((r) => r.nativeElement);
+    const listWrap = rows[0]?.closest('.firm-list') as HTMLElement | null;
 
     /* TEACHING */
     const tt = this.teachingTitleEl?.nativeElement || null;
     const ti = this.teachingIntroEl?.nativeElement || null;
-    const trows = (this.teachingRowEls?.toArray() || []).map(
-      (r) => r.nativeElement,
-    );
-    const tlist = (trows.length
-      ? trows[0].closest('.teach-list')
-      : null) as HTMLElement | null;
+    const trows = (this.teachingRowEls?.toArray() || []).map((r) => r.nativeElement);
+    const tlist = (trows.length ? trows[0].closest('.teach-list') : null) as HTMLElement | null;
 
     /* MAP */
     const mt = this.mapTitleEl?.nativeElement || null;
     const mi = this.mapImageEl?.nativeElement || null;
-    const mapListEl = document.querySelector(
-      '.where-panel',
-    ) as HTMLElement | null;
-    const mapItems = Array.from(
-      mapListEl?.querySelectorAll<HTMLElement>(
-        'a.where-link',
-      ) || [],
-    );
+    const mapListEl = document.querySelector('.where-panel') as HTMLElement | null;
+    const mapItems = Array.from(mapListEl?.querySelectorAll<HTMLElement>('a.where-link') || []);
 
     const playFirmList = () => {
       if (!listWrap || !rows.length) return;
@@ -997,16 +990,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
           defaults: { ease: EASE },
           onStart: () => rmPrehide([listWrap, ...rows]),
         })
-        .to(
-          rows,
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.45,
-            stagger: 0.06,
-          },
-          0,
-        )
+        .to(rows, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06 }, 0)
         .add(() => {
           gsap.set(rows, { clearProps: 'transform,opacity' });
         });
@@ -1023,9 +1007,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             y: 0,
             duration: 0.5,
             ease: EASE,
-            onComplete: () => {
-              gsap.set(tt, { clearProps: 'all' });
-            },
+            onComplete: () => gsap.set(tt, { clearProps: 'all' }),
           },
         );
       }
@@ -1039,9 +1021,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             y: 0,
             duration: 0.5,
             ease: EASE,
-            onComplete: () => {
-              gsap.set(ti, { clearProps: 'all' });
-            },
+            onComplete: () => gsap.set(ti, { clearProps: 'all' }),
           },
         );
       }
@@ -1052,21 +1032,8 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             defaults: { ease: EASE },
             onStart: () => rmPrehide([tlist, ...trows]),
           })
-          .to(
-            trows,
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.45,
-              stagger: 0.06,
-            },
-            0,
-          )
-          .add(() => {
-            gsap.set(trows, {
-              clearProps: 'transform,opacity',
-            });
-          });
+          .to(trows, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06 }, 0)
+          .add(() => gsap.set(trows, { clearProps: 'transform,opacity' }));
       }
     };
 
@@ -1081,9 +1048,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             y: 0,
             duration: 0.5,
             ease: EASE,
-            onComplete: () => {
-              gsap.set(mi, { clearProps: 'all' });
-            },
+            onComplete: () => gsap.set(mi, { clearProps: 'all' }),
           },
         );
       }
@@ -1097,9 +1062,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             y: 0,
             duration: 0.5,
             ease: EASE,
-            onComplete: () => {
-              gsap.set(mt, { clearProps: 'all' });
-            },
+            onComplete: () => gsap.set(mt, { clearProps: 'all' }),
           },
         );
       }
@@ -1108,24 +1071,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         gsap
           .timeline({
             defaults: { ease: EASE },
-            onStart: () =>
-              rmPrehide([mapListEl, ...mapItems]),
+            onStart: () => rmPrehide([mapListEl, ...mapItems]),
           })
-          .to(
-            mapItems,
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.45,
-              stagger: 0.08,
-            },
-            0,
-          )
-          .add(() => {
-            gsap.set(mapItems, {
-              clearProps: 'transform,opacity',
-            });
-          });
+          .to(mapItems, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.08 }, 0)
+          .add(() => gsap.set(mapItems, { clearProps: 'transform,opacity' }));
         this.attachListHoverZoom(mapItems);
       }
     };
@@ -1155,19 +1104,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       tl.fromTo(
         hi,
         { autoAlpha: 0, y: 14 },
-        {
-          autoAlpha: 1,
-          y: 0,
-          duration: 0.5,
-          immediateRender: false,
-        },
+        { autoAlpha: 1, y: 0, duration: 0.5, immediateRender: false },
         '>-0.10',
-      ).add(
-        () => {
-          gsap.set(hi, { clearProps: 'all' });
-        },
-        '>',
-      );
+      ).add(() => gsap.set(hi, { clearProps: 'all' }), '>');
     }
 
     // Titlebar firms
@@ -1179,40 +1118,26 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
           .fromTo(
             h2,
             { autoAlpha: 0, x: -24 },
-            {
-              autoAlpha: 1,
-              x: 0,
-              duration: 0.5,
-              immediateRender: false,
-            },
+            { autoAlpha: 1, x: 0, duration: 0.5, immediateRender: false },
             'firmsTitlebar',
           )
           .fromTo(
             link,
             { autoAlpha: 0, x: 24 },
-            {
-              autoAlpha: 1,
-              x: 0,
-              duration: 0.5,
-              immediateRender: false,
-            },
+            { autoAlpha: 1, x: 0, duration: 0.5, immediateRender: false },
             'firmsTitlebar+=0.08',
           )
           .add(() => {
-            gsap.set(
-              [h2, link].filter(Boolean) as HTMLElement[],
-              { clearProps: 'all' },
-            );
+            gsap.set([h2, link].filter(Boolean) as HTMLElement[], { clearProps: 'all' });
           });
         this.firmsTitlebarPlayed = true;
       } else {
-        rmPrehide(
-          [h2, link].filter(Boolean) as Element[],
-        );
-        gsap.set(
-          [h2, link].filter(Boolean) as HTMLElement[],
-          { autoAlpha: 1, x: 0, clearProps: 'all' },
-        );
+        rmPrehide([h2, link].filter(Boolean) as Element[]);
+        gsap.set([h2, link].filter(Boolean) as HTMLElement[], {
+          autoAlpha: 1,
+          x: 0,
+          clearProps: 'all',
+        });
       }
     }
 
@@ -1224,9 +1149,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         this.firmListPlayed = true;
       };
       if (isNearView) {
-        tl.add(() => {
-          playOnce();
-        }, '+=0.10');
+        tl.add(() => playOnce(), '+=0.10');
       } else {
         tl.add(() => {
           ScrollTrigger.create({
@@ -1239,11 +1162,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     } else if (listWrap && rows.length) {
       rmPrehide([listWrap, ...rows]);
-      gsap.set(rows, {
-        autoAlpha: 1,
-        y: 0,
-        clearProps: 'transform,opacity',
-      });
+      gsap.set(rows, { autoAlpha: 1, y: 0, clearProps: 'transform,opacity' });
     }
 
     // Teaching
@@ -1273,55 +1192,30 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     // Détail row ouverte
-    const openDetail = document.querySelector(
-      '.firm-row.open .fr-details',
-    ) as HTMLElement | null;
+    const openDetail = document.querySelector('.firm-row.open .fr-details') as HTMLElement | null;
     if (openDetail) {
-      const left = openDetail.querySelector(
-        '.ff-left',
-      ) as HTMLElement | null;
-      const right = openDetail.querySelector(
-        '.ff-right',
-      ) as HTMLElement | null;
-      const parts = [left, right].filter(
-        Boolean,
-      ) as HTMLElement[];
+      const left = openDetail.querySelector('.ff-left') as HTMLElement | null;
+      const right = openDetail.querySelector('.ff-right') as HTMLElement | null;
+      const parts = [left, right].filter(Boolean) as HTMLElement[];
 
       if (parts.length) {
-        if (
-          this.animateDetailOnFirstLoad &&
-          !this.skipDetailAnimNextBind
-        ) {
+        if (this.animateDetailOnFirstLoad && !this.skipDetailAnimNextBind) {
           rmPrehide(parts);
           tl.fromTo(
             left,
             { autoAlpha: 0, y: 14 },
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.45,
-              immediateRender: false,
-            },
+            { autoAlpha: 1, y: 0, duration: 0.45, immediateRender: false },
             '>-0.10',
           ).fromTo(
             right,
             { autoAlpha: 0, y: 14 },
-            {
-              autoAlpha: 1,
-              y: 0,
-              duration: 0.45,
-              immediateRender: false,
-            },
+            { autoAlpha: 1, y: 0, duration: 0.45, immediateRender: false },
             '>-0.36',
           );
           this.animateDetailOnFirstLoad = false;
         } else {
           rmPrehide(parts);
-          gsap.set(parts, {
-            autoAlpha: 1,
-            y: 0,
-            clearProps: 'all',
-          });
+          gsap.set(parts, { autoAlpha: 1, y: 0, clearProps: 'all' });
         }
       }
     }
@@ -1337,10 +1231,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const lang: Lang = this.isEN ? 'en' : 'fr';
     const baseSeo = getSeoForRoute('team', lang);
 
-    const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(
-      /\/+$/,
-      '',
-    );
+    const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
     const fallbackPathFR = '/equipes';
     const fallbackPathEN = '/en/team';
     const fallbackPath = this.isEN ? fallbackPathEN : fallbackPathFR;
@@ -1348,26 +1239,18 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const canonicalAbs =
       baseSeo.canonical && /^https?:\/\//i.test(baseSeo.canonical)
         ? baseSeo.canonical
-        : this.normalizeUrl(
-            siteUrl,
-            baseSeo.canonical || fallbackPath,
-          );
+        : this.normalizeUrl(siteUrl, baseSeo.canonical || fallbackPath);
 
-    // Image OG : on recentre via config + absUrl
-    const ogCandidate =
-      baseSeo.image || '/assets/og/og-default.jpg';
+    const ogCandidate = baseSeo.image || '/assets/og/og-default.jpg';
     const ogAbs = this.absUrl(ogCandidate, siteUrl);
 
-    // Description : priorité à la config, sinon on enrichit avec l’intro
     const introShort = this.strip(rawIntro || '', 90);
     const computedDesc = this.strip(
-      (baseSeo.description || '') ||
-        (introShort ? `${introShort}` : ''),
+      (baseSeo.description || '') || (introShort ? `${introShort}` : ''),
       160,
     );
     const description = baseSeo.description || computedDesc;
 
-    // FAQ JSON-LD basée sur faqItems
     const faqSource = this.faqItems || [];
     const faqLd =
       faqSource.length
@@ -1377,28 +1260,19 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             mainEntity: faqSource.map((f) => ({
               '@type': 'Question',
               name: f.q,
-              acceptedAnswer: {
-                '@type': 'Answer',
-                text: f.a,
-              },
+              acceptedAnswer: { '@type': 'Answer', text: f.a },
             })),
           }
         : null;
 
-    // Fusion avec le JSON-LD de la config centrale
     const existingJsonLd: any = baseSeo.jsonLd;
     let baseGraph: any[] = [];
     let baseContext = 'https://schema.org';
 
     if (existingJsonLd) {
-      if (Array.isArray(existingJsonLd['@graph'])) {
-        baseGraph = existingJsonLd['@graph'];
-      } else {
-        baseGraph = [existingJsonLd];
-      }
-      if (typeof existingJsonLd['@context'] === 'string') {
-        baseContext = existingJsonLd['@context'];
-      }
+      if (Array.isArray(existingJsonLd['@graph'])) baseGraph = existingJsonLd['@graph'];
+      else baseGraph = [existingJsonLd];
+      if (typeof existingJsonLd['@context'] === 'string') baseContext = existingJsonLd['@context'];
     }
 
     const graph: any[] = [...baseGraph];
@@ -1409,12 +1283,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       description,
       canonical: canonicalAbs,
       image: ogAbs,
-      jsonLd: graph.length
-        ? {
-            '@context': baseContext,
-            '@graph': graph,
-          }
-        : undefined,
+      jsonLd: graph.length ? { '@context': baseContext, '@graph': graph } : undefined,
     });
   }
 
@@ -1423,19 +1292,19 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const p = path.startsWith('/') ? path : `/${path}`;
     return `${b}${p}`;
   }
+
   private absUrl(url: string, origin: string): string {
     if (!url) return '';
     try {
       if (/^https?:\/\//i.test(url)) return url;
       if (/^\/\//.test(url)) return 'https:' + url;
-      const o = origin.endsWith('/')
-        ? origin.slice(0, -1)
-        : origin;
+      const o = origin.endsWith('/') ? origin.slice(0, -1) : origin;
       return url.startsWith('/') ? o + url : `${o}/${url}`;
     } catch {
       return url;
     }
   }
+
   private currentPath(): string {
     if (!this.isBrowser()) return this.router?.url || '/';
     try {
@@ -1450,23 +1319,17 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     const n = this.norm((c?.speakerName || '').toString());
     return n;
   }
-  private noAdjacentSameSpeaker(
-    arr: TeachingCourse[],
-  ): boolean {
+
+  private noAdjacentSameSpeaker(arr: TeachingCourse[]): boolean {
     for (let i = 1; i < arr.length; i++) {
-      if (
-        this.speakerKey(arr[i]) &&
-        this.speakerKey(arr[i]) ===
-          this.speakerKey(arr[i - 1])
-      ) {
+      if (this.speakerKey(arr[i]) && this.speakerKey(arr[i]) === this.speakerKey(arr[i - 1])) {
         return false;
       }
     }
     return true;
   }
-  private shuffleTeachingCourses(
-    arr: TeachingCourse[],
-  ): void {
+
+  private shuffleTeachingCourses(arr: TeachingCourse[]): void {
     if (arr.length < 2) return;
 
     let tries = 0;
@@ -1476,18 +1339,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     for (let i = 1; i < arr.length; i++) {
-      if (
-        this.speakerKey(arr[i]) &&
-        this.speakerKey(arr[i]) ===
-          this.speakerKey(arr[i - 1])
-      ) {
+      if (this.speakerKey(arr[i]) && this.speakerKey(arr[i]) === this.speakerKey(arr[i - 1])) {
         let j = i + 1;
-        while (
-          j < arr.length &&
-          (!this.speakerKey(arr[j]) ||
-            this.speakerKey(arr[j]) ===
-              this.speakerKey(arr[i]))
-        )
+        while (j < arr.length && (!this.speakerKey(arr[j]) || this.speakerKey(arr[j]) === this.speakerKey(arr[i])))
           j++;
         if (j < arr.length) {
           const tmp = arr[i];
@@ -1508,10 +1362,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         }
         buckets.get(k)!.push(c);
       }
-      order.sort(
-        (a, b) =>
-          buckets.get(b)!.length - buckets.get(a)!.length,
-      );
+      order.sort((a, b) => buckets.get(b)!.length - buckets.get(a)!.length);
 
       const result: TeachingCourse[] = [];
       let placed = true;
@@ -1520,11 +1371,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         for (const k of order) {
           const list = buckets.get(k)!;
           if (list.length) {
-            if (
-              result.length &&
-              this.speakerKey(result[result.length - 1]) ===
-                (k === '__unknown__' ? '' : k)
-            ) {
+            if (result.length && this.speakerKey(result[result.length - 1]) === (k === '__unknown__' ? '' : k)) {
               continue;
             }
             result.push(list.shift()!);
@@ -1537,11 +1384,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         while (list.length) result.push(list.shift()!);
       }
       for (let i = 1; i < result.length; i++) {
-        if (
-          this.speakerKey(result[i]) &&
-          this.speakerKey(result[i]) ===
-            this.speakerKey(result[i - 1])
-        ) {
+        if (this.speakerKey(result[i]) && this.speakerKey(result[i]) === this.speakerKey(result[i - 1])) {
           const kPrev = this.speakerKey(result[i - 1]);
           for (let j = i + 1; j < result.length; j++) {
             if (this.speakerKey(result[j]) !== kPrev) {
