@@ -12,7 +12,7 @@ import {
   QueryList,
   PLATFORM_ID,
 } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
@@ -72,6 +72,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
   private faq = inject(FaqService);
+  private doc = inject(DOCUMENT);
 
   // GSAP lazy (SSR-safe)
   private gsap: any | null = null;
@@ -96,10 +97,8 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
         this.gsap.registerPlugin(this.ScrollTrigger);
       } catch {}
     } catch {
-      // si import échoue, on laisse gsap/null
       // ✅ IMPORTANT : on ne doit jamais rester en "boot" sinon la FAQ/sections restent invisibles
       this.boot = false;
-      // fail-safe d’affichage (si tu utilises .prehide/.prehide-row sans GSAP)
       this.defer(() => this.revealAllFailSafe());
     }
 
@@ -114,6 +113,69 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     return v == null ? '' : '' + v;
   }
 
+  /* ===========================
+   * ✅ DOWNLOAD (nouvelle solution)
+   * - ouvre dans un nouvel onglet (reste sur la page)
+   * - déclenche en même temps un téléchargement (same-origin via pathname)
+   * =========================== */
+  onDlClick(evt: MouseEvent, fileUrl: string | null | undefined): void {
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    const url = (fileUrl || '').toString().trim();
+    if (!url || !this.isBrowser()) return;
+
+    // Onglet : URL réelle (affichage)
+    const openUrl = url;
+
+    // Download : URL "same-origin" (via proxy /wordpress/... si ton infra le permet)
+    const dlUrl = this.toSameOriginDownloadUrl(url);
+
+    // 1) Ouvre le PDF dans un nouvel onglet (user gesture)
+    try {
+      this.doc.defaultView?.open(openUrl, '_blank', 'noopener,noreferrer');
+    } catch {}
+
+    // 2) Téléchargement immédiat (le plus fiable)
+    try {
+      const a = this.doc.createElement('a');
+      a.href = dlUrl;
+      a.download = this.guessFilename(url);
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      this.doc.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch {}
+  }
+
+  /**
+   * Transforme une URL absolute (WP) en URL relative (/wordpress/wp-content/uploads/...)
+   * => permet de passer par le même origin (proxy Angular) donc "download" plus fiable.
+   */
+  private toSameOriginDownloadUrl(url: string): string {
+    if (!url) return '';
+    try {
+      const origin = this.doc.defaultView?.location?.origin || '';
+      const u = new URL(url, origin);
+      return u.pathname + u.search + u.hash;
+    } catch {
+      return url.startsWith('/') ? url : '/' + url;
+    }
+  }
+
+  private guessFilename(url: string): string {
+    try {
+      const origin = this.doc.defaultView?.location?.origin || 'http://localhost:4200';
+      const u = new URL(url, origin);
+      return decodeURIComponent(
+        u.pathname.split('/').filter(Boolean).pop() || 'contacts-groupe-abc.pdf',
+      );
+    } catch {
+      return 'contacts-groupe-abc.pdf';
+    }
+  }
+
   /* =====================================================================
    * Tracking (GA4 via GTM / dataLayer)
    * ===================================================================== */
@@ -123,9 +185,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       const w = window as any;
       w.dataLayer = w.dataLayer || [];
       w.dataLayer.push(payload);
-    } catch {
-      // no-op
-    }
+    } catch {}
   }
 
   private firmDisplayName(f: Firm): string {
@@ -144,7 +204,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.isEN ? 'en' : 'fr';
   }
 
-  /** Event commun GA4 */
   private trackFirmCta(kind: 'linkedin' | 'contact', f: Firm, url?: string): void {
     const label = this.firmDisplayName(f);
     const region = this.firmRegion(f);
@@ -173,19 +232,16 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
    * CTA contact (mailto + navigation page contact)
    * ===================================================================== */
 
-  /** route contact (FR/EN) */
   contactRoute(): any[] {
     return this.isEN ? ['/en', 'contact-chartered-valuers'] : ['/contact-expert-immobilier'];
   }
 
-  /** URL absolue de la page contact (utile dans le body du mail) */
   private contactPageAbsUrl(): string {
     const base = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
     const path = this.isEN ? '/en/contact-chartered-valuers' : '/contact-expert-immobilier';
     return base + path;
   }
 
-  /** mailto final (subject + body encodés) */
   firmContactMailtoHref(): string {
     const subject = 'Demande de contact – Groupe ABC';
     const body =
@@ -213,8 +269,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /* ===== Données ===== */
 
-  // ✅ BOOT MODE: tu peux le garder si tu veux H1-only au tout début,
-  // mais on S’ASSURE qu’il ne reste jamais vrai (sinon FAQ/sections invisibles).
   boot = true;
 
   heroTitle = 'Équipe';
@@ -233,12 +287,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   teachingIntroHtml: SafeHtml | '' = '';
   teachingCourses: TeachingCourse[] = [];
 
-  /* FAQ inline + langue (désormais issue de faq.routes) */
+  /* FAQ inline + langue (issue de faq.routes) */
   faqItems: FaqItem[] = [];
-  faqOpen: boolean[] = [];
   isEN = false;
 
-  /** FAQ */
+  /** FAQ accordéon */
   openFaqIndexes = new Set<number>();
 
   defaultPortrait = 'assets/fallbacks/portrait-placeholder.svg';
@@ -264,10 +317,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('faqTitleEl') faqTitleEl!: ElementRef<HTMLElement>;
   @ViewChildren('faqItemEl') faqItemEls!: QueryList<ElementRef<HTMLElement>>;
 
-  // optionnel : sub pour rebinder si la FAQ change
+  private firmRowChangesSub?: Subscription;
+  private detailChangesSub?: Subscription;
+  private teachingChangesSub?: Subscription;
   private faqChangesSub?: Subscription;
 
-  // flag pour ne jouer le reveal qu'une fois
   private faqPlayed = false;
 
   /* ===== Flags d’animation ===== */
@@ -281,8 +335,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private bindScheduled = false;
 
   private RANDOMIZE_FIRMS_ON_LOAD = true;
-  private OPEN_ONLY_IF_HAS_DETAILS = true;
-
   private TEACHING_RANDOMIZE = true;
   private TEACHING_MAX_TRIES = 200;
 
@@ -290,11 +342,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
   private MAX_PARALLEL_PRELOAD = 2;
   private preloadQueue: string[] = [];
   private preloadInFlight = 0;
-
-  // ✅ Fix fuites : on garde les subs pour unsubscribe
-  private firmRowChangesSub?: Subscription;
-  private detailChangesSub?: Subscription;
-  private teachingChangesSub?: Subscription;
 
   private defer(fn: () => void) {
     if (!this.isBrowser()) {
@@ -394,13 +441,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     return n.replace(/[^a-z0-9- ]/g, '').replace(/\s+/g, '-');
   }
 
-  private moveFirmToTop(i: number): boolean {
-    if (i <= 0 || i >= this.firms.length) return false;
-    const [pick] = this.firms.splice(i, 1);
-    this.firms.unshift(pick);
-    return true;
-  }
-
   rowAnchorId(i: number, f: Firm): string | null {
     const key = this.regionKeyFromLabel(f.region || '');
     if (!key) return null;
@@ -435,13 +475,10 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /* ===== Init ===== */
   ngOnInit(): void {
-    // Langue
     this.isEN = this.currentPath().startsWith('/en/');
 
-    // ✅ FAQ centralisée : récupération + exposition globale pour la bulle
     const lang: Lang = this.isEN ? 'en' : 'fr';
     this.faqItems = getFaqForRoute('team', lang) || [];
-    this.faqOpen = new Array(this.faqItems.length).fill(false);
 
     if (this.faqItems.length) {
       if (lang === 'en') this.faq.set([], this.faqItems);
@@ -659,7 +696,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!f) return;
 
     const isOpenNow = this.openFirmIndex === i;
-
     if (!this.firmHasDetails(f) && !isOpenNow) return;
 
     this.skipDetailAnimNextBind = true;
@@ -689,7 +725,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     return this.isOpen(i) ? 'true' : 'false';
   }
 
-  /* ===== Utils ===== */
   trackByIndex(i: number) {
     return i;
   }
@@ -708,23 +743,16 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   onTeachImgError(e: Event) {
     const img = e.target as HTMLImageElement;
-    if (img && img.src !== this.defaultPortrait) {
-      img.src = this.defaultPortrait;
-    }
+    if (img && img.src !== this.defaultPortrait) img.src = this.defaultPortrait;
   }
 
   onFirmImgError(e: Event) {
     const img = e.target as HTMLImageElement;
-    if (img && img.src !== this.defaultPortrait) {
-      img.src = this.defaultPortrait;
-    }
+    if (img && img.src !== this.defaultPortrait) img.src = this.defaultPortrait;
   }
 
   private strip(html: string, max = 160): string {
-    const t = (html || '')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    const t = (html || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     return t.length > max ? t.slice(0, max - 1) + '…' : t;
   }
 
@@ -764,12 +792,8 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       el.style.transformOrigin = 'left center';
       el.style.willChange = 'transform';
 
-      const enter = () => {
-        gsap.to(el, { scale: 1.045, duration: 0.18, ease: 'power3.out' });
-      };
-      const leave = () => {
-        gsap.to(el, { scale: 1, duration: 0.22, ease: 'power2.out' });
-      };
+      const enter = () => gsap.to(el, { scale: 1.045, duration: 0.18, ease: 'power3.out' });
+      const leave = () => gsap.to(el, { scale: 1, duration: 0.22, ease: 'power2.out' });
 
       el.addEventListener('mouseenter', enter);
       el.addEventListener('mouseleave', leave);
@@ -895,21 +919,16 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser()) return;
     await this.setupGsap();
 
-    // ✅ CRITICAL : on ne laisse jamais "boot" actif après le 1er paint,
-    // sinon la FAQ peut rester invisble (team--boot masque les sections).
-    // Les sections restent cachées via .prehide / ScrollTrigger, donc pas de flash.
+    // ✅ CRITICAL : on ne laisse jamais "boot" actif après le 1er paint
     queueMicrotask(() => (this.boot = false));
 
     this.firmRowChangesSub = this.firmRowEls?.changes?.subscribe(() => this.scheduleBind());
     this.detailChangesSub = this.detailEls?.changes?.subscribe(() => this.scheduleBind());
     this.teachingChangesSub = this.teachingRowEls?.changes?.subscribe(() => this.scheduleBind());
-
-    // ✅ IMPORTANT : la FAQ est rendue en fin de page → on rebinde quand elle apparaît / change
     this.faqChangesSub = this.faqItemEls?.changes?.subscribe(() => this.scheduleBind());
 
     this.scheduleBind();
 
-    // ✅ fallback ultime si gsap indispo: on dévoile tout (sinon .prehide peut bloquer)
     if (!this.gsap) {
       this.defer(() => this.revealAllFailSafe());
     }
@@ -958,15 +977,11 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
     );
   }
 
-  // --------------------------
-  // bindAnimations(): ✅ FAQ reveal (tardif, comme methods) + boot safe
-  // --------------------------
   private bindAnimations(): void {
     if (!this.isBrowser() || !this.gsap || !this.ScrollTrigger) return;
     const gsap = this.gsap!;
     const ScrollTrigger = this.ScrollTrigger!;
 
-    // ✅ on s’assure de sortir du boot (sinon sections/FAQ invisibles)
     if (this.boot) this.boot = false;
 
     const host = (document.querySelector('.team-wrapper') as HTMLElement) || document.body;
@@ -1019,14 +1034,9 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       if (!listWrap || !rows.length) return;
       gsap.set(rows, { autoAlpha: 0, y: 12 });
       gsap
-        .timeline({
-          defaults: { ease: EASE },
-          onStart: () => rmPrehide([listWrap, ...rows]),
-        })
+        .timeline({ defaults: { ease: EASE }, onStart: () => rmPrehide([listWrap, ...rows]) })
         .to(rows, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06 }, 0)
-        .add(() => {
-          gsap.set(rows, { clearProps: 'transform,opacity,visibility' });
-        });
+        .add(() => gsap.set(rows, { clearProps: 'transform,opacity,visibility' }));
     };
 
     const playTeaching = () => {
@@ -1061,10 +1071,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       if (tlist && trows.length) {
         gsap.set(trows, { autoAlpha: 0, y: 12, visibility: 'hidden' });
         gsap
-          .timeline({
-            defaults: { ease: EASE },
-            onStart: () => rmPrehide([tlist, ...trows]),
-          })
+          .timeline({ defaults: { ease: EASE }, onStart: () => rmPrehide([tlist, ...trows]) })
           .to(trows, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.06 }, 0)
           .add(() => gsap.set(trows, { clearProps: 'transform,opacity,visibility' }));
       }
@@ -1102,21 +1109,16 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       if (mapListEl && mapItems.length) {
         gsap.set(mapItems, { autoAlpha: 0, y: 12, visibility: 'hidden' });
         gsap
-          .timeline({
-            defaults: { ease: EASE },
-            onStart: () => rmPrehide([mapListEl, ...mapItems]),
-          })
+          .timeline({ defaults: { ease: EASE }, onStart: () => rmPrehide([mapListEl, ...mapItems]) })
           .to(mapItems, { autoAlpha: 1, y: 0, duration: 0.45, stagger: 0.08 }, 0)
           .add(() => gsap.set(mapItems, { clearProps: 'transform,opacity,visibility' }));
         this.attachListHoverZoom(mapItems);
       }
     };
 
-    // ✅ FAQ reveal tardif (comme methods)
     const playFaq = () => {
       if (!faqWrap) return;
 
-      // déjà joué => on sécurise l’affichage
       if (this.faqPlayed) {
         const all = [faqWrap, faqTitle, ...faqItemsEls].filter(Boolean) as HTMLElement[];
         rmPrehide(all);
@@ -1128,7 +1130,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       if (faqTitle) rmPrehide(faqTitle);
       if (faqItemsEls.length) rmPrehide(faqItemsEls);
 
-      // garde tout caché jusqu’au déclenchement exact
       gsap.set(faqWrap, { autoAlpha: 0, y: 14, visibility: 'hidden' });
       if (faqTitle) gsap.set(faqTitle, { autoAlpha: 0, y: 16, visibility: 'hidden' });
       if (faqItemsEls.length) gsap.set(faqItemsEls, { autoAlpha: 0, y: 12, visibility: 'hidden' });
@@ -1136,11 +1137,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       gsap
         .timeline({ defaults: { ease: EASE } })
         .to(faqWrap, { autoAlpha: 1, y: 0, duration: 0.35, visibility: 'visible' }, 0)
-        .to(
-          faqTitle,
-          { autoAlpha: 1, y: 0, duration: 0.45, visibility: 'visible' },
-          0.06,
-        )
+        .to(faqTitle, { autoAlpha: 1, y: 0, duration: 0.45, visibility: 'visible' }, 0.06)
         .to(
           faqItemsEls,
           { autoAlpha: 1, y: 0, duration: 0.34, stagger: 0.08, visibility: 'visible' },
@@ -1202,9 +1199,7 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
             { autoAlpha: 1, x: 0, duration: 0.5, immediateRender: false, visibility: 'visible' },
             'firmsTitlebar+=0.08',
           )
-          .add(() => {
-            gsap.set([h2, link].filter(Boolean) as HTMLElement[], { clearProps: 'all' });
-          });
+          .add(() => gsap.set([h2, link].filter(Boolean) as HTMLElement[], { clearProps: 'all' }));
         this.firmsTitlebarPlayed = true;
       } else {
         rmPrehide([h2, link].filter(Boolean) as Element[]);
@@ -1260,13 +1255,13 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    // ✅ FAQ: déclenchement très tardif (comme methods) + mini délai
+    // FAQ tardive
     if (faqWrap) {
       if (!this.faqPlayed) {
         ScrollTrigger.create({
           id: 'faq-last',
           trigger: faqWrap,
-          start: 'top 25%', // ✅ tardif : évite qu’elle parte “au démarrage”
+          start: 'top 25%',
           once: true,
           onEnter: () => {
             gsap.delayedCall(0.15, () => playFaq());
@@ -1402,15 +1397,13 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
 
   /* ========= Teaching shuffle helper ========= */
   private speakerKey(c?: TeachingCourse | null): string {
-    const n = this.norm((c?.speakerName || '').toString());
-    return n;
+    return this.norm((c?.speakerName || '').toString());
   }
 
   private noAdjacentSameSpeaker(arr: TeachingCourse[]): boolean {
     for (let i = 1; i < arr.length; i++) {
-      if (this.speakerKey(arr[i]) && this.speakerKey(arr[i]) === this.speakerKey(arr[i - 1])) {
-        return false;
-      }
+      const a = this.speakerKey(arr[i]);
+      if (a && a === this.speakerKey(arr[i - 1])) return false;
     }
     return true;
   }
@@ -1438,57 +1431,6 @@ export class TeamComponent implements OnInit, AfterViewInit, OnDestroy {
           arr[j] = tmp;
         }
       }
-    }
-
-    if (!this.noAdjacentSameSpeaker(arr)) {
-      const buckets = new Map<string, TeachingCourse[]>();
-      const order: string[] = [];
-      for (const c of arr) {
-        const k = this.speakerKey(c) || '__unknown__';
-        if (!buckets.has(k)) {
-          buckets.set(k, []);
-          order.push(k);
-        }
-        buckets.get(k)!.push(c);
-      }
-      order.sort((a, b) => buckets.get(b)!.length - buckets.get(a)!.length);
-
-      const result: TeachingCourse[] = [];
-      let placed = true;
-      while (placed) {
-        placed = false;
-        for (const k of order) {
-          const list = buckets.get(k)!;
-          if (list.length) {
-            if (
-              result.length &&
-              this.speakerKey(result[result.length - 1]) === (k === '__unknown__' ? '' : k)
-            ) {
-              continue;
-            }
-            result.push(list.shift()!);
-            placed = true;
-          }
-        }
-      }
-      for (const k of order) {
-        const list = buckets.get(k)!;
-        while (list.length) result.push(list.shift()!);
-      }
-      for (let i = 1; i < result.length; i++) {
-        if (this.speakerKey(result[i]) && this.speakerKey(result[i]) === this.speakerKey(result[i - 1])) {
-          const kPrev = this.speakerKey(result[i - 1]);
-          for (let j = i + 1; j < result.length; j++) {
-            if (this.speakerKey(result[j]) !== kPrev) {
-              const t = result[i];
-              result[i] = result[j];
-              result[j] = t;
-              break;
-            }
-          }
-        }
-      }
-      arr.splice(0, arr.length, ...result);
     }
   }
 }

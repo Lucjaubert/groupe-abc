@@ -3,7 +3,7 @@
   <ng-container *ngIf="!isDetail; else detailTpl">
     <!-- ===== HERO ===== -->
     <section class="section hero" aria-labelledby="methods-title">
-      <div class="section-inner">
+      <div class="section-inner pt-5 pt-lg-10">
         <h1 #heroTitle id="methods-title" class="page-title prehide">
           {{ hero.title }}
         </h1>
@@ -145,7 +145,7 @@
     </section>
 
     <!-- ===== VALEURS : image seule ===== -->
-    <section class="section values pt-7 pt-lg-0" *ngIf="wheel.image || wheel.imageUrl">
+    <section class="section values pt-lg-0" *ngIf="wheel.image || wheel.imageUrl">
       <div class="section-inner">
         <h2 #wheelTitle class="values-title prehide">{{ wheel.title }}</h2>
 
