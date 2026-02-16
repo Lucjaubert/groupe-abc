@@ -1,9 +1,9 @@
 @use "sass:map";
 @use "../../../styles/_variables.scss" as vars;
 
-$blue-hero: #444798; // titres & gros textes (60px)
-$blue: #444697;      // petits textes + contours (14px)
-$red: #E44D4D;       // bouton
+$blue-hero: #444798;
+$blue: #444697;
+$red: #E44D4D;
 $grey-100: #F5F4F8;
 
 // Fallbacks sûrs si la clé n'existe pas dans tes maps
@@ -46,7 +46,6 @@ $fw-regular: if(map.has-key(vars.$font-weight, "regular"), map.get(vars.$font-we
 
   .section-inner {
     width: 100%;
-    max-width: 1440px;
     margin-inline: auto;
     padding-block-start: clamp(56px, 8vw, 120px);
     padding-block-end: 0;
@@ -75,7 +74,6 @@ $fw-regular: if(map.has-key(vars.$font-weight, "regular"), map.get(vars.$font-we
     img {
       width: 39.47px;
       height: 39.47px;
-      flex-shrink: 0;
       display: block;
       object-fit: cover;
     }
@@ -87,14 +85,13 @@ $fw-regular: if(map.has-key(vars.$font-weight, "regular"), map.get(vars.$font-we
   inline-size: 100%;
   border: 0;
   padding: 0;
-  margin: 0 0 32px 0; /* marge réduite pour rapprocher la plaquette */
-  margin-top: 105px;
+  margin: 0 0 32px 0;
 }
 
 /* =========================================================================
-   RADIOS (✅ solution)
-   Desktop : Col1 = CIV, Col2 = PROFIL (ton HTML corrigé)
-   Mobile  : reste en 2 colonnes alignées avec la grille des champs
+   RADIOS
+   - Objectif : caler CIV (gauche) sur colonne Prénom/Téléphone/Message/PJ
+               caler PROFIL (droite) sur colonne Nom/Email/Envoyer
    ========================================================================= */
 
 .radios {
@@ -105,32 +102,23 @@ $fw-regular: if(map.has-key(vars.$font-weight, "regular"), map.get(vars.$font-we
   --r: 17px;
 }
 
-/* ✅ 2 colonnes (civ à gauche / profil à droite) */
+/* ✅ même grille 2 colonnes que .form-grid */
 .rad-row{
   display: grid;
-  grid-template-columns: 1fr 1fr; /* ✅ civ | profil */
-  column-gap: 28px;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 18px; /* = form-grid desktop */
   align-items: start;
 }
 
-/* Chaque colonne empile ses radios */
 .rad-col{
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   gap: 14px;
 }
 
-/* (compat : si tu avais encore rad-left/rad-right quelque part) */
-.rad-left,
-.rad-right {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 28px;
-}
+.rad-col--left { align-items: flex-start; }
+.rad-col--right { align-items: flex-start; }
 
-/* ===== Radio custom ===== */
 .radio {
   position: relative;
   display: inline-flex !important;
@@ -192,48 +180,44 @@ $fw-regular: if(map.has-key(vars.$font-weight, "regular"), map.get(vars.$font-we
 }
 
 /* =========================================================================
-   ✅ Grille des champs (avec zones + switch PRO)
+   ✅ Grille des champs
    ========================================================================= */
 .form-grid{
   display: grid;
+  width: 100%;
   grid-template-columns: 1fr 1fr;
   column-gap: 18px;
   row-gap: 18px;
 
-  /* défaut = Particulier */
   grid-template-areas:
     "firstname lastname"
-    "email     phone"
+    "phone     email"
     "message   message";
 
   &.is-pro{
     grid-template-areas:
       "company   company"
-      "email     phone"
+      "phone     email"
       "message   message";
   }
 }
 
-/* Zones */
-.fg.firstname { grid-area: firstname; }
-.fg.lastname  { grid-area: lastname; }
-.fg.company   { grid-area: company; }
-.fg.email     { grid-area: email; }
-.fg.phone     { grid-area: phone; }
-.fg.message   { grid-area: message; }
+.fg-first   { grid-area: firstname; }
+.fg-last    { grid-area: lastname; }
+.fg-company { grid-area: company; }
+.fg-phone   { grid-area: phone; }
+.fg-email   { grid-area: email; }
+.form-grid > label.full { grid-area: message; }
 
-/* full (compat) */
 .form-grid label { display: grid; }
 .form-grid label.full { grid-column: 1 / -1; }
 
-/* ✅ champs “cachables” animables (GSAP) */
 .js-person,
 .js-company{
   overflow: hidden;
   will-change: height, opacity, transform;
 }
 
-/* Champs */
 input,
 textarea {
   width: 100%;
@@ -258,7 +242,8 @@ textarea:focus {
 }
 
 /* =========================================================================
-   ✅ BARRE BAS DE FORM : PJ à gauche + Envoyer à droite (même ligne)
+   ✅ BARRE BAS DE FORM
+   - Objectif : PJ + Envoyer sur 1 seule ligne (desktop + mobile)
    ========================================================================= */
 .form-bottombar{
   display: flex;
@@ -266,28 +251,29 @@ textarea:focus {
   justify-content: space-between;
   gap: 16px;
   margin-top: 12px;
+  flex-wrap: nowrap; /* ✅ force la ligne unique */
 }
 
-/* Left side */
 .form-bottombar .form-extras{
   display: flex;
   justify-content: flex-start;
   align-items: center;
   min-width: 0;
   flex: 1 1 auto;
-  margin-top: 0; /* annule l'ancien margin-top */
+  margin-top: 0;
+  position: relative; /* important pour .attach-input absolute */
+  overflow: hidden; /* ✅ évite que le nom de fichier casse la ligne */
 }
 
-/* Right side */
 .form-bottombar .form-actions{
   display: flex;
   justify-content: flex-end;
-  margin-top: 0; /* annule l'ancien margin-top */
+  margin-top: 0;
   flex: 0 0 auto;
 }
 
 /* =========================================================================
-   ✅ Pièce jointe (dans la bottom bar)
+   ✅ Pièce jointe
    ========================================================================= */
 .attach {
   display: inline-flex;
@@ -317,6 +303,7 @@ textarea:focus {
   color: $blue;
   background: #fff;
   transition: transform .15s ease, background-color .15s ease, border-color .15s ease, opacity .15s ease;
+  flex: 0 0 auto;
 }
 
 .attach-ico {
@@ -339,6 +326,7 @@ textarea:focus {
   line-height: normal;
 }
 
+/* ✅ garde l’ellipsis, mais sans casser l’alignement horizontal */
 .attach-name {
   max-width: 360px;
   font-size: 13px;
@@ -346,6 +334,7 @@ textarea:focus {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  min-width: 0;
 }
 
 .attach-clear {
@@ -357,8 +346,12 @@ textarea:focus {
   border-radius: 6px;
   line-height: 1;
   transition: background-color .15s ease, color .15s ease;
+  flex: 0 0 auto;
 }
-.attach-clear:hover { background: rgba(68, 71, 152, .08); color: rgba(68, 70, 151, 1); }
+.attach-clear:hover {
+  background: rgba(68, 71, 152, .08);
+  color: rgba(68, 70, 151, 1);
+}
 
 .attach:hover .attach-btn { transform: translateY(-1px); opacity: .95; }
 .attach:active .attach-btn { transform: none; opacity: .9; }
@@ -381,12 +374,11 @@ textarea:focus {
   font-weight: 400;
   line-height: normal;
   cursor: pointer;
-  transition: background-color .18s ease, color .18s ease, transform .15s ease, opacity .15s ease;
+  transition: background-color .18s ease, transform .15s ease, opacity .15s ease;
 
   .btn-label { pointer-events: none; justify-self: start; text-align: left; }
   .ico-mail,
   .ico-check { justify-self: end; }
-  .ico-mail  { inline-size: 31px; block-size: 19px; display: grid; place-items: center; }
   .ico-check { display: none; width: 22px; height: 22px; fill: #FFF; }
 
   &:hover:not(:disabled)   { transform: translateY(-1px); opacity: .95; }
@@ -403,26 +395,6 @@ textarea:focus {
 }
 
 .form-error { margin-top: 10px; color: #b91c1c; font-size: 14px; }
-
-/* (on garde la classe pour compat, mais c’est la bottom bar qui gère l’alignement) */
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 0;
-
-  .ico-mail {
-    justify-self: end;
-    inline-size: 31px;
-    block-size: 19px;
-    display: grid;
-    place-items: center;
-    color: #7a7a7a;
-    transition: color .2s ease;
-
-    svg, svg * { fill: currentColor; }
-    &:hover { color: #fff; }
-  }
-}
 
 /* ====== BLOC COORDONNÉES ====== */
 .big-infos {
@@ -457,8 +429,8 @@ textarea:focus {
 /* ===== Wrapper adresse + download (desktop : 2 colonnes) ===== */
 .contact-bottom {
   display: grid;
-  grid-template-columns: 1fr auto; /* l'adresse prend la place, le download à droite */
-  align-items: start;               /* même hauteur que “18 rue Pasquier” */
+  grid-template-columns: 1fr auto;
+  align-items: start;
   column-gap: clamp(24px, 6vw, 64px);
   margin: 8px 0 28px 0;
 }
@@ -469,14 +441,14 @@ textarea:focus {
   justify-content: flex-start;
   align-items: flex-end;
   gap: clamp(16px, 2.8vw, 24px);
-  margin: 0; /* l’espacement vertical est géré par le wrapper */
+  margin: 0;
 }
 
 .download .dl-text { max-width: 540px; }
 
 .download .dl-line {
   color: $blue;
-  font-size: $fs-80; // ~36px par défaut si token absent
+  font-size: $fs-80;
   font-weight: $fw-regular;
   white-space: normal;
   margin: 0;
@@ -495,7 +467,7 @@ textarea:focus {
   align-items: end;
   gap: clamp(16px, 2.8vw, 24px);
   text-decoration: none;
-  width: 364px; /* largeur desktop */
+  width: 364px;
   color: inherit;
   cursor: pointer;
 }
@@ -503,10 +475,7 @@ textarea:focus {
   outline: 2px solid rgba(68,71,152,.35);
   outline-offset: 2px;
 }
-.download .dl-link.disabled {
-  opacity: .6;
-  /* pas de pointer-events:none pour garder la navigabilité clavier si besoin */
-}
+.download .dl-link.disabled { opacity: .6; }
 
 .download .dl-icon-img {
   width: clamp(36px, 4vw, 48px);
@@ -516,34 +485,32 @@ textarea:focus {
   transform: translateY(2px);
 }
 
+/* ✅ FIX : cache réellement les champs “toggle”, même s’ils sortent de .form-grid */
+.is-hidden {
+  display: none !important;
+}
 
 
 /* ================= Mobile ================= */
 @media (max-width: 768px) {
-  .only-desktop { display: none !important; }
-
-  /* ✅ Mobile version du bouton download (3 lignes maîtrisées) */
   .only-mobile {
-    display: inline-flex !important;
-    flex-direction: column;
-    align-items: flex-start;
-
+    display: inline !important;
     font-size: 23px;
     font-weight: 400;
-
-    /* ✅ contrôle précis de l’écart vertical entre les 3 lignes */
-    gap: 2px;          /* ajuste (0 à 6px) */
-    line-height: 1.05; /* réduit l'espace "perçu" */
   }
 
-  .only-mobile .dl-l1,
-  .only-mobile .dl-l2,
-  .only-mobile .dl-l3 {
+  .only-mobile .dl-line {
     display: block;
-    margin: 0;
-    padding: 0;
     line-height: 1.05;
+    margin: 0;
   }
+
+  /* ✅ force la 3e ligne "du Groupe ABC" à rester sur une seule ligne */
+  .only-mobile .dl-line--nowrap{
+    white-space: nowrap;
+  }
+
+  .only-desktop { display: none !important; }
 
   .contact-bottom {
     grid-template-columns: 1fr;
@@ -566,21 +533,13 @@ textarea:focus {
     margin-top: 4px;
   }
 
-  .contact-head .linkedin img {
-    width: 34.9px;
-    height: 35px;
-    flex-shrink: 0;
-  }
-
+  .contact-head .linkedin img { width: 34.9px; height: 35px; flex-shrink: 0; }
   .contact-head .page-title {
     color: #444798;
     font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto,
-      "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
-      "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    font-size: 32px;
-    font-style: normal;
-    font-weight: 300;
-    line-height: 30px;
+                 "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+                 "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-size: 32px; font-style: normal; font-weight: 300; line-height: 30px;
   }
 
   .big-infos { color: #444697; }
@@ -588,28 +547,27 @@ textarea:focus {
   .big-infos a {
     color: #444697;
     font-family: "Plus Jakarta Sans", system-ui, -apple-system, Segoe UI, Roboto,
-      "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
-      "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
-    font-size: 35px;
-    font-weight: 400;
-    line-height: 50px;
+                 "Helvetica Neue", Arial, "Noto Sans", "Apple Color Emoji",
+                 "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    font-size: 35px; font-weight: 400; line-height: 50px;
   }
 
+  /* ✅ form grid mobile : même logique 2 colonnes */
   .form-grid {
     grid-template-columns: 1fr 1fr;
     column-gap: 14px;
     row-gap: 14px;
   }
 
-  /* ✅ RADIOS MOBILE : on garde 2 colonnes (civ | profil) et on aligne avec la grille */
+  /* ✅ radios mobile : ON GARDE 2 COLONNES (civ à gauche / profil à droite) */
   .rad-row{
     grid-template-columns: 1fr 1fr;
-    column-gap: 14px; /* ✅ même gap que .form-grid mobile */
-    row-gap: 14px;
+    column-gap: 14px; /* = form-grid mobile */
+    row-gap: 0;
   }
 
-  /* ✅ en mobile, PJ + Envoyer sur la même ligne */
-  .form-bottombar {
+  /* ✅ bottom bar mobile : PJ + Envoyer sur la même ligne */
+  .form-bottombar{
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
@@ -617,35 +575,11 @@ textarea:focus {
     flex-wrap: nowrap;
   }
 
-  .form-extras {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
+  /* ✅ évite que le nom de fichier pousse tout */
+  .attach-name { max-width: 140px; }
 
-  .form-actions {
-    flex: 0 0 auto;
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
+  /* ✅ réduit le bouton pour tenir sur une ligne */
+  .btn-contact{
+    width: 150px;
   }
-
-  /* ✅ tronque le nom de fichier plutôt que de pousser le bouton */
-  .attach-name {
-    max-width: 140px; /* ajuste si besoin */
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    display: inline-block;
-    vertical-align: middle;
-  }
-
-  .btn-contact {
-    width: auto;
-    min-width: 120px; /* ajuste si besoin */
-  }
-}
-
-/* ✅ cache réellement les champs (et fait remonter la grille) */
-.form-grid .is-hidden {
-  display: none !important;
 }

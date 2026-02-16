@@ -141,6 +141,24 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     return '';
   }
 
+  /** ✅ Normalise un champ qui peut être URL / objet ACF / id / 0 / vide */
+  private normalizeMaybeUrl(v: any): string | undefined {
+    if (v == null) return undefined;
+
+    if (typeof v === 'object') {
+      const src = v?.source_url || v?.url || v?.src || '';
+      const s = (src || '').toString().trim();
+      return s ? s : undefined;
+    }
+
+    const s = ('' + v).trim();
+
+    // valeurs "vides" fréquentes ACF/WP après suppression
+    if (!s || s === '0' || s === 'false' || s === 'null' || s === 'undefined') return undefined;
+
+    return s;
+  }
+
   private currentLang: 'fr' | 'en' = 'fr';
   private weglotOff?: () => void;
 
@@ -211,7 +229,7 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   teamPages: TeamMember[][] = [];
   teamPageIndex = 0;
   private teamAutoplayRef: any = null;
-  teamAutoplayMs = 5000;
+  teamAutoplayMs = 7000;
   teamAutoplayStoppedByUser = false;
 
   private resolvedPhotos = new WeakMap<TeamMember, string>();
@@ -260,6 +278,20 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
   isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
+  }
+
+  /**
+   * ✅ NOUVELLE SOLUTION (FR/EN) — utilisé par le HTML :
+   * [routerLink]="toPath('slug-fr','slug-en')"
+   *
+   * - FR -> "/slug-fr"
+   * - EN -> "/en/slug-en"
+   */
+  toPath(frSlug: string, enSlug: string): string {
+    const raw = (this.isEnglish() ? enSlug : frSlug) || '';
+    const slug = raw.toString().replace(/^\/+|\/+$/g, ''); // trim des slashs
+    if (!slug) return this.isEnglish() ? '/en' : '/';
+    return this.isEnglish() ? `/en/${slug}` : `/${slug}`;
   }
 
   private async setupGsap(): Promise<void> {
@@ -594,24 +626,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
         },
       });
 
-      tl.to(
-        titleEl,
-        {
-          autoAlpha: 1,
-          y: 0,
-          duration: DUR_T,
-        },
-        0.5,
-      )
-        .to(
-          subEl,
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration: DUR_S,
-          },
-          0.8,
-        )
+      tl.to(titleEl, { autoAlpha: 1, y: 0, duration: DUR_T }, 0.5)
+        .to(subEl, { autoAlpha: 1, y: 0, duration: DUR_S }, 0.8)
         .to(
           dots,
           {
@@ -642,7 +658,11 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     if (this.gsap && !instant) {
       layers.forEach((el, i) => {
-        this.gsap.to(el, { opacity: i === this.heroIndex ? 1 : 0, duration: 0.45, ease: 'power2.out' });
+        this.gsap.to(el, {
+          opacity: i === this.heroIndex ? 1 : 0,
+          duration: 0.45,
+          ease: 'power2.out',
+        });
       });
     } else {
       layers.forEach((el, i) => (el.style.opacity = i === this.heroIndex ? '1' : '0'));
@@ -753,7 +773,13 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     if (n.includes('rhone') || n.includes('auvergne')) return 'rhone-alpes';
     if (n.includes('cote d azur') || n.includes('sud-est')) return 'cote-azur';
     if (n.includes('sud-ouest')) return 'sud-ouest';
-    if (n.includes('grand est') || n.includes('nord & est') || n.includes('nord et est')) return 'grand-est';
+    if (
+      n.includes('grand est') ||
+      n.includes('nord & est') ||
+      n.includes('nord et est') ||
+      n.includes('nord et est')
+    )
+      return 'grand-est';
     if (n.includes('antilles') || n.includes('guyane')) return 'antilles-guyane';
     if (n.includes('reunion') || n.includes('mayotte')) return 'reunion-mayotte';
     return n.replace(/[^a-z0-9- ]/g, '').replace(/\s+/g, '-');
@@ -858,15 +884,108 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
 
     const dl = this.acf?.presentation_download_section || {};
     const rawFile = dl.presentation_file;
-    const resolved = await this.resolveMedia(rawFile);
+    const resolved = (await this.resolveMedia(rawFile))?.toString().trim();
 
     this.presentation = {
       text1: dl.presentation_button_text_1 || 'Télécharger la présentation du',
       text2: dl.presentation_button_text_2 || 'Groupe ABC',
-      file: resolved || null,
+      file: resolved ? resolved : null,
     };
   }
 
+  /* ===========================
+   * DOWNLOAD PDF (nouvel onglet + download sans quitter la page)
+   * =========================== */
+  onPresentationClick(evt: MouseEvent): void {
+    evt.preventDefault();
+    evt.stopPropagation();
+
+    const url = this.presentation?.file;
+    if (!url) return;
+
+    const openUrl = url;
+    const dlUrl = this.toSameOriginDownloadUrl(url);
+
+    try {
+      this.doc.defaultView?.open(openUrl, '_blank', 'noopener,noreferrer');
+    } catch {}
+
+    try {
+      const a = this.doc.createElement('a');
+      a.href = dlUrl;
+      a.download = this.guessFilename(url);
+      a.rel = 'noopener';
+      a.style.display = 'none';
+      this.doc.body.appendChild(a);
+      a.click();
+      a.remove();
+    } catch {}
+  }
+
+  private async downloadViaBlobIfPossible(url: string): Promise<void> {
+    if (!this.isBrowser() || !url) return;
+
+    const abs = this.toAbsoluteUrl(url);
+    const filename = this.guessFilename(abs);
+    try {
+      const resp = await fetch(abs, { mode: 'cors' });
+      if (!resp.ok) return;
+
+      const blob = await resp.blob();
+      const objectUrl = URL.createObjectURL(blob);
+
+      this.triggerDownload(objectUrl, filename);
+
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 30_000);
+    } catch {}
+  }
+
+  private triggerDownload(href: string, filename: string): void {
+    const a = this.doc.createElement('a');
+    a.href = href;
+    a.download = filename || 'Plaquette-Groupe-ABC.pdf';
+    a.rel = 'noopener';
+    a.style.display = 'none';
+    this.doc.body.appendChild(a);
+    a.click();
+    a.remove();
+  }
+
+  private toSameOriginDownloadUrl(url: string): string {
+    if (!url) return '';
+    try {
+      const origin = this.doc.defaultView?.location?.origin || '';
+      const u = new URL(url, origin);
+      return u.pathname + u.search + u.hash;
+    } catch {
+      return url.startsWith('/') ? url : '/' + url;
+    }
+  }
+
+  private toAbsoluteUrl(url: string): string {
+    try {
+      const origin = this.doc.defaultView?.location?.origin || 'http://localhost:4200';
+      return new URL(url, origin).toString();
+    } catch {
+      return url;
+    }
+  }
+
+  private guessFilename(url: string): string {
+    try {
+      const origin = this.doc.defaultView?.location?.origin || 'http://localhost:4200';
+      const u = new URL(url, origin);
+      return decodeURIComponent(
+        u.pathname.split('/').filter(Boolean).pop() || 'Plaquette-Groupe-ABC.pdf',
+      );
+    } catch {
+      return 'Plaquette-Groupe-ABC.pdf';
+    }
+  }
+
+  /* ===========================
+   * Animations / News / Sections
+   * =========================== */
   private bindScrollAnimations(): void {
     if (!this.isBrowser() || !this.gsap || !this.ScrollTrigger) return;
   }
@@ -930,7 +1049,9 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
       const name = (t[`team_name_${i}`] || '').toString().trim();
       const area = t[`team_area_${i}`] || '';
       const jobHtml = t[`team_job_${i}`] || '';
-      const ricsLogo = (t[`team_rics_${i}`] ?? '').toString().trim();
+
+      // ✅ FIX : évite "0" / "false" / "" => pas d'img cassée
+      const ricsLogo = this.normalizeMaybeUrl(t[`team_rics_${i}`]);
 
       if (photo || name || area || jobHtml || ricsLogo) {
         let nameFirst = name;
@@ -940,7 +1061,14 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
           nameFirst = parts.slice(0, -1).join(' ');
           nameLast = parts.slice(-1)[0];
         }
-        tmp.push({ photo: photo ?? '', nameFirst, nameLast, area, jobHtml, ricsLogo: ricsLogo || undefined });
+        tmp.push({
+          photo: photo ?? '',
+          nameFirst,
+          nameLast,
+          area,
+          jobHtml,
+          ricsLogo, // déjà undefined si vide
+        });
       }
     }
 
@@ -964,6 +1092,15 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
   onTeamImgError(e: Event): void {
     const img = e.target as HTMLImageElement;
     if (img && img.src !== this.defaultPortrait) img.src = this.defaultPortrait;
+  }
+
+  /** ✅ FIX : si le logo RICS pointe vers un fichier supprimé / 404, on retire le bloc */
+  onRicsImgError(e: Event): void {
+    const img = e.target as HTMLImageElement | null;
+    if (!img) return;
+    const wrap = img.closest('.ff-person-meta') as HTMLElement | null;
+    if (wrap) wrap.remove();
+    else img.style.display = 'none';
   }
 
   async goTeamTo(i: number): Promise<void> {
@@ -1223,7 +1360,8 @@ export class HomepageComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.isBrowser()) return;
     setTimeout(() => {
       const wg: any = (window as any).Weglot;
-      const host = this.doc.querySelector('app-root') || this.doc.querySelector('main') || this.doc.body;
+      const host =
+        this.doc.querySelector('app-root') || this.doc.querySelector('main') || this.doc.body;
       wg?.addNodes?.([host]);
     }, 0);
   }

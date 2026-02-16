@@ -263,7 +263,13 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
       min-height: auto;
       padding-block: 24px;
     }
-    .assets-bg{ height: -webkit-fill-available; min-height: var(--band-h); }
+
+    .assets-bg{
+      top: 0;
+      bottom: 0;
+      height: auto;
+      min-height: 0;
+    }
   }
 }
 
@@ -327,7 +333,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
   @media (max-width: 900px){
     --values-top-gap: 40px;
     --gap-title-wheel: 2px;
-    --tighten: 14px;
 
     .wheel{ --size: clamp(100px, 92vw, 760px); }
     .wheel-img{ width: min(100%, calc(var(--size) * 0.98)); }
@@ -407,7 +412,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     border-top: $bd-2 solid $blue;
   }
 
-  /* ✅ la ligne n’est plus un grid sur <li>, mais sur le bouton .row-head */
   .eval-row{
     border-bottom: $bd-2 solid $blue;
     padding: 0;
@@ -424,7 +428,8 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     color: $blue;
 
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    /* ✅ minmax(0, 1fr) = clé pour permettre l'ellipsis en grid */
+    grid-template-columns: auto minmax(0, 1fr) auto;
     align-items: center;
     column-gap: clamp(16px, 3vw, 24px);
 
@@ -437,7 +442,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     border-radius: 10px;
   }
 
-  /* (optionnel mais souvent apprécié) */
   .row-head:hover .chevron{
     opacity: 1;
   }
@@ -449,8 +453,19 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     justify-self: start;
   }
 
+  /* ✅ 1 LIGNE SUR DESKTOP */
   .row-name{
-    width: fit-content !important;
+    /* important en grid pour permettre overflow/ellipsis */
+    min-width: 0;
+
+    /* écrase tes styles hérités vus dans DevTools (pre-line, width: 400vw, etc.) */
+    width: auto !important;
+    max-width: 100%;
+    white-space: nowrap !important;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+
     text-align: left;
     align-self: center;
 
@@ -459,15 +474,17 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     font-weight: 400;
     line-height: 1.25;
 
-    white-space: pre-line;
-    overflow-wrap: anywhere;
+    /* pas de wrap en desktop */
+    overflow-wrap: normal;
     word-break: normal;
   }
 
+  /* on neutralise les <br> injectés par WP */
   .row-name br{
-    display: none;
+    display: none !important;
   }
 
+  /* si WP injecte des <p> / <div>, on les met inline (sinon ça casse la ligne) */
   .row-name > p,
   .row-name > div,
   .row-name > span{
@@ -488,7 +505,6 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
 
   .row-desc{
     padding: 8px 0 18px;
-    /* aligne sous la colonne “titre” (icon + gap) */
     padding-left: calc(56px + clamp(16px, 3vw, 24px));
   }
 
@@ -500,13 +516,20 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     p:last-child{ margin-bottom: 0; }
   }
 
-  /* si tu veux garder l’“air” quand open */
   .eval-row.open .row-head{
     padding-top: 16px;
   }
 
+  /* ✅ SUR PETIT ÉCRAN : ON AUTORISE LE RETOUR À LA LIGNE */
   @media (max-width: 768px){
     .chevron { width: 18px; height: 18px; }
+
+    .row-name{
+      white-space: normal !important;
+      overflow: visible;
+      text-overflow: clip;
+      overflow-wrap: anywhere;
+    }
   }
 }
 
@@ -563,6 +586,7 @@ $fs60: map.get(vars.$font-size, "110"); // ~60
     }
   }
 }
+
 
 /* ===================================================================== */
 /* ================================= FAQ =============================== */

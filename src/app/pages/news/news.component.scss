@@ -56,13 +56,8 @@ $theme-autre:     $theme-expertise;
   width: 100%;
 }
 
-.section-inner {
-  padding-top: 60px !important;
-}
-
 /* ============ Intro ============ */
 .news-intro {
-  padding: 40px 0 18px;
 
   .prehide {
     opacity: 0;
@@ -83,10 +78,11 @@ $theme-autre:     $theme-expertise;
     display: flex;
     align-items: flex-start;
     gap: 14px;
+    width: 60%;              /* ✅ assure la largeur de la ligne */
 
     @media (max-width: 680px) {
-      align-items: flex-start;
       gap: 12px;
+      width: 100%;
     }
   }
 
@@ -96,20 +92,25 @@ $theme-autre:     $theme-expertise;
     font-weight: $fw-regular;
     line-height: 1.55;
     color: rgba(0, 0, 0, 0.72);
-    max-width: 820px;
+
+    flex: 1 1 auto;           /* ✅ prend toute la largeur dispo */
+    min-width: 0;             /* ✅ autorise le wrap au lieu d’overflow */
+    width: 100%;              /* ✅ utile si tu veux vraiment “plein” */
   }
 
   .linkedin {
+    flex: 0 0 auto;           /* ✅ garde sa taille */
     display: inline-block;
+    margin-left: auto;        /* ✅ pousse l’icône à droite (même si gap) */
 
     img {
       width: 39.47px;
       height: 39.47px;
-      flex-shrink: 0;
       display: block;
     }
   }
 }
+
 
 /* ==========================================================================
    FILTRES THEMES
@@ -118,7 +119,7 @@ $theme-autre:     $theme-expertise;
 .theme-filters {
   width: min(1120px, 100%);
   display: flex;
-  gap: 10px;
+  gap: 15px;
   flex-wrap: wrap;
   align-items: center;
 

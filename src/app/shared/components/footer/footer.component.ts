@@ -1,6 +1,18 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import {
+  ChangeDetectionStrategy,
+  ChangeDetectorRef,
+  Component,
+  Input,
+  Inject,
+  PLATFORM_ID,
+  OnDestroy,
+  OnInit,
+} from '@angular/core';
+import { isPlatformBrowser, DOCUMENT } from '@angular/common';
+import { Router, RouterModule, NavigationEnd } from '@angular/router';
+import { Subscription, filter } from 'rxjs';
+
 import { LangLinkPipe } from '../../../pipes/lang-link.pipe';
 import { ContactService } from '../../../services/contact.service';
 
@@ -18,6 +30,7 @@ export interface FooterSection {
 }
 
 type SendState = 'idle' | 'loading' | 'success' | 'error';
+type Lang = 'fr' | 'en';
 
 @Component({
   selector: 'app-footer',
@@ -27,16 +40,88 @@ type SendState = 'idle' | 'loading' | 'success' | 'error';
   styleUrls: ['./footer.component.scss'],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class FooterComponent {
+export class FooterComponent implements OnInit, OnDestroy {
   @Input({ required: true }) footer!: FooterSection;
 
   sendState: SendState = 'idle';
   messageError = '';
 
+  /** ✅ Lang courante exposée au template */
+  currentLang: Lang = 'fr';
+
+  /**
+   * ✅ FIX Mentions légales :
+   * EN n'est pas "/en/mentions-legales" mais "/en/legal-notice"
+   * -> on génère un routerLink correct selon la langue courante
+   */
+  get legalRouteLink(): any[] {
+    return this.currentLang === 'en'
+      ? ['/en/legal-notice']
+      : ['/mentions-legales'];
+  }
+
+  private subs = new Subscription();
+  private readonly isBrowser: boolean;
+
   constructor(
     private cdr: ChangeDetectorRef,
     private contact: ContactService,
-  ) {}
+    private router: Router,
+    @Inject(DOCUMENT) private doc: Document,
+    @Inject(PLATFORM_ID) platformId: Object,
+  ) {
+    this.isBrowser = isPlatformBrowser(platformId);
+  }
+
+  ngOnInit(): void {
+    // Lang au chargement
+    this.currentLang = this.detectLangNow();
+    this.cdr.markForCheck();
+
+    // Sur navigation : /en/... => EN, sinon FR
+    this.subs.add(
+      this.router.events
+        .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
+        .subscribe(() => {
+          const next = this.detectLangNow();
+          if (next !== this.currentLang) {
+            this.currentLang = next;
+            this.cdr.markForCheck();
+          }
+        })
+    );
+
+    // Weglot events (si présent)
+    if (this.isBrowser) {
+      try {
+        const wg: any = (window as any).Weglot;
+        if (wg?.on) {
+          const onChanged = (lang: string) => {
+            const next: Lang = lang === 'en' ? 'en' : 'fr';
+            if (next !== this.currentLang) {
+              this.currentLang = next;
+              this.cdr.markForCheck();
+            }
+          };
+
+          wg.on('initialized', () => onChanged(wg.getCurrentLang?.()));
+          wg.on('languageChanged', (newLang: string) => onChanged(newLang));
+
+          // cleanup
+          this.subs.add({
+            unsubscribe: () => {
+              try { wg?.off?.('initialized', onChanged); } catch {}
+              try { wg?.off?.('languageChanged', onChanged); } catch {}
+            }
+          });
+        }
+      } catch {}
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.subs.unsubscribe();
+  }
 
   // 👉 Getters utilisés dans le template
   get isLoading(): boolean { return this.sendState === 'loading'; }
@@ -78,7 +163,7 @@ export class FooterComponent {
       message: String(fd.get('message') ?? '').trim(),
       website: String(fd.get('website') ?? ''),
       source:  'footer',
-      lang:    'fr',
+      lang:    this.currentLang, // ✅ en/fr selon la version affichée
     };
 
     // Honeypot → succès immédiat (on reste en vert, bouton désactivé)
@@ -118,5 +203,34 @@ export class FooterComponent {
         this.cdr.markForCheck();
       }, 3000);
     }
+  }
+
+  // ===========================
+  // Lang detection
+  // ===========================
+  private detectLangNow(): Lang {
+    // 1) Weglot (prioritaire côté browser)
+    if (this.isBrowser) {
+      try {
+        const wg: any = (window as any).Weglot;
+        const l = wg?.getCurrentLang?.();
+        if (l === 'en' || l === 'fr') return l;
+      } catch {}
+    }
+
+    // 2) URL
+    try {
+      const url = (this.router?.url || '').split('?')[0].split('#')[0];
+      if (url === '/en' || url.startsWith('/en/')) return 'en';
+    } catch {}
+
+    // 3) <html lang="">
+    try {
+      const htmlLang = (this.doc?.documentElement?.lang || '').toLowerCase();
+      if (htmlLang.startsWith('en')) return 'en';
+      if (htmlLang.startsWith('fr')) return 'fr';
+    } catch {}
+
+    return 'fr';
   }
 }

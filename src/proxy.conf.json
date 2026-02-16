@@ -1,0 +1,8 @@
+{
+  "/groupe-abc/wp-content/uploads": {
+    "target": "http://localhost",
+    "secure": false,
+    "changeOrigin": true,
+    "logLevel": "debug"
+  }
+}

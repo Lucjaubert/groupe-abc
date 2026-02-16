@@ -604,8 +604,7 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
   align-items: end;
   gap: clamp(16px, 2.8vw, 24px);
   text-decoration: none;
-  width: 364px; /* largeur desktop */
-  will-change: transform, opacity; /* hook GSAP éventuel */
+  will-change: transform, opacity;
 }
 
 .download .dl-icon-img {
@@ -634,7 +633,6 @@ $bp-lg: map.get(vars.$breakpoints, "lg");
 
   /* Largeur du bouton sur mobile (plus compact) */
   .download .dl-link {
-    width: 232px;
     align-self: flex-start;
     margin-top: 4px;
   }

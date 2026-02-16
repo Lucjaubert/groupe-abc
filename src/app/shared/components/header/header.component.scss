@@ -57,24 +57,46 @@ $rail-w: 40px;
 /* ----- MENU BAR ----- */
 .menu-bar { grid-column: 1 / -1; width: 100%; padding: 10px 0 0; }
 
-/* ===== MENU ===== */
+/* ===== MENU (✅ espacement uniforme + 1er à gauche / dernier à droite) ===== */
 .menu {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  align-items: stretch;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
   list-style: none;
   margin: 0;
   padding: 0;
   width: 100%;
+
   border-top: 1px solid transparent;
   border-bottom: 1px solid transparent;
 }
-.menu li { position: relative; display: flex; align-items: center; justify-content: center; min-width: 0; }
-.menu a {
-  display: block; width: 100%; text-decoration: none; white-space: nowrap;
-  font-family: "Plus Jakarta Sans", sans-serif; font-size: 18px; font-weight: 500; line-height: 1;
-  color: #444697; text-align: center; padding: 8px 0;
+
+.menu li {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 0;
 }
+
+.menu a {
+  display: block;
+  text-decoration: none;
+  white-space: nowrap;
+
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+  line-height: 1;
+
+  color: #444697;
+  text-align: left;
+
+  /* ✅ hit-area identique */
+  padding: 8px clamp(10px, 1.2vw, 18px);
+}
+
 .menu a:hover { color: map.get(vars.$theme-colors, "dark-orange"); }
 
 /* ----- RAIL DROIT (fixe) ----- */
