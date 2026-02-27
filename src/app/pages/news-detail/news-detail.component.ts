@@ -9,12 +9,19 @@ import { SeoService } from '../../services/seo.service';
 import { environment } from '../../../environments/environment';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
 
+// ✅ NEW: helpers slugs news FR/EN
+import {
+  fromNewsUrlSlug,
+  toNewsDisplaySlug,
+  buildNewsRoute,
+} from '../../config/news.slugs';
+
 type ThemeKey = 'expertise' | 'juridique' | 'marche' | 'autre';
 
 type NewsPost = {
   id?: number | string;
-  wpSlug?: string;
-  prettySlug?: string;
+  wpSlug?: string;       // slug WP canonical (source de vérité)
+  prettySlug?: string;   // ancien fallback local (conservé pour compat)
 
   theme?: string;
   themeKey?: ThemeKey;
@@ -68,11 +75,11 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
   p: NewsPost | null = null;
 
   private routeSub?: Subscription;
+  private isLoadingRoute = false; // évite les doubles chargements en chaîne
 
   async ngOnInit(): Promise<void> {
-    // ✅ Réagit aussi si on navigue vers un autre slug en restant sur le même composant
+    // ✅ Réagit si on navigue vers un autre slug en restant sur le même composant
     this.routeSub = this.route.paramMap.subscribe(() => {
-      // pas de await dans subscribe: on délègue
       void this.loadFromRoute();
     });
 
@@ -85,83 +92,109 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
   }
 
   private async loadFromRoute(): Promise<void> {
-    this.loading = true;
-    this.notFound = false;
-    this.p = null;
+    // garde-fou contre les appels simultanés (subscribe + init)
+    if (this.isLoadingRoute) return;
+    this.isLoadingRoute = true;
 
-    this.slugParam = (this.route.snapshot.paramMap.get('slug') || '').trim();
-    if (!this.slugParam) {
-      this.notFound = true;
-      this.loading = false;
-      return;
-    }
-
-    let list: any[] = [];
     try {
-      list = await firstValueFrom(this.wp.getAllNews());
-    } catch {
-      // si l’API plante, on met un 404 “soft”
-      this.notFound = true;
+      this.loading = true;
+      this.notFound = false;
+      this.p = null;
+
+      this.slugParam = (this.route.snapshot.paramMap.get('slug') || '').trim();
+      if (!this.slugParam) {
+        this.notFound = true;
+        this.loading = false;
+        return;
+      }
+
+      const lang = this.currentLang();
+
+      // ✅ slug URL (FR/EN) -> slug WP canonical (FR le plus souvent)
+      const canonicalRequestedSlug = fromNewsUrlSlug(this.slugParam, lang);
+
+      let list: any[] = [];
+      try {
+        list = await firstValueFrom(this.wp.getAllNews());
+      } catch {
+        // si l’API plante, on met un 404 “soft”
+        this.notFound = true;
+        this.loading = false;
+        return;
+      }
+
+      // mapping proche de NewsComponent
+      const mapped: NewsPost[] = [];
+      for (const it of list) {
+        const acfPost = it?.acf?.post || null;
+        if (!acfPost) continue;
+
+        const title = acfPost.post_title || it?.title?.rendered || '';
+        const wpSlug = (it?.slug || '').trim();
+        const prettySlug = this.makePrettySlug(title);
+
+        mapped.push({
+          id: it?.id,
+          wpSlug,
+          prettySlug,
+
+          theme: acfPost.theme || '',
+          themeKey: this.toThemeKey(acfPost.theme),
+
+          title,
+          html: acfPost.post_content || it?.content?.rendered || '',
+
+          date: acfPost.date || it?.date || '',
+          author: acfPost.author || '',
+          firmName: acfPost.nam_firm || '',
+
+          firmLogo: acfPost.logo_firm,
+          imageUrl: acfPost.post_image,
+          linkedinUrl: acfPost.linkedin_link || '',
+        });
+      }
+
+      // retirer le post “news” d’intro
+      const posts = mapped.filter((x) => x.wpSlug !== 'news');
+
+      // ✅ priorité au slug WP canonical demandé
+      let found =
+        posts.find((x) => x.wpSlug === canonicalRequestedSlug) ||
+        // fallback compat ancien format local
+        posts.find((x) => x.prettySlug === this.slugParam) ||
+        // fallback si URL FR = slug WP direct non mappé
+        posts.find((x) => x.wpSlug === this.slugParam) ||
+        null;
+
+      if (!found) {
+        this.notFound = true;
+        this.loading = false;
+        return;
+      }
+
+      // ✅ normalisation URL canonique (FR/EN) sans casser WP
+      const expectedDisplaySlug = toNewsDisplaySlug(found.wpSlug || '', lang);
+
+      if (expectedDisplaySlug && this.slugParam !== expectedDisplaySlug) {
+        this.router.navigate(buildNewsRoute(lang, found.wpSlug || expectedDisplaySlug), {
+          replaceUrl: true,
+        });
+        return;
+      }
+
+      // hydrater médias (logos/images)
+      found._imageUrl = await this.resolveMedia(found.imageUrl);
+      found._firmLogoUrl = await this.resolveMedia(found.firmLogo);
+
+      this.p = found;
+
+      // SEO dynamique
+      this.updateSeo(found, lang);
+
       this.loading = false;
-      return;
+    } finally {
+      this.isLoadingRoute = false;
     }
-
-    // mapping proche de NewsComponent
-    const mapped: NewsPost[] = [];
-    for (const it of list) {
-      const acfPost = it?.acf?.post || null;
-      if (!acfPost) continue;
-
-      const title = acfPost.post_title || it?.title?.rendered || '';
-      const wpSlug = it?.slug || '';
-      const prettySlug = this.makePrettySlug(title);
-
-      mapped.push({
-        id: it?.id,
-        wpSlug,
-        prettySlug,
-
-        theme: acfPost.theme || '',
-        themeKey: this.toThemeKey(acfPost.theme),
-
-        title,
-        html: acfPost.post_content || it?.content?.rendered || '',
-
-        date: acfPost.date || it?.date || '',
-        author: acfPost.author || '',
-        firmName: acfPost.nam_firm || '',
-
-        firmLogo: acfPost.logo_firm,
-        imageUrl: acfPost.post_image,
-        linkedinUrl: acfPost.linkedin_link || '',
-      });
-    }
-
-    // retirer le post “news” d’intro
-    const posts = mapped.filter((x) => x.wpSlug !== 'news');
-
-    // match exact slug WP, sinon match slug “propre”
-    const found =
-      posts.find((x) => x.wpSlug === this.slugParam) ||
-      posts.find((x) => x.prettySlug === this.slugParam) ||
-      null;
-
-    if (!found) {
-      this.notFound = true;
-      this.loading = false;
-      return;
-    }
-
-    // hydrater médias (logos/images)
-    found._imageUrl = await this.resolveMedia(found.imageUrl);
-    found._firmLogoUrl = await this.resolveMedia(found.firmLogo);
-
-    this.p = found;
-
-    // SEO dynamique
-    this.updateSeo(found);
-
-    this.loading = false;
   }
 
   /* ===== Thème : identique à NewsComponent ===== */
@@ -181,11 +214,24 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
   }
 
   /* ===== SEO ===== */
-  private updateSeo(p: NewsPost) {
+  private updateSeo(p: NewsPost, lang: 'fr' | 'en') {
     const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
-    const canonical = `${siteUrl}${this.currentPath()}`;
 
-    const title = this.stripHtml(p.title || 'Actualité');
+    // ✅ canonical piloté par slug canonique d'affichage (pas juste currentPath)
+    const wpSlug = (p.wpSlug || '').trim();
+    const displaySlug = toNewsDisplaySlug(wpSlug || this.slugParam, lang);
+
+    const canonicalPath =
+      lang === 'en'
+        ? `/en/real-estate-valuation-news/${displaySlug}`
+        : `/actualites-expertise-immobiliere/${displaySlug}`;
+
+    const canonical = `${siteUrl}${canonicalPath}`;
+
+    const altFr = `${siteUrl}/actualites-expertise-immobiliere/${toNewsDisplaySlug(wpSlug || this.slugParam, 'fr')}`;
+    const altEn = `${siteUrl}/en/real-estate-valuation-news/${toNewsDisplaySlug(wpSlug || this.slugParam, 'en')}`;
+
+    const title = this.stripHtml(p.title || (lang === 'en' ? 'News article' : 'Actualité'));
     const description = this.makeDescriptionFromHtml(p.html || '', 160);
 
     const jsonLd: any = {
@@ -200,12 +246,17 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
     // optionnel : image dans JSON-LD si dispo
     if (p._imageUrl) jsonLd.image = [p._imageUrl];
 
-    // ✅ OG image + title/desc + canonical
+    // ✅ OG image + title/desc + canonical + hreflang
     this.seo.update({
       title,
       description,
       canonical,
       image: p._imageUrl || undefined,
+      alternates: [
+        { lang: 'fr', href: altFr },
+        { lang: 'en', href: altEn },
+        { lang: 'x-default', href: altFr },
+      ],
       jsonLd,
     });
   }
@@ -215,7 +266,7 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
    * - si theme fourni => on revient avec ?theme=xxx pour activer le filtre côté liste
    */
   goBackToList(theme?: ThemeKey | null): void {
-    const isEN = this.currentPath().startsWith('/en/');
+    const isEN = this.currentLang() === 'en';
     const target = isEN ? '/en/real-estate-valuation-news' : '/actualites-expertise-immobiliere';
 
     if (theme) {
@@ -277,6 +328,11 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
     }
 
     return '';
+  }
+
+  private currentLang(): 'fr' | 'en' {
+    const path = this.currentPath();
+    return path.startsWith('/en') ? 'en' : 'fr';
   }
 
   private currentPath(): string {

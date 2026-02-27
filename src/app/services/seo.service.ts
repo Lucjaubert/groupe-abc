@@ -1,6 +1,7 @@
 import {
   Injectable,
   Inject,
+  Optional,
   Renderer2,
   RendererFactory2,
   PLATFORM_ID,
@@ -70,6 +71,15 @@ const ALT_MAP: { fr: string; en: string }[] = [
   { fr: '/mentions-legales', en: '/en/legal-notice' },
 ];
 
+/**
+ * Type minimal “express-like” pour SSR_REQUEST
+ * (évite d’importer express côté Angular)
+ */
+type SsrRequestLike = {
+  header?: (name: string) => string | undefined;
+  headers?: Record<string, any>;
+};
+
 @Injectable({ providedIn: 'root' })
 export class SeoService {
   private rnd: Renderer2;
@@ -82,6 +92,10 @@ export class SeoService {
     @Inject(DOCUMENT) private doc: Document,
     @Inject(PLATFORM_ID) platformId: Object,
     renderer: RendererFactory2,
+
+    // ✅ Injecté par ton SSR (run-ssr.mjs) si tu le fournis
+    //   provider: { provide: 'SSR_REQUEST', useValue: req }
+    @Optional() @Inject('SSR_REQUEST') private ssrReq?: SsrRequestLike,
   ) {
     this.rnd = renderer.createRenderer(null, null);
     this.isBrowser = isPlatformBrowser(platformId);
@@ -109,8 +123,10 @@ export class SeoService {
 
     // Origin & URLs
     const origin = this.siteOrigin();
+    const routerPath = this.normalizePath((this.router.url || '/').split(/[?#]/)[0]);
+
     const pageUrl = this.absUrl(
-      cfg.canonical || this.currentUrl() || this.routerUrlAsAbs(origin),
+      cfg.canonical || this.absFromOrigin(origin, routerPath),
       origin,
     );
     const imgUrl = this.absUrl(cfg.image || '', origin);
@@ -158,12 +174,10 @@ export class SeoService {
       ...(cfg.twitterCreator ? { 'twitter:creator': cfg.twitterCreator } : {}),
     });
 
-    // Canonical absolu
+    // ✅ Canonical (toujours injecté dans le HTML SSR)
     this.setCanonical(pageUrl || undefined);
 
-    // ===== hreflang alternates =====
-    const routerPath = this.normalizePath((this.router.url || '/').split(/[?#]/)[0]);
-
+    // ✅ hreflang alternates (toujours injectés dans le HTML SSR)
     const hreflangs =
       cfg.alternates && cfg.alternates.length
         ? cfg.alternates
@@ -179,16 +193,18 @@ export class SeoService {
   /** JSON-LD “sitewide” persistant (WebSite / Organization…) */
   setSitewideJsonLd(obj: object): void {
     if (!obj) return;
+
+    const head = this.getHead();
+    if (!head) return;
+
     let script = this.doc.getElementById('ld-sitewide') as HTMLScriptElement | null;
     if (!script) {
       script = this.rnd.createElement('script') as HTMLScriptElement;
       script.id = 'ld-sitewide';
       script.type = 'application/ld+json';
       try {
-        this.rnd.appendChild(this.doc.head, script);
-      } catch {
-        // head peut être absent dans certains environnements SSR exotiques
-      }
+        this.rnd.appendChild(head, script);
+      } catch {}
     }
     try {
       script.text = JSON.stringify(obj);
@@ -219,8 +235,8 @@ export class SeoService {
     }
 
     /**
-     * 1bis) Cas spécial : détail d’actif (FR) sous /methodes-evaluation-immobiliere/:slug
-     * -> EN attendu sous /en/valuation-methods-assets/:slug
+     * Détail d’actif (FR) : /methodes-evaluation-immobiliere/:slug
+     * -> EN : /en/valuation-methods-assets/:slug
      */
     if (clean.startsWith('/methodes-evaluation-immobiliere/')) {
       const slug = clean
@@ -240,7 +256,29 @@ export class SeoService {
       }
     }
 
-    // 2) Fallback générique (pour routes non mappées)
+    /**
+     * Détail d’actif (EN) : /en/valuation-methods-assets/:slug
+     * -> FR : /methodes-evaluation-immobiliere/:slug
+     */
+    if (clean.startsWith('/en/valuation-methods-assets/')) {
+      const slug = clean
+        .replace('/en/valuation-methods-assets/', '')
+        .replace(/^\/+/, '')
+        .replace(/\/+$/, '');
+
+      if (slug) {
+        const frHref = this.absFromOrigin(origin, `/methodes-evaluation-immobiliere/${slug}`);
+        const enHref = this.absFromOrigin(origin, `/en/valuation-methods-assets/${slug}`);
+
+        return [
+          { lang: 'fr', href: frHref },
+          { lang: 'en', href: enHref },
+          { lang: 'x-default', href: frHref },
+        ];
+      }
+    }
+
+    // 2) Fallback générique (routes non mappées)
     const isEn = clean === '/en' || clean.startsWith('/en/');
     const frPath = isEn ? clean.replace(/^\/en(\/|$)/, '/') || '/' : clean;
     const enPath = isEn ? clean : clean === '/' ? '/en' : `/en${clean}`;
@@ -283,10 +321,11 @@ export class SeoService {
   }
 
   setAlternates(alts: Hreflang[]): void {
+    const head = this.getHead();
+    if (!head) return;
+
     try {
-      Array.from(this.doc.head.querySelectorAll('link[rel="alternate"][hreflang]')).forEach((el) =>
-        el.remove(),
-      );
+      Array.from(head.querySelectorAll('link[rel="alternate"][hreflang]')).forEach((el) => el.remove());
     } catch {}
 
     if (!alts?.length) return;
@@ -298,7 +337,7 @@ export class SeoService {
       link.setAttribute('hreflang', a.lang);
       link.setAttribute('href', a.href);
       try {
-        this.rnd.appendChild(this.doc.head, link);
+        this.rnd.appendChild(head, link);
       } catch {}
     }
   }
@@ -323,6 +362,10 @@ export class SeoService {
 
   addJsonLd(obj: object): void {
     if (!obj) return;
+
+    const head = this.getHead();
+    if (!head) return;
+
     const script = this.rnd.createElement('script') as HTMLScriptElement;
     script.type = 'application/ld+json';
     script.setAttribute('data-jsonld', '1');
@@ -332,7 +375,7 @@ export class SeoService {
       script.text = '';
     }
     try {
-      this.rnd.appendChild(this.doc.head, script);
+      this.rnd.appendChild(head, script);
     } catch {}
   }
 
@@ -355,22 +398,45 @@ export class SeoService {
     }
   }
 
+  /**
+   * ✅ Origin SSR fiable :
+   * - prend host + x-forwarded-proto si SSR_REQUEST est fourni
+   * - sinon fallback environment.siteUrl
+   */
   siteOrigin(): string {
     const fallback = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/$/, '');
-    if (!this.isBrowser) return fallback;
 
-    try {
-      const loc = this.doc.defaultView?.location;
-      return loc ? `${loc.protocol}//${loc.host}` : fallback;
-    } catch {
-      return fallback;
+    // SSR: req headers
+    if (!this.isBrowser && this.ssrReq) {
+      try {
+        const h = (name: string) =>
+          this.ssrReq?.header?.(name) ||
+          (this.ssrReq?.headers?.[name] as string | undefined);
+
+        const proto = String(h('x-forwarded-proto') || h('X-Forwarded-Proto') || 'https')
+          .split(',')[0]
+          .trim();
+        const host = String(h('host') || h('Host') || 'groupe-abc.fr')
+          .split(',')[0]
+          .trim();
+
+        return `${proto}://${host}`.replace(/\/$/, '');
+      } catch {
+        return fallback;
+      }
     }
-  }
 
-  private routerUrlAsAbs(origin: string): string {
-    const base = (origin || '').replace(/\/$/, '');
-    const path = this.normalizePath(this.router.url || '/');
-    return this.absFromOrigin(base, path);
+    // Browser
+    if (this.isBrowser) {
+      try {
+        const loc = this.doc.defaultView?.location;
+        return loc ? `${loc.protocol}//${loc.host}` : fallback;
+      } catch {
+        return fallback;
+      }
+    }
+
+    return fallback;
   }
 
   /**
@@ -442,18 +508,24 @@ export class SeoService {
   }
 
   private removeMeta(kind: 'name' | 'property', token: string): void {
+    const head = this.getHead();
+    if (!head) return;
+
     try {
       const selector = `${kind}='${cssEscape(token)}'`;
-      const el = this.doc.head.querySelector(`meta[${selector}]`);
+      const el = head.querySelector(`meta[${selector}]`);
       if (el) el.remove();
     } catch {}
   }
 
   private upsertLink(rel: string, href?: string): HTMLLinkElement | null {
+    const head = this.getHead();
+    if (!head) return null;
+
     let link: HTMLLinkElement | null = null;
 
     try {
-      link = this.doc.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
+      link = head.querySelector<HTMLLinkElement>(`link[rel="${rel}"]`);
     } catch {}
 
     if (!href) {
@@ -469,12 +541,27 @@ export class SeoService {
       link = this.rnd.createElement('link') as HTMLLinkElement;
       link.setAttribute('rel', rel);
       try {
-        this.rnd.appendChild(this.doc.head, link);
+        this.rnd.appendChild(head, link);
       } catch {}
     }
 
     link.setAttribute('href', href);
     return link;
+  }
+
+  /**
+   * ✅ Head SSR-safe (Domino)
+   * - document.head si dispo
+   * - sinon <head> via getElementsByTagName
+   */
+  private getHead(): HTMLElement | null {
+    try {
+      if ((this.doc as any)?.head) return (this.doc as any).head as HTMLElement;
+      const heads = this.doc.getElementsByTagName('head');
+      return (heads && heads.length ? (heads[0] as any) : null) as HTMLElement | null;
+    } catch {
+      return null;
+    }
   }
 }
 

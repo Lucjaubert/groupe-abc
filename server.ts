@@ -25,7 +25,7 @@ type Lang = 'fr' | 'en';
 const SSR_DIST = __dirname;
 const BROWSER_DIST = join(__dirname, '..', 'browser');
 
-// On charge le bundle SSR Angular (dist/groupe-abc/server/main.cjs)
+// Bundle SSR Angular (dist/.../server/main.cjs)
 const mainServer = require(join(SSR_DIST, 'main.cjs')).default;
 
 const app = express();
@@ -39,37 +39,129 @@ const asyncHandler =
 
 // (debug) marquer les réponses qui passent par le SSR
 app.use((req, res, next) => {
-  res.setHeader('x-ssr', 'on');
+  res.setHeader('x-ssr', '1');
   next();
 });
 
 // Cookies (pour persister la langue côté SSR)
 app.use(cookieParser());
 
+// CORS / JSON
+app.use(cors());
+app.use(express.json());
+
 // End-point de santé (utile pour tests et monitoring)
 app.get('/healthz', (_req, res) => {
   res.status(200).type('text/plain').send('ok');
 });
 
-// CORS / JSON
-app.use(cors());
-app.use(express.json());
+/* =========================================================
+ * 1) REDIRECTS 301 (SEO) — AVANT tout (wp-json / sitemap / statiques / SSR)
+ * ======================================================= */
 
-// ─────────────────────────────────────────────
-// LANG AUTO (IP/headers) + redirect vers /en (SEO-friendly)
-// ─────────────────────────────────────────────
+function stripTrailingSlash(p: string) {
+  if (p === '/') return '/';
+  return p.replace(/\/+$/, '');
+}
+
+const REDIRECTS_301: Record<string, string> = {
+  // FR legacy
+  '/accueil': '/',
+  '/actualite': '/actualites-expertise-immobiliere',
+  '/biens-et-methodes': '/methodes-evaluation-immobiliere',
+  '/contact': '/contact-expert-immobilier',
+  '/equipe': '/experts-immobiliers-agrees',
+  '/equipes': '/experts-immobiliers-agrees',
+  '/qui-sommes-nous': '/expert-immobilier-reseau-national',
+  '/services': '/expertise-immobiliere-services',
+
+  // cas GSC identifiés
+  '/actualites-expertise-immobiliere/news': '/actualites-expertise-immobiliere',
+
+  // EN legacy (dans /en)
+  '/en/news': '/en/real-estate-valuation-news',
+  '/en/contact': '/en/contact-chartered-valuers',
+  '/en/services': '/en/real-estate-valuation-services',
+  '/en/team': '/en/chartered-valuers-team',
+  '/en/teams': '/en/chartered-valuers-team',
+  '/en/assets-methods': '/en/valuation-methods-assets',
+  '/en/chartered-valuation-experts': '/en/chartered-valuers-team',
+  '/en/contact-real-estate-valuation': '/en/contact-chartered-valuers',
+
+  // anciennes URLs FR sous /en
+  '/en/actualites': '/en/real-estate-valuation-news',
+  '/en/actualites-expertise-immobiliere': '/en/real-estate-valuation-news',
+  '/en/biens-et-methodes': '/en/valuation-methods-assets',
+  '/en/methodes-evaluation-immobiliere': '/en/valuation-methods-assets',
+  '/en/equipe': '/en/chartered-valuers-team',
+  '/en/experts-immobiliers-agrees': '/en/chartered-valuers-team',
+  '/en/contact-expert-immobilier': '/en/contact-chartered-valuers',
+  '/en/expert-immobilier-reseau-national': '/en/expert-network-chartered-valuers',
+  '/en/expertise-immobiliere-services': '/en/real-estate-valuation-services',
+
+  // cas GSC côté EN
+  '/en/actualites-expertise-immobiliere/news': '/en/real-estate-valuation-news',
+};
+
+app.use((req, res, next) => {
+  const p = stripTrailingSlash(req.path || '/');
+
+  // FR: /actualites/:slug -> /actualites-expertise-immobiliere/:slug
+  if (p.startsWith('/actualites/')) {
+    const slug = p.replace('/actualites/', '').replace(/^\/+/, '');
+    if (slug) return res.redirect(301, `/actualites-expertise-immobiliere/${slug}`);
+  }
+
+  // FR: /assets-methods(/:slug) -> /methodes-evaluation-immobiliere(/:slug)
+  if (p === '/assets-methods') return res.redirect(301, '/methodes-evaluation-immobiliere');
+  if (p.startsWith('/assets-methods/')) {
+    const slug = p.replace('/assets-methods/', '').replace(/^\/+/, '');
+    if (slug) return res.redirect(301, `/methodes-evaluation-immobiliere/${slug}`);
+  }
+
+  // EN: /en/news/:slug -> /en/real-estate-valuation-news/:slug
+  if (p.startsWith('/en/news/')) {
+    const slug = p.replace('/en/news/', '').replace(/^\/+/, '');
+    if (slug) return res.redirect(301, `/en/real-estate-valuation-news/${slug}`);
+  }
+
+  // EN: /en/assets-methods(/:slug) -> /en/valuation-methods-assets(/:slug)
+  if (p === '/en/assets-methods') return res.redirect(301, '/en/valuation-methods-assets');
+  if (p.startsWith('/en/assets-methods/')) {
+    const slug = p.replace('/en/assets-methods/', '').replace(/^\/+/, '');
+    if (slug) return res.redirect(301, `/en/valuation-methods-assets/${slug}`);
+  }
+
+  // FR legacy : /actualites-expertise-immobiliere/article-<n> -> listing
+  if (/^\/actualites-expertise-immobiliere\/article-\d+$/i.test(p)) {
+    return res.redirect(301, '/actualites-expertise-immobiliere');
+  }
+
+  // EN legacy : /en/actualites-expertise-immobiliere/article-<n> -> listing EN
+  if (/^\/en\/actualites-expertise-immobiliere\/article-\d+$/i.test(p)) {
+    return res.redirect(301, '/en/real-estate-valuation-news');
+  }
+
+  const target = REDIRECTS_301[p];
+  if (target) return res.redirect(301, target);
+
+  next();
+});
+
+/* =========================================================
+ * 2) LANG AUTO (geo) — 302 vers /en (pas pour bots, pas sur statiques)
+ * ======================================================= */
+
 function isBot(req: Request): boolean {
   const ua = String(req.header('user-agent') || '').toLowerCase();
   return /(googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot)/.test(ua);
 }
 
 function isStaticLikePath(pathname: string): boolean {
-  // évite de rediriger les assets, sitemap, robots, wp-json, etc.
   if (!pathname) return false;
   if (pathname === '/robots.txt' || pathname === '/sitemap.xml' || pathname === '/healthz') return true;
   if (pathname.startsWith('/wp-json')) return true;
   if (pathname.startsWith('/wp-admin') || pathname.startsWith('/wp-content')) return true;
-  // fichiers avec extension (js/css/png/ico/xml/...)
   return /\.[a-z0-9]{2,6}$/i.test(pathname);
 }
 
@@ -94,7 +186,6 @@ function detectLangFromReq(req: Request): Lang {
   return 'fr';
 }
 
-// Middleware langue AVANT statiques et AVANT SSR
 app.use((req, res, next) => {
   const path = req.path || '/';
   const isEnUrl = path === '/en' || path.startsWith('/en/');
@@ -105,24 +196,23 @@ app.use((req, res, next) => {
   (res.locals as any).serverLang = lang;
   res.setHeader('x-lang-detected', lang);
 
-  // Redirect uniquement vers EN (pas de redirect vers FR)
+  // Redirect uniquement vers EN (pas vers FR)
   if (!isStaticLikePath(path) && !hasLangCookie && !isBot(req) && lang === 'en' && !isEnUrl) {
     const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
-    const target = '/en' + path + qs;
-    return res.redirect(302, target);
+    return res.redirect(302, '/en' + path + qs);
   }
 
   next();
 });
 
-// ─────────────────────────────────────────────
-// Proxy vers l’API WordPress (avant SSR)
-// ─────────────────────────────────────────────
+/* =========================================================
+ * 3) PROXY /wp-json (avant SSR)
+ * ======================================================= */
+
 app.use(
   '/wp-json',
   asyncHandler(async (req, res) => {
     try {
-      // ✅ Node 18/20 : fetch natif
       const response = await fetch(`https://wordpress.groupe-abc.fr/wp-json${req.url}`, {
         headers: { accept: 'application/json' },
       });
@@ -145,14 +235,12 @@ app.use(
   })
 );
 
-// ─────────────────────────────────────────────
-// SITEMAP + ROBOTS dynamiques (routes + news WP)
-// IMPORTANT : doit être AVANT les statiques et AVANT le catch-all SSR
-// + SÉCURITÉ : ne JAMAIS renvoyer du HTML sur /sitemap.xml, même si un bug survient
-// ─────────────────────────────────────────────
+/* =========================================================
+ * 4) robots.txt / sitemap.xml
+ * ======================================================= */
+
 const PUBLIC_BASE = (process.env['PUBLIC_BASE'] || 'https://groupe-abc.fr').replace(/\/$/, '');
 const WP_API_BASE = (process.env['WP_API_BASE'] || 'https://wordpress.groupe-abc.fr').replace(/\/$/, '');
-
 const NEWS_PUBLIC_PREFIX = process.env['NEWS_PUBLIC_PREFIX'] || '/actualites-expertise-immobiliere/';
 
 // Cache mémoire simple
@@ -161,10 +249,12 @@ const SITEMAP_TTL_MS = parseInt(process.env['SITEMAP_TTL_MS'] || String(15 * 60 
 
 // Fallback XML minimal (anti-HTML)
 function minimalSitemapXml() {
-  return `<?xml version="1.0" encoding="UTF-8"?>\n` +
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     `  <url><loc>${PUBLIC_BASE}/</loc></url>\n` +
-    `</urlset>\n`;
+    `</urlset>\n`
+  );
 }
 
 function escapeXml(v: string) {
@@ -489,7 +579,10 @@ app.get(
   })
 );
 
-// Fichiers statiques Angular (assets, *.js, *.css, etc.)
+/* =========================================================
+ * 5) STATIC Angular (assets, *.js, *.css, etc.)
+ * ======================================================= */
+
 app.get(
   '*.*',
   express.static(BROWSER_DIST, {
@@ -498,9 +591,10 @@ app.get(
   })
 );
 
-// ─────────────────────────────────────────────
-// SSR : on délègue le rendu à Angular Universal
-// ─────────────────────────────────────────────
+/* =========================================================
+ * 6) SSR Angular (catch-all)
+ * ======================================================= */
+
 app.get(
   '*',
   asyncHandler(async (req, res) => {
@@ -529,8 +623,8 @@ app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
   if (!res.headersSent) res.status(500).type('text/plain').send('Server error');
 });
 
-// Port : aligne avec Nginx (proxy_pass -> 127.0.0.1:4300)
-const PORT = parseInt(process.env['PORT'] ?? '4300', 10);
+// ✅ PORT : par défaut 4000 (aligné avec tes logs PM2). Ajuste si ton Nginx proxy_pass vise un autre port.
+const PORT = parseInt(process.env['PORT'] ?? '4000', 10);
 
 app.listen(PORT, () => {
   console.log(`✅ Serveur Node SSR en cours sur http://localhost:${PORT}`);

@@ -78,7 +78,6 @@ $theme-autre:     $theme-expertise;
     display: flex;
     align-items: flex-start;
     gap: 14px;
-    width: 60%;              /* ✅ assure la largeur de la ligne */
 
     @media (max-width: 680px) {
       gap: 12px;
