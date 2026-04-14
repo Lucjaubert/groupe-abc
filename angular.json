@@ -67,7 +67,8 @@
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "groupe-abc:build"
+            "buildTarget": "groupe-abc:build",
+            "proxyConfig": "src/proxy.conf.json"
           },
           "configurations": {
             "production": {
@@ -123,7 +124,6 @@
             "serverTarget": "groupe-abc:server:production",
             "routes": [
               "/",
-
               "/expert-immobilier-reseau-national",
               "/expertise-immobiliere-services",
               "/methodes-evaluation-immobiliere",
@@ -131,7 +131,6 @@
               "/actualites-expertise-immobiliere",
               "/contact-expert-immobilier",
               "/mentions-legales",
-
               "/en",
               "/en/expert-network-chartered-valuers",
               "/en/real-estate-valuation-services",
@@ -148,7 +147,6 @@
               "serverTarget": "groupe-abc:server:staging",
               "routes": [
                 "/",
-
                 "/expert-immobilier-reseau-national",
                 "/expertise-immobiliere-services",
                 "/methodes-evaluation-immobiliere",
@@ -156,7 +154,6 @@
                 "/actualites-expertise-immobiliere",
                 "/contact-expert-immobilier",
                 "/mentions-legales",
-
                 "/en",
                 "/en/expert-network-chartered-valuers",
                 "/en/real-estate-valuation-services",

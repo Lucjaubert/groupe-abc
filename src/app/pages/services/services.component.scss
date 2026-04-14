@@ -358,6 +358,11 @@ img:not([src]), img[src=""] { opacity: 0; }
   .refs-grid{
     list-style: none;
     margin: 0 0 111px 0;
+
+    @media (max-width: 768px) {
+      margin: 0 0 35px 0;
+    }
+
     padding: 0;
 
     display: grid;

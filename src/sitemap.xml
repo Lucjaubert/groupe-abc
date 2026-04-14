@@ -1,0 +1,350 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+
+  <!-- =========================
+       PAGES CANONIQUES FR / EN
+       ========================= -->
+
+  <!-- Accueil FR -->
+  <url>
+    <loc>https://groupe-abc.fr/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/"/>
+  </url>
+
+  <!-- About FR -->
+  <url>
+    <loc>https://groupe-abc.fr/expert-immobilier-reseau-national</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/expert-immobilier-reseau-national"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/expert-network-chartered-valuers"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/expert-immobilier-reseau-national"/>
+  </url>
+
+  <!-- Services FR -->
+  <url>
+    <loc>https://groupe-abc.fr/expertise-immobiliere-services</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/expertise-immobiliere-services"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-services"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/expertise-immobiliere-services"/>
+  </url>
+
+  <!-- Methods listing FR -->
+  <url>
+    <loc>https://groupe-abc.fr/methodes-evaluation-immobiliere</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/methodes-evaluation-immobiliere"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/valuation-methods-assets"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/methodes-evaluation-immobiliere"/>
+  </url>
+
+  <!-- Team FR -->
+  <url>
+    <loc>https://groupe-abc.fr/experts-immobiliers-agrees</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/experts-immobiliers-agrees"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/chartered-valuers-team"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/experts-immobiliers-agrees"/>
+  </url>
+
+  <!-- News listing FR -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere"/>
+  </url>
+
+  <!-- Contact FR -->
+  <url>
+    <loc>https://groupe-abc.fr/contact-expert-immobilier</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/contact-expert-immobilier"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/contact-chartered-valuers"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/contact-expert-immobilier"/>
+  </url>
+
+  <!-- Legal FR -->
+  <url>
+    <loc>https://groupe-abc.fr/mentions-legales</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/mentions-legales"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/legal-notice"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/mentions-legales"/>
+  </url>
+
+  <!-- =========================
+       PAGES CANONIQUES EN
+       ========================= -->
+
+  <!-- Home EN -->
+  <url>
+    <loc>https://groupe-abc.fr/en</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/"/>
+  </url>
+
+  <!-- About EN -->
+  <url>
+    <loc>https://groupe-abc.fr/en/expert-network-chartered-valuers</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/expert-immobilier-reseau-national"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/expert-network-chartered-valuers"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/expert-immobilier-reseau-national"/>
+  </url>
+
+  <!-- Services EN -->
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-services</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/expertise-immobiliere-services"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-services"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/expertise-immobiliere-services"/>
+  </url>
+
+  <!-- Methods listing EN -->
+  <url>
+    <loc>https://groupe-abc.fr/en/valuation-methods-assets</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/methodes-evaluation-immobiliere"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/valuation-methods-assets"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/methodes-evaluation-immobiliere"/>
+  </url>
+
+  <!-- Team EN -->
+  <url>
+    <loc>https://groupe-abc.fr/en/chartered-valuers-team</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/experts-immobiliers-agrees"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/chartered-valuers-team"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/experts-immobiliers-agrees"/>
+  </url>
+
+  <!-- News listing EN -->
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere"/>
+  </url>
+
+  <!-- Contact EN -->
+  <url>
+    <loc>https://groupe-abc.fr/en/contact-chartered-valuers</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/contact-expert-immobilier"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/contact-chartered-valuers"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/contact-expert-immobilier"/>
+  </url>
+
+  <!-- Legal EN -->
+  <url>
+    <loc>https://groupe-abc.fr/en/legal-notice</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.5</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/mentions-legales"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/legal-notice"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/mentions-legales"/>
+  </url>
+
+  <!-- =========================
+       ARTICLES ACTUALITÉS (FR/EN)
+       Cohérents avec news.slugs.ts
+       ========================= -->
+
+  <!-- 1 -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-commercial-bordelais</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-commercial-bordelais"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/bordeaux-commercial-real-estate-market-update"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-commercial-bordelais"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news/bordeaux-commercial-real-estate-market-update</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-commercial-bordelais"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/bordeaux-commercial-real-estate-market-update"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-commercial-bordelais"/>
+  </url>
+
+  <!-- 2 -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere/permis-de-louer-a-bordeaux-tout</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/permis-de-louer-a-bordeaux-tout"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/bordeaux-rental-permit-everything-you-need-to-know"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/permis-de-louer-a-bordeaux-tout"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news/bordeaux-rental-permit-everything-you-need-to-know</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/permis-de-louer-a-bordeaux-tout"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/bordeaux-rental-permit-everything-you-need-to-know"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/permis-de-louer-a-bordeaux-tout"/>
+  </url>
+
+  <!-- 3 -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere/la-croissance-des-expertises-sur-les</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/la-croissance-des-expertises-sur-les"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/growth-in-valuations-on"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/la-croissance-des-expertises-sur-les"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news/growth-in-valuations-on</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/la-croissance-des-expertises-sur-les"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/growth-in-valuations-on"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/la-croissance-des-expertises-sur-les"/>
+  </url>
+
+  <!-- 4 -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere/credit-immobilier-le-recours-a-un</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/credit-immobilier-le-recours-a-un"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/mortgage-credit-using-a"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/credit-immobilier-le-recours-a-un"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news/mortgage-credit-using-a</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/credit-immobilier-le-recours-a-un"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/mortgage-credit-using-a"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/credit-immobilier-le-recours-a-un"/>
+  </url>
+
+  <!-- 5 -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere/frais-de-notaire-de-quoi-sont-ils</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/frais-de-notaire-de-quoi-sont-ils"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/notary-fees-what-are-they-made-of"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/frais-de-notaire-de-quoi-sont-ils"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news/notary-fees-what-are-they-made-of</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/frais-de-notaire-de-quoi-sont-ils"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/notary-fees-what-are-they-made-of"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/frais-de-notaire-de-quoi-sont-ils"/>
+  </url>
+
+  <!-- 6 -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere/le-marche-du-coliving-en-france</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/le-marche-du-coliving-en-france"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/coliving-market-in-france"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/le-marche-du-coliving-en-france"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news/coliving-market-in-france</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/le-marche-du-coliving-en-france"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/coliving-market-in-france"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/le-marche-du-coliving-en-france"/>
+  </url>
+
+  <!-- 7 -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere/la-tension-entre-valeur-assurantielle-et</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/la-tension-entre-valeur-assurantielle-et"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/tension-between-insurance-value-and"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/la-tension-entre-valeur-assurantielle-et"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news/tension-between-insurance-value-and</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/la-tension-entre-valeur-assurantielle-et"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/tension-between-insurance-value-and"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/la-tension-entre-valeur-assurantielle-et"/>
+  </url>
+
+  <!-- 8 -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere/travaux-dpe-ce-qu-il-faut</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/travaux-dpe-ce-qu-il-faut"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/dpe-works-what-you-need-to-know"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/travaux-dpe-ce-qu-il-faut"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news/dpe-works-what-you-need-to-know</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/travaux-dpe-ce-qu-il-faut"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/dpe-works-what-you-need-to-know"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/travaux-dpe-ce-qu-il-faut"/>
+  </url>
+
+  <!-- 9 -->
+  <url>
+    <loc>https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-de-bureaux</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-de-bureaux"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/office-real-estate-market-update"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-de-bureaux"/>
+  </url>
+
+  <url>
+    <loc>https://groupe-abc.fr/en/real-estate-valuation-news/office-real-estate-market-update</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-de-bureaux"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://groupe-abc.fr/en/real-estate-valuation-news/office-real-estate-market-update"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://groupe-abc.fr/actualites-expertise-immobiliere/point-marche-l-immobilier-de-bureaux"/>
+  </url>
+
+</urlset>

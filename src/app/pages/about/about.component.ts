@@ -100,6 +100,50 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Divers */
   defaultPortrait = '/assets/fallbacks/portrait-placeholder.svg';
 
+  /** ✅ Titres EXACTS souhaités (fallback sécurité) */
+  private readonly DEON_TITLES_EXACT: string[] = [
+    'Red book-Normes internationales-RICS-Edition décembre 2024',
+    'Blue book-European Valuation Standards-Tegova-Edition n°10-2025',
+    "Charte de l'expertise en évaluation immobilière-Edition n°6-novembre 2025",
+    'Charte de déontologie Groupe ABC-2025',
+  ];
+
+    /** ✅ Labels "Télécharger ..." affichés dans le bouton (EN DUR, par ligne) */
+  private readonly DEON_DL_LABELS_FR: string[] = [
+    'Télécharger le Red Book',
+    'Télécharger le Blue Book',
+    "Télécharger la Charte de l'expertise",
+    'Télécharger la Charte de déontologie',
+  ];
+
+  private readonly DEON_DL_LABELS_EN: string[] = [
+    'Download the Red Book',
+    'Download the Blue Book',
+    'Download the Valuation Charter',
+    'Download the Code of Ethics',
+  ];
+
+  /** ✅ Label affiché dans le bouton */
+  deonDownloadLabel(i: number, d?: DeonItem | null): string {
+    const idx = Math.max(0, Math.min(3, i)); // sécurité 0..3
+
+    if (this.isEnglish()) {
+      return this.DEON_DL_LABELS_EN[idx] || 'Download document';
+    }
+    return this.DEON_DL_LABELS_FR[idx] || 'Télécharger le document';
+  }
+
+  /** ✅ Aria-label cohérent (lecteurs d’écran) */
+  deonDownloadAriaLabel(i: number, d?: DeonItem | null): string {
+    const title = (d?.title || '').toString().trim();
+    const base = this.deonDownloadLabel(i, d);
+
+    // Si tu veux que l'aria mentionne aussi le titre exact de la ligne :
+    if (title) return `${base} : ${title}`;
+    return base;
+  }
+
+
   get hasMultiplePartners(): boolean {
     return this.allPartners.length > 1;
   }
@@ -165,9 +209,12 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         }
       };
 
+      // ✅ Si ton service renvoie direct `acf`, on récupère la base correctement
+      const aboutRoot: any = about?.acf ? about.acf : about;
+
       /* -------- Intro / Core -------- */
-      const hero = about?.hero ?? {};
-      const introBody: string = about?.intro_body || '';
+      const hero = aboutRoot?.hero ?? {};
+      const introBody: string = aboutRoot?.intro_body || '';
       this.intro = {
         title: hero.section_title || 'Qui sommes-nous ?',
         content: introBody,
@@ -175,7 +222,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       this.core = [{ title: this.intro.title, html: this.intro.content }];
 
       /* -------- Map (Où ?) -------- */
-      const mapSecRaw = about?.map_section ?? {};
+      const mapSecRaw = aboutRoot?.map_section ?? {};
       const whereFallback = [
         mapSecRaw.where_item_1,
         mapSecRaw.where_item_2,
@@ -188,9 +235,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       ].filter(Boolean) as string[];
 
       const whereItems =
-        Array.isArray(whereFromHome) && whereFromHome.length
-          ? whereFromHome
-          : whereFallback;
+        Array.isArray(whereFromHome) && whereFromHome.length ? whereFromHome : whereFallback;
 
       this.mapSection = {
         title: mapSecRaw.where_title || 'Où ?',
@@ -199,23 +244,19 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       };
 
       /* -------- Mesh (maillage) -------- */
-      const meshRaw = about?.mesh ?? {};
-      const meshLevels = [
-        meshRaw.level_label_1,
-        meshRaw.level_label_2,
-        meshRaw.level_label_3,
-      ].filter(Boolean) as string[];
+      const meshRaw = aboutRoot?.mesh ?? {};
+      const meshLevels = [meshRaw.level_label_1, meshRaw.level_label_2, meshRaw.level_label_3].filter(
+        Boolean
+      ) as string[];
 
       this.mesh = {
-        title:
-          meshRaw.section_title ||
-          'Un maillage à toutes les échelles de notre territoire',
+        title: meshRaw.section_title || 'Un maillage à toutes les échelles de notre territoire',
         image: await resolveMediaInline(meshRaw.skyline_image),
         levels: meshLevels,
       };
 
       /* -------- Valeurs -------- */
-      const cv = about?.core_values ?? {};
+      const cv = aboutRoot?.core_values ?? {};
       this.coreValuesTitle = cv.section_title || 'Nos valeurs';
 
       const rawVals = ['value_1', 'value_2', 'value_3']
@@ -224,17 +265,17 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
       const resolvedValues: ValueItem[] = [];
       for (const v of rawVals) {
-        const iconUrl = await resolveMediaInline(v.icon);
+        const iconUrl = await resolveMediaInline((v as any).icon);
         resolvedValues.push({
-          title: v.title || '',
-          html: (v as any).description || v.html || '',
+          title: (v as any).title || '',
+          html: (v as any).description || (v as any).html || '',
           iconUrl,
         });
       }
       this.coreValues = resolvedValues.filter((v) => v.title || v.html || v.iconUrl);
 
       /* -------- Affiliations -------- */
-      const a = about?.affiliations ?? {};
+      const a = aboutRoot?.affiliations ?? {};
       this.affTitle = a.section_title || 'Appartenance';
 
       const rawAffs: AffItem[] = [];
@@ -251,7 +292,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       this.affOpen = new Array(this.affiliations.length).fill(false);
 
       /* -------- Déontologie -------- */
-      const d = about?.deontology ?? {};
+      const d = aboutRoot?.deontology ?? {};
       this.deonTitle = d.deo_title || 'Déontologie';
       this.deontology = [];
 
@@ -259,25 +300,40 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         const di = (d as any)[`deo_${i}`];
         if (!di) continue;
 
+        // ✅ 1) TITRE (on veut EXACTEMENT ce que tu as dans l'API)
+        let title = (di.title || '').toString().trim();
+
+        // ✅ Sécurité : si jamais tu récupères un titre "court" (RedBook/Blue Book), on force tes titres
+        // Critère simple : si pas de "-" ou trop court => fallback.
+        if (!title || title.length < 12 || !title.includes('-')) {
+          title = this.DEON_TITLES_EXACT[i - 1] || title;
+        }
+
+        // ✅ 2) FICHIER (pour que le 4e lien ne saute plus)
         const rawFile =
           di['deo-doc-download'] ??
           di['deo_doc_download'] ??
           di.deoDocDownload ??
-          di['deo_document'] ??
+          di.deoDocdownload ??
+          di.deo_doc_download ??
+          di.file ??
+          di.url ??
           null;
 
-        const fileUrl = rawFile ? await resolveMediaInline(rawFile) : null;
+        const fileUrl = rawFile ? (await resolveMediaInline(rawFile)).trim() : '';
+        const safeFile = fileUrl ? fileUrl : null;
 
         this.deontology.push({
-          title: di.title || '',
-          html: di.deo_description || '',
-          file: fileUrl,
+          title,
+          html: (di.deo_description || di.description || '').toString(),
+          file: safeFile,
         });
       }
+
       this.deonOpen = new Array(this.deontology.length).fill(false);
 
       /* -------- Timeline -------- */
-      const tlRaw = about?.timeline ?? {};
+      const tlRaw = aboutRoot?.timeline ?? {};
       this.timelineTitle = tlRaw.section_title || 'Timeline du Groupe ABC';
 
       const events: TimelineStep[] = [];
@@ -319,12 +375,12 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       this.scheduleBind();
       this.cdr.markForCheck();
 
-      // ✅ DEBUG : tu dois voir un URL ici
+      // ✅ DEBUG utile (à enlever après)
       if (this.isBrowser()) {
         // eslint-disable-next-line no-console
-        console.log('[ABOUT] first partner organismLogo =>', this.activePartner?.organismLogo);
+        console.log('[ABOUT] deontology titles =>', this.deontology.map((x) => x.title));
         // eslint-disable-next-line no-console
-        console.log('[ABOUT] currentOrgLogoUrl =>', this.currentOrgLogoUrl);
+        console.log('[ABOUT] deontology files =>', this.deontology.map((x) => x.file));
       }
     });
   }
@@ -377,31 +433,26 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   /* =========================
-   * ✅ LOGO ORGANISME (RICS) — le coeur du fix
+   * ✅ LOGO ORGANISME (RICS)
    * ========================= */
   private updateOrgLogoFromPartner(p?: PartnerCard): void {
     const raw = (p as any)?.organismLogo;
 
-    // ACF peut renvoyer false
     if (!raw || raw === false) {
       this.currentOrgLogoUrl = '';
       return;
     }
 
-    // si string url
     if (typeof raw === 'string') {
       this.currentOrgLogoUrl = raw.trim();
       return;
     }
 
-    // si object WP media
     const u = raw?.source_url || raw?.url || '';
     this.currentOrgLogoUrl = (u || '').trim();
   }
 
-  /** handler image error pour le logo (ton HTML passe $event) */
   onOrgImgError(_e: Event): void {
-    // si le logo casse, on le masque
     this.currentOrgLogoUrl = this.defaultOrgLogo || '';
     if (!this.defaultOrgLogo) this.currentOrgLogoUrl = '';
     this.cdr.markForCheck();
@@ -484,6 +535,16 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
       if (kind === 'aff') this.toggleAff(i);
       else this.toggleDeon(i);
     }
+  }
+
+  // ✅ Compat si ton template appelle encore getDeonDownloadAria(...)
+  getDeonDownloadAria(d?: DeonItem | null): string {
+    return this.getDeonDownloadAriaLabel(d);
+  }
+
+  getDeonDownloadAriaLabel(d?: DeonItem | null): string {
+    const t = (d?.title || 'Déontologie').toString();
+    return (this.isEnglish() ? 'Download the document: ' : 'Télécharger le document : ') + t;
   }
 
   isSameOrigin(url: string): boolean {
@@ -609,7 +670,6 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     const next = this.allPartners[this.partnerIndex];
     this.activePartner = next;
 
-    // ✅ le FIX : logo organisme vient du partenaire TEAM
     this.updateOrgLogoFromPartner(next);
 
     const cached = this.cachedPhotoUrl(next);
@@ -659,10 +719,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
    * SEO (inchangé)
    * ========================= */
   private stripHtml(raw: string): string {
-    return (raw || '')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
+    return (raw || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
   }
 
   private buildFaqJsonLd(faqItems: FaqItem[], pageUrl: string): any | null {
@@ -779,11 +836,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     if (coreTitleEl && coreGridEl && !this.revealed.has(coreTitleEl)) {
       const tlCore = gsap.timeline({
         defaults: { ease: EASE },
-        scrollTrigger: {
-          trigger: coreTitleEl,
-          start: 'top 85%',
-          once: true,
-        },
+        scrollTrigger: { trigger: coreTitleEl, start: 'top 85%', once: true },
       });
 
       tlCore.add(() => rm(coreTitleEl), 0);
@@ -795,9 +848,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           autoAlpha: 1,
           y: 0,
           duration: 0.45,
-          onComplete: () => {
-            this.revealed.add(coreTitleEl);
-          },
+          onComplete: () => void this.revealed.add(coreTitleEl),
         }
       );
 
@@ -814,9 +865,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
               ease: EASE,
               onComplete: () => {
                 this.revealed.add(coreGridEl);
-                gsap.set(coreGridEl, {
-                  clearProps: 'transform,opacity,visibility,willChange',
-                });
+                gsap.set(coreGridEl, { clearProps: 'transform,opacity,visibility,willChange' });
               },
             }
           );
@@ -829,8 +878,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     const meshTitle = this.meshTitleEl?.nativeElement;
     const skyline = this.meshSkylineEl?.nativeElement;
     const meshLevels = this.meshLevelsEl?.nativeElement;
-    const meshLevelItems =
-      this.meshLevelEls?.toArray().map((r) => r.nativeElement) || [];
+    const meshLevelItems = this.meshLevelEls?.toArray().map((r) => r.nativeElement) || [];
 
     if (meshTitle) {
       gsap.fromTo(
@@ -841,11 +889,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           y: 0,
           duration: 0.55,
           ease: EASE,
-          scrollTrigger: {
-            trigger: meshTitle,
-            start: 'top 85%',
-            once: true,
-          },
+          scrollTrigger: { trigger: meshTitle, start: 'top 85%', once: true },
           onStart: () => rm(meshTitle),
         }
       );
@@ -860,11 +904,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           y: 0,
           duration: 0.55,
           ease: EASE,
-          scrollTrigger: {
-            trigger: skyline,
-            start: 'top 80%',
-            once: true,
-          },
+          scrollTrigger: { trigger: skyline, start: 'top 80%', once: true },
           onStart: () => rm(skyline),
         }
       );
@@ -876,32 +916,20 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
       const tl = gsap.timeline({
         defaults: { ease: 'power2.out' },
-        scrollTrigger: {
-          trigger: meshLevels,
-          start: 'top 85%',
-          once: true,
-        },
+        scrollTrigger: { trigger: meshLevels, start: 'top 85%', once: true },
         onStart: () => {
           rm(meshLevels);
           meshLevelItems.forEach((el) => rm(el));
         },
       });
 
-      tl.to(meshLevels, {
-        duration: 1.6,
-        '--lineW': '100%',
-      } as any);
+      tl.to(meshLevels, { duration: 1.6, '--lineW': '100%' } as any);
 
       const steps = [0.15, 0.85, 1.55];
       meshLevelItems.forEach((el, i) => {
         tl.to(
           el,
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.45,
-            ease: EASE,
-          },
+          { autoAlpha: 1, y: 0, duration: 0.45, ease: EASE },
           steps[Math.min(i, steps.length - 1)]
         );
       });
@@ -922,11 +950,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           y: 0,
           duration: 0.55,
           ease: EASE,
-          scrollTrigger: {
-            trigger: mapImgWrap,
-            start: 'top 85%',
-            once: true,
-          },
+          scrollTrigger: { trigger: mapImgWrap, start: 'top 85%', once: true },
           onStart: () => rm(mapImgWrap),
         }
       );
@@ -941,11 +965,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           y: 0,
           duration: 0.5,
           ease: EASE,
-          scrollTrigger: {
-            trigger: mapTitle,
-            start: 'top 85%',
-            once: true,
-          },
+          scrollTrigger: { trigger: mapTitle, start: 'top 85%', once: true },
           onStart: () => rm(mapTitle),
         }
       );
@@ -961,13 +981,8 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           duration: 0.45,
           ease: EASE,
           stagger: 0.08,
-          scrollTrigger: {
-            trigger: mapList,
-            start: 'top 90%',
-            once: true,
-          },
-          onStart: () =>
-            mapItemEls.forEach((el) => el.classList.remove('prehide-row')),
+          scrollTrigger: { trigger: mapList, start: 'top 90%', once: true },
+          onStart: () => mapItemEls.forEach((el) => el.classList.remove('prehide-row')),
         }
       );
     }
@@ -986,11 +1001,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           y: 0,
           duration: 0.5,
           ease: EASE,
-          scrollTrigger: {
-            trigger: valuesTitle,
-            start: 'top 85%',
-            once: true,
-          },
+          scrollTrigger: { trigger: valuesTitle, start: 'top 85%', once: true },
           onStart: () => rm(valuesTitle),
         }
       );
@@ -1004,10 +1015,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
       valueItems.forEach((li) => {
         li.classList.remove('prehide');
-        gsap.set(li, {
-          autoAlpha: 1,
-          clearProps: 'visibility',
-        });
+        gsap.set(li, { autoAlpha: 1, clearProps: 'visibility' });
 
         const icon = li.querySelector('.icon-wrap img') as HTMLElement | null;
         const title = li.querySelector('.value-name') as HTMLElement | null;
@@ -1016,35 +1024,19 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
         if (icon) {
           icons.push(icon);
-          gsap.set(icon, {
-            autoAlpha: 0,
-            y: 8,
-            scale: 0.98,
-            willChange: 'transform,opacity',
-          });
+          gsap.set(icon, { autoAlpha: 0, y: 8, scale: 0.98, willChange: 'transform,opacity' });
         }
         if (title) {
           titles.push(title);
-          gsap.set(title, {
-            autoAlpha: 0,
-            y: 14,
-            willChange: 'transform,opacity',
-          });
+          gsap.set(title, { autoAlpha: 0, y: 14, willChange: 'transform,opacity' });
         }
         if (desc) {
           descs.push(desc);
-          gsap.set(desc, {
-            autoAlpha: 0,
-            y: 14,
-            willChange: 'transform,opacity',
-          });
+          gsap.set(desc, { autoAlpha: 0, y: 14, willChange: 'transform,opacity' });
         }
         if (divider) {
           dividers.push(divider);
-          gsap.set(divider, {
-            scaleX: 0,
-            transformOrigin: '50% 50%',
-          });
+          gsap.set(divider, { scaleX: 0, transformOrigin: '50% 50%' });
         }
       });
 
@@ -1052,42 +1044,19 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
 
       const tl = gsap.timeline({
         defaults: { ease: EASE },
-        scrollTrigger: {
-          trigger: valuesGrid,
-          start: 'top 85%',
-          once: true,
-        },
+        scrollTrigger: { trigger: valuesGrid, start: 'top 85%', once: true },
       });
 
       tl.add('phase1')
-        .to(
-          icons,
-          { autoAlpha: 1, y: 0, scale: 1, duration: D },
-          'phase1'
-        )
-        .to(
-          dividers,
-          { scaleX: 1, duration: D },
-          'phase1'
-        );
+        .to(icons, { autoAlpha: 1, y: 0, scale: 1, duration: D }, 'phase1')
+        .to(dividers, { scaleX: 1, duration: D }, 'phase1');
 
-      tl.add('phase2').to(
-        titles,
-        { autoAlpha: 1, y: 0, duration: D },
-        'phase2'
-      );
-
-      tl.add('phase3').to(
-        descs,
-        { autoAlpha: 1, y: 0, duration: D },
-        'phase3'
-      );
+      tl.add('phase2').to(titles, { autoAlpha: 1, y: 0, duration: D }, 'phase2');
+      tl.add('phase3').to(descs, { autoAlpha: 1, y: 0, duration: D }, 'phase3');
 
       tl.add(() => {
         const toClear = [...icons, ...titles, ...descs];
-        gsap.set(toClear, {
-          clearProps: 'transform,opacity,willChange',
-        });
+        gsap.set(toClear, { clearProps: 'transform,opacity,willChange' });
         gsap.set(dividers, { clearProps: 'transform' });
       });
     }
@@ -1096,35 +1065,20 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     {
       const affTitle = this.affTitleEl?.nativeElement;
       const affRows = this.affRowEls?.toArray().map((r) => r.nativeElement) || [];
-      const affSection = affTitle
-        ? (affTitle.closest('.affiliations') as HTMLElement | null)
-        : null;
+      const affSection = affTitle ? (affTitle.closest('.affiliations') as HTMLElement | null) : null;
 
       if (affSection && affTitle && affRows.length) {
         gsap
           .timeline({
             defaults: { ease: EASE },
-            scrollTrigger: {
-              trigger: affSection,
-              start: 'top 85%',
-              once: true,
-            },
+            scrollTrigger: { trigger: affSection, start: 'top 85%', once: true },
             onStart: () => {
               rm(affTitle);
               affRows.forEach((el) => el.classList.remove('prehide-row'));
             },
           })
-          .to(affTitle, {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.65,
-          })
-          .to(affRows, {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.65,
-            stagger: 0.06,
-          });
+          .to(affTitle, { autoAlpha: 1, y: 0, duration: 0.65 })
+          .to(affRows, { autoAlpha: 1, y: 0, duration: 0.65, stagger: 0.06 });
       }
     }
 
@@ -1132,35 +1086,20 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     {
       const deonTitle = this.deonTitleEl?.nativeElement;
       const deonRows = this.deonRowEls?.toArray().map((r) => r.nativeElement) || [];
-      const deonSection = deonTitle
-        ? (deonTitle.closest('.deon') as HTMLElement | null)
-        : null;
+      const deonSection = deonTitle ? (deonTitle.closest('.deon') as HTMLElement | null) : null;
 
       if (deonSection && deonTitle && deonRows.length) {
         gsap
           .timeline({
             defaults: { ease: EASE },
-            scrollTrigger: {
-              trigger: deonSection,
-              start: 'top 85%',
-              once: true,
-            },
+            scrollTrigger: { trigger: deonSection, start: 'top 85%', once: true },
             onStart: () => {
               rm(deonTitle);
               deonRows.forEach((el) => el.classList.remove('prehide-row'));
             },
           })
-          .to(deonTitle, {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.65,
-          })
-          .to(deonRows, {
-            autoAlpha: 1,
-            y: 0,
-            duration: 0.65,
-            stagger: 0.06,
-          });
+          .to(deonTitle, { autoAlpha: 1, y: 0, duration: 0.65 })
+          .to(deonRows, { autoAlpha: 1, y: 0, duration: 0.65, stagger: 0.06 });
       }
     }
 
@@ -1179,11 +1118,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           y: 0,
           duration: 0.5,
           ease: EASE,
-          scrollTrigger: {
-            trigger: tlTitleEl,
-            start: 'top 85%',
-            once: true,
-          },
+          scrollTrigger: { trigger: tlTitleEl, start: 'top 85%', once: true },
           onStart: () => rm(tlTitleEl),
         }
       );
@@ -1199,10 +1134,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         (y as HTMLElement).style.setProperty('--dashNow', '0px');
       });
       tlBodies.forEach((b) => gsap.set(b, { autoAlpha: 0, y: 10 }));
-      gsap.set(tlRailEl, {
-        scaleY: 0,
-        transformOrigin: 'top',
-      });
+      gsap.set(tlRailEl, { scaleY: 0, transformOrigin: 'top' });
 
       let railHeight = 0;
       let checkpoints: number[] = [];
@@ -1234,10 +1166,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
         onUpdate: (self) => {
           const p = self.progress;
           const drawPx = railHeight * p;
-          gsap.set(tlRailEl, {
-            scaleY: p,
-            transformOrigin: 'top',
-          });
+          gsap.set(tlRailEl, { scaleY: p, transformOrigin: 'top' });
 
           for (let i = 0; i < tlYears.length; i++) {
             const yEl = tlYears[i] as any;
@@ -1250,39 +1179,21 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
                 y: 0,
                 duration: 0.45,
                 ease: EASE,
-                onStart: () =>
-                  (yEl as HTMLElement).style.setProperty('--dashNow', 'var(--dash-w)'),
+                onStart: () => (yEl as HTMLElement).style.setProperty('--dashNow', 'var(--dash-w)'),
               });
-              gsap.to(bEl, {
-                autoAlpha: 1,
-                y: 0,
-                duration: 0.45,
-                ease: EASE,
-                delay: 0.08,
-              });
+              gsap.to(bEl, { autoAlpha: 1, y: 0, duration: 0.45, ease: EASE, delay: 0.08 });
             }
           }
         },
         onRefreshInit: () => {
           computeLayout();
-          gsap.set(tlRailEl, {
-            scaleY: 0,
-            transformOrigin: 'top',
-          });
+          gsap.set(tlRailEl, { scaleY: 0, transformOrigin: 'top' });
           tlYears.forEach((y: any) => {
             y.__revealed = false;
-            gsap.set(y, {
-              autoAlpha: 0,
-              y: 10,
-            });
+            gsap.set(y, { autoAlpha: 0, y: 10 });
             (y as HTMLElement).style.setProperty('--dashNow', '0px');
           });
-          tlBodies.forEach((b) =>
-            gsap.set(b, {
-              autoAlpha: 0,
-              y: 10,
-            })
-          );
+          tlBodies.forEach((b) => gsap.set(b, { autoAlpha: 0, y: 10 }));
         },
       });
 
@@ -1292,9 +1203,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
           ScrollTrigger.refresh();
         } catch {}
       });
-      if (ro && (tlGrid || tlRailEl)) {
-        ro.observe(tlGrid || tlRailEl);
-      }
+      if (ro && (tlGrid || tlRailEl)) ro.observe(tlGrid || tlRailEl);
     }
 
     /* ----- Hover zoom MAP items ----- */
@@ -1319,11 +1228,7 @@ export class AboutComponent implements OnInit, AfterViewInit, OnDestroy {
     } catch {}
   }
 
-  private attachHoverZoom(
-    elements: HTMLElement[] | undefined,
-    originLeft = true,
-    scale = 1.045
-  ): void {
+  private attachHoverZoom(elements: HTMLElement[] | undefined, originLeft = true, scale = 1.045): void {
     if (!this.isBrowser() || !elements || !elements.length) return;
 
     elements.forEach((el) => {

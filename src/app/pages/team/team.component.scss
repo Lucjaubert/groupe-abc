@@ -345,8 +345,13 @@ $blue-hero: #444798;
     inline-size: 68px; block-size: 25px;
     flex-shrink: 0; aspect-ratio: 68 / 25; object-fit: contain; display: block;
   }
+  .ff-ifei {
+    block-size: 50px; inline-size: auto;
+    flex-shrink: 0; object-fit: contain; display: block;
+  }
   @media (max-width: 720px) {
     .ff-org { inline-size: 56px; block-size: 21px; aspect-ratio: 56 / 21; }
+    .ff-ifei { block-size: 45px; }
   }
 
   .ff-titles {
@@ -562,7 +567,7 @@ $blue-hero: #444798;
     padding: 0;
     border-top: map.get(vars.$border-size, "2") solid $blue-hero;
     margin-top: 50px;
-    margin-bottom: 100px;
+    margin-bottom: 50px;
   }
 
   .teach-row {

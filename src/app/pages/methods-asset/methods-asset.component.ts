@@ -1,5 +1,3 @@
-// src/app/pages/methods-asset/methods-asset.component.ts
-
 import {
   Component,
   OnInit,
@@ -67,6 +65,9 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
   private doc = inject(DOCUMENT);
 
+  // ✅ si tu le fournis côté SSR (run-ssr.mjs providers), ça aide à détecter la langue
+  private serverLang = inject('SERVER_LANG' as any, { optional: true }) as Lang | null;
+
   private gsap: any | null = null;
   private ScrollTrigger: any | null = null;
 
@@ -133,6 +134,14 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
           this.sections = [];
           this.faqItems = [];
           this.openFaqIndexes.clear();
+          // ✅ SEO listing (optionnel) — si tu veux, sinon enlève
+          const lang = this.getLang();
+          this.seo.update({
+            title: lang === 'en' ? 'Valuation methods – Groupe ABC' : 'Méthodes d’évaluation – Groupe ABC',
+            description: '',
+            canonical: `https://groupe-abc.fr${METHODS_ASSETS_BASE[lang]}`,
+            lang,
+          });
           return;
         }
 
@@ -151,6 +160,9 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
           this.router.navigate([base, desiredDisplay], { replaceUrl: true }).catch(() => {});
           return;
         }
+
+        // ✅ IMPORTANT : SEO "early" synchron (SSR-friendly) AVANT les await
+        this.applySeoEarly(canonicalWp);
 
         // 4) éviter re-fetch si on a déjà le même canonical WP
         if (canonicalWp === this.lastSlugCanonical) {
@@ -320,7 +332,7 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
     this.faqItems = this.buildFaq(acf?.faq);
     this.openFaqIndexes.clear();
 
-    /* ---------- SEO ---------- */
+    /* ---------- SEO (ACF) ---------- */
     this.applySeoFromAcf(acf?.seo, slugDisplay, this.faqItems);
   }
 
@@ -470,6 +482,43 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
     return '';
   }
 
+  /**
+   * ✅ SEO EARLY synchron (SSR)
+   * Objectif : avoir canonical + hreflang + title fallback dans le HTML SSR,
+   * même si WP n'a pas encore répondu.
+   */
+  private applySeoEarly(canonicalWpSlug: string): void {
+    const lang = this.getLang();
+    const origin = 'https://groupe-abc.fr';
+
+    // slug affiché par langue (EN peut être mappé)
+    const frDisplay = toMethodsAssetDisplaySlug(canonicalWpSlug, 'fr');
+    const enDisplay = toMethodsAssetDisplaySlug(canonicalWpSlug, 'en');
+
+    const frPath = `${METHODS_ASSETS_BASE.fr}/${encodeURIComponent(frDisplay)}`;
+    const enPath = `${METHODS_ASSETS_BASE.en}/${encodeURIComponent(enDisplay)}`;
+
+    const canonical = lang === 'en' ? `${origin}${enPath}` : `${origin}${frPath}`;
+
+    // title fallback : on met quelque chose de correct en attendant ACF
+    const title =
+      lang === 'en'
+        ? `Valuation method – ${enDisplay} – Groupe ABC`
+        : `Méthode d’évaluation – ${frDisplay} – Groupe ABC`;
+
+    this.seo.update({
+      title,
+      description: '',
+      canonical,
+      lang,
+      alternates: [
+        { lang: 'fr', href: `${origin}${frPath}` },
+        { lang: 'en', href: `${origin}${enPath}` },
+        { lang: 'x-default', href: `${origin}${frPath}` },
+      ],
+    });
+  }
+
   private applySeoFromAcf(seoAcf: any, slugDisplay: string, faqItems: FaqItemUI[] = []): void {
     const lang = this.getLang();
 
@@ -539,6 +588,8 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
       jsonLdObj = { '@context': 'https://schema.org', '@graph': graph };
     }
 
+    // ✅ ici on laisse SeoService générer les alternates par défaut
+    // MAIS comme on a déjà un early SEO, ça écrase proprement ensuite
     this.seo.update({
       title: metaTitle,
       description: metaDesc,
@@ -551,12 +602,23 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private getLang(): Lang {
+    // 1) html lang si déjà défini
     try {
       const htmlLang = (this.doc?.documentElement?.lang || '').toLowerCase();
       if (htmlLang.startsWith('en')) return 'en';
       if (htmlLang.startsWith('fr')) return 'fr';
     } catch {}
 
+    // 2) SSR-safe : on lit la route actuelle (ça marche côté serveur)
+    try {
+      const p = (this.router.url || '/').split(/[?#]/)[0];
+      if (p === '/en' || p.startsWith('/en/')) return 'en';
+    } catch {}
+
+    // 3) fallback token SSR si fourni
+    if (this.serverLang === 'en' || this.serverLang === 'fr') return this.serverLang;
+
+    // 4) browser-only : pathname
     if (this.isBrowser()) {
       try {
         const path = window.location.pathname || '/';

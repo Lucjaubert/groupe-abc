@@ -1,7 +1,6 @@
 <section class="section contact-page" aria-labelledby="contact-title">
-  <div class="section-inner">
+  <div class="section-inner pt-5 pt-lg-10">
     <header class="contact-head">
-      <!-- ✅ H1 toujours rendu (SSR) avec fallback selon la langue -->
       <h1 #contactTitle id="contact-title" class="page-title prehide">
         {{ contactH1 }}
       </h1>
@@ -32,12 +31,13 @@
       (submit)="onSubmit($event)"
       autocomplete="on"
     >
+      <!-- ================= RADIOS ================= -->
       <fieldset #radiosEl class="radios" aria-label="Civilité / Type">
         <legend class="sr-only">Civilité / Type</legend>
 
         <div class="rad-row">
-          <div class="rad-col">
-            <!-- Colonne gauche : CIV -->
+          <!-- Colonne gauche : CIV -->
+          <div class="rad-col rad-col--left">
             <label #radioItem class="radio prehide-row is-civ">
               <input
                 type="radio"
@@ -53,19 +53,21 @@
                 type="radio"
                 name="civ"
                 value="monsieur"
+                [checked]="true"
                 (change)="onFormChange()"
               />
               <span>Monsieur</span>
             </label>
           </div>
 
-          <div class="rad-col">
-            <!-- Colonne droite : PROFIL -->
+          <!-- Colonne droite : PROFIL -->
+          <div class="rad-col rad-col--right">
             <label #radioItem class="radio prehide-row is-profil">
               <input
                 type="radio"
                 name="profil"
                 value="pro"
+                [checked]="profil === 'pro'"
                 (change)="setProfil('pro')"
               />
               <span>Professionnel</span>
@@ -76,6 +78,7 @@
                 type="radio"
                 name="profil"
                 value="part"
+                [checked]="profil === 'part'"
                 (change)="setProfil('part')"
               />
               <span>Particulier</span>
@@ -84,8 +87,7 @@
         </div>
       </fieldset>
 
-
-      <!-- ✅ Grille champs -->
+      <!-- ================= GRILLE ================= -->
       <div #formGridEl class="form-grid" [class.is-pro]="isPro">
         <!-- Particulier : Prénom | Nom -->
         <label
@@ -123,7 +125,7 @@
         <!-- Pro : Société (plein largeur) -->
         <label
           #fgLabel
-          class="fg field fg-company full prehide-row js-company"
+          class="fg field fg-company prehide-row js-company"
           [class.is-hidden]="!isPro"
         >
           <span class="sr-only">Société*</span>
@@ -137,8 +139,7 @@
           />
         </label>
 
-
-        <!-- Ligne suivante : Téléphone | Email -->
+        <!-- Ligne : Téléphone (gauche) | Email (droite) -->
         <label #fgLabel class="fg field fg-phone prehide-row">
           <span class="sr-only">Téléphone</span>
           <input
@@ -162,6 +163,7 @@
           />
         </label>
 
+        <!-- Message full width -->
         <label #fgLabel class="fg field full prehide-row">
           <span class="sr-only">Message*</span>
           <textarea
@@ -172,7 +174,7 @@
           ></textarea>
         </label>
 
-        <!-- Honeypot anti-bot -->
+        <!-- Honeypot -->
         <input
           class="sr-only"
           id="website"
@@ -184,20 +186,21 @@
         />
       </div>
 
-      <!-- ✅ PJ + Envoyer sur la même ligne -->
+      <!-- ================= BOTTOM BAR ================= -->
       <div #attachRowEl class="form-bottombar prehide-row">
-        <!-- Gauche : Pièce jointe -->
+        <!-- PJ à gauche -->
         <div class="form-extras">
-          <label class="attach" aria-label="Ajouter une pièce jointe">
-            <input
-              class="attach-input"
-              type="file"
-              name="attachment"
-              (change)="onFileSelected($event)"
-              [attr.accept]="acceptedAttachmentTypes"
-            />
+          <input
+            id="attachment"
+            class="attach-input"
+            type="file"
+            name="attachment"
+            (change)="onFileSelected($event)"
+            [attr.accept]="acceptedAttachmentTypes"
+          />
 
-            <span class="attach-btn" role="button" tabindex="0">
+          <label class="attach" for="attachment" aria-label="Ajouter une pièce jointe">
+            <span class="attach-btn">
               <span class="attach-ico" aria-hidden="true">
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                   <path
@@ -216,20 +219,20 @@
             >
               {{ attachmentName }}
             </span>
-
-            <button
-              *ngIf="attachmentName"
-              type="button"
-              class="attach-clear"
-              (click)="clearAttachment()"
-              aria-label="Supprimer la pièce jointe"
-            >
-              ✕
-            </button>
           </label>
+
+          <button
+            *ngIf="attachmentName"
+            type="button"
+            class="attach-clear"
+            (click)="clearAttachment()"
+            aria-label="Supprimer la pièce jointe"
+          >
+            ✕
+          </button>
         </div>
 
-        <!-- Droite : Envoyer -->
+        <!-- Envoyer à droite -->
         <div class="form-actions">
           <button
             #sendBtn
@@ -240,9 +243,7 @@
             [disabled]="isLoading || isSuccess"
             aria-live="polite"
             [attr.aria-pressed]="isSuccess ? 'true' : 'false'"
-            [attr.aria-label]="
-              isSuccess ? 'Message envoyé' : 'Envoyer le message'
-            "
+            [attr.aria-label]="isSuccess ? 'Message envoyé' : 'Envoyer le message'"
           >
             <span class="btn-label">{{ isSuccess ? 'Envoyé' : 'Envoyer' }}</span>
 
@@ -333,7 +334,7 @@
       </p>
     </form>
 
-    <!-- ==================== BLOC BOTTOM (Adresse + Download côte à côte) ==================== -->
+    <!-- ==================== BLOC BOTTOM ==================== -->
     <div class="contact-bottom mt-lg-10">
       <div #bigInfosEl class="big-infos">
         <p #bigLine class="prehide">18 rue Pasquier</p>
@@ -345,46 +346,42 @@
       </div>
 
       <article class="download pb-lg-0 pb-7" *ngIf="presentation as pres">
-        <a
-          class="dl-link"
-          (click)="onDlClick($event, pres.file)"
-          [class.disabled]="!hasFile"
-          [attr.href]="hasFile ? pres.file : null"
-          [attr.tabindex]="hasFile ? null : '-1'"
-          [attr.download]="
-            hasFile && isSameOrigin(pres.file!)
-              ? safeDownloadName(pres.file!)
-              : null
-          "
-          [attr.target]="
-            hasFile && !isSameOrigin(pres.file!) ? '_blank' : null
-          "
-          [attr.rel]="hasFile && !isSameOrigin(pres.file!) ? 'noopener' : null"
-        >
+        <a class="dl-link"
+           (click)="onDlClick($event, pres.file)"
+           [class.disabled]="!hasFile"
+           [attr.href]="hasFile ? pres.file : null"
+           [attr.tabindex]="hasFile ? null : '-1'"
+           [attr.download]="hasFile && isSameOrigin(pres.file!) ? safeDownloadName(pres.file!) : null"
+           [attr.target]="hasFile && !isSameOrigin(pres.file!) ? '_blank' : null"
+           [attr.rel]="hasFile && !isSameOrigin(pres.file!) ? 'noopener' : null">
+
           <div class="dl-text">
             <div class="dl-line">
+              <!-- Desktop -->
               <span class="only-desktop">
                 {{ dlL1 }} {{ dlL2 }}
                 <span class="dl-accent">{{ presentation.text2 }}</span>
               </span>
-
+              <!-- Mobile (3 lignes fixes) -->
+              <!-- Mobile (3 lignes fixes) -->
               <span class="only-mobile">
-                <span class="dl-l1">{{ dlL1 }}</span>
-                <span class="dl-l2">{{ dlL2 }}</span>
-                <span class="dl-l3 dl-accent">{{ presentation.text2 }}</span>
+                <span class="dl-line">Télécharger</span>
+                <span class="dl-line">la présentation</span>
+                <span class="dl-line dl-line--nowrap">
+                  du <span class="dl-accent">Groupe ABC</span>
+                </span>
               </span>
+
+
 
             </div>
           </div>
 
-          <img
-            class="dl-icon-img"
-            src="assets/icons/download.webp"
-            alt="Télécharger"
-            width="48"
-            height="56"
-            loading="lazy"
-          />
+          <img class="dl-icon-img"
+               src="assets/icons/download.webp"
+               alt="Télécharger"
+               width="48" height="56"
+               loading="lazy">
         </a>
       </article>
     </div>

@@ -2,7 +2,7 @@
 <div class="news-wrapper">
   <!-- ===== INTRO ===== -->
   <section class="section news-intro">
-    <div class="section-inner">
+    <div class="section-inner pt-5 pt-lg-10">
       <h1 #introTitle class="page-title prehide">{{ intro.title }}</h1>
 
       <div class="intro-line">
@@ -31,7 +31,7 @@
   </section>
 
   <!-- ===== FILTRES THEMES (3 boutons côte à côte) ===== -->
-  <div class="theme-filters px-0" role="group" aria-label="Filtrer les actualités par thème">
+  <div class="theme-filters px-0 py-5" role="group" aria-label="Filtrer les actualités par thème">
     <button
       *ngFor="let t of themeFilters"
       #themeFilterBtn
@@ -47,7 +47,7 @@
 
   <!-- ===== LISTE DES POSTS ===== -->
   <section class="section news-list" *ngIf="pagedPosts?.length">
-    <div class="section-inner px-0">
+    <div class="section-inner px-0 pt-5">
       <ul class="posts" role="list">
         <li
           #newsRow

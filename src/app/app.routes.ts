@@ -24,20 +24,20 @@ const frRoutes: Routes = [
     title: 'Services d’expertise immobilière – Valeur vénale et locative',
   },
 
-  /* ✅ FR (PARENT + CHILD) */
+  /* ✅ FR — DETAIL (AVANT le listing, sans parent/child) */
+  {
+    path: 'methodes-evaluation-immobiliere/:slug',
+    loadComponent: () =>
+      import('./pages/methods-asset/methods-asset.component').then(m => m.MethodsAssetComponent),
+    title: 'Actif immobilier – Groupe ABC',
+  },
+
+  /* ✅ FR — LISTING */
   {
     path: 'methodes-evaluation-immobiliere',
     loadComponent: () =>
       import('./pages/methods/methods.component').then(m => m.MethodsComponent),
     title: 'Méthodes d’évaluation immobilière – Approches et calculs de valeur',
-    children: [
-      {
-        path: ':slug',
-        loadComponent: () =>
-          import('./pages/methods-asset/methods-asset.component').then(m => m.MethodsAssetComponent),
-        title: 'Actif immobilier – Groupe ABC',
-      },
-    ],
   },
 
   {
@@ -46,17 +46,31 @@ const frRoutes: Routes = [
       import('./pages/team/team.component').then(m => m.TeamComponent),
     title: 'Équipe d’experts immobiliers agréés – Compétences et déontologie',
   },
+    /* ✅ FR (PARENT + CHILD) — ACTUALITÉS */
   {
     path: 'actualites-expertise-immobiliere',
-    loadComponent: () => import('./pages/news/news.component').then(m => m.NewsComponent),
-    title: 'Actualités de l’expertise immobilière – Marché, valeur vénale et réglementation',
+    children: [
+      // Listing
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () => import('./pages/news/news.component').then(m => m.NewsComponent),
+        title: 'Actualités de l’expertise immobilière – Marché, valeur vénale et réglementation',
+      },
+
+      { path: 'news', redirectTo: '', pathMatch: 'full' },
+      { path: 'article-:id', redirectTo: '', pathMatch: 'full' },
+
+      // Détail
+      {
+        path: ':slug',
+        loadComponent: () =>
+          import('./pages/news-detail/news-detail.component').then(m => m.NewsDetailComponent),
+        title: 'Actualité immobilière – Groupe ABC',
+      },
+    ],
   },
-  {
-    path: 'actualites-expertise-immobiliere/:slug',
-    loadComponent: () =>
-      import('./pages/news-detail/news-detail.component').then(m => m.NewsDetailComponent),
-    title: 'Actualité immobilière – Groupe ABC',
-  },
+
   {
     path: 'contact-expert-immobilier',
     loadComponent: () =>
@@ -73,7 +87,6 @@ const frRoutes: Routes = [
 
 /* ===========================================
    FR — redirections historiques
-   ✅ je te conseille de les mettre AVANT frRoutes (optionnel mais propre)
    =========================================== */
 const frLegacyRedirects: Routes = [
   { path: 'accueil', redirectTo: '', pathMatch: 'full' },
@@ -95,7 +108,6 @@ const frLegacyRedirects: Routes = [
    EN — redirections historiques (dans le scope /en)
    =========================================== */
 const enLegacyRedirects: Routes = [
-  // anciennes URLs EN simples
   { path: 'news', redirectTo: 'real-estate-valuation-news', pathMatch: 'full' },
   { path: 'news/:slug', redirectTo: 'real-estate-valuation-news/:slug', pathMatch: 'full' },
   { path: 'contact', redirectTo: 'contact-chartered-valuers', pathMatch: 'full' },
@@ -108,7 +120,6 @@ const enLegacyRedirects: Routes = [
   { path: 'chartered-valuation-experts', redirectTo: 'chartered-valuers-team', pathMatch: 'full' },
   { path: 'contact-real-estate-valuation', redirectTo: 'contact-chartered-valuers', pathMatch: 'full' },
 
-  // anciennes URLs FR sous /en
   { path: 'actualites', redirectTo: 'real-estate-valuation-news', pathMatch: 'full' },
   { path: 'actualites/:slug', redirectTo: 'real-estate-valuation-news/:slug', pathMatch: 'full' },
 
@@ -117,7 +128,6 @@ const enLegacyRedirects: Routes = [
 
   { path: 'biens-et-methodes', redirectTo: 'valuation-methods-assets', pathMatch: 'full' },
 
-  // ✅ IMPORTANT : ajoute aussi la variante FR “methodes-evaluation-immobiliere/:slug” sous /en si tu veux la supporter
   { path: 'methodes-evaluation-immobiliere', redirectTo: 'valuation-methods-assets', pathMatch: 'full' },
   { path: 'methodes-evaluation-immobiliere/:slug', redirectTo: 'valuation-methods-assets/:slug', pathMatch: 'full' },
 
@@ -152,20 +162,20 @@ const enRoutes: Routes = [
     title: 'Real estate valuation services — Market & rental value',
   },
 
-  /* ✅ EN (PARENT + CHILD) */
+  /* ✅ EN — DETAIL (AVANT le listing, sans parent/child) */
+  {
+    path: 'valuation-methods-assets/:slug',
+    loadComponent: () =>
+      import('./pages/methods-asset/methods-asset.component').then(m => m.MethodsAssetComponent),
+    title: 'Asset – Groupe ABC',
+  },
+
+  /* ✅ EN — LISTING */
   {
     path: 'valuation-methods-assets',
     loadComponent: () =>
       import('./pages/methods/methods.component').then(m => m.MethodsComponent),
     title: 'Valuation methods & assets — Approaches & calculations',
-    children: [
-      {
-        path: ':slug',
-        loadComponent: () =>
-          import('./pages/methods-asset/methods-asset.component').then(m => m.MethodsAssetComponent),
-        title: 'Asset – Groupe ABC',
-      },
-    ],
   },
 
   {
@@ -210,7 +220,6 @@ const enRoutes: Routes = [
    Routes exportées
    ========================= */
 export const routes: Routes = [
-  // ✅ je mets les redirects AVANT les canoniques (plus logique, évite les cas tordus)
   ...frLegacyRedirects,
   ...frRoutes,
 

@@ -45,6 +45,7 @@ export class AppComponent implements OnInit, OnDestroy {
   showFooter = true;
 
   private routerSub?: Subscription;
+  private didInitSitewide = false;
 
   footerData: FooterSection = {
     title: 'Prise de contact rapide',
@@ -59,17 +60,11 @@ export class AppComponent implements OnInit, OnDestroy {
     cta_url: '/contact-expert-immobilier',
     links: [
       { label: 'Mentions légales', url: '/mentions-legales' },
-      {
-        label: 'Politique de confidentialité',
-        url: '/politique-de-confidentialite',
-      },
+      { label: 'Politique de confidentialité', url: '/politique-de-confidentialite' },
       { label: 'Cookies', url: '/cookies' },
     ],
     socials: [
-      {
-        label: 'LinkedIn',
-        url: 'https://www.linkedin.com/company/groupe-abc-experts/',
-      },
+      { label: 'LinkedIn', url: 'https://www.linkedin.com/company/groupe-abc-experts/' },
     ],
   };
 
@@ -87,14 +82,73 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // ============================================
+    // 1) JSON-LD sitewide (SSR OK) — une seule fois
+    // ============================================
+    this.initSitewideJsonLdOnce();
+
     // =========================
-    // JSON-LD sitewide (Organization + WebSite)
+    // 2) Routing / SEO / UX
     // =========================
-    const origin = (environment.siteUrl || 'https://groupe-abc.fr').replace(
-      /\/+$/,
-      ''
-    );
-    // On utilise le même logo que dans le header
+    this.routerSub = this.router.events.subscribe((evt) => {
+      if (evt instanceof NavigationStart) {
+        this.showFooter = false;
+      }
+
+      if (evt instanceof NavigationEnd) {
+        this.currentRoute = evt.urlAfterRedirects || evt.url;
+        this.showFooter = true;
+
+        // ✅ IMPORTANT : SEO update doit tourner AUSSI en SSR
+        // -> canonical + hreflang injectés dans le HTML SSR
+        this.applySeoForRoute(this.currentRoute);
+
+        // ✅ Tout ce qui touche au DOM / scroll / Weglot => browser only
+        if (!this.isBrowser) return;
+
+        // Scroll top (SSR-friendly)
+        try {
+          this.viewport.scrollToPosition([0, 0]);
+        } catch {}
+
+        // Classe body (browser only)
+        try {
+          if (this.currentRoute.includes('/contact-expert-immobilier')) {
+            this.renderer.addClass(document.body, 'contact-page');
+          } else {
+            this.renderer.removeClass(document.body, 'contact-page');
+          }
+        } catch {}
+
+        // Weglot refresh (browser only)
+        try {
+          this._wgRefresh.refresh();
+        } catch {}
+      }
+    });
+
+    // ✅ Bonus : au premier rendu SSR, il n’y a pas toujours de NavigationEnd “immédiat”
+    // On applique quand même un SEO minimal sur l’URL courante connue par le Router.
+    try {
+      const initial = this.router.url || '/';
+      this.currentRoute = initial;
+      this.applySeoForRoute(initial);
+    } catch {}
+  }
+
+  ngOnDestroy(): void {
+    this.routerSub?.unsubscribe();
+  }
+
+  /* =========================================================
+   * Sitewide JSON-LD
+   * ======================================================= */
+
+  private initSitewideJsonLdOnce(): void {
+    if (this.didInitSitewide) return;
+    this.didInitSitewide = true;
+
+    const origin = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
     const logoUrl = `${origin}/assets/img/header/logo-groupe-abc.webp`;
 
     this.seo.setSitewideJsonLd({
@@ -130,48 +184,50 @@ export class AppComponent implements OnInit, OnDestroy {
         },
       ],
     });
+  }
 
-    // =========================
-    // Routing / UX
-    // =========================
-    this.routerSub = this.router.events.subscribe((evt) => {
-      if (evt instanceof NavigationStart) {
-        this.showFooter = false;
-      }
+  /* =========================================================
+   * SEO minimal “root-level” (SSR + browser)
+   * - L’objectif : canonical + hreflang présents dès SSR
+   * - Tes pages peuvent ensuite surcharger avec getSeoForRoute(...)
+   * ======================================================= */
 
-      if (evt instanceof NavigationEnd) {
-        this.currentRoute = evt.urlAfterRedirects || evt.url;
-        this.showFooter = true;
+  private applySeoForRoute(url: string): void {
+    const origin = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
+    const path = this.stripQueryHash(url || '/');
 
-        // ✅ SSR-safe : tout ce qui touche au DOM / scroll / Weglot => browser only
-        if (!this.isBrowser) return;
+    // Déduire lang depuis la route (scope /en)
+    const isEn = path === '/en' || path.startsWith('/en/');
+    const lang: 'fr' | 'en' = isEn ? 'en' : 'fr';
 
-        // ✅ SSR-friendly : pas de window.scrollTo
-        try {
-          // instant, sans dépendance DOM
-          this.viewport.scrollToPosition([0, 0]);
-          // Si tu tiens au smooth, Angular ne le gère pas via ViewportScroller.
-          // On reste donc "instant" pour rester propre SSR/hydration.
-        } catch {}
+    // Canonical absolu : l’objectif est d’être strict et stable
+    const canonicalAbs = new URL(path, origin).toString();
 
-        // ✅ Renderer2 OK, mais document.body only en browser
-        try {
-          if (this.currentRoute.includes('/contact-expert-immobilier')) {
-            this.renderer.addClass(document.body, 'contact-page');
-          } else {
-            this.renderer.removeClass(document.body, 'contact-page');
-          }
-        } catch {}
+    // Image par défaut
+    const img = `${origin}/assets/img/seo/og-default.webp`;
 
-        // ✅ Weglot : rescans sur changement de route (browser only)
-        try {
-          this._wgRefresh.refresh();
-        } catch {}
-      }
+    // Title / description fallback (tes pages peuvent écraser ensuite)
+    const title = isEn
+      ? 'Groupe ABC — Chartered real estate valuation'
+      : 'Groupe ABC — Expertise immobilière certifiée';
+    const description = isEn
+      ? 'National network of chartered real estate valuation experts.'
+      : 'Réseau national d’experts immobiliers agréés.';
+
+    this.seo.update({
+      title,
+      description,
+      lang,
+      canonical: canonicalAbs,
+      image: img,
+      type: 'website',
+      robots: 'index,follow',
+      // alternates/hreflang seront auto-construits par SeoService via ALT_MAP + rules
     });
   }
 
-  ngOnDestroy(): void {
-    this.routerSub?.unsubscribe();
+  private stripQueryHash(u: string): string {
+    const s = (u || '/').split(/[?#]/)[0] || '/';
+    return s.startsWith('/') ? s : `/${s}`;
   }
 }
