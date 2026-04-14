@@ -151,6 +151,14 @@
                     loading="lazy"
                     decoding="async"
                   />
+                  <img
+                    class="ff-ifei mb-3"
+                    *ngIf="f.organismLogoUrl"
+                    src="assets/img/logos-organisms/logo-IFEI.png"
+                    alt="IFEI"
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
 
                 <div class="ff-titles my-3" *ngIf="f.titlesHtml" [innerHTML]="f.titlesHtml"></div>

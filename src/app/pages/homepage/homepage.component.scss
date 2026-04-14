@@ -1107,6 +1107,8 @@ $pink:  #F1D2DB;
   /* Logo RICS (desktop) */
   --rics-w: 92px;   /* ← réduit fort */
   --rics-h: 28px;
+  --ifei-w: 50px;
+  --ifei-h: 50px;
 
   padding-block: clamp(48px, 7vw, 96px);
   box-sizing: border-box;
@@ -1192,8 +1194,7 @@ $pink:  #F1D2DB;
   }
 
   .member-text {
-    height: var(--team-tile-h);
-    overflow: hidden;
+    min-height: var(--team-tile-h);
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
@@ -1223,6 +1224,10 @@ $pink:  #F1D2DB;
   .ff-person-meta {
     margin-top: 6px;
     margin-bottom: 2px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
   }
 
   /* RICS / org logo (force petit même si image énorme) */
@@ -1236,6 +1241,16 @@ $pink:  #F1D2DB;
     display: block;
     /* optionnel : évite un rendu "crénelé" sur certains navigateurs */
     image-rendering: auto;
+  }
+
+  /* Logo IFEI : dimensions contrôlées par --ifei-w / --ifei-h */
+  .ff-ifei {
+    block-size: var(--ifei-h);
+    inline-size: var(--ifei-w);
+    flex-shrink: 0;
+    object-fit: contain;
+    object-position: left center;
+    display: block;
   }
 
   .member-job {
@@ -1355,6 +1370,8 @@ $pink:  #F1D2DB;
 
     --rics-w: 64px;
     --rics-h: 20px;
+    --ifei-w: 40px;
+    --ifei-h: 40px;
 
     padding-top: 32px;
     padding-bottom: 32px;
@@ -1391,7 +1408,7 @@ $pink:  #F1D2DB;
     }
 
     .member-text {
-      height: var(--team-tile-h);
+      min-height: var(--team-tile-h);
       gap: 6px;
     }
 

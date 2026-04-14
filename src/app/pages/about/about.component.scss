@@ -230,8 +230,9 @@ $white:      map.get(vars.$theme-colors, "white");
 
   .member-org-link {
     display: inline-flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     text-decoration: none;
     margin-top: 2px;
 
@@ -258,8 +259,16 @@ $white:      map.get(vars.$theme-colors, "white");
     object-fit: contain;
   }
 
+  .member-ifei-logo {
+    display: block;
+    height: 50px;
+    width: auto;
+    object-fit: contain;
+  }
+
   @media (max-width: 768px) {
     .member-org-logo { height: 18px; }
+    .member-ifei-logo { height: 40px; }
   }
 
   .member-job {

@@ -53,6 +53,7 @@ $rail-w: 40px;
   line-height: normal;
 }
 .rics { display: block; margin-top: 10px; height: 22px; margin-left: auto; }
+.ifei { display: block; height: 55px; width: auto; object-fit: contain; margin-left: auto; margin-top: 6px; }
 
 /* ----- MENU BAR ----- */
 .menu-bar { grid-column: 1 / -1; width: 100%; padding: 10px 0 0; }
@@ -386,6 +387,13 @@ $rail-w: 40px;
     aspect-ratio: 19 / 7;
     flex-shrink: 0;
     margin-left: 0;
+  }
+
+  .ifei {
+    block-size: 40px;
+    inline-size: auto;
+    margin-left: 0;
+    margin-top: 5px;
   }
 
   .menu-bar {
