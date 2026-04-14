@@ -149,8 +149,12 @@ $theme-autre:     $theme-expertise;
     width: 100%;            /* ✅ l'image remplit SON conteneur */
     height: 100%;
     display: block;
-    object-fit: cover;
-    object-position: center;
+    object-fit: contain;
+    object-position: left;
+
+    @media (max-width: 992px) {
+      object-position: center;
+    }
   }
 
   /* ✅ Bloc texte sous l’image (aligné à gauche) */
