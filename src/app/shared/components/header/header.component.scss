@@ -52,8 +52,31 @@ $rail-w: 40px;
   color: map.get(vars.$theme-colors, "light-blue");
   line-height: normal;
 }
-.rics { display: block; margin-top: 10px; height: 22px; margin-left: auto; }
-.ifei { display: block; height: 55px; width: auto; object-fit: contain; margin-left: auto; margin-top: 6px; }
+.org-logos {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  height: 80px; /* conteneur commun = hauteur du plus grand logo */
+}
+.rics {
+  display: block;
+  height: 95%;
+  width: auto;
+  object-fit: contain;
+  object-position: center bottom;
+  flex-shrink: 0;
+}
+.ifei {
+  display: block;
+  height: 55px;
+  width: auto;
+  object-fit: contain;
+  object-position: center bottom;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
 
 /* ----- MENU BAR ----- */
 .menu-bar { grid-column: 1 / -1; width: 100%; padding: 10px 0 0; }
@@ -380,20 +403,22 @@ $rail-w: 40px;
 
   .tagline-text br:nth-of-type(2) { display: none; }
 
-  .rics {
-    margin-top: 10px;
-    inline-size: 57px;
-    block-size: 21px;
-    aspect-ratio: 19 / 7;
-    flex-shrink: 0;
+  .org-logos {
     margin-left: 0;
+    gap: 8px;
+    height: 60px;
+  }
+
+  .rics {
+    height: 100%;
+    block-size: unset;
+    inline-size: auto;
+    aspect-ratio: unset;
   }
 
   .ifei {
     block-size: 40px;
     inline-size: auto;
-    margin-left: 0;
-    margin-top: 5px;
   }
 
   .menu-bar {

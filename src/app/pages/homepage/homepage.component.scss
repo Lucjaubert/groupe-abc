@@ -1105,8 +1105,8 @@ $pink:  #F1D2DB;
   --team-dots-top-gap: 76.7px;
 
   /* Logo RICS (desktop) */
-  --rics-w: 92px;   /* ← réduit fort */
-  --rics-h: 28px;
+  --rics-w: auto;
+  --rics-h: 75px;
   --ifei-w: 50px;
   --ifei-h: 50px;
 
@@ -1235,7 +1235,6 @@ $pink:  #F1D2DB;
     inline-size: var(--rics-w);
     block-size: var(--rics-h);
     flex-shrink: 0;
-    aspect-ratio: 1949 / 709;
     object-fit: contain;
     object-position: left center;
     display: block;
@@ -1368,8 +1367,8 @@ $pink:  #F1D2DB;
     --team-tile-w: 162px;
     --team-tile-h: 192px;
 
-    --rics-w: 64px;
-    --rics-h: 20px;
+    --rics-w: auto;
+    --rics-h: 60px;
     --ifei-w: 40px;
     --ifei-h: 40px;
 
@@ -1496,8 +1495,8 @@ $pink:  #F1D2DB;
 /* micro-ajustement si tu veux encore plus petit sur très petit mobile */
 @media (max-width: 360px) {
   .team {
-    --rics-w: 56px;
-    --rics-h: 18px;
+    --rics-w: auto;
+    --rics-h: 55px;
   }
 }
 
