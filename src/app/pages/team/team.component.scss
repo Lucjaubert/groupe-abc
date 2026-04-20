@@ -341,16 +341,23 @@ $blue-hero: #444798;
     margin: 0 0 4px;
   }
 
+  .ff-person-meta {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+  }
+
   .ff-org {
-    inline-size: 68px; block-size: 25px;
-    flex-shrink: 0; aspect-ratio: 68 / 25; object-fit: contain; display: block;
+    block-size: 70px; inline-size: auto;
+    flex-shrink: 0; object-fit: contain; display: block;
   }
   .ff-ifei {
     block-size: 50px; inline-size: auto;
     flex-shrink: 0; object-fit: contain; display: block;
   }
   @media (max-width: 720px) {
-    .ff-org { inline-size: 56px; block-size: 21px; aspect-ratio: 56 / 21; }
+    .ff-org { block-size: 60px; inline-size: auto; }
     .ff-ifei { block-size: 45px; }
   }
 
