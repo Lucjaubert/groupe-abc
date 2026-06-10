@@ -10,23 +10,31 @@
       "prefix": "app",
       "architect": {
         "build": {
-          "builder": "@angular-devkit/build-angular:browser",
+          "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/groupe-abc/browser",
+            "outputPath": "dist/groupe-abc",
             "index": "src/index.html",
-            "polyfills": "src/polyfills.ts",
-            "main": "src/main.ts",
+            "browser": "src/main.ts",
+            "polyfills": ["zone.js"],
             "tsConfig": "tsconfig.app.json",
             "assets": [
               "src/assets",
               "src/robots.txt",
-              "src/sitemap.xml",
-              "src/favicon.ico"
+              "src/sitemap.xml"
             ],
             "styles": [
               "src/styles/styles.scss"
             ],
-            "scripts": []
+            "scripts": [],
+            "server": "src/main.server.ts",
+            "ssr": {
+              "entry": "server.ts"
+            },
+            "allowedCommonJsDependencies": [
+              "gsap",
+              "animejs",
+              "domino"
+            ]
           },
           "configurations": {
             "production": {
@@ -42,15 +50,12 @@
               ]
             },
             "development": {
-              "buildOptimizer": false,
               "optimization": false,
-              "vendorChunk": true,
               "extractLicenses": false,
-              "sourceMap": true,
-              "namedChunks": true
+              "sourceMap": true
             },
             "staging": {
-              "outputPath": "dist/groupe-abc-staging/browser",
+              "outputPath": "dist/groupe-abc-staging",
               "outputHashing": "all",
               "optimization": true,
               "sourceMap": false,
@@ -62,12 +67,12 @@
                 }
               ]
             }
-          }
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "buildTarget": "groupe-abc:build",
             "proxyConfig": "src/proxy.conf.json"
           },
           "configurations": {
@@ -83,96 +88,11 @@
           },
           "defaultConfiguration": "development"
         },
-        "server": {
-          "builder": "@angular-devkit/build-angular:server",
-          "options": {
-            "outputPath": "dist/groupe-abc/server",
-            "main": "src/main.server.ts",
-            "tsConfig": "tsconfig.server.json",
-            "assets": []
-          },
-          "configurations": {
-            "production": {
-              "optimization": true,
-              "sourceMap": false,
-              "extractLicenses": true,
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.prod.ts"
-                }
-              ]
-            },
-            "staging": {
-              "outputPath": "dist/groupe-abc-staging/server",
-              "optimization": true,
-              "sourceMap": false,
-              "extractLicenses": true,
-              "fileReplacements": [
-                {
-                  "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.staging.ts"
-                }
-              ]
-            }
-          }
-        },
-        "prerender": {
-          "builder": "@angular-devkit/build-angular:prerender",
-          "options": {
-            "browserTarget": "groupe-abc:build:production",
-            "serverTarget": "groupe-abc:server:production",
-            "routes": [
-              "/",
-              "/expert-immobilier-reseau-national",
-              "/expertise-immobiliere-services",
-              "/methodes-evaluation-immobiliere",
-              "/experts-immobiliers-agrees",
-              "/actualites-expertise-immobiliere",
-              "/contact-expert-immobilier",
-              "/mentions-legales",
-              "/en",
-              "/en/expert-network-chartered-valuers",
-              "/en/real-estate-valuation-services",
-              "/en/valuation-methods-assets",
-              "/en/chartered-valuers-team",
-              "/en/real-estate-valuation-news",
-              "/en/contact-chartered-valuers",
-              "/en/legal-notice"
-            ]
-          },
-          "configurations": {
-            "staging": {
-              "browserTarget": "groupe-abc:build:staging",
-              "serverTarget": "groupe-abc:server:staging",
-              "routes": [
-                "/",
-                "/expert-immobilier-reseau-national",
-                "/expertise-immobiliere-services",
-                "/methodes-evaluation-immobiliere",
-                "/experts-immobiliers-agrees",
-                "/actualites-expertise-immobiliere",
-                "/contact-expert-immobilier",
-                "/mentions-legales",
-                "/en",
-                "/en/expert-network-chartered-valuers",
-                "/en/real-estate-valuation-services",
-                "/en/valuation-methods-assets",
-                "/en/chartered-valuers-team",
-                "/en/real-estate-valuation-news",
-                "/en/contact-chartered-valuers",
-                "/en/legal-notice"
-              ]
-            }
-          }
-        },
         "deploy-assets": {
           "builder": "@angular-devkit/build-angular:copy",
           "options": {
             "outputPath": "dist/groupe-abc",
             "assets": [
-              "server.mjs",
-              "bootstrap-proxy.cjs",
               "package.json"
             ]
           },
@@ -180,38 +100,16 @@
             "staging": {
               "outputPath": "dist/groupe-abc-staging",
               "assets": [
-                "server.mjs",
-                "bootstrap-proxy.cjs",
                 "package.json"
               ]
             },
             "production": {
               "outputPath": "dist/groupe-abc",
               "assets": [
-                "server.mjs",
-                "bootstrap-proxy.cjs",
                 "package.json"
               ]
             }
           }
-        },
-        "serve-ssr": {
-          "builder": "@nguniversal/builders:ssr-dev-server",
-          "options": {
-            "browserTarget": "groupe-abc:build:production",
-            "serverTarget": "groupe-abc:server:production"
-          },
-          "configurations": {
-            "production": {
-              "browserTarget": "groupe-abc:build:production",
-              "serverTarget": "groupe-abc:server:production"
-            },
-            "staging": {
-              "browserTarget": "groupe-abc:build:staging",
-              "serverTarget": "groupe-abc:server:staging"
-            }
-          },
-          "defaultConfiguration": "production"
         }
       }
     }
