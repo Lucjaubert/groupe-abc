@@ -39,6 +39,7 @@ export class RgpdService {
     tarteaucitron.init({
       privacyUrl: '/mentions-legales',   // lien politique/confidentialité de la bannière
       orientation: 'bottom',             // bannière en bas
+      iconPosition: 'BottomLeft',        // icône de réouverture en bas-gauche (évite le FAB mail en bas-droite)
       showAlertSmall: false,
       cookieslist: false,
       AcceptAllCta: true,                // « Tout accepter »
