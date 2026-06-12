@@ -19,7 +19,11 @@
             "tsConfig": "tsconfig.app.json",
             "assets": [
               "src/assets",
-              "src/sitemap.xml"
+              "src/sitemap.xml",
+              { "glob": "tarteaucitron.js", "input": "node_modules/tarteaucitronjs", "output": "assets/tarteaucitron" },
+              { "glob": "tarteaucitron.services.js", "input": "node_modules/tarteaucitronjs", "output": "assets/tarteaucitron" },
+              { "glob": "tarteaucitron.css", "input": "node_modules/tarteaucitronjs/css", "output": "assets/tarteaucitron/css" },
+              { "glob": "tarteaucitron.fr.js", "input": "node_modules/tarteaucitronjs/lang", "output": "assets/tarteaucitron/lang" }
             ],
             "styles": [
               "src/styles/styles.scss"
