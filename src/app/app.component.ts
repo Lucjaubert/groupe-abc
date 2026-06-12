@@ -61,8 +61,8 @@ export class AppComponent implements OnInit, OnDestroy {
     cta_url: '/contact-expert-immobilier',
     links: [
       { label: 'Mentions légales', url: '/mentions-legales' },
-      { label: 'Politique de confidentialité', url: '/politique-de-confidentialite' },
-      { label: 'Cookies', url: '/cookies' },
+      { label: 'Politique de confidentialité', url: '/mentions-legales' },
+      { label: 'Cookies', url: '/mentions-legales' },
     ],
     socials: [
       { label: 'LinkedIn', url: 'https://www.linkedin.com/company/groupe-abc-experts/' },
