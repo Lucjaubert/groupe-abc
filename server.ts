@@ -6,7 +6,11 @@ import cookieParser from 'cookie-parser';
 import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import bootstrap from './src/main.server';
-import { toNewsEnSlug } from './src/server/news-slugs';
+import { buildNewsPath, isNewsArticle, translateNewsDetailPath } from './src/app/config/news.slugs';
+import {
+  buildMethodsAssetPath,
+  translateMethodsAssetDetailPath,
+} from './src/app/config/methods-assets.slugs';
 
 type Lang = 'fr' | 'en';
 
@@ -86,25 +90,18 @@ function minimalSitemapXml(): string {
   );
 }
 
-const METHODS_CANONICAL_TO_EN: Record<string, string> = {
-  'expertise-credit-bail': 'leasehold-financing',
-  'expertise-bureaux-locaux-professionnels': 'offices-professional-premises',
-  'expertise-locaux-commerciaux': 'retail-commercial-premises',
-  'expertise-biens-residentiels': 'residential-assets',
-};
-
-function toMethodsEnSlug(canonicalSlug: string): string {
-  const s = String(canonicalSlug || '').trim().toLowerCase();
-  return METHODS_CANONICAL_TO_EN[s] || s;
-}
-
-async function fetchWpCollectionAll(endpointName: string, perPage = 100, maxPages = 50): Promise<any[]> {
+async function fetchWpCollectionAll(
+  endpointName: string,
+  fields = 'slug,modified_gmt',
+  perPage = 100,
+  maxPages = 50,
+): Promise<any[]> {
   const out: any[] = [];
   let page = 1;
   while (page <= maxPages) {
     const endpoint =
       `${WP_API_BASE}/wp-json/wp/v2/${endpointName}` +
-      `?per_page=${perPage}&page=${page}&_fields=slug,modified_gmt`;
+      `?per_page=${perPage}&page=${page}&_fields=${fields}`;
 
     const res = await fetch(endpoint, { headers: { accept: 'application/json' } });
     if (!res.ok) {
@@ -183,20 +180,22 @@ async function buildSitemapXml(): Promise<string> {
     pageEntry({ frPath: '/mentions-legales', enPath: '/en/legal-notice', changefreq: 'yearly', priority: '0.5' }),
   ];
 
+  // URL du sitemap = URL servie en 200 avec canonical identique : mêmes helpers
+  // (news.slugs / methods-assets.slugs) que les liens, canonical et hreflang des pages.
   let wpNews: any[] = [];
   try {
-    wpNews = await fetchWpCollectionAll('news');
+    wpNews = await fetchWpCollectionAll('news', 'slug,modified_gmt,acf');
   } catch (e) {
     console.error('[SITEMAP] WP news fetch failed:', (e as Error)?.message || e);
     wpNews = [];
   }
+  // isNewsArticle : exclut le post d'intro "news" et les "article-N" (301 nginx)
   const newsEntries = wpNews
-    .filter((n) => n && typeof n.slug === 'string' && n.slug.trim())
+    .filter((n) => isNewsArticle(n))
     .map((n) => {
-      const canonical = String(n.slug).trim().toLowerCase();
       return pageEntry({
-        frPath: `/actualites-expertise-immobiliere/${encodeURIComponent(canonical)}`,
-        enPath: `/en/real-estate-valuation-news/${encodeURIComponent(toNewsEnSlug(canonical))}`,
+        frPath: buildNewsPath('fr', n.slug),
+        enPath: buildNewsPath('en', n.slug),
         lastmod: toIsoDate(n.modified_gmt ? `${n.modified_gmt}Z` : null),
         changefreq: 'monthly',
         priority: '0.6',
@@ -213,10 +212,9 @@ async function buildSitemapXml(): Promise<string> {
   const methodsEntries = wpMethods
     .filter((m) => m && typeof m.slug === 'string' && m.slug.trim())
     .map((m) => {
-      const canonical = String(m.slug).trim().toLowerCase();
       return pageEntry({
-        frPath: `/methodes-evaluation-immobiliere/${encodeURIComponent(canonical)}`,
-        enPath: `/en/valuation-methods-assets/${encodeURIComponent(toMethodsEnSlug(canonical))}`,
+        frPath: buildMethodsAssetPath('fr', m.slug),
+        enPath: buildMethodsAssetPath('en', m.slug),
         lastmod: toIsoDate(m.modified_gmt ? `${m.modified_gmt}Z` : null),
         changefreq: 'monthly',
         priority: '0.6',
@@ -330,6 +328,23 @@ export function app(): express.Express {
     maxAge: '1y',
     index: 'index.html',
   }));
+
+  // Détails news / methods_asset : URL non canonique (alias historique, slug FR sous /en,
+  // majuscules…) -> 301 vers l'URL officielle, pour que toute page 200 ait canonical = elle-même
+  server.get('**', (req: Request, res: Response, next: NextFunction) => {
+    let path = req.path;
+    try {
+      path = decodeURIComponent(path);
+    } catch {}
+    const lang: Lang = path === '/en' || path.startsWith('/en/') ? 'en' : 'fr';
+    const target = translateNewsDetailPath(path, lang) || translateMethodsAssetDetailPath(path, lang);
+    if (!target || decodeURIComponent(target) === path) {
+      next();
+      return;
+    }
+    const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+    res.redirect(301, target + qs);
+  });
 
   // All regular routes use the Angular engine (SSR)
   server.get('**', (req: Request, res: Response) => {

@@ -1,5 +1,5 @@
 // src/app/pages/news-detail/news-detail.component.ts
-import { CommonModule, isPlatformBrowser, DOCUMENT } from '@angular/common';
+import { CommonModule, isPlatformBrowser, isPlatformServer, DOCUMENT } from '@angular/common';
 import { Component, OnInit, inject, PLATFORM_ID, Inject, OnDestroy } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { firstValueFrom, Subscription } from 'rxjs';
@@ -8,20 +8,22 @@ import { WordpressService } from '../../services/wordpress.service';
 import { SeoService } from '../../services/seo.service';
 import { environment } from '../../../environments/environment';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
+import { NotFoundComponent } from '../not-found/not-found.component';
 
 // ✅ NEW: helpers slugs news FR/EN
 import {
   fromNewsUrlSlug,
   toNewsDisplaySlug,
   buildNewsRoute,
+  buildNewsPath,
+  isNewsArticle,
 } from '../../config/news.slugs';
 
 type ThemeKey = 'expertise' | 'juridique' | 'marche' | 'autre';
 
 type NewsPost = {
   id?: number | string;
-  wpSlug?: string;       // slug WP canonical (source de vérité)
-  prettySlug?: string;   // ancien fallback local (conservé pour compat)
+  wpSlug?: string;       // slug WP (source de vérité des URL)
 
   theme?: string;
   themeKey?: ThemeKey;
@@ -44,7 +46,7 @@ type NewsPost = {
 @Component({
   selector: 'app-news-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, ImgFastDirective],
+  imports: [CommonModule, RouterLink, ImgFastDirective, NotFoundComponent],
   templateUrl: './news-detail.component.html',
   styleUrls: ['./news-detail.component.scss'],
 })
@@ -54,6 +56,7 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private platformId = inject(PLATFORM_ID);
+  private ssrRes = inject<any>('SSR_RESPONSE' as any, { optional: true });
 
   // ✅ SSR-safe : ne jamais utiliser window/document directement
   constructor(@Inject(DOCUMENT) private doc: Document) {}
@@ -110,15 +113,19 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
 
       const lang = this.currentLang();
 
-      // ✅ slug URL (FR/EN) -> slug WP canonical (FR le plus souvent)
-      const canonicalRequestedSlug = fromNewsUrlSlug(this.slugParam, lang);
+      // ✅ slug URL (FR/EN) -> slug WP
+      const requestedWpSlug = fromNewsUrlSlug(this.slugParam, lang);
 
       let list: any[] = [];
       try {
         list = await firstValueFrom(this.wp.getAllNews());
       } catch {
-        // si l’API plante, on met un 404 “soft”
-        this.notFound = true;
+        // WP indisponible : erreur temporaire (503), surtout pas un 404 qui désindexerait la page
+        if (isPlatformServer(this.platformId)) {
+          try {
+            this.ssrRes?.status?.(503);
+          } catch {}
+        }
         this.loading = false;
         return;
       }
@@ -126,17 +133,16 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
       // mapping proche de NewsComponent
       const mapped: NewsPost[] = [];
       for (const it of list) {
-        const acfPost = it?.acf?.post || null;
-        if (!acfPost) continue;
+        // ✅ Même règle que la liste et le sitemap
+        if (!isNewsArticle(it)) continue;
+        const acfPost = it.acf.post;
 
         const title = acfPost.post_title || it?.title?.rendered || '';
         const wpSlug = (it?.slug || '').trim();
-        const prettySlug = this.makePrettySlug(title);
 
         mapped.push({
           id: it?.id,
           wpSlug,
-          prettySlug,
 
           theme: acfPost.theme || '',
           themeKey: this.toThemeKey(acfPost.theme),
@@ -154,25 +160,16 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
         });
       }
 
-      // retirer le post “news” d’intro
-      const posts = mapped.filter((x) => x.wpSlug !== 'news');
+      const found = mapped.find((x) => x.wpSlug === requestedWpSlug) || null;
 
-      // ✅ priorité au slug WP canonical demandé
-      let found =
-        posts.find((x) => x.wpSlug === canonicalRequestedSlug) ||
-        // fallback compat ancien format local
-        posts.find((x) => x.prettySlug === this.slugParam) ||
-        // fallback si URL FR = slug WP direct non mappé
-        posts.find((x) => x.wpSlug === this.slugParam) ||
-        null;
-
+      // ✅ vrai 404 (statut SSR + noindex) via <app-not-found>
       if (!found) {
         this.notFound = true;
         this.loading = false;
         return;
       }
 
-      // ✅ normalisation URL canonique (FR/EN) sans casser WP
+      // ✅ URL EN non traduite alors qu'un slug EN existe -> URL EN officielle
       const expectedDisplaySlug = toNewsDisplaySlug(found.wpSlug || '', lang);
 
       if (expectedDisplaySlug && this.slugParam !== expectedDisplaySlug) {
@@ -217,19 +214,11 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
   private updateSeo(p: NewsPost, lang: 'fr' | 'en') {
     const siteUrl = (environment.siteUrl || 'https://groupe-abc.fr').replace(/\/+$/, '');
 
-    // ✅ canonical piloté par slug canonique d'affichage (pas juste currentPath)
+    // ✅ canonical = URL servie, construite depuis le slug WP (mêmes helpers que liens + sitemap)
     const wpSlug = (p.wpSlug || '').trim();
-    const displaySlug = toNewsDisplaySlug(wpSlug || this.slugParam, lang);
-
-    const canonicalPath =
-      lang === 'en'
-        ? `/en/real-estate-valuation-news/${displaySlug}`
-        : `/actualites-expertise-immobiliere/${displaySlug}`;
-
-    const canonical = `${siteUrl}${canonicalPath}`;
-
-    const altFr = `${siteUrl}/actualites-expertise-immobiliere/${toNewsDisplaySlug(wpSlug || this.slugParam, 'fr')}`;
-    const altEn = `${siteUrl}/en/real-estate-valuation-news/${toNewsDisplaySlug(wpSlug || this.slugParam, 'en')}`;
+    const altFr = `${siteUrl}${buildNewsPath('fr', wpSlug)}`;
+    const altEn = `${siteUrl}${buildNewsPath('en', wpSlug)}`;
+    const canonical = lang === 'en' ? altEn : altFr;
 
     const title = this.stripHtml(p.title || (lang === 'en' ? 'News article' : 'Actualité'));
     const description = this.makeDescriptionFromHtml(p.html || '', 160);
@@ -286,20 +275,6 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
 
   private stripHtml(raw: string): string {
     return (raw || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-  }
-
-  private makePrettySlug(title: string, maxWords = 6): string {
-    const plain = this.stripHtml(title || '');
-    const tokens = plain
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .replace(/[^a-z0-9\s-]/g, ' ')
-      .split(/\s+/)
-      .filter(Boolean);
-
-    const cut = tokens.slice(0, maxWords).join('-');
-    return cut.replace(/-+/g, '-').replace(/^-|-$/g, '') || 'article';
   }
 
   /** ====== Media (copié/aligné NewsComponent) ====== */

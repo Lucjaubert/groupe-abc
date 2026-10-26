@@ -16,6 +16,7 @@ import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { firstValueFrom, Subscription, filter } from 'rxjs';
 import { ActivatedRoute, Router, NavigationEnd, RouterOutlet, RouterLink } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 
 import { WordpressService } from '../../services/wordpress.service';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
@@ -86,6 +87,7 @@ type MethodsAssetIndexItem = { slug: string; title: string };
 })
 export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   private wp = inject(WordpressService);
+  private http = inject(HttpClient);
   private sanitizer = inject(DomSanitizer);
   private seo = inject(SeoService);
 
@@ -215,25 +217,21 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     return `${String(base).replace(/\/+$/g, '')}/wp-json/wp/v2`;
   }
 
+  // ✅ SSR + navigateur : les liens du HTML serveur doivent pointer vers les vrais slugs WP
   private async preloadAssetsIndex(): Promise<void> {
-    if (this.assetsIndexLoaded || !this.isBrowser()) {
-      this.assetsIndexLoaded = true;
-      return;
-    }
+    if (this.assetsIndexLoaded) return;
 
-    const url = `${this.getWpRestBase()}/methods_asset?per_page=100`;
+    const url = `${this.getWpRestBase()}/methods_asset?per_page=100&_fields=slug,title,acf.hero`;
     try {
-      const res = await fetch(url, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const rows = (await res.json()) as any[];
+      // HttpClient (et non fetch) : le rendu SSR attend la réponse avant de sérialiser la page
+      const rows = await firstValueFrom(this.http.get<any[]>(url));
 
       const items: MethodsAssetIndexItem[] = (rows || [])
-        .map((r) => {
+        .flatMap((r) => {
           const slug = (r?.slug || '').toString().trim();
           const t1 = (r?.acf?.hero?.section_title || '').toString().trim();
           const t2 = (r?.title?.rendered || '').toString().trim();
-          const title = t1 || t2;
-          return { slug, title };
+          return [t1, t2].map((title) => ({ slug, title }));
         })
         .filter((x) => !!x.slug && !!x.title);
 
@@ -252,91 +250,6 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
-  /* =========================
-     ✅ Mapping slugs (FR) — fallback
-     ========================= */
-  private readonly ASSET_SLUG_FR: Record<string, string> = {
-    'expertise immobiliere – biens residentiels': 'expertise-biens-residentiels',
-    'expertise immobiliere - biens residentiels': 'expertise-biens-residentiels',
-    'biens residentiels': 'expertise-biens-residentiels',
-
-    'expertise immobiliere – locaux commerciaux': 'expertise-locaux-commerciaux',
-    'expertise immobiliere - locaux commerciaux': 'expertise-locaux-commerciaux',
-    'locaux commerciaux': 'expertise-locaux-commerciaux',
-
-    'expertise immobiliere – bureaux et locaux professionnels':
-      'expertise-bureaux-locaux-professionnels',
-    'expertise immobiliere - bureaux et locaux professionnels':
-      'expertise-bureaux-locaux-professionnels',
-    'bureaux et locaux professionnels': 'expertise-bureaux-locaux-professionnels',
-    bureaux: 'expertise-bureaux-locaux-professionnels',
-
-    'expertise immobiliere – entrepots et locaux d’activites':
-      'expertise-entrepots-locaux-activites',
-    'expertise immobiliere - entrepots et locaux d’activites':
-      'expertise-entrepots-locaux-activites',
-    "expertise immobiliere – entrepots et locaux d'activites":
-      'expertise-entrepots-locaux-activites',
-    'entrepots et locaux d’activites': 'expertise-entrepots-locaux-activites',
-    "entrepots et locaux d'activites": 'expertise-entrepots-locaux-activites',
-
-    'expertise immobiliere – hotels': 'expertise-hotels',
-    'expertise immobiliere - hotels': 'expertise-hotels',
-    hotels: 'expertise-hotels',
-    hotel: 'expertise-hotels',
-
-    'expertise immobiliere – residences de services': 'expertise-residences-de-services',
-    'expertise immobiliere - residences de services': 'expertise-residences-de-services',
-    'residences de services': 'expertise-residences-de-services',
-
-    'expertise immobiliere – ehpad': 'expertise-ehpad',
-    'expertise immobiliere - ehpad': 'expertise-ehpad',
-    ehpad: 'expertise-ehpad',
-
-    'expertise immobiliere – gisements fonciers': 'expertise-gisements-fonciers',
-    'expertise immobiliere - gisements fonciers': 'expertise-gisements-fonciers',
-    'gisements fonciers': 'expertise-gisements-fonciers',
-
-    'expertise immobiliere – friches industrielles': 'expertise-friches-industrielles',
-    'expertise immobiliere - friches industrielles': 'expertise-friches-industrielles',
-    'friches industrielles': 'expertise-friches-industrielles',
-
-    'expertise immobiliere – charges foncieres urbaines': 'expertise-charges-foncieres-urbaines',
-    'expertise immobiliere - charges foncieres urbaines': 'expertise-charges-foncieres-urbaines',
-    'charges foncieres urbaines': 'expertise-charges-foncieres-urbaines',
-
-    'expertise immobiliere – lotissements': 'expertise-lotissements',
-    'expertise immobiliere - lotissements': 'expertise-lotissements',
-    lotissements: 'expertise-lotissements',
-
-    'expertise immobiliere – terrains agricoles': 'expertise-terrains-agricoles',
-    'expertise immobiliere - terrains agricoles': 'expertise-terrains-agricoles',
-    'terrains agricoles': 'expertise-terrains-agricoles',
-
-    'expertise immobiliere – credit-bail': 'expertise-credit-bail',
-    'expertise immobiliere - credit-bail': 'expertise-credit-bail',
-    'credit-bail': 'expertise-credit-bail',
-    'credit bail': 'expertise-credit-bail',
-
-    'expertise immobiliere – fonds de commerce': 'expertise-fonds-de-commerce',
-    'expertise immobiliere - fonds de commerce': 'expertise-fonds-de-commerce',
-    'fonds de commerce': 'expertise-fonds-de-commerce',
-
-    'expertise immobiliere – droit au bail': 'expertise-droit-au-bail',
-    'expertise immobiliere - droit au bail': 'expertise-droit-au-bail',
-    'droit au bail': 'expertise-droit-au-bail',
-
-    'expertise immobiliere – indemnite d’eviction': 'expertise-indemnite-eviction',
-    'expertise immobiliere - indemnite d’eviction': 'expertise-indemnite-eviction',
-    "expertise immobiliere – indemnite d'eviction": 'expertise-indemnite-eviction',
-    'indemnite d’eviction': 'expertise-indemnite-eviction',
-    "indemnite d'eviction": 'expertise-indemnite-eviction',
-
-    'expertise immobiliere – usufruit': 'expertise-usufruit',
-    'expertise immobiliere - usufruit': 'expertise-usufruit',
-    usufruit: 'expertise-usufruit',
-  };
-
   /* ===================== Lifecycle ===================== */
   ngOnInit(): void {
     this.isDetail = this.isChildActive();
@@ -344,7 +257,7 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
     // FAQ + SEO (lang)
     this.refreshLangFaqSeo();
 
-    // préload index WP (browser only)
+    // préload index WP
     this.preloadAssetsIndex().catch(() => {});
 
     // Data WP page "methods"
@@ -806,22 +719,13 @@ export class MethodsComponent implements OnInit, AfterViewInit, OnDestroy {
   /* =================
      ✅ Slug resolution
      ================= */
-  private resolveSlugFromLabel(label: string, lang: Lang): string {
-    const key = this.normalizeLabel(label);
-
-    const fromIndex = this.assetsIndexByTitle.get(key);
+  /** Libellé ACF -> slug WP réel, ou '' (pas de lien) si aucune fiche methods_asset ne correspond */
+  private resolveSlugFromLabel(label: string, _lang: Lang): string {
+    const fromIndex = this.assetsIndexByTitle.get(this.normalizeLabel(label));
     if (fromIndex) return fromIndex;
 
-    if (lang === 'fr') {
-      const hit = this.ASSET_SLUG_FR[key];
-      if (hit) return hit;
-    }
-
-    const candidate = this.slugify(label);
-    if (candidate && (this.assetsIndexBySlug.size === 0 || this.assetsIndexBySlug.has(candidate)))
-      return candidate;
-
-    return candidate;
+    const candidate = canonicalizeMethodsAssetSlug(this.slugify(label));
+    return this.assetsIndexBySlug.has(candidate) ? candidate : '';
   }
 
   private normalizeLabel(s: string): string {

@@ -13,7 +13,8 @@ import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { filter, Subscription } from 'rxjs';
 import { LanguageService, Lang } from '../../../services/language.service';
-import { translateMethodsAssetDetailPath } from '../../../config/methods-slugs';
+import { translateMethodsAssetDetailPath } from '../../../config/methods-assets.slugs';
+import { translateNewsDetailPath } from '../../../config/news.slugs';
 
 type MenuKey = 'about' | 'services' | 'methods' | 'teams' | 'news' | 'contact';
 
@@ -270,7 +271,8 @@ export class HeaderComponent implements OnDestroy, AfterViewInit {
     // Ex:
     // EN: /en/valuation-methods-assets/leasehold-financing
     // FR: /methodes-evaluation-immobiliere/expertise-credit-bail
-    const dyn = translateMethodsAssetDetailPath(path, targetLang);
+    const dyn =
+      translateMethodsAssetDetailPath(path, targetLang) || translateNewsDetailPath(path, targetLang);
     if (dyn) return dyn;
 
     if (targetLang === 'en') {
