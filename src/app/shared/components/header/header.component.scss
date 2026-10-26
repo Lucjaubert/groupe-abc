@@ -406,14 +406,12 @@ $rail-w: 40px;
   .org-logos {
     margin-left: 0;
     gap: 8px;
-    height: 60px;
   }
 
   .rics {
-    height: 100%;
-    block-size: unset;
-    inline-size: auto;
-    aspect-ratio: unset;
+    inline-size: 57px;
+    block-size: 75px;
+    aspect-ratio: 19 / 7;
   }
 
   .ifei {

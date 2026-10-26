@@ -21,6 +21,7 @@ import { ImgFastDirective } from '../../directives/img-fast.directive';
 import { environment } from '../../../environments/environment';
 import { getSeoForRoute } from '../../config/seo.routes';
 import { getFaqForRoute, FaqItem } from '../../config/faq.routes';
+import { NEWS_INTRO_SLUG, isNewsArticle, buildNewsRoute } from '../../config/news.slugs';
 
 type Lang = 'fr' | 'en';
 
@@ -178,7 +179,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     const list: any[] = await firstValueFrom(this.wp.getAllNews());
 
     /* ===== Intro depuis le post "news" (ACF news.section_title / intro_body / linkedin_url) ===== */
-    const introSource = list.find((it: any) => it?.slug === 'news' && it?.acf?.news);
+    const introSource = list.find((it: any) => it?.slug === NEWS_INTRO_SLUG && it?.acf?.news);
     if (introSource?.acf?.news) {
       const n = introSource.acf.news;
       if (n.section_title) this.intro.title = n.section_title;
@@ -194,9 +195,9 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
     const mapped: NewsPost[] = [];
 
     for (const it of list) {
-      // ✅ IMPORTANT : on n’intègre que les items qui ont réellement acf.post
-      const p = it?.acf?.post || null;
-      if (!p) continue;
+      // ✅ Même règle que le détail et le sitemap (acf.post présent, ni intro ni article-N)
+      if (!isNewsArticle(it)) continue;
+      const p = it.acf.post;
 
       const title = (p.post_title || it?.title?.rendered || '').toString();
       const wpSlug = (it?.slug || '').toString();
@@ -223,8 +224,7 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    // ⚠️ On retire le post "news" de la liste d’articles (il sert uniquement d’intro)
-    const onlyPosts = mapped.filter((p) => p.slug !== 'news');
+    const onlyPosts = mapped;
 
     // Résolution médias + préchargement borné
     await this.hydratePostMedia(onlyPosts);
@@ -399,12 +399,11 @@ export class NewsComponent implements OnInit, AfterViewInit, OnDestroy {
    * FR : /actualites-expertise-immobiliere/:slug
    * EN : /en/real-estate-valuation-news/:slug
    *
-   * ✅ On privilégie prettySlug, et NewsDetail sait matcher wpSlug OU prettySlug.
+   * ✅ Slug WP (source de vérité), traduit en EN si un slug EN est défini.
    */
   detailLink(p: NewsPost): any[] {
-    const slug = (p?.prettySlug || p?.slug || p?.id || '').toString();
     const isEN = this.currentPath().startsWith('/en/');
-    return isEN ? ['/en', 'real-estate-valuation-news', slug] : ['/actualites-expertise-immobiliere', slug];
+    return buildNewsRoute(isEN ? 'en' : 'fr', p?.slug || '');
   }
 
   /* ============ Animations ============ */

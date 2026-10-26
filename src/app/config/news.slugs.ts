@@ -1,4 +1,9 @@
 // src/app/config/news.slugs.ts
+//
+// Source de vérité UNIQUE des URL d'actualités (app Angular + sitemap server.ts).
+// - FR : /actualites-expertise-immobiliere/<slug WP>
+// - EN : /en/real-estate-valuation-news/<slug EN traduit, sinon slug WP>
+// Aucun slug dérivé du titre : le slug WordPress fait foi (anciens article-N -> alias).
 
 export type Lang = 'fr' | 'en';
 
@@ -13,31 +18,37 @@ export const NEWS_BASE: Record<Lang, string> = {
 };
 
 /**
- * Aliases -> slug canonical WP (FR)
- * Utiles pour :
- * - anciens slugs
- * - variantes manuelles
- * - slugs historiques "article-x", etc. (si tu veux les supporter)
- *
- * ⚠️ Laisse vide au départ si tu veux, puis enrichis au fil de l’eau.
+ * Post WP "news" : porte l'intro de la page Actualités (acf.news),
+ * ce n'est pas un article -> jamais de page détail ni d'entrée sitemap.
+ */
+export const NEWS_INTRO_SLUG = 'news';
+
+/**
+ * Anciens slugs WP "article-N" -> slug canonique.
+ * - Avant renommage dans WP : le slug WP "article-N" est traduit ici, donc jamais produit
+ *   (liens, canonical, hreflang, sitemap).
+ * - Après renommage : seules les anciennes URL /…/article-N passent par ici,
+ *   et server.ts les redirige en 301 vers l'article (FR et EN).
  */
 export const NEWS_ALIASES_TO_CANONICAL: Record<string, string> = {
-  // Exemples (à adapter si besoin)
-  // 'article-7': 'point-marche-l-immobilier-commercial-bordelais',
-  // 'point-marche-immobilier-commercial-bordeaux': 'point-marche-l-immobilier-commercial-bordelais',
+  'article-2': 'le-marche-du-coliving-en-france',
+  'article-3': 'credit-immobilier-le-recours-a-un',
+  'article-4': 'frais-de-notaire-de-quoi-sont-ils',
+  'article-5': 'la-croissance-des-expertises-sur-les',
+  'article-6': 'permis-de-louer-a-bordeaux-tout',
+  'article-7': 'point-marche-l-immobilier-de-bureaux',
+  'article-8': 'point-marche-l-immobilier-commercial-bordelais',
+  'article-9': 'travaux-dpe-ce-qu-il-faut',
+  'article-10': 'la-tension-entre-valeur-assurantielle-et',
 };
 
 /**
- * Slugs EN "propres" (display) pour chaque slug canonical WP.
- * Clé   = slug WP canonical (souvent FR)
+ * Slugs EN "propres" (display) pour chaque slug WP.
+ * Clé   = slug WP (FR)
  * Valeur = slug affiché dans l'URL EN
- *
- * ✅ Tu peux avancer progressivement :
- * - mets uniquement les articles prioritaires
- * - les autres garderont le slug WP FR (fallback)
+ * Les articles non listés gardent le slug WP en EN.
  */
 export const NEWS_CANONICAL_TO_EN: Record<string, string> = {
-  // --- Articles que tu m'as listés ---
   'point-marche-l-immobilier-commercial-bordelais': 'bordeaux-commercial-real-estate-market-update',
   'permis-de-louer-a-bordeaux-tout': 'bordeaux-rental-permit-everything-you-need-to-know',
   'la-croissance-des-expertises-sur-les': 'growth-in-valuations-on',
@@ -47,12 +58,9 @@ export const NEWS_CANONICAL_TO_EN: Record<string, string> = {
   'la-tension-entre-valeur-assurantielle-et': 'tension-between-insurance-value-and',
   'travaux-dpe-ce-qu-il-faut': 'dpe-works-what-you-need-to-know',
   'point-marche-l-immobilier-de-bureaux': 'office-real-estate-market-update',
-
-  // Tu peux en ajouter ensuite :
-  // 'slug-wp-fr': 'translated-english-slug',
 };
 
-/** Reverse map EN display => canonical WP */
+/** Reverse map EN display => slug WP */
 export const NEWS_EN_TO_CANONICAL: Record<string, string> = Object.fromEntries(
   Object.entries(NEWS_CANONICAL_TO_EN).map(([canonical, en]) => [en, canonical]),
 );
@@ -71,53 +79,42 @@ export function normalizeNewsSlug(s: string): string {
     .replace(/-+/g, '-');
 }
 
-/**
- * 1) normalise
- * 2) si slug EN connu -> convertit en canonical WP
- * 3) si alias connu -> convertit en canonical WP
- *
- * Résultat = slug canonical WP (souvent FR) à utiliser pour requêter WordPress
- */
-export function canonicalizeNewsSlug(anySlug: string): string {
-  const n = normalizeNewsSlug(anySlug);
-
-  // si on reçoit un slug EN "propre"
-  const fromEn = NEWS_EN_TO_CANONICAL[n];
-  const maybeCanonical = fromEn || n;
-
-  // aliases -> canonical WP
-  return NEWS_ALIASES_TO_CANONICAL[maybeCanonical] || maybeCanonical;
+/** Slug WP ou ancien slug (article-N) -> slug canonique de l'article */
+export function canonicalNewsSlug(s: string): string {
+  const n = normalizeNewsSlug(s);
+  return NEWS_ALIASES_TO_CANONICAL[n] || n;
 }
 
 /**
- * À partir du slug canonical WP, fournit le slug à afficher dans l’URL
- * selon la langue (EN peut être “traduit”).
+ * Un item WP /news est-il un article publiable (page détail 200 + sitemap) ?
+ * Même règle pour la liste, le détail et le sitemap.
  */
-export function toNewsDisplaySlug(canonicalWpSlug: string, lang: Lang): string {
-  const c = normalizeNewsSlug(canonicalWpSlug);
+export function isNewsArticle(item: any): boolean {
+  const slug = normalizeNewsSlug(item?.slug || '');
+  return !!slug && slug !== NEWS_INTRO_SLUG && !!item?.acf?.post;
+}
+
+/**
+ * Slug WP (ou ancien article-N) -> slug affiché dans l'URL selon la langue (EN peut être traduit).
+ */
+export function toNewsDisplaySlug(wpSlug: string, lang: Lang): string {
+  const c = canonicalNewsSlug(wpSlug);
 
   if (lang === 'en') {
     const en = NEWS_CANONICAL_TO_EN[c];
     if (en) return normalizeNewsSlug(en);
   }
 
-  // FR (ou EN non mappé) -> slug WP canonical
   return c;
 }
 
 /**
- * Si on lit un slug depuis l’URL (FR/EN), on le convertit vers le canonical WP.
- * (utile pour le composant detail qui doit requêter WP avec le vrai slug)
+ * Slug lu dans l'URL (FR/EN) -> slug canonique de l'article.
  */
 export function fromNewsUrlSlug(urlSlug: string, lang: Lang): string {
   const n = normalizeNewsSlug(urlSlug);
-
-  if (lang === 'en') {
-    const canonical = NEWS_EN_TO_CANONICAL[n];
-    if (canonical) return canonicalizeNewsSlug(canonical);
-  }
-
-  return canonicalizeNewsSlug(n);
+  if (lang === 'en' && NEWS_EN_TO_CANONICAL[n]) return NEWS_EN_TO_CANONICAL[n];
+  return canonicalNewsSlug(n);
 }
 
 /**
@@ -126,19 +123,15 @@ export function fromNewsUrlSlug(urlSlug: string, lang: Lang): string {
  * buildNewsRoute('en', 'point-marche-l-immobilier-de-bureaux')
  * -> ['/en/real-estate-valuation-news', 'office-real-estate-market-update']
  */
-export function buildNewsRoute(lang: Lang, anySlug: string): any[] {
-  const canonicalWp = canonicalizeNewsSlug(anySlug);
-  const display = toNewsDisplaySlug(canonicalWp, lang);
-  return [NEWS_BASE[lang], display];
+export function buildNewsRoute(lang: Lang, wpSlug: string): any[] {
+  return [NEWS_BASE[lang], toNewsDisplaySlug(wpSlug, lang)];
 }
 
 /**
- * Construit l'URL string absolue/relative d’un article (pratique pour sitemap/SEO/helpers)
+ * Chemin (relatif à l'origine) d'un article : liens, canonical, hreflang, sitemap.
  */
-export function buildNewsPath(lang: Lang, anySlug: string): string {
-  const canonicalWp = canonicalizeNewsSlug(anySlug);
-  const display = toNewsDisplaySlug(canonicalWp, lang);
-  return `${NEWS_BASE[lang]}/${display}`;
+export function buildNewsPath(lang: Lang, wpSlug: string): string {
+  return `${NEWS_BASE[lang]}/${encodeURIComponent(toNewsDisplaySlug(wpSlug, lang))}`;
 }
 
 /**
@@ -153,37 +146,18 @@ export function isNewsDetailPath(path: string): boolean {
 }
 
 /**
- * Traduit uniquement la partie route+slug pour News detail
- * sans casser WordPress (on repasse toujours par le canonical WP)
+ * Traduit un chemin de détail news vers la langue cible (hreflang, switch de langue).
+ * Retourne null si le chemin n'est pas un détail news.
  */
 export function translateNewsDetailPath(currPath: string, targetLang: Lang): string | null {
   const p = normalizeNewsSlug(currPath);
 
-  // EN -> FR
+  let wpSlug = '';
   if (p.startsWith('en/real-estate-valuation-news/')) {
-    const slugEn = p.replace('en/real-estate-valuation-news/', '');
-    const canonical = canonicalizeNewsSlug(slugEn);
-
-    if (targetLang === 'fr') {
-      return `/actualites-expertise-immobiliere/${toNewsDisplaySlug(canonical, 'fr')}`;
-    }
-
-    // EN -> EN : normalise / stabilise
-    return `/en/real-estate-valuation-news/${toNewsDisplaySlug(canonical, 'en')}`;
+    wpSlug = fromNewsUrlSlug(p.replace('en/real-estate-valuation-news/', ''), 'en');
+  } else if (p.startsWith('actualites-expertise-immobiliere/')) {
+    wpSlug = fromNewsUrlSlug(p.replace('actualites-expertise-immobiliere/', ''), 'fr');
   }
 
-  // FR -> EN
-  if (p.startsWith('actualites-expertise-immobiliere/')) {
-    const slugFr = p.replace('actualites-expertise-immobiliere/', '');
-    const canonical = canonicalizeNewsSlug(slugFr);
-
-    if (targetLang === 'en') {
-      return `/en/real-estate-valuation-news/${toNewsDisplaySlug(canonical, 'en')}`;
-    }
-
-    // FR -> FR : normalise / stabilise
-    return `/actualites-expertise-immobiliere/${toNewsDisplaySlug(canonical, 'fr')}`;
-  }
-
-  return null;
+  return wpSlug ? buildNewsPath(targetLang, wpSlug) : null;
 }

@@ -1,4 +1,7 @@
-<div class="methods-asset-wrapper">
+<!-- ✅ Slug inconnu de WordPress : vraie 404 (statut SSR + noindex) -->
+<app-not-found *ngIf="notFound"></app-not-found>
+
+<div class="methods-asset-wrapper" *ngIf="!notFound">
   <!-- ✅ Détail uniquement si on est bien sur une page fille -->
   <ng-container *ngIf="isDetail; else emptyTpl">
     <!-- ===== HERO ===== -->

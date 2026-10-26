@@ -10,7 +10,7 @@ import {
   QueryList,
   PLATFORM_ID,
 } from '@angular/core';
-import { CommonModule, DOCUMENT, isPlatformBrowser } from '@angular/common';
+import { CommonModule, DOCUMENT, isPlatformBrowser, isPlatformServer } from '@angular/common';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ActivatedRoute, Router, NavigationEnd } from '@angular/router';
 import { HttpClient } from '@angular/common/http';
@@ -21,6 +21,7 @@ import { environment } from '../../../environments/environment';
 import { ImgFastDirective } from '../../directives/img-fast.directive';
 import { SeoService } from '../../services/seo.service';
 import { WordpressService } from '../../services/wordpress.service';
+import { NotFoundComponent } from '../not-found/not-found.component';
 
 // ✅ Source de vérité slugs / routes (FR/EN)
 import {
@@ -28,6 +29,7 @@ import {
   normalizeSlug,
   fromMethodsAssetUrlSlug,
   toMethodsAssetDisplaySlug,
+  buildMethodsAssetPath,
 } from '../../config/methods-assets.slugs';
 
 type Lang = 'fr' | 'en';
@@ -50,7 +52,7 @@ type FaqItemUI = { q: string; a: string };
 @Component({
   selector: 'app-methods-asset',
   standalone: true,
-  imports: [CommonModule, ImgFastDirective],
+  imports: [CommonModule, ImgFastDirective, NotFoundComponent],
   templateUrl: './methods-asset.component.html',
   styleUrls: ['./methods-asset.component.scss'],
 })
@@ -67,12 +69,16 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
 
   // ✅ si tu le fournis côté SSR (run-ssr.mjs providers), ça aide à détecter la langue
   private serverLang = inject('SERVER_LANG' as any, { optional: true }) as Lang | null;
+  private ssrRes = inject<any>('SSR_RESPONSE' as any, { optional: true });
 
   private gsap: any | null = null;
   private ScrollTrigger: any | null = null;
 
   /** ✅ Sert au template: n'afficher le détail que si on a un slug */
   isDetail = false;
+
+  /** ✅ Slug absent de WordPress -> <app-not-found> (404 SSR + noindex) */
+  notFound = false;
 
   private isBrowser(): boolean {
     return isPlatformBrowser(this.platformId);
@@ -127,6 +133,7 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
         const rawUrlSlug = normalizeSlug(rawParam);
 
         this.isDetail = !!rawUrlSlug;
+        this.notFound = false;
 
         if (!rawUrlSlug) {
           this.lastSlugCanonical = '';
@@ -174,13 +181,19 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
 
         const seq = ++this.loadSeq;
         try {
-          await this.loadBySlug(canonicalWp, seq, desiredDisplay /* slug affiché */);
+          await this.loadBySlug(canonicalWp, seq);
           this.scheduleBind();
         } catch (e) {
           this.hero = { title: 'Actifs immobiliers', subtitle: '', html: '', imageUrl: '' };
           this.sections = [];
           this.faqItems = [];
           this.openFaqIndexes.clear();
+          // WP indisponible : erreur temporaire (503), surtout pas un 404 qui désindexerait la page
+          if (isPlatformServer(this.platformId)) {
+            try {
+              this.ssrRes?.status?.(503);
+            } catch {}
+          }
           // eslint-disable-next-line no-console
           console.error('[MethodsAsset] loadBySlug failed', e);
         }
@@ -275,7 +288,7 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
     return Array.from(new Set([primary, alt].filter(Boolean)));
   }
 
-  private async loadBySlug(slugWp: string, seq: number, slugDisplay: string): Promise<void> {
+  private async loadBySlug(slugWp: string, seq: number): Promise<void> {
     const bases = this.wpApiBases();
 
     const fetchFrom = async (base: string) => {
@@ -307,6 +320,9 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
       this.sections = [];
       this.faqItems = [];
       this.openFaqIndexes.clear();
+      // ✅ aucun methods_asset pour ce slug -> vraie 404 (cf. NotFoundComponent)
+      this.notFound = true;
+      this.lastSlugCanonical = '';
       return;
     }
 
@@ -333,7 +349,7 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
     this.openFaqIndexes.clear();
 
     /* ---------- SEO (ACF) ---------- */
-    this.applySeoFromAcf(acf?.seo, slugDisplay, this.faqItems);
+    this.applySeoFromAcf(acf?.seo, slugWp, this.faqItems);
   }
 
   private async buildSections(cs: any, seq: number): Promise<Section[]> {
@@ -489,16 +505,12 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
    */
   private applySeoEarly(canonicalWpSlug: string): void {
     const lang = this.getLang();
-    const origin = 'https://groupe-abc.fr';
 
     // slug affiché par langue (EN peut être mappé)
     const frDisplay = toMethodsAssetDisplaySlug(canonicalWpSlug, 'fr');
     const enDisplay = toMethodsAssetDisplaySlug(canonicalWpSlug, 'en');
 
-    const frPath = `${METHODS_ASSETS_BASE.fr}/${encodeURIComponent(frDisplay)}`;
-    const enPath = `${METHODS_ASSETS_BASE.en}/${encodeURIComponent(enDisplay)}`;
-
-    const canonical = lang === 'en' ? `${origin}${enPath}` : `${origin}${frPath}`;
+    const { canonical, alternates } = this.seoUrls(canonicalWpSlug, lang);
 
     // title fallback : on met quelque chose de correct en attendant ACF
     const title =
@@ -511,26 +523,40 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
       description: '',
       canonical,
       lang,
-      alternates: [
-        { lang: 'fr', href: `${origin}${frPath}` },
-        { lang: 'en', href: `${origin}${enPath}` },
-        { lang: 'x-default', href: `${origin}${frPath}` },
-      ],
+      alternates,
     });
   }
 
-  private applySeoFromAcf(seoAcf: any, slugDisplay: string, faqItems: FaqItemUI[] = []): void {
+  /**
+   * canonical = URL servie (FR ou EN), hreflang fr/en/x-default (= FR),
+   * construits depuis le slug WP avec les mêmes helpers que les liens et le sitemap.
+   */
+  private seoUrls(canonicalWpSlug: string, lang: Lang) {
+    const origin = 'https://groupe-abc.fr';
+    const fr = `${origin}${buildMethodsAssetPath('fr', canonicalWpSlug)}`;
+    const en = `${origin}${buildMethodsAssetPath('en', canonicalWpSlug)}`;
+
+    return {
+      canonical: lang === 'en' ? en : fr,
+      alternates: [
+        { lang: 'fr', href: fr },
+        { lang: 'en', href: en },
+        { lang: 'x-default', href: fr },
+      ],
+    };
+  }
+
+  private applySeoFromAcf(seoAcf: any, canonicalWpSlug: string, faqItems: FaqItemUI[] = []): void {
     const lang = this.getLang();
 
     const metaTitle = (seoAcf?.meta_title || this.hero.title || 'Actifs immobiliers').toString();
     const metaDesc = (seoAcf?.meta_description || '').toString();
 
     const origin = 'https://groupe-abc.fr';
-    const base = METHODS_ASSETS_BASE[lang];
-    const fallbackPath = `${base}/${encodeURIComponent(slugDisplay)}`;
-    const canonicalFallback = `${origin}${fallbackPath}`;
 
-    const canonical = (seoAcf?.canonical || canonicalFallback).toString();
+    // ⚠️ seoAcf.canonical volontairement ignoré : saisi en FR uniquement (et parfois faux),
+    //    il pointait les pages EN vers le FR. Le canonical est toujours l'URL servie.
+    const { canonical, alternates } = this.seoUrls(canonicalWpSlug, lang);
     const robots = seoAcf?.noindex ? 'noindex,nofollow' : 'index,follow';
 
     let jsonLdObj: any = null;
@@ -588,12 +614,11 @@ export class MethodsAssetComponent implements OnInit, AfterViewInit, OnDestroy {
       jsonLdObj = { '@context': 'https://schema.org', '@graph': graph };
     }
 
-    // ✅ ici on laisse SeoService générer les alternates par défaut
-    // MAIS comme on a déjà un early SEO, ça écrase proprement ensuite
     this.seo.update({
       title: metaTitle,
       description: metaDesc,
       canonical,
+      alternates,
       robots,
       lang,
       locale: lang === 'en' ? 'en_US' : 'fr_FR',

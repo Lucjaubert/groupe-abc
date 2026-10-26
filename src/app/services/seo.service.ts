@@ -10,6 +10,8 @@ import { Title, Meta } from '@angular/platform-browser';
 import { DOCUMENT, isPlatformBrowser } from '@angular/common';
 import { Router } from '@angular/router';
 import { environment } from '../../environments/environment';
+import { translateMethodsAssetDetailPath } from '../config/methods-assets.slugs';
+import { translateNewsDetailPath } from '../config/news.slugs';
 
 export type OgType = 'website' | 'article';
 
@@ -174,16 +176,21 @@ export class SeoService {
       ...(cfg.twitterCreator ? { 'twitter:creator': cfg.twitterCreator } : {}),
     });
 
-    // ✅ Canonical (toujours injecté dans le HTML SSR)
-    this.setCanonical(pageUrl || undefined);
+    // ✅ Canonical + hreflang (toujours injectés dans le HTML SSR),
+    //    sauf page noindex (404…) : ni canonical ni hreflang
+    if (/noindex/i.test(robots)) {
+      this.setCanonical(undefined);
+      this.setAlternates([]);
+    } else {
+      this.setCanonical(pageUrl || undefined);
 
-    // ✅ hreflang alternates (toujours injectés dans le HTML SSR)
-    const hreflangs =
-      cfg.alternates && cfg.alternates.length
-        ? cfg.alternates
-        : this.buildDefaultAlternates(origin, routerPath);
+      const hreflangs =
+        cfg.alternates && cfg.alternates.length
+          ? cfg.alternates
+          : this.buildDefaultAlternates(origin, routerPath);
 
-    this.setAlternates(hreflangs);
+      this.setAlternates(hreflangs);
+    }
 
     // JSON-LD (page)
     this.clearJsonLd();
@@ -221,64 +228,36 @@ export class SeoService {
     // 1) On cherche dans le ALT_MAP
     const direct = ALT_MAP.find((p) => p.fr === clean || p.en === clean);
 
+    // x-default = version FR, identique sur les deux pages du couple FR/EN
     if (direct) {
-      const isEn = clean === direct.en;
-
       const frHref = this.absFromOrigin(origin, direct.fr);
       const enHref = this.absFromOrigin(origin, direct.en);
 
       return [
         { lang: 'fr', href: frHref },
         { lang: 'en', href: enHref },
-        { lang: 'x-default', href: isEn ? enHref : frHref },
+        { lang: 'x-default', href: frHref },
       ];
     }
 
-    /**
-     * Détail d’actif (FR) : /methodes-evaluation-immobiliere/:slug
-     * -> EN : /en/valuation-methods-assets/:slug
-     */
-    if (clean.startsWith('/methodes-evaluation-immobiliere/')) {
-      const slug = clean
-        .replace('/methodes-evaluation-immobiliere/', '')
-        .replace(/^\/+/, '')
-        .replace(/\/+$/, '');
+    // 2) Détails news / methods_asset : slugs traduits via les mêmes helpers que les pages
+    const frDetail =
+      translateNewsDetailPath(clean, 'fr') || translateMethodsAssetDetailPath(clean, 'fr');
+    const enDetail =
+      translateNewsDetailPath(clean, 'en') || translateMethodsAssetDetailPath(clean, 'en');
 
-      if (slug) {
-        const frHref = this.absFromOrigin(origin, `/methodes-evaluation-immobiliere/${slug}`);
-        const enHref = this.absFromOrigin(origin, `/en/valuation-methods-assets/${slug}`);
+    if (frDetail && enDetail) {
+      const frHref = this.absFromOrigin(origin, frDetail);
+      const enHref = this.absFromOrigin(origin, enDetail);
 
-        return [
-          { lang: 'fr', href: frHref },
-          { lang: 'en', href: enHref },
-          { lang: 'x-default', href: frHref },
-        ];
-      }
+      return [
+        { lang: 'fr', href: frHref },
+        { lang: 'en', href: enHref },
+        { lang: 'x-default', href: frHref },
+      ];
     }
 
-    /**
-     * Détail d’actif (EN) : /en/valuation-methods-assets/:slug
-     * -> FR : /methodes-evaluation-immobiliere/:slug
-     */
-    if (clean.startsWith('/en/valuation-methods-assets/')) {
-      const slug = clean
-        .replace('/en/valuation-methods-assets/', '')
-        .replace(/^\/+/, '')
-        .replace(/\/+$/, '');
-
-      if (slug) {
-        const frHref = this.absFromOrigin(origin, `/methodes-evaluation-immobiliere/${slug}`);
-        const enHref = this.absFromOrigin(origin, `/en/valuation-methods-assets/${slug}`);
-
-        return [
-          { lang: 'fr', href: frHref },
-          { lang: 'en', href: enHref },
-          { lang: 'x-default', href: frHref },
-        ];
-      }
-    }
-
-    // 2) Fallback générique (routes non mappées)
+    // 3) Fallback générique (routes non mappées)
     const isEn = clean === '/en' || clean.startsWith('/en/');
     const frPath = isEn ? clean.replace(/^\/en(\/|$)/, '/') || '/' : clean;
     const enPath = isEn ? clean : clean === '/' ? '/en' : `/en${clean}`;
@@ -289,7 +268,7 @@ export class SeoService {
     return [
       { lang: 'fr', href: frHref },
       { lang: 'en', href: enHref },
-      { lang: 'x-default', href: isEn ? enHref : frHref },
+      { lang: 'x-default', href: frHref },
     ];
   }
 

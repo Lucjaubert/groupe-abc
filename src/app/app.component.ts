@@ -24,6 +24,7 @@ import { ContactFabComponent } from './shared/components/faq-bubble/contact-fab.
 
 import { SeoService } from './services/seo.service';
 import { WeglotRefreshService } from './services/weglot-refresh.service';
+import { RgpdService } from './services/rgpd.service';
 import { environment } from '../environments/environment';
 
 @Component({
@@ -60,8 +61,8 @@ export class AppComponent implements OnInit, OnDestroy {
     cta_url: '/contact-expert-immobilier',
     links: [
       { label: 'Mentions légales', url: '/mentions-legales' },
-      { label: 'Politique de confidentialité', url: '/politique-de-confidentialite' },
-      { label: 'Cookies', url: '/cookies' },
+      { label: 'Politique de confidentialité', url: '/mentions-legales' },
+      { label: 'Cookies', url: '/mentions-legales' },
     ],
     socials: [
       { label: 'LinkedIn', url: 'https://www.linkedin.com/company/groupe-abc-experts/' },
@@ -74,7 +75,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private renderer: Renderer2,
     private viewport: ViewportScroller,
     private seo: SeoService,
-    private _wgRefresh: WeglotRefreshService
+    private _wgRefresh: WeglotRefreshService,
+    private rgpd: RgpdService,
   ) {}
 
   private get isBrowser(): boolean {
@@ -86,6 +88,11 @@ export class AppComponent implements OnInit, OnDestroy {
     // 1) JSON-LD sitewide (SSR OK) — une seule fois
     // ============================================
     this.initSitewideJsonLdOnce();
+
+    // Consentement RGPD (tarteaucitron) — navigateur uniquement, jamais en SSR
+    if (this.isBrowser) {
+      this.rgpd.init();
+    }
 
     // =========================
     // 2) Routing / SEO / UX

@@ -380,3 +380,28 @@ body.no-scroll { overflow: hidden; }
     font-size: 0.85em;
   }
 }
+
+/* RGPD — icône de réouverture tarteaucitron réduite de moitié (tous écrans).
+   Sélecteurs renforcés : la CSS tarteaucitron est injectée après nos styles. */
+/* Centrée verticalement sur le FAB contact (cf. contact-fab.component.scss :
+   bottom clamp(12px, 2vw, 24px), hauteur 52px / 42px ≤ 768px). */
+html body #tarteaucitronIcon {
+  left: clamp(12px, 2vw, 24px);
+  bottom: calc(clamp(12px, 2vw, 24px) + 26px);
+  transform: translateY(50%);
+
+  @media (max-width: 768px) {
+    bottom: calc(clamp(12px, 2vw, 24px) + 21px);
+  }
+}
+
+html body #tarteaucitronIcon #tarteaucitronManager {
+  display: block;
+  padding: 4px 5px;
+  line-height: 0;
+}
+
+html body #tarteaucitronIcon #tarteaucitronManager img {
+  width: 25px;
+  height: 25px;
+}

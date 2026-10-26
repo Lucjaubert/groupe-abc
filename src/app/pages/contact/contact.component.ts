@@ -14,6 +14,7 @@ import {
   ChangeDetectorRef,
   PLATFORM_ID,
 } from '@angular/core';
+import { Router } from '@angular/router';
 import { firstValueFrom } from 'rxjs';
 
 import { ContactService } from '../../services/contact.service';
@@ -82,6 +83,7 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private platformId = inject(PLATFORM_ID);
   private doc = inject(DOCUMENT);
+  private router = inject(Router);
 
   /* ====== GSAP lazy ====== */
   private gsap: any | null = null;
@@ -379,7 +381,8 @@ export class ContactComponent implements OnInit, AfterViewInit, OnDestroy {
         return '/';
       }
     }
-    return '/';
+    // SSR : l'URL du router (sinon /en/contact-chartered-valuers était rendu en FR)
+    return (this.router.url || '/').split(/[?#]/)[0] || '/';
   }
 
   private isBrowser(): boolean {

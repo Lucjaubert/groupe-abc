@@ -1,254 +1,87 @@
-// server.ts
-import 'zone.js/node';
-
-import express from 'express';
-import type { Request, Response, NextFunction, RequestHandler } from 'express';
-
-import { join } from 'path';
-import { CommonEngine } from '@angular/ssr';
 import { APP_BASE_HREF } from '@angular/common';
-
-import cors from 'cors';
+import { CommonEngine } from '@angular/ssr';
+import express, { type Request, type Response, type NextFunction } from 'express';
+import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import { fileURLToPath } from 'node:url';
+import { dirname, join, resolve } from 'node:path';
+import bootstrap from './src/main.server';
+import { buildNewsPath, isNewsArticle, translateNewsDetailPath } from './src/app/config/news.slugs';
+import {
+  buildMethodsAssetPath,
+  translateMethodsAssetDetailPath,
+} from './src/app/config/methods-assets.slugs';
 
 type Lang = 'fr' | 'en';
 
-/**
- * Dossiers de build, RELATIFS au bundle serveur.
- *
- * Si ton fichier compilé est : /var/www/.../groupe-abc_angular/server/server.cjs
- * alors __dirname = /var/www/.../groupe-abc_angular/server
- *
- * ➜ BROWSER_DIST = /var/www/.../groupe-abc_angular/browser
- * ➜ SSR_DIST     = /var/www/.../groupe-abc_angular/server
- */
-const SSR_DIST = __dirname;
-const BROWSER_DIST = join(__dirname, '..', 'browser');
-
-// Bundle SSR Angular (dist/.../server/main.cjs)
-const mainServer = require(join(SSR_DIST, 'main.cjs')).default;
-
-const app = express();
-
-// ✅ Helper : rend les handlers async compatibles avec Express typings (pas de Promise retournée)
-const asyncHandler =
-  (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>): RequestHandler =>
-  (req, res, next) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-
-// (debug) marquer les réponses qui passent par le SSR
-app.use((req, res, next) => {
-  res.setHeader('x-ssr', '1');
-  next();
-});
-
-// Cookies (pour persister la langue côté SSR)
-app.use(cookieParser());
-
-// CORS / JSON
-app.use(cors());
-app.use(express.json());
-
-// End-point de santé (utile pour tests et monitoring)
-app.get('/healthz', (_req, res) => {
-  res.status(200).type('text/plain').send('ok');
-});
+/* =========================================================
+ * ENV / constants
+ * ======================================================= */
+const PUBLIC_HOST = (process.env['PUBLIC_HOST'] || 'groupe-abc.fr')
+  .replace(/^https?:\/\//, '')
+  .replace(/\/$/, '');
+const PUBLIC_BASE = (process.env['PUBLIC_BASE'] || `https://${PUBLIC_HOST}`).replace(/\/$/, '');
+const WP_API_BASE = (process.env['WP_API_BASE'] || `https://${PUBLIC_HOST}/wordpress`).replace(/\/$/, '');
+const SITEMAP_TTL_MS = parseInt(process.env['SITEMAP_TTL_MS'] || String(15 * 60 * 1000), 10);
+const SSR_TIMEOUT_MS = parseInt(process.env['SSR_TIMEOUT_MS'] || '15000', 10);
 
 /* =========================================================
- * 1) REDIRECTS 301 (SEO) — AVANT tout (wp-json / sitemap / statiques / SSR)
+ * Lang detection (cookie -> geo headers -> Accept-Language)
  * ======================================================= */
-
-function stripTrailingSlash(p: string) {
-  if (p === '/') return '/';
-  return p.replace(/\/+$/, '');
-}
-
-const REDIRECTS_301: Record<string, string> = {
-  // FR legacy
-  '/accueil': '/',
-  '/actualite': '/actualites-expertise-immobiliere',
-  '/biens-et-methodes': '/methodes-evaluation-immobiliere',
-  '/contact': '/contact-expert-immobilier',
-  '/equipe': '/experts-immobiliers-agrees',
-  '/equipes': '/experts-immobiliers-agrees',
-  '/qui-sommes-nous': '/expert-immobilier-reseau-national',
-  '/services': '/expertise-immobiliere-services',
-
-  // cas GSC identifiés
-  '/actualites-expertise-immobiliere/news': '/actualites-expertise-immobiliere',
-
-  // EN legacy (dans /en)
-  '/en/news': '/en/real-estate-valuation-news',
-  '/en/contact': '/en/contact-chartered-valuers',
-  '/en/services': '/en/real-estate-valuation-services',
-  '/en/team': '/en/chartered-valuers-team',
-  '/en/teams': '/en/chartered-valuers-team',
-  '/en/assets-methods': '/en/valuation-methods-assets',
-  '/en/chartered-valuation-experts': '/en/chartered-valuers-team',
-  '/en/contact-real-estate-valuation': '/en/contact-chartered-valuers',
-
-  // anciennes URLs FR sous /en
-  '/en/actualites': '/en/real-estate-valuation-news',
-  '/en/actualites-expertise-immobiliere': '/en/real-estate-valuation-news',
-  '/en/biens-et-methodes': '/en/valuation-methods-assets',
-  '/en/methodes-evaluation-immobiliere': '/en/valuation-methods-assets',
-  '/en/equipe': '/en/chartered-valuers-team',
-  '/en/experts-immobiliers-agrees': '/en/chartered-valuers-team',
-  '/en/contact-expert-immobilier': '/en/contact-chartered-valuers',
-  '/en/expert-immobilier-reseau-national': '/en/expert-network-chartered-valuers',
-  '/en/expertise-immobiliere-services': '/en/real-estate-valuation-services',
-
-  // cas GSC côté EN
-  '/en/actualites-expertise-immobiliere/news': '/en/real-estate-valuation-news',
-};
-
-app.use((req, res, next) => {
-  const p = stripTrailingSlash(req.path || '/');
-
-  // FR: /actualites/:slug -> /actualites-expertise-immobiliere/:slug
-  if (p.startsWith('/actualites/')) {
-    const slug = p.replace('/actualites/', '').replace(/^\/+/, '');
-    if (slug) return res.redirect(301, `/actualites-expertise-immobiliere/${slug}`);
-  }
-
-  // FR: /assets-methods(/:slug) -> /methodes-evaluation-immobiliere(/:slug)
-  if (p === '/assets-methods') return res.redirect(301, '/methodes-evaluation-immobiliere');
-  if (p.startsWith('/assets-methods/')) {
-    const slug = p.replace('/assets-methods/', '').replace(/^\/+/, '');
-    if (slug) return res.redirect(301, `/methodes-evaluation-immobiliere/${slug}`);
-  }
-
-  // EN: /en/news/:slug -> /en/real-estate-valuation-news/:slug
-  if (p.startsWith('/en/news/')) {
-    const slug = p.replace('/en/news/', '').replace(/^\/+/, '');
-    if (slug) return res.redirect(301, `/en/real-estate-valuation-news/${slug}`);
-  }
-
-  // EN: /en/assets-methods(/:slug) -> /en/valuation-methods-assets(/:slug)
-  if (p === '/en/assets-methods') return res.redirect(301, '/en/valuation-methods-assets');
-  if (p.startsWith('/en/assets-methods/')) {
-    const slug = p.replace('/en/assets-methods/', '').replace(/^\/+/, '');
-    if (slug) return res.redirect(301, `/en/valuation-methods-assets/${slug}`);
-  }
-
-  // FR legacy : /actualites-expertise-immobiliere/article-<n> -> listing
-  if (/^\/actualites-expertise-immobiliere\/article-\d+$/i.test(p)) {
-    return res.redirect(301, '/actualites-expertise-immobiliere');
-  }
-
-  // EN legacy : /en/actualites-expertise-immobiliere/article-<n> -> listing EN
-  if (/^\/en\/actualites-expertise-immobiliere\/article-\d+$/i.test(p)) {
-    return res.redirect(301, '/en/real-estate-valuation-news');
-  }
-
-  const target = REDIRECTS_301[p];
-  if (target) return res.redirect(301, target);
-
-  next();
-});
-
-/* =========================================================
- * 2) LANG AUTO (geo) — 302 vers /en (pas pour bots, pas sur statiques)
- * ======================================================= */
-
 function isBot(req: Request): boolean {
   const ua = String(req.header('user-agent') || '').toLowerCase();
   return /(googlebot|bingbot|yandex|baiduspider|duckduckbot|slurp|facebookexternalhit|twitterbot)/.test(ua);
 }
 
 function isStaticLikePath(pathname: string): boolean {
-  if (!pathname) return false;
-  if (pathname === '/robots.txt' || pathname === '/sitemap.xml' || pathname === '/healthz') return true;
-  if (pathname.startsWith('/wp-json')) return true;
-  if (pathname.startsWith('/wp-admin') || pathname.startsWith('/wp-content')) return true;
-  return /\.[a-z0-9]{2,6}$/i.test(pathname);
+  const p = String(pathname || '');
+  if (!p) return false;
+  if (p === '/robots.txt' || p === '/sitemap.xml' || p === '/healthz' || p === '/healthz-node') return true;
+  if (p.startsWith('/wp-json') || p.startsWith('/wp-admin') || p.startsWith('/wp-content')) return true;
+  return /\.[a-z0-9]{2,6}$/i.test(p);
 }
 
 function detectLangFromReq(req: Request): Lang {
-  // 1) cookie user (prioritaire)
-  const c = (req as any).cookies?.lang;
+  const c = req.cookies?.['lang'];
   if (c === 'fr' || c === 'en') return c;
 
-  // 2) Pays via headers infra (Cloudflare / Vercel / autres)
-  const country =
-    String(req.header('cf-ipcountry') || req.header('x-vercel-ip-country') || '')
-      .trim()
-      .toUpperCase();
-
+  const country = String(req.header('cf-ipcountry') || req.header('x-vercel-ip-country') || '')
+    .trim()
+    .toUpperCase();
   const EN_COUNTRIES = new Set(['US', 'GB', 'IE', 'CA', 'AU', 'NZ']);
   if (country && EN_COUNTRIES.has(country)) return 'en';
 
-  // 3) Fallback Accept-Language
   const al = String(req.header('accept-language') || '').toLowerCase();
   if (al.includes('en') && !al.includes('fr')) return 'en';
 
   return 'fr';
 }
 
-app.use((req, res, next) => {
-  const path = req.path || '/';
-  const isEnUrl = path === '/en' || path.startsWith('/en/');
-
-  const hasLangCookie = (req as any).cookies?.lang === 'fr' || (req as any).cookies?.lang === 'en';
-  const lang = detectLangFromReq(req);
-
-  (res.locals as any).serverLang = lang;
-  res.setHeader('x-lang-detected', lang);
-
-  // Redirect uniquement vers EN (pas vers FR)
-  if (!isStaticLikePath(path) && !hasLangCookie && !isBot(req) && lang === 'en' && !isEnUrl) {
-    const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
-    return res.redirect(302, '/en' + path + qs);
-  }
-
-  next();
-});
-
 /* =========================================================
- * 3) PROXY /wp-json (avant SSR)
+ * Sitemap (FR/EN hreflang + news + methods_asset), cached
  * ======================================================= */
-
-app.use(
-  '/wp-json',
-  asyncHandler(async (req, res) => {
-    try {
-      const response = await fetch(`https://wordpress.groupe-abc.fr/wp-json${req.url}`, {
-        headers: { accept: 'application/json' },
-      });
-
-      if (!response.ok) {
-        const txt = await response.text().catch(() => '');
-        res
-          .status(response.status)
-          .type('application/json; charset=UTF-8')
-          .send(JSON.stringify({ error: `WP API error ${response.status}`, body: txt.slice(0, 500) }));
-        return;
-      }
-
-      const data = await response.json();
-      res.status(200).json(data);
-    } catch (error) {
-      console.error('❌ Erreur API WordPress:', error);
-      res.status(500).json({ error: 'Erreur lors de la récupération des données WordPress' });
-    }
-  })
-);
-
-/* =========================================================
- * 4) robots.txt / sitemap.xml
- * ======================================================= */
-
-const PUBLIC_BASE = (process.env['PUBLIC_BASE'] || 'https://groupe-abc.fr').replace(/\/$/, '');
-const WP_API_BASE = (process.env['WP_API_BASE'] || 'https://wordpress.groupe-abc.fr').replace(/\/$/, '');
-const NEWS_PUBLIC_PREFIX = process.env['NEWS_PUBLIC_PREFIX'] || '/actualites-expertise-immobiliere/';
-
-// Cache mémoire simple
 let sitemapCache: { xml: string; expiresAt: number } | null = null;
-const SITEMAP_TTL_MS = parseInt(process.env['SITEMAP_TTL_MS'] || String(15 * 60 * 1000), 10);
 
-// Fallback XML minimal (anti-HTML)
-function minimalSitemapXml() {
+function xmlEscape(s: unknown): string {
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+function toIsoDate(d: string | null): string | null {
+  if (!d) return null;
+  try {
+    const dt = new Date(d);
+    return Number.isNaN(dt.getTime()) ? null : dt.toISOString();
+  } catch {
+    return null;
+  }
+}
+
+function minimalSitemapXml(): string {
   return (
     `<?xml version="1.0" encoding="UTF-8"?>\n` +
     `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
@@ -257,375 +90,311 @@ function minimalSitemapXml() {
   );
 }
 
-function escapeXml(v: string) {
-  return String(v ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
-}
-
-function toLastmodDate(iso: string | undefined | null): string | null {
-  if (!iso) return null;
-  const d = iso.split('T')[0];
-  return /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null;
-}
-
-async function fetchAllNews(): Promise<Array<{ slug: string; modified_gmt?: string; modified?: string }>> {
-  const perPage = 100;
+async function fetchWpCollectionAll(
+  endpointName: string,
+  fields = 'slug,modified_gmt',
+  perPage = 100,
+  maxPages = 50,
+): Promise<any[]> {
+  const out: any[] = [];
   let page = 1;
-  const all: Array<{ slug: string; modified_gmt?: string; modified?: string }> = [];
+  while (page <= maxPages) {
+    const endpoint =
+      `${WP_API_BASE}/wp-json/wp/v2/${endpointName}` +
+      `?per_page=${perPage}&page=${page}&_fields=${fields}`;
 
-  while (true) {
-    const url =
-      `${WP_API_BASE}/wp-json/wp/v2/news` +
-      `?status=publish&per_page=${perPage}&page=${page}` +
-      `&_fields=slug,modified_gmt,modified`;
-
-    const resp = await fetch(url, { headers: { accept: 'application/json' } });
-
-    if (!resp.ok) {
-      const txt = await resp.text().catch(() => '');
-      throw new Error(`WP news fetch failed ${resp.status}: ${txt.slice(0, 300)}`);
+    const res = await fetch(endpoint, { headers: { accept: 'application/json' } });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      throw new Error(`WP_${endpointName.toUpperCase()}_FETCH_FAILED status=${res.status} body=${text.slice(0, 200)}`);
     }
 
-    const items = (await resp.json()) as Array<{ slug: string; modified_gmt?: string; modified?: string }>;
-    all.push(...items);
+    const arr = await res.json();
+    if (!Array.isArray(arr) || arr.length === 0) break;
 
-    const totalPagesHeader = resp.headers.get('x-wp-totalpages');
-    const totalPages = totalPagesHeader ? parseInt(totalPagesHeader, 10) : 1;
-
-    // Si le header n’existe pas, on stop quand on reçoit moins que perPage
-    if (!totalPagesHeader) {
-      if (items.length < perPage) break;
-    } else {
-      if (page >= totalPages) break;
-    }
-
+    out.push(...arr);
+    if (arr.length < perPage) break;
     page += 1;
   }
-
-  return all;
+  return out;
 }
 
-// robots.txt
-app.get('/robots.txt', (_req, res) => {
-  res.setHeader('Content-Type', 'text/plain; charset=UTF-8');
-  res.setHeader('Cache-Control', 'public, max-age=31536000');
-  res.status(200).send(`User-agent: *
-Allow: /
+interface SitemapEntry {
+  frPath: string;
+  enPath: string;
+  xDefaultPath: string;
+  lastmod: string | null;
+  priority: string | null;
+  changefreq: string | null;
+}
 
-Sitemap: ${PUBLIC_BASE}/sitemap.xml
-`);
-});
+function pageEntry(o: {
+  frPath: string;
+  enPath: string;
+  lastmod?: string | null;
+  priority?: string | null;
+  changefreq?: string | null;
+  xDefault?: Lang;
+}): SitemapEntry {
+  return {
+    frPath: o.frPath,
+    enPath: o.enPath,
+    xDefaultPath: o.xDefault === 'en' ? o.enPath : o.frPath,
+    lastmod: o.lastmod ?? null,
+    priority: o.priority ?? null,
+    changefreq: o.changefreq ?? null,
+  };
+}
 
-// ✅ sitemap.xml : handler async typé correctement via asyncHandler
-app.get(
-  '/sitemap.xml',
-  asyncHandler(async (_req, res) => {
-    // IMPORTANT : toujours XML
-    res.setHeader('Content-Type', 'application/xml; charset=UTF-8');
+function renderSitemapUrl(e: SitemapEntry, currentLang: Lang): string {
+  const abs = (p: string) => `${PUBLIC_BASE}${p}`;
+  const loc = currentLang === 'en' ? abs(e.enPath) : abs(e.frPath);
+  const lastmodXml = e.lastmod ? `\n    <lastmod>${xmlEscape(e.lastmod)}</lastmod>` : '';
+  const changefreqXml = e.changefreq ? `\n    <changefreq>${xmlEscape(e.changefreq)}</changefreq>` : '';
+  const priorityXml = e.priority != null ? `\n    <priority>${xmlEscape(e.priority)}</priority>` : '';
 
-    try {
-      const now = Date.now();
+  return [
+    '  <url>',
+    `    <loc>${xmlEscape(loc)}</loc>`,
+    lastmodXml || null,
+    changefreqXml || null,
+    priorityXml || null,
+    `    <xhtml:link rel="alternate" hreflang="fr" href="${xmlEscape(abs(e.frPath))}"/>`,
+    `    <xhtml:link rel="alternate" hreflang="en" href="${xmlEscape(abs(e.enPath))}"/>`,
+    `    <xhtml:link rel="alternate" hreflang="x-default" href="${xmlEscape(abs(e.xDefaultPath))}"/>`,
+    '  </url>',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
 
-      // Cache
-      if (sitemapCache && sitemapCache.expiresAt > now) {
-        res.setHeader('Cache-Control', 'public, max-age=300');
-        res.status(200).send(sitemapCache.xml);
-        return;
-      }
+async function buildSitemapXml(): Promise<string> {
+  const fixedPages: SitemapEntry[] = [
+    pageEntry({ frPath: '/', enPath: '/en', changefreq: 'weekly', priority: '1.0', xDefault: 'fr' }),
+    pageEntry({ frPath: '/expert-immobilier-reseau-national', enPath: '/en/expert-network-chartered-valuers', changefreq: 'monthly', priority: '0.8' }),
+    pageEntry({ frPath: '/expertise-immobiliere-services', enPath: '/en/real-estate-valuation-services', changefreq: 'monthly', priority: '0.8' }),
+    pageEntry({ frPath: '/methodes-evaluation-immobiliere', enPath: '/en/valuation-methods-assets', changefreq: 'monthly', priority: '0.7' }),
+    pageEntry({ frPath: '/experts-immobiliers-agrees', enPath: '/en/chartered-valuers-team', changefreq: 'monthly', priority: '0.7' }),
+    pageEntry({ frPath: '/actualites-expertise-immobiliere', enPath: '/en/real-estate-valuation-news', changefreq: 'weekly', priority: '0.7' }),
+    pageEntry({ frPath: '/contact-expert-immobilier', enPath: '/en/contact-chartered-valuers', changefreq: 'monthly', priority: '0.6' }),
+    pageEntry({ frPath: '/mentions-legales', enPath: '/en/legal-notice', changefreq: 'yearly', priority: '0.5' }),
+  ];
 
-      // Routes statiques (reprend ton sitemap actuel)
-      const staticUrls: Array<{
-        loc: string;
-        changefreq?: string;
-        priority?: string;
-        alternates?: Array<{ hreflang: string; href: string }>;
-      }> = [
-        // Accueil
-        {
-          loc: `${PUBLIC_BASE}/`,
-          changefreq: 'weekly',
-          priority: '1.0',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/` },
-          ],
-        },
-
-        // FR canoniques
-        {
-          loc: `${PUBLIC_BASE}/expert-immobilier-reseau-national`,
-          changefreq: 'monthly',
-          priority: '0.8',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/expert-immobilier-reseau-national` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/expert-network-chartered-valuers` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/expert-immobilier-reseau-national` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/expertise-immobiliere-services`,
-          changefreq: 'monthly',
-          priority: '0.8',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/expertise-immobiliere-services` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/real-estate-valuation-services` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/expertise-immobiliere-services` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/methodes-evaluation-immobiliere`,
-          changefreq: 'monthly',
-          priority: '0.7',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/methodes-evaluation-immobiliere` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/valuation-methods-assets` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/methodes-evaluation-immobiliere` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/experts-immobiliers-agrees`,
-          changefreq: 'monthly',
-          priority: '0.7',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/experts-immobiliers-agrees` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/chartered-valuers-team` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/experts-immobiliers-agrees` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/actualites-expertise-immobiliere`,
-          changefreq: 'weekly',
-          priority: '0.7',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/actualites-expertise-immobiliere` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/real-estate-valuation-news` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/actualites-expertise-immobiliere` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/contact-expert-immobilier`,
-          changefreq: 'monthly',
-          priority: '0.6',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/contact-expert-immobilier` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/contact-chartered-valuers` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/contact-expert-immobilier` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/mentions-legales`,
-          changefreq: 'yearly',
-          priority: '0.5',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/mentions-legales` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/legal-notice` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/mentions-legales` },
-          ],
-        },
-
-        // EN canoniques
-        {
-          loc: `${PUBLIC_BASE}/en`,
-          changefreq: 'weekly',
-          priority: '0.9',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/en/expert-network-chartered-valuers`,
-          changefreq: 'monthly',
-          priority: '0.8',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/expert-immobilier-reseau-national` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/expert-network-chartered-valuers` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/expert-immobilier-reseau-national` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/en/real-estate-valuation-services`,
-          changefreq: 'monthly',
-          priority: '0.8',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/expertise-immobiliere-services` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/real-estate-valuation-services` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/expertise-immobiliere-services` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/en/valuation-methods-assets`,
-          changefreq: 'monthly',
-          priority: '0.7',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/methodes-evaluation-immobiliere` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/valuation-methods-assets` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/methodes-evaluation-immobiliere` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/en/chartered-valuers-team`,
-          changefreq: 'monthly',
-          priority: '0.7',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/experts-immobiliers-agrees` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/chartered-valuers-team` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/experts-immobiliers-agrees` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/en/real-estate-valuation-news`,
-          changefreq: 'weekly',
-          priority: '0.7',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/actualites-expertise-immobiliere` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/real-estate-valuation-news` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/actualites-expertise-immobiliere` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/en/contact-chartered-valuers`,
-          changefreq: 'monthly',
-          priority: '0.6',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/contact-expert-immobilier` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/contact-chartered-valuers` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/contact-expert-immobilier` },
-          ],
-        },
-        {
-          loc: `${PUBLIC_BASE}/en/legal-notice`,
-          changefreq: 'yearly',
-          priority: '0.5',
-          alternates: [
-            { hreflang: 'fr', href: `${PUBLIC_BASE}/mentions-legales` },
-            { hreflang: 'en', href: `${PUBLIC_BASE}/en/legal-notice` },
-            { hreflang: 'x-default', href: `${PUBLIC_BASE}/mentions-legales` },
-          ],
-        },
-      ];
-
-      // Articles (CPT news) depuis WP
-      const news = await fetchAllNews();
-      const newsUrls = news.map((n) => {
-        const loc = `${PUBLIC_BASE}${NEWS_PUBLIC_PREFIX}${encodeURIComponent(n.slug)}`;
-        const lastmod = toLastmodDate(n.modified_gmt || n.modified);
-        return { loc, lastmod };
+  // URL du sitemap = URL servie en 200 avec canonical identique : mêmes helpers
+  // (news.slugs / methods-assets.slugs) que les liens, canonical et hreflang des pages.
+  let wpNews: any[] = [];
+  try {
+    wpNews = await fetchWpCollectionAll('news', 'slug,modified_gmt,acf');
+  } catch (e) {
+    console.error('[SITEMAP] WP news fetch failed:', (e as Error)?.message || e);
+    wpNews = [];
+  }
+  // isNewsArticle : exclut le post d'intro "news" ; buildNewsPath traduit un slug WP "article-N" non renommé
+  const newsEntries = wpNews
+    .filter((n) => isNewsArticle(n))
+    .map((n) => {
+      return pageEntry({
+        frPath: buildNewsPath('fr', n.slug),
+        enPath: buildNewsPath('en', n.slug),
+        lastmod: toIsoDate(n.modified_gmt ? `${n.modified_gmt}Z` : null),
+        changefreq: 'monthly',
+        priority: '0.6',
       });
-
-      // XML
-      const urlsXml: string[] = [];
-
-      for (const u of staticUrls) {
-        const alternates = (u.alternates || [])
-          .map(
-            (a) =>
-              `    <xhtml:link rel="alternate" hreflang="${escapeXml(a.hreflang)}" href="${escapeXml(a.href)}"/>`
-          )
-          .join('\n');
-
-        urlsXml.push(
-          [
-            '  <url>',
-            `    <loc>${escapeXml(u.loc)}</loc>`,
-            u.changefreq ? `    <changefreq>${escapeXml(u.changefreq)}</changefreq>` : '',
-            u.priority ? `    <priority>${escapeXml(u.priority)}</priority>` : '',
-            alternates || '',
-            '  </url>',
-          ]
-            .filter(Boolean)
-            .join('\n')
-        );
-      }
-
-      // Articles : pas d’alternates EN ici (ajoute si tu as une route EN par article)
-      for (const n of newsUrls) {
-        urlsXml.push(
-          [
-            '  <url>',
-            `    <loc>${escapeXml(n.loc)}</loc>`,
-            n.lastmod ? `    <lastmod>${escapeXml(n.lastmod)}</lastmod>` : '',
-            '    <changefreq>monthly</changefreq>',
-            '    <priority>0.6</priority>',
-            '  </url>',
-          ]
-            .filter(Boolean)
-            .join('\n')
-        );
-      }
-
-      const xml =
-        `<?xml version="1.0" encoding="UTF-8"?>\n` +
-        `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n` +
-        `        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n\n` +
-        urlsXml.join('\n\n') +
-        `\n\n</urlset>\n`;
-
-      sitemapCache = { xml, expiresAt: now + SITEMAP_TTL_MS };
-
-      res.setHeader('Cache-Control', 'public, max-age=300');
-      res.status(200).send(xml);
-    } catch (e) {
-      console.error('❌ sitemap.xml error (fallback minimal)', e);
-      res.setHeader('Cache-Control', 'public, max-age=60');
-      res.status(200).send(minimalSitemapXml());
-    }
-  })
-);
-
-/* =========================================================
- * 5) STATIC Angular (assets, *.js, *.css, etc.)
- * ======================================================= */
-
-app.get(
-  '*.*',
-  express.static(BROWSER_DIST, {
-    maxAge: '1y',
-    immutable: true,
-  })
-);
-
-/* =========================================================
- * 6) SSR Angular (catch-all)
- * ======================================================= */
-
-app.get(
-  '*',
-  asyncHandler(async (req, res) => {
-    const engine = new CommonEngine();
-
-    const html = await engine.render({
-      bootstrap: mainServer,
-      documentFilePath: join(BROWSER_DIST, 'index.html'),
-      url: req.originalUrl,
-      publicPath: BROWSER_DIST,
-      providers: [
-        { provide: APP_BASE_HREF, useValue: req.baseUrl },
-        { provide: 'SSR_REQUEST', useValue: req },
-        { provide: 'SSR_RESPONSE', useValue: res },
-        { provide: 'SERVER_LANG', useValue: (res.locals as any).serverLang ?? 'fr' },
-      ],
     });
 
-    if (!res.headersSent) res.status(200).send(html);
-  })
-);
+  let wpMethods: any[] = [];
+  try {
+    wpMethods = await fetchWpCollectionAll('methods_asset');
+  } catch (e) {
+    console.error('[SITEMAP] WP methods fetch failed:', (e as Error)?.message || e);
+    wpMethods = [];
+  }
+  const methodsEntries = wpMethods
+    .filter((m) => m && typeof m.slug === 'string' && m.slug.trim())
+    .map((m) => {
+      return pageEntry({
+        frPath: buildMethodsAssetPath('fr', m.slug),
+        enPath: buildMethodsAssetPath('en', m.slug),
+        lastmod: toIsoDate(m.modified_gmt ? `${m.modified_gmt}Z` : null),
+        changefreq: 'monthly',
+        priority: '0.6',
+      });
+    });
 
-// ✅ Error handler Express (à la fin)
-app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-  console.error('❌ Express error:', err?.stack || err);
-  if (!res.headersSent) res.status(500).type('text/plain').send('Server error');
-});
+  const entries = [...fixedPages, ...newsEntries, ...methodsEntries];
 
-// ✅ PORT : par défaut 4000 (aligné avec tes logs PM2). Ajuste si ton Nginx proxy_pass vise un autre port.
-const PORT = parseInt(process.env['PORT'] ?? '4000', 10);
+  return (
+    `<?xml version="1.0" encoding="UTF-8"?>\n` +
+    `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n` +
+    `        xmlns:xhtml="http://www.w3.org/1999/xhtml">\n` +
+    entries.map((e) => [renderSitemapUrl(e, 'fr'), renderSitemapUrl(e, 'en')].join('\n')).join('\n') +
+    `\n</urlset>\n`
+  );
+}
 
-app.listen(PORT, () => {
-  console.log(`✅ Serveur Node SSR en cours sur http://localhost:${PORT}`);
-});
+/* =========================================================
+ * SSR render timeout guard (-> 503 instead of 200 empty)
+ * ======================================================= */
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  let timeoutId!: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('SSR_TIMEOUT')), ms);
+  });
+  return Promise.race([p, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+}
+
+/* =========================================================
+ * Express app
+ * ======================================================= */
+export function app(): express.Express {
+  const server = express();
+  const serverDistFolder = dirname(fileURLToPath(import.meta.url));
+  const browserDistFolder = resolve(serverDistFolder, '../browser');
+  const indexHtml = join(serverDistFolder, 'index.server.html');
+
+  const commonEngine = new CommonEngine();
+
+  server.disable('x-powered-by');
+  server.set('view engine', 'html');
+  server.set('views', browserDistFolder);
+
+  server.use(compression());
+  server.use(cookieParser());
+
+  // Health (non-SSR)
+  server.get('/healthz', (_req, res) => { res.status(200).type('text/plain').send('ok'); });
+  server.get('/healthz-node', (_req, res) => { res.status(200).type('text/plain').send('ok'); });
+
+  // Safety: WP routes are handled by nginx, must never hit SSR node
+  server.get(['/wp-json/*', '/wp-admin/*', '/wp-content/*'], (_req, res) => {
+    res.status(502).type('text/plain').send('WP routes should not hit SSR node');
+  });
+
+  // Lang auto-redirect (302 -> /en) + expose detected lang for SSR
+  server.use((req: Request, res: Response, next: NextFunction) => {
+    const path = req.path || '/';
+    const isEnUrl = path === '/en' || path.startsWith('/en/');
+    const lang = detectLangFromReq(req);
+
+    res.locals['serverLang'] = lang;
+    res.setHeader('X-LANG-DETECTED', lang);
+
+    const hasLangCookie = req.cookies?.['lang'] === 'fr' || req.cookies?.['lang'] === 'en';
+
+    if (!isStaticLikePath(path) && !hasLangCookie && !isBot(req) && lang === 'en' && !isEnUrl) {
+      const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+      res.redirect(302, '/en' + path + qs);
+      return;
+    }
+
+    next();
+  });
+
+  // robots.txt (dynamic)
+  server.get('/robots.txt', (_req, res) => {
+    res.status(200).type('text/plain; charset=UTF-8');
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+    res.setHeader('X-ROBOTS-HIT', '1');
+    res.send(`User-agent: *\nAllow: /\n\nSitemap: ${PUBLIC_BASE}/sitemap.xml\n`);
+  });
+
+  // sitemap.xml (dynamic, cached, WP-driven)
+  server.get('/sitemap.xml', (_req, res) => {
+    res.type('application/xml; charset=UTF-8');
+    res.setHeader('X-SITEMAP-HIT', '1');
+
+    const now = Date.now();
+    if (sitemapCache && sitemapCache.expiresAt > now) {
+      res.setHeader('Cache-Control', 'public, max-age=300');
+      res.status(200).send(sitemapCache.xml);
+      return;
+    }
+
+    buildSitemapXml()
+      .then((xml) => {
+        sitemapCache = { xml, expiresAt: Date.now() + SITEMAP_TTL_MS };
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        res.status(200).send(xml);
+      })
+      .catch((e) => {
+        console.error('[SITEMAP] fatal error:', e?.stack || e);
+        res.setHeader('Cache-Control', 'public, max-age=60');
+        res.status(200).send(sitemapCache?.xml || minimalSitemapXml());
+      });
+  });
+
+  // Serve static files from /browser
+  server.get('**', express.static(browserDistFolder, {
+    maxAge: '1y',
+    index: 'index.html',
+  }));
+
+  // Détails news / methods_asset : URL non canonique (alias historique, slug FR sous /en,
+  // majuscules…) -> 301 vers l'URL officielle, pour que toute page 200 ait canonical = elle-même
+  server.get('**', (req: Request, res: Response, next: NextFunction) => {
+    let path = req.path;
+    try {
+      path = decodeURIComponent(path);
+    } catch {}
+    const lang: Lang = path === '/en' || path.startsWith('/en/') ? 'en' : 'fr';
+    const target = translateNewsDetailPath(path, lang) || translateMethodsAssetDetailPath(path, lang);
+    if (!target || decodeURIComponent(target) === path) {
+      next();
+      return;
+    }
+    const qs = req.originalUrl.includes('?') ? req.originalUrl.slice(req.originalUrl.indexOf('?')) : '';
+    res.redirect(301, target + qs);
+  });
+
+  // All regular routes use the Angular engine (SSR)
+  server.get('**', (req: Request, res: Response) => {
+    const t0 = Date.now();
+    const { protocol, originalUrl, baseUrl, headers } = req;
+
+    withTimeout(
+      commonEngine.render({
+        bootstrap,
+        documentFilePath: indexHtml,
+        url: `${protocol}://${headers.host}${originalUrl}`,
+        publicPath: browserDistFolder,
+        providers: [
+          { provide: APP_BASE_HREF, useValue: baseUrl },
+          { provide: 'SERVER_LANG', useValue: res.locals['serverLang'] ?? 'fr' },
+          { provide: 'SSR_REQUEST', useValue: req },
+          { provide: 'SSR_RESPONSE', useValue: res },
+        ],
+      }),
+      SSR_TIMEOUT_MS,
+    )
+      .then((html) => {
+        // Do NOT force status 200: keep any status set during render
+        // (e.g. NotFoundComponent sets 404 via SSR_RESPONSE).
+        res.set('X-SSR', '1').set('X-SSR-TTFB-MS', String(Date.now() - t0)).send(html);
+      })
+      .catch((err) => {
+        const code = err?.message === 'SSR_TIMEOUT' ? 'SSR_TIMEOUT' : (err?.message || 'SSR_ERROR');
+        console.error('[SSR] render error:', err?.stack || err);
+        res
+          .status(503)
+          .set('X-SSR', '0')
+          .set('X-SSR-ERR', String(code))
+          .set('X-SSR-TTFB-MS', String(Date.now() - t0))
+          .type('text/plain; charset=utf-8')
+          .send('SSR_FAILED');
+      });
+  });
+
+  return server;
+}
+
+function run(): void {
+  const port = process.env['PORT'] || 4000;
+
+  // Start up the Node server
+  const server = app();
+  server.listen(port, () => {
+    console.log(`Node Express server listening on http://localhost:${port}`);
+  });
+}
+
+run();
