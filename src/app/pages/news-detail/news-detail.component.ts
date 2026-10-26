@@ -17,6 +17,7 @@ import {
   buildNewsRoute,
   buildNewsPath,
   isNewsArticle,
+  canonicalNewsSlug,
 } from '../../config/news.slugs';
 
 type ThemeKey = 'expertise' | 'juridique' | 'marche' | 'autre';
@@ -138,7 +139,8 @@ export class NewsDetailComponent implements OnInit, OnDestroy {
         const acfPost = it.acf.post;
 
         const title = acfPost.post_title || it?.title?.rendered || '';
-        const wpSlug = (it?.slug || '').trim();
+        // slug canonique (un slug WP "article-N" non renommé est traduit via les alias)
+        const wpSlug = canonicalNewsSlug(it?.slug || '');
 
         mapped.push({
           id: it?.id,

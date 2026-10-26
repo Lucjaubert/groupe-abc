@@ -189,7 +189,7 @@ async function buildSitemapXml(): Promise<string> {
     console.error('[SITEMAP] WP news fetch failed:', (e as Error)?.message || e);
     wpNews = [];
   }
-  // isNewsArticle : exclut le post d'intro "news" et les "article-N" (301 nginx)
+  // isNewsArticle : exclut le post d'intro "news" ; buildNewsPath traduit un slug WP "article-N" non renommé
   const newsEntries = wpNews
     .filter((n) => isNewsArticle(n))
     .map((n) => {

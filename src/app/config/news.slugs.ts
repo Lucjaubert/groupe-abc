@@ -3,7 +3,7 @@
 // Source de vérité UNIQUE des URL d'actualités (app Angular + sitemap server.ts).
 // - FR : /actualites-expertise-immobiliere/<slug WP>
 // - EN : /en/real-estate-valuation-news/<slug EN traduit, sinon slug WP>
-// Aucun slug dérivé du titre, aucun alias historique : le slug WordPress fait foi.
+// Aucun slug dérivé du titre : le slug WordPress fait foi (anciens article-N -> alias).
 
 export type Lang = 'fr' | 'en';
 
@@ -24,10 +24,23 @@ export const NEWS_BASE: Record<Lang, string> = {
 export const NEWS_INTRO_SLUG = 'news';
 
 /**
- * Slugs WP "article-N" : redirigés en 301 vers la liste par nginx,
- * ils ne peuvent donc jamais répondre 200 -> exclus des liens et du sitemap.
+ * Anciens slugs WP "article-N" -> slug canonique.
+ * - Avant renommage dans WP : le slug WP "article-N" est traduit ici, donc jamais produit
+ *   (liens, canonical, hreflang, sitemap).
+ * - Après renommage : seules les anciennes URL /…/article-N passent par ici,
+ *   et server.ts les redirige en 301 vers l'article (FR et EN).
  */
-const NGINX_REDIRECTED_SLUG = /^article-\d+$/;
+export const NEWS_ALIASES_TO_CANONICAL: Record<string, string> = {
+  'article-2': 'le-marche-du-coliving-en-france',
+  'article-3': 'credit-immobilier-le-recours-a-un',
+  'article-4': 'frais-de-notaire-de-quoi-sont-ils',
+  'article-5': 'la-croissance-des-expertises-sur-les',
+  'article-6': 'permis-de-louer-a-bordeaux-tout',
+  'article-7': 'point-marche-l-immobilier-de-bureaux',
+  'article-8': 'point-marche-l-immobilier-commercial-bordelais',
+  'article-9': 'travaux-dpe-ce-qu-il-faut',
+  'article-10': 'la-tension-entre-valeur-assurantielle-et',
+};
 
 /**
  * Slugs EN "propres" (display) pour chaque slug WP.
@@ -66,25 +79,26 @@ export function normalizeNewsSlug(s: string): string {
     .replace(/-+/g, '-');
 }
 
+/** Slug WP ou ancien slug (article-N) -> slug canonique de l'article */
+export function canonicalNewsSlug(s: string): string {
+  const n = normalizeNewsSlug(s);
+  return NEWS_ALIASES_TO_CANONICAL[n] || n;
+}
+
 /**
  * Un item WP /news est-il un article publiable (page détail 200 + sitemap) ?
  * Même règle pour la liste, le détail et le sitemap.
  */
 export function isNewsArticle(item: any): boolean {
   const slug = normalizeNewsSlug(item?.slug || '');
-  return (
-    !!slug &&
-    slug !== NEWS_INTRO_SLUG &&
-    !NGINX_REDIRECTED_SLUG.test(slug) &&
-    !!item?.acf?.post
-  );
+  return !!slug && slug !== NEWS_INTRO_SLUG && !!item?.acf?.post;
 }
 
 /**
- * Slug WP -> slug affiché dans l'URL selon la langue (EN peut être traduit).
+ * Slug WP (ou ancien article-N) -> slug affiché dans l'URL selon la langue (EN peut être traduit).
  */
 export function toNewsDisplaySlug(wpSlug: string, lang: Lang): string {
-  const c = normalizeNewsSlug(wpSlug);
+  const c = canonicalNewsSlug(wpSlug);
 
   if (lang === 'en') {
     const en = NEWS_CANONICAL_TO_EN[c];
@@ -95,12 +109,12 @@ export function toNewsDisplaySlug(wpSlug: string, lang: Lang): string {
 }
 
 /**
- * Slug lu dans l'URL (FR/EN) -> slug WP à requêter.
+ * Slug lu dans l'URL (FR/EN) -> slug canonique de l'article.
  */
 export function fromNewsUrlSlug(urlSlug: string, lang: Lang): string {
   const n = normalizeNewsSlug(urlSlug);
-  if (lang === 'en') return NEWS_EN_TO_CANONICAL[n] || n;
-  return n;
+  if (lang === 'en' && NEWS_EN_TO_CANONICAL[n]) return NEWS_EN_TO_CANONICAL[n];
+  return canonicalNewsSlug(n);
 }
 
 /**
