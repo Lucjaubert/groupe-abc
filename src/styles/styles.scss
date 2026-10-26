@@ -380,3 +380,14 @@ body.no-scroll { overflow: hidden; }
     font-size: 0.85em;
   }
 }
+
+/* RGPD — icône de réouverture tarteaucitron réduite de moitié (tous écrans).
+   Sélecteurs renforcés : la CSS tarteaucitron est injectée après nos styles. */
+html body #tarteaucitronIcon #tarteaucitronManager {
+  padding: 4px 5px;
+}
+
+html body #tarteaucitronIcon #tarteaucitronManager img {
+  width: 25px;
+  height: 25px;
+}
